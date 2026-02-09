@@ -24,13 +24,6 @@ const elements = {
     roi: document.querySelector('#card-7 .metric-value'),
     leadsTable: document.querySelector('#qualified-leads-table tbody'),
     dateFilter: document.getElementById('date-filter'),
-    adminBtn: document.getElementById('admin-btn'),
-    adminPanel: document.getElementById('admin-panel'),
-    closeAdmin: document.getElementById('close-admin'),
-    adminForm: document.getElementById('admin-form'),
-    webhookInput: document.getElementById('webhook-url'),
-    investmentInput: document.getElementById('investment'),
-    salesInput: document.getElementById('sales'),
     mobileToggle: document.getElementById('mobile-toggle'),
     sidebar: document.querySelector('.sidebar')
 };
@@ -48,17 +41,9 @@ function loadConfig() {
     const savedConfig = localStorage.getItem('cefemex_dashboard_config');
     if (savedConfig) {
         state.config = JSON.parse(savedConfig);
-        // Update form values
-        elements.webhookInput.value = state.config.webhookUrl;
-        elements.investmentInput.value = state.config.investment;
-        elements.salesInput.value = state.config.sales;
     }
 }
 
-function saveConfig(newConfig) {
-    state.config = { ...state.config, ...newConfig };
-    localStorage.setItem('cefemex_dashboard_config', JSON.stringify(state.config));
-}
 
 // Data Fetching
 async function fetchData() {
@@ -238,19 +223,6 @@ function renderChart() {
 
 // Event Listeners
 function setupEventListeners() {
-    // Admin Toggles
-    const toggleAdmin = () => {
-        elements.adminPanel.classList.toggle('visible');
-        elements.adminPanel.classList.remove('hidden');
-    };
-
-    elements.adminBtn.addEventListener('click', toggleAdmin);
-
-    const sidebarAdminBtn = document.getElementById('admin-btn-sidebar');
-    if (sidebarAdminBtn) {
-        sidebarAdminBtn.addEventListener('click', toggleAdmin);
-    }
-
     // Mobile Sidebar Toggle
     if (elements.mobileToggle) {
         elements.mobileToggle.addEventListener('click', () => {
@@ -267,24 +239,6 @@ function setupEventListeners() {
                 elements.mobileToggle.classList.remove('active');
             }
         }
-    });
-
-    elements.closeAdmin.addEventListener('click', () => {
-        elements.adminPanel.classList.remove('visible');
-    });
-
-    // Admin Form Submission
-    elements.adminForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        saveConfig({
-            webhookUrl: elements.webhookInput.value,
-            investment: elements.investmentInput.value,
-            sales: elements.salesInput.value
-        });
-
-        elements.adminPanel.classList.remove('visible');
-        await fetchData();
-        renderDashboard();
     });
 
     // Date Filter

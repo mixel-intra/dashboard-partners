@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Back Office - Cefemex Capital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css">
+    <style>
+        /* Specific Additions for Admin UI */
+        .admin-container {
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 2rem;
+        }
+
+        .form-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .form-card h1 {
+            color: var(--accent-magenta);
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-container">
+        <div class="logo" style="justify-content: center; margin-bottom: 2rem;">
+            <img src="/logo-placeholder.svg" alt="Cefemex">
+            <div class="brand">
+                <span class="brand-name">Cefemex</span>
+                <span class="brand-sub">Back Office Admin</span>
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h1>Configuración Global</h1>
+            <form id="admin-form">
+                <div class="form-group">
+                    <label>Webhook de Leads (Origen de Datos)</label>
+                    <input type="url" id="webhook-url" required>
+                    <small>URL donde se consultan los leads de n8n</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Inversión Total ($)</label>
+                    <input type="number" id="investment" required min="0">
+                </div>
+
+                <div class="form-group">
+                    <label>Meta de Ventas / Ingresos ($)</label>
+                    <input type="number" id="sales" required min="0">
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <button type="submit" class="btn-primary" style="width: 100%;">Guardar Cambios</button>
+                    <p id="save-status"
+                        style="text-align: center; margin-top: 1rem; color: var(--accent-magenta); display: none;">
+                        ¡Configuración guardada exitosamente!</p>
+                </div>
+            </form>
+
+            <div style="margin-top: 2rem; text-align: center;">
+                <a href="index.html" style="color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;">←
+                    Ir al Dashboard Público</a>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/src/admin.js"></script>
+</body>
+
+</html>

@@ -40,9 +40,7 @@
             </div>
 
             <div class="sidebar-footer">
-                <button id="admin-btn-sidebar" class="admin-trigger">
-                    <span>⚙️ Configuración</span>
-                </button>
+                <!-- Admin button removed for Client Dashboard -->
             </div>
         </nav>
 
@@ -62,7 +60,6 @@
                         <input type="text" placeholder="Search leads...">
                     </div>
                     <input type="date" id="date-filter" class="date-picker">
-                    <button id="admin-btn" class="admin-icon-btn">⚙️</button>
                 </div>
             </header>
 
@@ -176,31 +173,7 @@
             </div>
         </div>
 
-        <!-- Panel de Administración Re-estilizado -->
-        <aside id="admin-panel" class="side-panel hidden">
-            <div class="panel-content">
-                <header>
-                    <h2>Settings</h2>
-                    <button id="close-admin">✕</button>
-                </header>
-                <form id="admin-form">
-                    <div class="form-group">
-                        <label>Webhook Source</label>
-                        <input type="url" id="webhook-url"
-                            value="https://cefemexyucatan.app.n8n.cloud/webhook/ce285ee2-cc8b-424d-b8aa-288050cbd320">
-                    </div>
-                    <div class="form-group">
-                        <label>Total Budget ($)</label>
-                        <input type="number" id="investment" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Revenue Target ($)</label>
-                        <input type="number" id="sales" value="0">
-                    </div>
-                    <button type="submit" class="btn-primary">Apply Configuration</button>
-                </form>
-            </div>
-        </aside>
+        <!-- Admin Panel removed to be moved to admin.html -->
     </div>
     <script type="module" src="/src/main.js"></script>
 </body>
