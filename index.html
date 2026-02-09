@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Leads - Cefemex Capital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div id="app" class="layout-wrapper">
+        <!-- Sidebar lateral inspirado en Quantix -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="/logo-placeholder.svg" alt="Cefemex">
+                    <div class="brand">
+                        <span class="brand-name">Cefemex</span>
+                        <span class="brand-sub">Lead Intelligence</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-menu">
+                <div class="menu-section">
+                    <span class="section-title">Overview</span>
+                    <a href="#" class="menu-item active"><span>📊 Dashboard</span></a>
+                    <a href="#" class="menu-item"><span>📈 Analytics</span></a>
+                </div>
+                <div class="menu-section">
+                    <span class="section-title">Account</span>
+                    <a href="#" class="menu-item"><span>💼 Portfolio</span></a>
+                    <a href="#" class="menu-item"><span>📁 Leads</span></a>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="admin-btn-sidebar" class="admin-trigger">
+                    <span>⚙️ Configuración</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Contenido Principal -->
+        <div class="main-content">
+            <header class="top-nav">
+                <div class="nav-left">
+                    <button id="mobile-toggle" class="mobile-menu-btn">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <span class="breadcrumb">Overview / <b>Dashboard</b></span>
+                </div>
+                <div class="nav-right">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search leads...">
+                    </div>
+                    <input type="date" id="date-filter" class="date-picker">
+                    <button id="admin-btn" class="admin-icon-btn">⚙️</button>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div class="welcome-section">
+                    <h2>Bienvenido de vuelta, Administrador</h2>
+                    <p class="last-update">Última actualización: hace un momento</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Fila 1: Métricas Principales -->
+                    <div class="metric-card primary-card" id="card-2">
+                        <div class="card-head">
+                            <span class="card-icon">🎯</span>
+                            <h3>Leads Calificados</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="metric-value">0</p>
+                            <span class="trend positive">+ 3.2%</span>
+                        </div>
+                        <div class="card-footer">
+                            <span class="footer-label">Total histórico</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card primary-card" id="card-3">
+                        <div class="card-head">
+                            <span class="card-icon">⚡</span>
+                            <h3>Tasa de Conversión</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="metric-value">0%</p>
+                            <div class="mini-chart-placeholder"></div>
+                        </div>
+                        <div class="card-progress">
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card primary-card" id="card-6">
+                        <div class="card-head">
+                            <span class="card-icon">💰</span>
+                            <h3>Ventas</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="metric-value">$0</p>
+                        </div>
+                    </div>
+
+                    <div class="metric-card primary-card" id="card-7">
+                        <div class="card-head">
+                            <span class="card-icon">🚀</span>
+                            <h3>ROI</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="metric-value">0x</p>
+                        </div>
+                    </div>
+
+                    <!-- Fila 2: Gráfico y Costo -->
+                    <div class="chart-section card">
+                        <div class="chart-header">
+                            <h3>Tendencia de Leads</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="leads-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="featured-metric card" id="card-5">
+                        <div class="card-head">
+                            <h3>Costo Lead Calificado</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="metric-value">$0</p>
+                            <p class="sub-label">Optimización sugerida</p>
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Submétricas y Tabla -->
+                    <div class="sub-metrics-row">
+                        <div class="metric-card small" id="card-1">
+                            <h3>Total Leads</h3>
+                            <p class="metric-value">0</p>
+                        </div>
+                        <div class="metric-card small" id="card-4">
+                            <h3>Inversión</h3>
+                            <p class="metric-value">$0</p>
+                        </div>
+                    </div>
+
+                    <div class="table-section card">
+                        <h3>Market Overview / Leads</h3>
+                        <div class="table-wrapper">
+                            <table id="qualified-leads-table">
+                                <thead>
+                                    <tr>
+                                        <th>Lead Name</th>
+                                        <th>Date</th>
+                                        <th>Medium</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Administración Re-estilizado -->
+        <aside id="admin-panel" class="side-panel hidden">
+            <div class="panel-content">
+                <header>
+                    <h2>Settings</h2>
+                    <button id="close-admin">✕</button>
+                </header>
+                <form id="admin-form">
+                    <div class="form-group">
+                        <label>Webhook Source</label>
+                        <input type="url" id="webhook-url"
+                            value="https://cefemexyucatan.app.n8n.cloud/webhook/ce285ee2-cc8b-424d-b8aa-288050cbd320">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Budget ($)</label>
+                        <input type="number" id="investment" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Revenue Target ($)</label>
+                        <input type="number" id="sales" value="0">
+                    </div>
+                    <button type="submit" class="btn-primary">Apply Configuration</button>
+                </form>
+            </div>
+        </aside>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
