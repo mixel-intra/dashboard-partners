@@ -1,83 +1,413 @@
+<!-- VERSION: REDESIGN_V2_FINAL -->
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Back Office - Cefemex Capital</title>
+    <title>Back Office | Dashboard partners</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css">
     <style>
-        /* Specific Additions for Admin UI */
-        .admin-container {
-            max-width: 600px;
-            margin: 100px auto;
-            padding: 2rem;
+        /* Admin Redesign - Optimized for No-Scroll */
+        :root {
+            --bg-body: #050505;
+            --bg-card: rgba(20, 21, 26, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --accent-glow: rgba(123, 97, 255, 0.15);
         }
 
-        .form-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(var(--glass-blur));
-            border: 1px solid var(--border-subtle);
-            border-radius: 24px;
-            padding: 2.5rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        body {
+            background-color: var(--bg-body);
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(117, 81, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(1, 241, 227, 0.05) 0%, transparent 50%);
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
         }
 
-        .form-card h1 {
-            color: var(--accent-magenta);
-            margin-bottom: 2rem;
-            font-size: 1.8rem;
+        .admin-layout {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            padding: 20px;
+            gap: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Sidebar Stylized */
+        .panel-sidebar {
+            width: 280px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-add {
+            padding: 20px;
+            background: rgba(123, 97, 255, 0.1);
+            border: none;
+            border-bottom: 1px solid var(--border-glass);
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-add:hover {
+            background: rgba(123, 97, 255, 0.2);
+        }
+
+        .client-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .client-item {
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .client-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(5px);
+        }
+
+        .client-item.active {
+            background: var(--accent-glow);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(117, 81, 255, 0.1);
+        }
+
+        .client-id-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .client-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* Main Content Stylized */
+        .panel-main {
+            flex: 1;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .editor-header {
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .editor-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, #fff, #8E92A3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .dashboard-quick-access {
+            background: rgba(123, 97, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid rgba(123, 97, 255, 0.2);
+        }
+
+        .url-preview-pill {
+            font-family: monospace;
+            color: var(--accent-primary);
+            font-size: 0.85rem;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .form-container {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .form-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            padding: 14px 18px;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: rgba(123, 97, 255, 0.05);
+            box-shadow: 0 0 15px rgba(117, 81, 255, 0.1);
+        }
+
+        .actions-footer {
+            margin-top: auto;
+            padding: 25px 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--border-glass);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(117, 81, 255, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .placeholder-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: radial-gradient(circle at center, rgba(123, 97, 255, 0.03), transparent);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.4s ease forwards;
         }
     </style>
 </head>
 
 <body>
-    <div class="admin-container">
-        <div class="logo" style="justify-content: center; margin-bottom: 2rem;">
-            <img src="/logo-placeholder.svg" alt="Cefemex">
-            <div class="brand">
-                <span class="brand-name">Cefemex</span>
-                <span class="brand-sub">Back Office Admin</span>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <div class="panel-sidebar">
+            <button id="add-client-btn" class="btn-add">
+                <ion-icon name="add-circle-outline" style="font-size: 1.5rem;"></ion-icon>
+                Nuevo Cliente
+            </button>
+            <div id="clients-list" class="client-list">
+                <!-- JS Generated -->
             </div>
         </div>
 
-        <div class="form-card">
-            <h1>Configuración Global</h1>
-            <form id="admin-form">
-                <div class="form-group">
-                    <label>Webhook de Leads (Origen de Datos)</label>
-                    <input type="url" id="webhook-url" required>
-                    <small>URL donde se consultan los leads de n8n</small>
+        <!-- Main Workspace -->
+        <div class="panel-main">
+            <!-- Empty State -->
+            <div id="editor-placeholder" class="placeholder-state">
+                <div style="font-size: 4rem; margin-bottom: 20px; filter: grayscale(1); opacity: 0.5;">📁</div>
+                <h3 style="color: white; margin-bottom: 10px;">Gestión de Clientes</h3>
+                <p style="color: var(--text-muted); max-width: 250px;">Selecciona o crea un cliente para configurar su
+                    acceso y métricas.</p>
+            </div>
+
+            <!-- Client Editor -->
+            <div id="client-editor" class="hidden animate-fade"
+                style="height: 100%; display: flex; flex-direction: column;">
+                <div class="editor-header">
+                    <h2 id="editor-title">Editar Cliente</h2>
+                    <div class="dashboard-quick-access">
+                        <code class="url-preview-pill" id="dashboard-url-text">index.html?client=...</code>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="copy-link-btn" class="btn"
+                                style="padding: 6px 12px; background: rgba(255,255,255,0.05); font-size: 0.75rem;">
+                                <ion-icon name="copy-outline"></ion-icon>
+                            </button>
+                            <a href="#" id="preview-link" target="_blank" class="btn btn-primary"
+                                style="padding: 6px 12px; font-size: 0.75rem;">
+                                <ion-icon name="open-outline"></ion-icon> IR
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Inversión Total ($)</label>
-                    <input type="number" id="investment" required min="0">
-                </div>
+                <form id="admin-form" class="form-container">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">ID del Cliente (Slug)</label>
+                            <input type="text" id="client-id" class="form-input" placeholder="ej. porsche-test"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nombre Comercial</label>
+                            <input type="text" id="client-display-name" class="form-input"
+                                placeholder="ej. Porsche Premium" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label">Webhook URL (Datos n8n)</label>
+                            <input type="url" id="webhook-url" class="form-input" placeholder="https://..." required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label">Logo del Cliente (Subir archivo)</label>
+                            <input type="file" id="client-logo-file" class="form-input" accept="image/*">
+                            <input type="hidden" id="client-logo-url">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Inversión Mensual ($)</label>
+                            <input type="number" id="investment" class="form-input" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ventas Objetivo ($)</label>
+                            <input type="number" id="sales" class="form-input" placeholder="0">
+                        </div>
 
-                <div class="form-group">
-                    <label>Meta de Ventas / Ingresos ($)</label>
-                    <input type="number" id="sales" required min="0">
-                </div>
+                        <!-- Credenciales de Acceso -->
+                        <div class="form-group full-width"
+                            style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                            <h1>Dashboard <span style="color: var(--primary);">Partners</span></h1>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Usuario</label>
+                            <input type="text" id="client-user" class="form-input" placeholder="ej. porsche_user">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contraseña</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="client-pass" class="form-input"
+                                    placeholder="Generar contraseña...">
+                                <button type="button" id="generate-pass-btn" class="btn btn-primary"
+                                    style="padding: 0 15px; flex-shrink: 0;">
+                                    <ion-icon name="key-outline"></ion-icon> Generar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-                <div style="margin-top: 2rem;">
-                    <button type="submit" class="btn-primary" style="width: 100%;">Guardar Cambios</button>
-                    <p id="save-status"
-                        style="text-align: center; margin-top: 1rem; color: var(--accent-magenta); display: none;">
-                        ¡Configuración guardada exitosamente!</p>
-                </div>
-            </form>
+                    <p id="save-status" class="success-msg"
+                        style="margin: 0; text-align: right; display: none; color: #10B981;">✅ Cambios guardados</p>
+                </form>
 
-            <div style="margin-top: 2rem; text-align: center;">
-                <a href="index.html" style="color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;">←
-                    Ir al Dashboard Público</a>
+                <div class="actions-footer">
+                    <button type="button" id="delete-client-btn" class="btn btn-danger">
+                        <ion-icon name="trash-outline"></ion-icon> Eliminar
+                    </button>
+                    <button type="submit" form="admin-form" class="btn btn-primary">
+                        <ion-icon name="save-outline"></ion-icon> Guardar Configuración
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-    <script type="module" src="/src/admin.js"></script>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="src/config.js"></script>
+    <script src="./src/backoffice.js"></script>
 </body>
 
 </html>

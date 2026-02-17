@@ -4,178 +4,398 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Leads - Cefemex Capital</title>
+    <title>Dashboard partners | Client Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Ionicons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <link rel="stylesheet" href="./src/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-    <div id="app" class="layout-wrapper">
-        <!-- Sidebar lateral inspirado en Quantix -->
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <img src="/logo-placeholder.svg" alt="Cefemex">
-                    <div class="brand">
-                        <span class="brand-name">Cefemex</span>
-                        <span class="brand-sub">Lead Intelligence</span>
+    <div class="app-container full-width-layout">
+        <!-- Main Header -->
+        <header class="main-header">
+            <div class="header-left">
+                <div class="client-branding">
+                    <img id="client-logo" src="" alt="Client Logo" class="client-logo-img hidden">
+                    <div class="welcome-area">
+                        <span class="welcome-label">Bienvenido,</span>
+                        <h2 class="welcome-name" id="welcome-name">Administrador</h2>
                     </div>
                 </div>
             </div>
 
-            <div class="sidebar-menu">
-                <div class="menu-section">
-                    <span class="section-title">Overview</span>
-                    <a href="#" class="menu-item active"><span>📊 Dashboard</span></a>
-                    <a href="#" class="menu-item"><span>📈 Analytics</span></a>
-                </div>
-                <div class="menu-section">
-                    <span class="section-title">Account</span>
-                    <a href="#" class="menu-item"><span>💼 Portfolio</span></a>
-                    <a href="#" class="menu-item"><span>📁 Leads</span></a>
+            <div class="header-right">
+                <div class="intra-branding">
+                    <img src="src/assets/intra-logo.png" alt="Intra" class="intra-logo-img">
+                    <span class="partner-tag">Partner Portal</span>
                 </div>
             </div>
+        </header>
 
-            <div class="sidebar-footer">
-                <!-- Admin button removed for Client Dashboard -->
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="ticker-section">
+                <div class="live-label">
+                    <div class="live-dot"></div>
+                    <span>Última actualización: Ahora mismo</span>
+                </div>
+                <h1 class="section-headline">
+                    Monitor de Leads <ion-icon name="globe-outline" class="globe-icon"></ion-icon>
+                </h1>
             </div>
-        </nav>
 
-        <!-- Contenido Principal -->
-        <div class="main-content">
-            <header class="top-nav">
-                <div class="nav-left">
-                    <button id="mobile-toggle" class="mobile-menu-btn">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button>
-                    <span class="breadcrumb">Overview / <b>Dashboard</b></span>
-                </div>
-                <div class="nav-right">
-                    <div class="search-box">
-                        <input type="text" placeholder="Search leads...">
-                    </div>
-                    <input type="date" id="date-filter" class="date-picker">
-                </div>
-            </header>
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
 
-            <div class="content-body">
-                <div class="welcome-section">
-                    <h2>Bienvenido de vuelta, Administrador</h2>
-                    <p class="last-update">Última actualización: hace un momento</p>
-                </div>
-
-                <div class="dashboard-grid">
-                    <!-- Fila 1: Métricas Principales -->
-                    <div class="metric-card primary-card" id="card-2">
-                        <div class="card-head">
-                            <span class="card-icon">🎯</span>
-                            <h3>Leads Calificados</h3>
+                <!-- Cards Row -->
+                <div class="cards-grid">
+                    <!-- Card 1: Leads Calificados -->
+                    <div class="card-quantix card-orange">
+                        <div class="card-accent-line orange"></div>
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="icon-box"
+                                    style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #F59E0B;">
+                                    <ion-icon name="ribbon"></ion-icon>
+                                </div>
+                                <div class="label-group">
+                                    <span class="label-sub">CALIDAD</span>
+                                    <span class="label-main">Leads Calificados</span>
+                                </div>
+                            </div>
+                            <button class="more-btn"><ion-icon name="ellipsis-vertical"></ion-icon></button>
                         </div>
-                        <div class="card-body">
-                            <p class="metric-value">0</p>
-                            <span class="trend positive">+ 3.2%</span>
+
+                        <div class="value-big" id="card-1-value">0</div>
+                        <div class="pill-change pill-green">
+                            <ion-icon name="arrow-up"></ion-icon> High Quality
                         </div>
-                        <div class="card-footer">
-                            <span class="footer-label">Total histórico</span>
+
+                        <div class="card-chart-container">
+                            <canvas id="chart-1"></canvas>
                         </div>
                     </div>
 
-                    <div class="metric-card primary-card" id="card-3">
-                        <div class="card-head">
-                            <span class="card-icon">⚡</span>
-                            <h3>Tasa de Conversión</h3>
+                    <!-- Card 2: Tasa de Conversión -->
+                    <div class="card-quantix card-purple">
+                        <div class="card-accent-line purple"></div>
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="icon-box"
+                                    style="background: rgba(117, 81, 255, 0.1); border-color: rgba(117, 81, 255, 0.3); color: #7551FF;">
+                                    <ion-icon name="swap-vertical"></ion-icon>
+                                </div>
+                                <div class="label-group">
+                                    <span class="label-sub">TOTAL / CALIFICADOS</span>
+                                    <span class="label-main">Tasa de Conversión</span>
+                                </div>
+                            </div>
+                            <button class="more-btn"><ion-icon name="ellipsis-vertical"></ion-icon></button>
                         </div>
-                        <div class="card-body">
-                            <p class="metric-value">0%</p>
-                            <div class="mini-chart-placeholder"></div>
+
+                        <div class="value-big" id="card-2-value">0.0</div>
+                        <div class="pill-change pill-green"
+                            style="background: rgba(117, 81, 255, 0.15); color: #7551FF;">
+                            Ratio Actual
                         </div>
-                        <div class="card-progress">
-                            <div class="progress-bar">
-                                <div class="progress" style="width: 0%"></div>
+
+                        <div class="card-chart-container">
+                            <canvas id="chart-2"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Ventas -->
+                    <div class="card-quantix card-cyan">
+                        <div class="card-accent-line cyan"></div>
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="icon-box"
+                                    style="background: rgba(1, 241, 227, 0.1); border-color: rgba(1, 241, 227, 0.3); color: #01F1E3;">
+                                    <ion-icon name="cash"></ion-icon>
+                                </div>
+                                <div class="label-group">
+                                    <span class="label-sub">INGRESOS TOTALES</span>
+                                    <span class="label-main">Ventas</span>
+                                </div>
+                            </div>
+                            <button class="more-btn"><ion-icon name="ellipsis-vertical"></ion-icon></button>
+                        </div>
+
+                        <div class="value-big" id="card-3-value">$0</div>
+                        <div class="pill-change pill-red" style="background: rgba(255,255,255,0.05); color: #8E92A3;">
+                            Meta Pendiente
+                        </div>
+
+                        <div class="card-chart-container">
+                            <canvas id="chart-3"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: ROI -->
+                    <div class="card-quantix card-pink">
+                        <div class="card-accent-line pink"></div>
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="icon-box"
+                                    style="background: rgba(255, 0, 229, 0.1); border-color: rgba(255, 0, 229, 0.3); color: #FF00E5;">
+                                    <ion-icon name="rocket"></ion-icon>
+                                </div>
+                                <div class="label-group">
+                                    <span class="label-sub">RETORNO / INVERSIÓN</span>
+                                    <span class="label-main">ROI</span>
+                                </div>
+                            </div>
+                            <button class="more-btn"><ion-icon name="ellipsis-vertical"></ion-icon></button>
+                        </div>
+
+                        <div class="value-big" id="card-4-value">0.0x</div>
+                        <div class="pill-change pill-green"
+                            style="background: rgba(255, 0, 229, 0.15); color: #FF00E5;">
+                            Multiplicador
+                        </div>
+
+                        <div class="card-chart-container">
+                            <canvas id="chart-4"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sketch Layout Implementation -->
+                <!-- Layout V2: Split Row + Bottom Cards -->
+
+                <!-- Middle Row: Chart & Table (50/50) -->
+                <div class="split-row-grid">
+                    <!-- Main Big Chart -->
+                    <div class="card-quantix big-chart-card">
+                        <div class="card-header" style="margin-bottom: 20px;">
+                            <div>
+                                <span class="label-sub">TENDENCIA HISTÓRICA</span>
+                                <h3 class="section-headline" style="font-size: 1.5rem; margin: 0;">Comportamiento de
+                                    Leads</h3>
+                            </div>
+                            <div class="table-tabs">
+                                <button class="tab-btn active">7D</button>
+                                <button class="tab-btn">1M</button>
+                                <button class="tab-btn">3M</button>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="metric-card primary-card" id="card-6">
-                        <div class="card-head">
-                            <span class="card-icon">💰</span>
-                            <h3>Ventas</h3>
-                        </div>
-                        <div class="card-body">
-                            <p class="metric-value">$0</p>
+                        <div style="flex: 1; position: relative; width: 100%;">
+                            <canvas id="main-chart"></canvas>
                         </div>
                     </div>
 
-                    <div class="metric-card primary-card" id="card-7">
-                        <div class="card-head">
-                            <span class="card-icon">🚀</span>
-                            <h3>ROI</h3>
+                    <!-- Table Card -->
+                    <div class="table-card" style="display: flex; flex-direction: column;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-secondary);">Leads Calificados
+                            </h3>
+                            <button id="view-all-btn" class="header-icon-btn" title="Ver info completa">
+                                <ion-icon name="open-outline"></ion-icon>
+                            </button>
                         </div>
-                        <div class="card-body">
-                            <p class="metric-value">0x</p>
-                        </div>
-                    </div>
-
-                    <!-- Fila 2: Gráfico y Costo -->
-                    <div class="chart-section card">
-                        <div class="chart-header">
-                            <h3>Tendencia de Leads</h3>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="leads-chart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="featured-metric card" id="card-5">
-                        <div class="card-head">
-                            <h3>Costo Lead Calificado</h3>
-                        </div>
-                        <div class="card-body">
-                            <p class="metric-value">$0</p>
-                            <p class="sub-label">Optimización sugerida</p>
-                        </div>
-                    </div>
-
-                    <!-- Fila 3: Submétricas y Tabla -->
-                    <div class="sub-metrics-row">
-                        <div class="metric-card small" id="card-1">
-                            <h3>Total Leads</h3>
-                            <p class="metric-value">0</p>
-                        </div>
-                        <div class="metric-card small" id="card-4">
-                            <h3>Inversión</h3>
-                            <p class="metric-value">$0</p>
-                        </div>
-                    </div>
-
-                    <div class="table-section card">
-                        <h3>Market Overview / Leads</h3>
-                        <div class="table-wrapper">
-                            <table id="qualified-leads-table">
+                        <div class="table-wrapper" style="border:none; padding:0; background:none;">
+                            <table>
                                 <thead>
                                     <tr>
-                                        <th>Lead Name</th>
-                                        <th>Date</th>
-                                        <th>Medium</th>
-                                        <th>Status</th>
+                                        <th>Nombre</th>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
                                     </tr>
                                 </thead>
-                                <tbody></tbody>
+                                <tbody id="leads-table-body">
+                                    <!-- JS Injection -->
+                                </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Admin Panel removed to be moved to admin.html -->
+                <!-- Bottom Row: Remaining Cards -->
+                <div class="bottom-cards-row">
+                    <!-- Card 5: Total Leads -->
+                    <div class="card-quantix card-orange">
+                        <div class="card-accent-line orange"></div>
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="icon-box"
+                                    style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #F59E0B;">
+                                    <ion-icon name="people"></ion-icon>
+                                </div>
+                                <div class="label-group">
+                                    <span class="label-sub">METRICA 1</span>
+                                    <span class="label-main">Total de Leads</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="value-big" id="card-5-value">0</div>
+                        <div class="pill-change pill-green">Generados</div>
+                        <div class="card-chart-container"><canvas id="chart-5"></canvas></div>
+                    </div>
+
+                    <!-- Card 6: Inversión -->
+                    <div class="card-quantix card-pink">
+                        <div class="card-accent-line pink"></div>
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="icon-box"
+                                    style="background: rgba(255, 0, 229, 0.1); border-color: rgba(255, 0, 229, 0.3); color: #FF00E5;">
+                                    <ion-icon name="wallet"></ion-icon>
+                                </div>
+                                <div class="label-group">
+                                    <span class="label-sub">METRICA 4</span>
+                                    <span class="label-main">Inversión</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="value-big" id="card-6-value">$0</div>
+                        <div class="pill-change pill-red">Presupuesto</div>
+                        <div class="card-chart-container"><canvas id="chart-6"></canvas></div>
+                    </div>
+
+                    <!-- Card 7: CPL -->
+                    <div class="card-quantix card-cyan">
+                        <div class="card-accent-line cyan"></div>
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="icon-box"
+                                    style="background: rgba(1, 241, 227, 0.1); border-color: rgba(1, 241, 227, 0.3); color: #01F1E3;">
+                                    <ion-icon name="pricetag"></ion-icon>
+                                </div>
+                                <div class="label-group">
+                                    <span class="label-sub">METRICA 5</span>
+                                    <span class="label-main">Costo x Lead</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="value-big" id="card-7-value">$0.00</div>
+                        <div class="pill-change pill-green">Eficiencia</div>
+                        <div class="card-chart-container"><canvas id="chart-7"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- UTM Campaigns Row -->
+                <div class="split-row-grid" style="margin-top: 2rem;">
+                    <div class="card-quantix big-chart-card">
+                        <div class="card-header" style="margin-bottom: 20px;">
+                            <div>
+                                <span class="label-sub">RENDIMIENTO POR CAMPAÑA</span>
+                                <h3 class="section-headline" style="font-size: 1.5rem; margin: 0;">Leads Calificados por
+                                    UTM</h3>
+                            </div>
+                        </div>
+                        <div style="flex: 1; position: relative; width: 100%;">
+                            <canvas id="utm-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card-quantix table-card" style="min-height: auto;">
+                        <div class="card-header">
+                            <div>
+                                <span class="label-sub">TOP MEDIOS</span>
+                                <h3 class="section-headline" style="font-size: 1.2rem; margin: 0;">Fuentes de Tráfico
+                                </h3>
+                            </div>
+                        </div>
+                        <div id="utm-list" style="margin-top: 1rem;">
+                            <!-- JS Injection -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Structure -->
+                <div id="leads-modal" class="modal-overlay hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Detalle Completo de Leads</h3>
+                            <button class="close-modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="modal-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Nombre</th>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modal-table-body">
+                                    <!-- JS Injection -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+        </main>
+
+        <!-- Right Panel (Comentado por solicitud del usuario) -->
+        <!-- <aside class="right-panel">
+            <div class="exchange-flow">
+                <div class="exchange-nav">
+                    <div class="nav-pill active">Invertir</div>
+                    <div class="nav-pill">Vender</div>
+                    <div class="nav-pill">Canjear</div>
+                </div>
+
+                <h3 style="margin-bottom: 20px; font-weight: 500;">Simulador</h3>
+
+                <div class="input-field-box">
+                    <span class="label-small">Inversión (Gasto)</span>
+                    <div class="input-flex">
+                        <input type="text" class="big-input" value="$0" id="panel-invest" readonly>
+                        <div class="currency-tag">
+                            <ion-icon name="card-outline"></ion-icon> MXN
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider-arrow">
+                    <ion-icon name="arrow-down-circle-outline"></ion-icon>
+                </div>
+
+                <div class="input-field-box">
+                    <span class="label-small">Retorno (Ventas)</span>
+                    <div class="input-flex">
+                        <input type="text" class="big-input" value="$0" id="panel-sales" readonly>
+                        <div class="currency-tag">
+                            <ion-icon name="trending-up-outline"></ion-icon> MXN
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top: 20px; display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary);">
+                    <span>Multiplicador ROI</span>
+                    <span style="color: white; font-weight: 700;" id="roi-txt">0.00x</span>
+                </div>
+                <div
+                    style="margin-top: 10px; display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary);">
+                    <span>Costo por Lead</span>
+                    <span style="color: white; font-weight: 700;" id="cpl-txt">$0.00</span>
+                </div>
+
+                <button class="execute-btn">Generar Reporte</button>
+            </div>
+        </aside>
     </div>
-    <script type="module" src="/src/main.js"></script>
+
+    <!-- Scripts -->
+        <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+        <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="src/config.js"></script>
+        <script src="src/auth.js"></script>
+        <script src="src/dashboard.js"></script>
+        <footer style="text-align: center; padding: 20px; color: var(--text-dim); font-size: 0.8rem; opacity: 0.6;">
+            &copy; 2026 Dashboard partners. Todos los derechos reservados.
+        </footer>
 </body>
 
 </html>
