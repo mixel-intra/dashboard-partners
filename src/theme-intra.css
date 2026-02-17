@@ -1,0 +1,36 @@
+:root {
+    /* Quantix Palette - Deep Space Black */
+    --bg-app: #020202;
+    /* True Black */
+    --bg-sidebar: rgba(5, 5, 5, 0.95);
+    --bg-card: #0A0A0A;
+    /* Near Black for cards */
+    --bg-panel: #0A0A0A;
+
+    --text-primary: #FFFFFF;
+    --text-secondary: #8E92A3;
+    /* Lighter gray for better contrast */
+    --text-muted: #565969;
+
+    --accent-purple: #7551FF;
+    /* Vibrant Purple */
+    --accent-purple-glow: rgba(117, 81, 255, 0.3);
+    --accent-blue: #3A86FF;
+    --accent-green: #01F1E3;
+    /* Cyan/Teal Neon for "High Quality" */
+    --accent-red: #FF4444;
+
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-highlight: rgba(117, 81, 255, 0.5);
+
+    /* Typography */
+    --font-main: 'Inter', sans-serif;
+}
+
+/* Theme-specific body background */
+body {
+    background-color: var(--bg-app);
+    background-image:
+        radial-gradient(circle at 0% 0%, rgba(117, 81, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(58, 134, 255, 0.05) 0%, transparent 40%);
+}
