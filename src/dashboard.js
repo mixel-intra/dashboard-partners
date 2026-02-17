@@ -197,7 +197,7 @@ function calculateMetrics() {
     const sales = parseFloat(state.config.sales) || 0;
 
     // Fixed conversion logic (Leads / Qualified? No, usually Qualified / Total? Using what user had before: total/qualified resulted in 36.1 in screenshot)
-    const conversionRate = qualified > 0 ? (total / qualified) : 0;
+    const conversionRate = total > 0 ? (qualified / total) : 0;
     const roi = investment > 0 ? (sales / investment) : 0;
     const cpl = qualified > 0 ? (investment / qualified) : 0;
 
@@ -211,7 +211,7 @@ function updateUI(m) {
     };
 
     setTxt('card-1-value', m.qualified);
-    setTxt('card-2-value', m.conversionRate.toFixed(1));
+    setTxt('card-2-value', (m.conversionRate * 100).toFixed(1) + '%');
     setTxt('card-3-value', `$${m.sales.toLocaleString('en-US')}`);
     setTxt('card-4-value', `${m.roi.toFixed(2)}x`);
 
