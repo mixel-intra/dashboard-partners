@@ -44,7 +44,8 @@ body {
     color: var(--text-primary);
     font-family: var(--font-main);
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     /* Subtle Grain & Glow */
     background-image:
         radial-gradient(circle at 0% 0%, rgba(117, 81, 255, 0.08) 0%, transparent 50%),
@@ -932,4 +933,114 @@ tr:hover td {
     background: rgba(255, 255, 255, 0.1);
     color: white;
     border-color: rgba(255, 255, 255, 0.2);
+}
+/* === RESPONSIVE OPTIMIZATIONS === */
+
+/* Tablets / Laptops small */
+@media (max-width: 1024px) {
+    .main-content {
+        padding: 1.5rem 2rem;
+    }
+    
+    .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+
+    .bottom-cards-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile Devices (iPhone 16, etc.) */
+@media (max-width: 768px) {
+    .main-header {
+        height: auto;
+        padding: 1.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .intra-branding {
+        align-items: flex-start;
+    }
+
+    .main-content {
+        padding: 1.5rem;
+    }
+
+    .section-headline {
+        font-size: 1.8rem;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .split-row-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .bottom-cards-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .card-quantix {
+        min-height: 220px;
+        padding: 20px;
+        border-radius: 24px;
+    }
+
+    .value-big {
+        font-size: 2.2rem;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -15px; /* Pull to edges */
+        padding: 0 15px;
+    }
+
+    table {
+        min-width: 500px;
+    }
+
+    /* Modal Mobile */
+    .modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .modal-header {
+        padding: 15px;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+}
+
+/* Very small devices */
+@media (max-width: 400px) {
+    .section-headline {
+        font-size: 1.5rem;
+    }
+
+    .value-big {
+        font-size: 1.8rem;
+    }
+
+    .welcome-name {
+        font-size: 1.2rem;
+    }
 }
