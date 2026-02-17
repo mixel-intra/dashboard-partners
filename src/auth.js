@@ -3,7 +3,10 @@
 // Simple session check
 function checkAuth() {
     const session = localStorage.getItem('cefemex_session');
-    const currentPage = window.location.pathname.split('/').pop();
+    let currentPage = window.location.pathname.split('/').pop();
+
+    // Si es la raíz o index.html
+    if (currentPage === '' || currentPage === '/') currentPage = 'index.html';
 
     // Get client from URL if exists
     const urlParams = new URLSearchParams(window.location.search);
@@ -12,15 +15,18 @@ function checkAuth() {
     if (currentPage === 'index.html') {
         if (!session) {
             window.location.href = `login.html${clientId ? '?client=' + clientId : ''}`;
+            return false;
         } else {
             const sessionData = JSON.parse(session);
             // If the URL client doesn't match the session client, redirect or clear
             if (clientId && sessionData.clientId !== clientId) {
                 localStorage.removeItem('cefemex_session');
                 window.location.href = `login.html?client=${clientId}`;
+                return false;
             }
         }
     }
+    return true;
 }
 
 // Login Handler

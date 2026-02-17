@@ -6,8 +6,8 @@ const state = {
     leads: [],
     filteredLeads: [],
     config: {
-        clientName: 'Administrador',
-        webhookUrl: 'https://cefemexyucatan.app.n8n.cloud/webhook/ce285ee2-cc8b-424d-b8aa-288050cbd320',
+        clientName: 'Cargando...',
+        webhookUrl: '',
         investment: 0,
         sales: 0
     },
@@ -17,8 +17,19 @@ const state = {
 // --- Initialization ---
 async function init() {
     console.log('--- QUANTIX DASHBOARD INIT ---');
+
+    // Verificación de seguridad adicional
+    if (typeof checkAuth === 'function' && !checkAuth()) {
+        console.log('No autenticado. Abortando carga de datos.');
+        return;
+    }
+
     try {
         await loadConfig();
+        if (!state.config.webhookUrl) {
+            console.warn('Configuración incompleta o sin cliente válido.');
+            return;
+        }
         await fetchData();
         renderDashboard();
     } catch (err) {
