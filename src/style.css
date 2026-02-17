@@ -213,6 +213,7 @@ body {
 .header-right {
     display: flex;
     align-items: center;
+    gap: 15px;
 }
 
 .client-branding {
@@ -269,6 +270,27 @@ body {
 
 .hidden {
     display: none !important;
+}
+
+.logout-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1.4rem;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 77, 77, 0.1);
+    color: #FF4444;
+    border-color: rgba(255, 77, 77, 0.2);
 }
 
 /* Top Header */
@@ -934,6 +956,7 @@ tr:hover td {
     color: white;
     border-color: rgba(255, 255, 255, 0.2);
 }
+
 /* === RESPONSIVE OPTIMIZATIONS === */
 
 /* Tablets / Laptops small */
@@ -941,7 +964,7 @@ tr:hover td {
     .main-content {
         padding: 1.5rem 2rem;
     }
-    
+
     .cards-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1.5rem;
@@ -956,19 +979,39 @@ tr:hover td {
 @media (max-width: 768px) {
     .main-header {
         height: auto;
-        padding: 1.5rem;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 20px;
+        padding: 1.2rem;
+        flex-direction: row;
+        /* Keep row but wrap if needed */
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header-left {
+        max-width: 50%;
+    }
+
+    .client-logo-img {
+        max-height: 35px;
+    }
+
+    .welcome-name {
+        font-size: 1.2rem;
     }
 
     .header-right {
-        width: 100%;
-        justify-content: flex-start;
+        width: auto;
+        justify-content: flex-end;
+        gap: 12px;
     }
 
     .intra-branding {
-        align-items: flex-start;
+        display: none;
+        /* Hide brand text/logo in very small to save space if needed, or simplify */
+    }
+
+    .intra-logo-img {
+        height: 24px;
     }
 
     .main-content {
@@ -1007,7 +1050,8 @@ tr:hover td {
     .table-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        margin: 0 -15px; /* Pull to edges */
+        margin: 0 -15px;
+        /* Pull to edges */
         padding: 0 15px;
     }
 
