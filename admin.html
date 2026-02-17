@@ -218,6 +218,107 @@
             box-shadow: 0 0 15px rgba(117, 81, 255, 0.1);
         }
 
+        .color-picker-style {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .color-swatch-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .color-swatch-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .hue-slider-custom {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+            outline: none;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        .hue-slider-custom::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #000;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        .hex-display {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: monospace;
+            font-size: 1rem;
+            padding: 5px 10px;
+            border-radius: 8px;
+            width: 100px;
+            text-align: center;
+            outline: none;
+        }
+
+        .grid-presets {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .preset-dot {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.1s;
+        }
+
+        .preset-dot:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+
+        .preset-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .preset-btn:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+
         .actions-footer {
             margin-top: auto;
             padding: 25px 30px;
@@ -365,6 +466,129 @@
                         <div class="form-group">
                             <label class="form-label">Ventas Objetivo ($)</label>
                             <input type="number" id="sales" class="form-input" placeholder="0">
+                        </div>
+
+                        <!-- Colores del Tema con Previsualizador -->
+                        <div class="form-group full-width"
+                            style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+                            <label class="form-label"
+                                style="color: var(--accent-purple); display: flex; align-items: center; gap: 8px;">
+                                <ion-icon name="color-palette-outline"></ion-icon> Personalización Visual (Premium)
+                            </label>
+
+                            <div class="theme-selection-container"
+                                style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px; margin-top: 15px;">
+                                <!-- Inputs y Presets -->
+                                <div class="color-controls" style="display: flex; flex-direction: column; gap: 15px;">
+                                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                                        <!-- Primary Picker Control -->
+                                        <div class="color-swatch-box">
+                                            <div class="color-swatch-preview" id="swatch-primary"
+                                                style="background: #7551FF;">
+                                                <!-- Native picker is still here for advanced users but hidden visually -->
+                                                <input type="color" id="theme-primary" class="color-picker-style"
+                                                    value="#7551FF">
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <div
+                                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                                    <span class="form-label" style="font-size: 0.6rem;">COLOR
+                                                        PRIMARIO</span>
+                                                    <input type="text" id="hex-primary" class="hex-display"
+                                                        value="#7551FF">
+                                                </div>
+                                                <input type="range" id="hue-primary" class="hue-slider-custom" min="0"
+                                                    max="360" value="255">
+                                            </div>
+                                        </div>
+
+                                        <!-- Secondary Picker Control -->
+                                        <div class="color-swatch-box">
+                                            <div class="color-swatch-preview" id="swatch-secondary"
+                                                style="background: #01F1E3;">
+                                                <input type="color" id="theme-secondary" class="color-picker-style"
+                                                    value="#01F1E3">
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <div
+                                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                                    <span class="form-label" style="font-size: 0.6rem;">COLOR
+                                                        SECUNDARIO</span>
+                                                    <input type="text" id="hex-secondary" class="hex-display"
+                                                        value="#01F1E3">
+                                                </div>
+                                                <input type="range" id="hue-secondary" class="hue-slider-custom" min="0"
+                                                    max="360" value="175">
+                                            </div>
+                                        </div>
+
+                                        <!-- Instant Presets Grid -->
+                                        <div style="margin-top: 5px;">
+                                            <span class="form-label" style="font-size: 0.6rem;">PALETAS
+                                                RECOMENDADAS</span>
+                                            <div class="grid-presets">
+                                                <div class="preset-dot" data-p="#7551FF" data-s="#01F1E3"
+                                                    style="background: #7551FF;"></div>
+                                                <div class="preset-dot" data-p="#00C74C" data-s="#FFFFFF"
+                                                    style="background: #00C74C;"></div>
+                                                <div class="preset-dot" data-p="#FF4444" data-s="#FFD700"
+                                                    style="background: #FF4444;"></div>
+                                                <div class="preset-dot" data-p="#3A86FF" data-s="#8338EC"
+                                                    style="background: #3A86FF;"></div>
+                                                <div class="preset-dot" data-p="#FF00E5" data-s="#3A86FF"
+                                                    style="background: #FF00E5;"></div>
+                                                <div class="preset-dot" data-p="#FFFFFF" data-s="#000000"
+                                                    style="background: #888;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Live Preview Card -->
+                                <div class="theme-preview-box" id="theme-preview"
+                                    style="background: #0A0A0A; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 15px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                                    <div class="preview-card-mockup"
+                                        style="border-left: 3px solid #7551FF; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 0 8px 8px 0;">
+                                        <div
+                                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                            <div style="display: flex; gap: 6px;">
+                                                <div id="preview-icon"
+                                                    style="width: 20px; height: 20px; border-radius: 4px; background: rgba(117, 81, 255, 0.2); color: #7551FF; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;">
+                                                    <ion-icon name="stats-chart"></ion-icon>
+                                                </div>
+                                                <div
+                                                    style="width: 40px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 7px;">
+                                                </div>
+                                            </div>
+                                            <div
+                                                style="width: 15px; height: 15px; border-radius: 50%; background: rgba(255,255,255,0.05);">
+                                            </div>
+                                        </div>
+                                        <div id="preview-value"
+                                            style="font-size: 1.2rem; font-weight: 700; color: white; margin-bottom: 5px;">
+                                            $14,250</div>
+                                        <div id="preview-badge"
+                                            style="display: inline-block; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: rgba(1, 241, 227, 0.1); color: #01F1E3; font-weight: 700;">
+                                            +12.5% High Quality
+                                        </div>
+
+                                        <!-- Mini Chart Visualizer -->
+                                        <div style="margin-top: 12px; height: 30px; position: relative;">
+                                            <svg width="100%" height="100%" viewBox="0 0 100 30"
+                                                preserveAspectRatio="none">
+                                                <path id="preview-path" d="M0 25 Q 25 5, 50 15 T 100 0" fill="none"
+                                                    stroke="#7551FF" stroke-width="2" />
+                                                <path id="preview-area"
+                                                    d="M0 25 Q 25 5, 50 15 T 100 0 L 100 30 L 0 30 Z"
+                                                    fill="rgba(117, 81, 255, 0.1)" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div
+                                        style="position: absolute; bottom: 8px; right: 12px; font-size: 0.55rem; color: rgba(255,255,255,0.2); font-weight: 700; letter-spacing: 1px;">
+                                        THEME PREVIEW</div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Credenciales de Acceso -->

@@ -20,7 +20,15 @@ const elements = {
     generatePassBtn: document.getElementById('generate-pass-btn'),
     saveStatus: document.getElementById('save-status'),
     previewLink: document.getElementById('preview-link'),
-    deleteClientBtn: document.getElementById('delete-client-btn')
+    deleteClientBtn: document.getElementById('delete-client-btn'),
+    themePrimaryInput: document.getElementById('theme-primary'),
+    themeSecondaryInput: document.getElementById('theme-secondary'),
+    hexPrimary: document.getElementById('hex-primary'),
+    hexSecondary: document.getElementById('hex-secondary'),
+    swatchPrimary: document.getElementById('swatch-primary'),
+    swatchSecondary: document.getElementById('swatch-secondary'),
+    huePrimary: document.getElementById('hue-primary'),
+    hueSecondary: document.getElementById('hue-secondary')
 };
 
 // State
@@ -102,6 +110,55 @@ function generateSecurePassword() {
     return `${prefix}${random}-${year}`;
 }
 
+function updateThemePreview() {
+    const primary = elements.themePrimaryInput.value;
+    const secondary = elements.themeSecondaryInput.value;
+
+    const previewIcon = document.getElementById('preview-icon');
+    const previewBadge = document.getElementById('preview-badge');
+    const previewPath = document.getElementById('preview-path');
+    const previewArea = document.getElementById('preview-area');
+    const previewMockup = document.querySelector('.preview-card-mockup');
+
+    if (previewIcon) {
+        previewIcon.style.color = primary;
+        previewIcon.style.background = `${primary}33`; // 20% opacity hex
+    }
+    if (previewBadge) {
+        previewBadge.style.color = secondary;
+        previewBadge.style.background = `${secondary}26`; // 15% opacity hex
+    }
+    if (previewPath) previewPath.setAttribute('stroke', primary);
+    if (previewArea) previewArea.setAttribute('fill', `${primary}1a`); // 10% opacity hex
+    if (previewMockup) previewMockup.style.borderLeftColor = primary;
+
+    // Sync swatches and text inputs
+    if (elements.hexPrimary) elements.hexPrimary.value = primary.toUpperCase();
+    if (elements.hexSecondary) elements.hexSecondary.value = secondary.toUpperCase();
+    if (elements.swatchPrimary) elements.swatchPrimary.style.background = primary;
+    if (elements.swatchSecondary) elements.swatchSecondary.style.background = secondary;
+}
+
+const hueToHex = (h) => {
+    let s = 1, v = 1;
+    let i = Math.floor(h / 60);
+    let f = h / 60 - i;
+    let p = v * (1 - s);
+    let q = v * (1 - f * s);
+    let t = v * (1 - (1 - f) * s);
+    let r, g, b;
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    const toHex = x => Math.round(x * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 // UI Rendering
 function renderClientList() {
     if (state.clients.length === 0) {
@@ -161,7 +218,18 @@ async function selectClient(clientId) {
     elements.investmentInput.value = currentConfig.investment || 0;
     elements.salesInput.value = currentConfig.sales_goal || 0;
     elements.clientLogoInput.value = currentConfig.logo_url || '';
+    elements.clientUserInput.value = currentConfig.username || '';
+    elements.clientPassInput.value = currentConfig.password || '';
+    elements.themePrimaryInput.value = currentConfig.theme_primary || '#7551FF';
+    elements.themeSecondaryInput.value = currentConfig.theme_secondary || '#01F1E3';
 
+    // Sync UI Swatches and Hex
+    elements.hexPrimary.value = elements.themePrimaryInput.value;
+    elements.hexSecondary.value = elements.themeSecondaryInput.value;
+    elements.swatchPrimary.style.background = elements.themePrimaryInput.value;
+    elements.swatchSecondary.style.background = elements.themeSecondaryInput.value;
+
+    updateThemePreview();
     updatePreviewLink(clientId);
 
     // Update URL
@@ -227,6 +295,40 @@ function setupEventListeners() {
         elements.clientPassInput.value = generateSecurePassword();
     });
 
+    // Hue Slider Sync
+    elements.huePrimary.addEventListener('input', () => {
+        elements.themePrimaryInput.value = hueToHex(elements.huePrimary.value);
+        updateThemePreview();
+    });
+    elements.hueSecondary.addEventListener('input', () => {
+        elements.themeSecondaryInput.value = hueToHex(elements.hueSecondary.value);
+        updateThemePreview();
+    });
+
+    elements.themePrimaryInput.addEventListener('input', updateThemePreview);
+    elements.themeSecondaryInput.addEventListener('input', updateThemePreview);
+
+    // Sync Hex Text -> Color Picker
+    const syncHex = (hexEl, pickerEl) => {
+        let val = hexEl.value.trim();
+        if (val && !val.startsWith('#')) val = '#' + val;
+        if (/^#[0-9A-F]{6}$/i.test(val)) {
+            pickerEl.value = val;
+            updateThemePreview();
+        }
+    };
+    elements.hexPrimary.addEventListener('input', () => syncHex(elements.hexPrimary, elements.themePrimaryInput));
+    elements.hexSecondary.addEventListener('input', () => syncHex(elements.hexSecondary, elements.themeSecondaryInput));
+
+    // Presets
+    document.querySelectorAll('.preset-dot').forEach(btn => {
+        btn.onclick = () => {
+            elements.themePrimaryInput.value = btn.dataset.p;
+            elements.themeSecondaryInput.value = btn.dataset.s;
+            updateThemePreview();
+        };
+    });
+
     // Save Logic
     elements.adminForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -260,7 +362,9 @@ function setupEventListeners() {
                 sales_goal: parseFloat(elements.salesInput.value) || 0,
                 logo_url: logoUrl,
                 username: elements.clientUserInput.value.trim(),
-                password: elements.clientPassInput.value.trim()
+                password: elements.clientPassInput.value.trim(),
+                theme_primary: elements.themePrimaryInput.value,
+                theme_secondary: elements.themeSecondaryInput.value
             };
 
             const { error } = await supabase

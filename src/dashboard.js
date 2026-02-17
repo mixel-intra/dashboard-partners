@@ -9,7 +9,9 @@ const state = {
         clientName: 'Cargando...',
         webhookUrl: '',
         investment: 0,
-        sales: 0
+        sales: 0,
+        themePrimary: '#7551FF',
+        themeSecondary: '#01F1E3'
     },
     charts: {}
 };
@@ -74,9 +76,84 @@ async function loadConfig() {
             webhookUrl: config.webhook_url,
             investment: config.investment,
             sales: config.sales_goal,
-            clientLogo: config.logo_url
+            clientLogo: config.logo_url,
+            themePrimary: config.theme_primary,
+            themeSecondary: config.theme_secondary
         };
+
+        applyDynamicTheme(state.config.themePrimary, state.config.themeSecondary);
     }
+}
+
+function applyDynamicTheme(primary, secondary) {
+    if (!primary || !secondary) return;
+
+    console.log('--- APPLYING DYNAMIC THEME ---', primary, secondary);
+
+    // Create a dynamic style element
+    let styleEl = document.getElementById('dynamic-theme-styles');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'dynamic-theme-styles';
+        document.head.appendChild(styleEl);
+    }
+
+    // Convert hex to rgba for the glow effect
+    const hexToRgba = (hex, alpha) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    const primaryGlow = hexToRgba(primary, 0.3);
+    const primaryBorder = hexToRgba(primary, 0.5);
+
+    // Make utility globally available for charts
+    window.hexToRgba = hexToRgba;
+
+    styleEl.innerHTML = `
+        :root {
+            --accent-purple: ${primary};
+            --accent-purple-glow: ${primaryGlow};
+            --accent-green: ${secondary};
+            --border-highlight: ${primaryBorder};
+        }
+        
+        /* Apply dynamic glow to body background if needed */
+        body {
+            background-image:
+                radial-gradient(circle at 0% 0%, ${hexToRgba(primary, 0.08)} 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, ${hexToRgba(secondary, 0.05)} 0%, transparent 40%);
+        }
+
+        /* Clear specific card accents/colors from index.html */
+        .card-accent-line { background: ${primary} !important; opacity: 0.8; }
+        .card-accent-line.orange, .card-accent-line.purple, .card-accent-line.cyan, .card-accent-line.pink { background: ${primary} !important; }
+        
+        /* Icon Boxes (Overriding inline styles) */
+        .icon-box { 
+            background: ${hexToRgba(primary, 0.1)} !important; 
+            border-color: ${hexToRgba(primary, 0.3)} !important; 
+            color: ${primary} !important; 
+        }
+        
+        /* Specific card indices if they need to vary */
+        .card-quantix:nth-child(odd) .icon-box { color: ${secondary} !important; background: ${hexToRgba(secondary, 0.1)} !important; border-color: ${hexToRgba(secondary, 0.3)} !important; }
+        .card-quantix:nth-child(odd) .card-accent-line { background: ${secondary} !important; }
+
+        /* Pills and Badges */
+        .pill-change { 
+            background: ${hexToRgba(primary, 0.15)} !important; 
+            color: ${primary} !important; 
+        }
+        .pill-change.pill-green { 
+            background: ${hexToRgba(secondary, 0.15)} !important; 
+            color: ${secondary} !important; 
+        }
+        
+        .view-btn:hover { border-color: ${primary} !important; color: ${primary} !important; }
+    `;
 }
 
 async function fetchData() {
@@ -204,7 +281,7 @@ function renderLogRow(lead, index) {
             </td>
             <td style="color: #8E92A3;">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td> 
             <td>
-                <span class="status-badge" style="color: ${lead.estatus === 'Lead Condicionado' ? '#FFAA00' : (lead.estatus === 'Lead Calificado' ? '#01F1E3' : '#FF4444')}; 
+                <span class="status-badge" style="color: ${lead.estatus === 'Lead Calificado' ? state.config.themeSecondary : (lead.estatus === 'Lead Condicionado' ? '#FFAA00' : '#FF4444')}; 
                       background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
                     ${lead.estatus}
                 </span>
@@ -238,16 +315,16 @@ function setupModalEvents() {
 
 function renderAllCharts(metrics) {
     console.log('--- renderAllCharts START ---');
-    // 1. Small Mini-Charts (Manual/Fake data for sparklines) - Sparklines usually don't have axes
-    createSmoothChart('chart-1', [12, 19, 15, 25, 22, 30, 28, 35, 40, 45, 50, 60], '#F59E0B');
-    createSmoothChart('chart-2', [5, 8, 12, 10, 15, 20, 25, 22, 28, 35, 30, 40], '#7551FF');
-    createSmoothChart('chart-3', [10, 12, 14, 18, 16, 20, 22, 26, 30, 28, 35, 40], '#01F1E3');
-    createSmoothChart('chart-4', [2, 3, 3.5, 3.2, 4, 4.5, 5.0, 5.2, 5.5, 6, 6.5, 7], '#FF00E5');
+    // 1. Small Mini-Charts (Manual/Fake data for sparklines) - Using theme colors for consistency
+    createSmoothChart('chart-1', [12, 19, 15, 25, 22, 30, 28, 35, 40, 45, 50, 60], state.config.themeSecondary);
+    createSmoothChart('chart-2', [5, 8, 12, 10, 15, 20, 25, 22, 28, 35, 30, 40], state.config.themePrimary);
+    createSmoothChart('chart-3', [10, 12, 14, 18, 16, 20, 22, 26, 30, 28, 35, 40], state.config.themeSecondary);
+    createSmoothChart('chart-4', [2, 3, 3.5, 3.2, 4, 4.5, 5.0, 5.2, 5.5, 6, 6.5, 7], state.config.themePrimary);
 
     // Bottom SPARKLINES
-    createSmoothChart('chart-5', [100, 110, 105, 120, 130, 125, 140, 150, 160, 155, 170, 180], '#F59E0B');
-    createSmoothChart('chart-6', [50, 55, 52, 60, 62, 58, 65, 70, 75, 72, 80, 85], '#FF00E5');
-    createSmoothChart('chart-7', [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45], '#01F1E3');
+    createSmoothChart('chart-5', [100, 110, 105, 120, 130, 125, 140, 150, 160, 155, 170, 180], state.config.themeSecondary);
+    createSmoothChart('chart-6', [50, 55, 52, 60, 62, 58, 65, 70, 75, 72, 80, 85], state.config.themePrimary);
+    createSmoothChart('chart-7', [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45], state.config.themeSecondary);
 
     // 2. MAIN BIG CHART (Actual Data)
     createMainChart();
@@ -283,8 +360,8 @@ function createUTMChart() {
             datasets: [{
                 label: 'Leads Calificados',
                 data: values,
-                backgroundColor: 'rgba(1, 241, 227, 0.6)',
-                borderColor: '#01F1E3',
+                backgroundColor: hexToRgba(state.config.themeSecondary, 0.6),
+                borderColor: state.config.themeSecondary,
                 borderWidth: 1,
                 borderRadius: 8
             }]
@@ -393,10 +470,10 @@ function createMainChart() {
         values = [0];
     }
 
-    const color = '#7551FF';
+    const color = state.config.themePrimary;
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(117, 81, 255, 0.3)');
-    gradient.addColorStop(1, 'rgba(117, 81, 255, 0)');
+    gradient.addColorStop(0, hexToRgba(color, 0.3));
+    gradient.addColorStop(1, hexToRgba(color, 0));
 
     state.charts['main-chart'] = new Chart(ctx, {
         type: 'line',
