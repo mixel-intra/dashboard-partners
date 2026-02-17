@@ -18,6 +18,13 @@ function checkAuth() {
             return false;
         } else {
             const sessionData = JSON.parse(session);
+
+            // Si el cliente no está en la URL, lo mandamos a su dashboard específico
+            if (!clientId) {
+                window.location.href = `index.html?client=${sessionData.clientId}`;
+                return false;
+            }
+
             // If the URL client doesn't match the session client, redirect or clear
             if (clientId && sessionData.clientId !== clientId) {
                 localStorage.removeItem('cefemex_session');
