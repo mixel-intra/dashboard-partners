@@ -13,6 +13,11 @@
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <link rel="stylesheet" href="./src/theme-intra.css">
     <link rel="stylesheet" href="./src/style.css">
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
@@ -43,14 +48,42 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <div class="ticker-section">
-                <div class="live-label">
-                    <div class="live-dot"></div>
-                    <span>Última actualización: Ahora mismo</span>
+            <div class="content-header-row">
+                <div class="header-title-area">
+                    <div class="live-label">
+                        <div class="live-dot"></div>
+                        <span>Última actualización: Ahora mismo</span>
+                    </div>
+                    <h1 class="section-headline">
+                        Dashboard <ion-icon name="globe-outline" class="globe-icon"></ion-icon>
+                    </h1>
                 </div>
-                <h1 class="section-headline">
-                    Dashboard <ion-icon name="globe-outline" class="globe-icon"></ion-icon>
-                </h1>
+
+                <!-- Global Range Selector -->
+                <div class="global-range-selector">
+                    <div class="range-display" id="range-picker-toggle">
+                        <ion-icon name="calendar-outline"></ion-icon>
+                        <span id="current-range-label">Todo el tiempo</span>
+                        <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
+                    </div>
+
+                    <div class="range-dropdown hidden" id="range-dropdown">
+                        <div class="custom-range-inputs">
+                            <span class="label">Seleccionar rango personalizado:</span>
+                            <div class="inputs-row">
+                                <input type="text" id="date-range-picker" class="range-input-field full-width"
+                                    placeholder="Clic para abrir calendario..." readonly>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <button class="range-opt" data-range="today">Hoy</button>
+                        <button class="range-opt" data-range="7d">Últimos 7 días</button>
+                        <button class="range-opt" data-range="30d">Últimos 30 días</button>
+                        <button class="range-opt" data-range="this-month">Este mes</button>
+                        <button class="range-opt" data-range="last-month">Mes pasado</button>
+                        <button class="range-opt" data-range="all">Todo el tiempo</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Dashboard Grid -->
@@ -72,7 +105,6 @@
                                     <span class="label-main">Oportunidades calificadas</span>
                                 </div>
                             </div>
-                            <button class="more-btn"><ion-icon name="ellipsis-vertical"></ion-icon></button>
                         </div>
 
                         <div class="value-big" id="card-1-value">0</div>
@@ -95,11 +127,10 @@
                                     <ion-icon name="swap-vertical"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub">CALIFICADOS / TOTAL</span>
+                                    <span class="label-sub">Oportunidades calificadas / Leads</span>
                                     <span class="label-main">Tasa de Conversión</span>
                                 </div>
                             </div>
-                            <button class="more-btn"><ion-icon name="ellipsis-vertical"></ion-icon></button>
                         </div>
 
                         <div class="value-big" id="card-2-value">0.0</div>
@@ -127,7 +158,6 @@
                                     <span class="label-main">Ventas</span>
                                 </div>
                             </div>
-                            <button class="more-btn"><ion-icon name="ellipsis-vertical"></ion-icon></button>
                         </div>
 
                         <div class="value-big" id="card-3-value">$0</div>
@@ -152,7 +182,6 @@
                                     <span class="label-main">ROI</span>
                                 </div>
                             </div>
-                            <button class="more-btn"><ion-icon name="ellipsis-vertical"></ion-icon></button>
                         </div>
 
                         <div class="value-big" id="card-4-value">0.0x</div>
@@ -164,9 +193,6 @@
                     </div>
                 </div>
 
-                <!-- Sketch Layout Implementation -->
-                <!-- Layout V2: Split Row + Bottom Cards -->
-
                 <!-- Middle Row: Chart & Table (50/50) -->
                 <div class="split-row-grid">
                     <!-- Main Big Chart -->
@@ -174,13 +200,7 @@
                         <div class="card-header" style="margin-bottom: 20px;">
                             <div>
                                 <span class="label-sub">TENDENCIA HISTÓRICA</span>
-                                <h3 class="section-headline" style="font-size: 1.5rem; margin: 0;">Comportamiento de
-                                    Leads</h3>
-                            </div>
-                            <div class="table-tabs">
-                                <button class="tab-btn active">7D</button>
-                                <button class="tab-btn">1M</button>
-                                <button class="tab-btn">3M</button>
+                                <h3 class="section-headline" style="font-size: 1.5rem; margin: 0;">Comportamiento</h3>
                             </div>
                         </div>
                         <div style="flex: 1; position: relative; width: 100%;">
@@ -192,8 +212,8 @@
                     <div class="table-card" style="display: flex; flex-direction: column;">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-secondary);">Oportunidades
-                                calificadas
+                            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-secondary);">Últimos leads
+                                calificados
                             </h3>
                             <button id="view-all-btn" class="header-icon-btn" title="Ver info completa">
                                 <ion-icon name="open-outline"></ion-icon>
@@ -228,8 +248,8 @@
                                     <ion-icon name="people"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub">METRICA 1</span>
-                                    <span class="label-main">Total de Leads</span>
+                                    <span class="label-sub">Personas que mandaron mensaje</span>
+                                    <span class="label-main">Total de Registros</span>
                                 </div>
                             </div>
                         </div>
@@ -248,7 +268,7 @@
                                     <ion-icon name="wallet"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub">METRICA 4</span>
+                                    <span class="label-sub"></span>
                                     <span class="label-main">Inversión</span>
                                 </div>
                             </div>
@@ -268,8 +288,8 @@
                                     <ion-icon name="pricetag"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub">METRICA 5</span>
-                                    <span class="label-main">Costo x Lead</span>
+                                    <span class="label-sub"></span>
+                                    <span class="label-main">Costo por oportunidad calificada</span>
                                 </div>
                             </div>
                         </div>
@@ -307,68 +327,16 @@
                 </div>
         </main>
 
-        <!-- Right Panel (Comentado por solicitud del usuario) -->
-        <!-- <aside class="right-panel">
-            <div class="exchange-flow">
-                <div class="exchange-nav">
-                    <div class="nav-pill active">Invertir</div>
-                    <div class="nav-pill">Vender</div>
-                    <div class="nav-pill">Canjear</div>
-                </div>
-
-                <h3 style="margin-bottom: 20px; font-weight: 500;">Simulador</h3>
-
-                <div class="input-field-box">
-                    <span class="label-small">Inversión (Gasto)</span>
-                    <div class="input-flex">
-                        <input type="text" class="big-input" value="$0" id="panel-invest" readonly>
-                        <div class="currency-tag">
-                            <ion-icon name="card-outline"></ion-icon> MXN
-                        </div>
-                    </div>
-                </div>
-
-                <div class="divider-arrow">
-                    <ion-icon name="arrow-down-circle-outline"></ion-icon>
-                </div>
-
-                <div class="input-field-box">
-                    <span class="label-small">Retorno (Ventas)</span>
-                    <div class="input-flex">
-                        <input type="text" class="big-input" value="$0" id="panel-sales" readonly>
-                        <div class="currency-tag">
-                            <ion-icon name="trending-up-outline"></ion-icon> MXN
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    style="margin-top: 20px; display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary);">
-                    <span>Multiplicador ROI</span>
-                    <span style="color: white; font-weight: 700;" id="roi-txt">0.00x</span>
-                </div>
-                <div
-                    style="margin-top: 10px; display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary);">
-                    <span>Costo por Lead</span>
-                    <span style="color: white; font-weight: 700;" id="cpl-txt">$0.00</span>
-                </div>
-
-                <button class="execute-btn">Generar Reporte</button>
-            </div>
-        </aside>
     </div>
 
     <!-- Scripts -->
-        <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-        <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <script src="src/config.js"></script>
-        <script src="src/auth.js"></script>
-        <script src="src/dashboard.js"></script>
-        <footer style="text-align: center; padding: 20px; color: var(--text-dim); font-size: 0.8rem; opacity: 0.6;">
-            &copy; 2026 Intra. Todos los derechos reservados.
-        </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="src/config.js"></script>
+    <script src="src/auth.js"></script>
+    <script src="src/dashboard.js"></script>
+    <footer style="text-align: center; padding: 20px; color: var(--text-dim); font-size: 0.8rem; opacity: 0.6;">
+        &copy; 2026 Intra. Todos los derechos reservados.
+    </footer>
 </body>
 
 </html>

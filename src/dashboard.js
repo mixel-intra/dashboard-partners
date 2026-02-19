@@ -13,7 +13,12 @@ const state = {
         themePrimary: '#7551FF',
         themeSecondary: '#01F1E3'
     },
-    charts: {}
+    charts: {},
+    filters: {
+        start: null,
+        end: null
+    },
+    flatpickr: null
 };
 
 // --- Initialization ---
@@ -82,6 +87,180 @@ async function loadConfig() {
         };
 
         applyDynamicTheme(state.config.themePrimary, state.config.themeSecondary);
+        setupEventListeners();
+    }
+}
+
+function setupEventListeners() {
+    // Global Range Selector Toggle
+    const rangeToggle = document.getElementById('range-picker-toggle');
+    const rangeDropdown = document.getElementById('range-dropdown');
+
+    if (rangeToggle && rangeDropdown) {
+        rangeToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            rangeDropdown.classList.toggle('hidden');
+            rangeToggle.querySelector('.chevron').style.transform = rangeDropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        });
+
+        document.addEventListener('click', () => {
+            rangeDropdown.classList.add('hidden');
+            rangeToggle.querySelector('.chevron').style.transform = 'rotate(0deg)';
+        });
+
+        rangeDropdown.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    // Predefined Ranges
+    document.querySelectorAll('.range-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const range = opt.dataset.range;
+            const label = document.getElementById('current-range-label');
+            label.textContent = opt.textContent;
+
+            setPredefinedRange(range);
+            rangeDropdown.classList.add('hidden');
+            rangeToggle.querySelector('.chevron').style.transform = 'rotate(0deg)';
+        });
+    });
+
+    // Flatpickr initialization
+    const rangePickerInput = document.getElementById('date-range-picker');
+    if (rangePickerInput) {
+        state.flatpickr = flatpickr(rangePickerInput, {
+            mode: 'range',
+            locale: 'es',
+            dateFormat: 'Y-m-d',
+            disableMobile: "true",
+            onClose: (selectedDates) => {
+                if (selectedDates.length === 2) {
+                    state.filters.start = selectedDates[0];
+                    state.filters.end = new Date(selectedDates[1]);
+                    state.filters.end.setHours(23, 59, 59, 999);
+
+                    document.getElementById('current-range-label').textContent = 'Rango personalizado';
+                    applyGlobalFilters();
+                }
+            }
+        });
+    }
+
+    // PDF Export
+    const exportBtn = document.getElementById('export-pdf-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToPDF);
+    }
+}
+
+function setPredefinedRange(range) {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    let start = null;
+    let end = today;
+
+    switch (range) {
+        case 'today':
+            start = new Date();
+            start.setHours(0, 0, 0, 0);
+            break;
+        case '7d':
+            start = new Date();
+            start.setDate(today.getDate() - 7);
+            break;
+        case '30d':
+            start = new Date();
+            start.setDate(today.getDate() - 30);
+            break;
+        case 'this-month':
+            start = new Date(today.getFullYear(), today.getMonth(), 1);
+            break;
+        case 'last-month':
+            start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            end = new Date(today.getFullYear(), today.getMonth(), 0);
+            end.setHours(23, 59, 59, 999);
+            break;
+        case 'all':
+        default:
+            start = null;
+            end = null;
+            break;
+    }
+
+    state.filters.start = start;
+    state.filters.end = end;
+
+    // Update inputs visual state
+    if (state.flatpickr) {
+        if (start && end) {
+            state.flatpickr.setDate([start, end]);
+        } else {
+            state.flatpickr.clear();
+        }
+    }
+
+    applyGlobalFilters();
+}
+
+function applyGlobalFilters() {
+    console.log('Applying global filters:', state.filters);
+
+    state.filteredLeads = state.leads.filter(lead => {
+        if (!lead.fecha_parsed) return false;
+
+        let match = true;
+        if (state.filters.start) {
+            match = match && lead.fecha_parsed >= state.filters.start;
+        }
+        if (state.filters.end) {
+            match = match && lead.fecha_parsed <= state.filters.end;
+        }
+        return match;
+    });
+
+    renderDashboard();
+}
+
+async function exportToPDF() {
+    const exportBtn = document.getElementById('export-pdf-btn');
+    const originalContent = exportBtn.innerHTML;
+    exportBtn.disabled = true;
+    exportBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon>';
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const dashboard = document.querySelector('.main-content');
+
+        // Temporarily hide elements that shouldn't be in PDF
+        const filterTabs = document.querySelector('.table-tabs');
+        const viewAllBtn = document.getElementById('view-all-btn');
+        if (filterTabs) filterTabs.style.visibility = 'hidden';
+        if (viewAllBtn) viewAllBtn.style.visibility = 'hidden';
+
+        const canvas = await html2canvas(dashboard, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#0B0C10',
+            logging: false
+        });
+
+        if (filterTabs) filterTabs.style.visibility = 'visible';
+        if (viewAllBtn) viewAllBtn.style.visibility = 'visible';
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Reporte_Intra_${state.config.clientName}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+        console.error('PDF Export Error:', err);
+        alert('Error al generar el PDF. Inténtalo de nuevo.');
+    } finally {
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = originalContent;
     }
 }
 
@@ -189,9 +368,8 @@ function renderDashboard() {
 
 function calculateMetrics() {
     const total = state.filteredLeads.length;
-    const qualified = state.filteredLeads.filter(l =>
-        l.estatus === 'Lead Calificado' || l.estatus === 'Lead Condicionado'
-    ).length;
+    const qualifiedLeads = state.filteredLeads.filter(l => isQualified(l.estatus));
+    const qualified = qualifiedLeads.length;
 
     const investment = parseFloat(state.config.investment) || 0;
     const sales = parseFloat(state.config.sales) || 0;
@@ -248,9 +426,7 @@ function renderTable() {
     const modalTableBody = document.getElementById('modal-table-body');
     if (!tableBody) return;
 
-    let leadsToShow = state.filteredLeads.filter(l =>
-        l.estatus === 'Lead Calificado' || l.estatus === 'Lead Condicionado'
-    );
+    let leadsToShow = state.filteredLeads.filter(l => isQualified(l.estatus));
 
     if (leadsToShow.length === 0 && state.leads.length > 0) {
         leadsToShow = state.filteredLeads;
@@ -281,7 +457,7 @@ function renderLogRow(lead, index) {
             </td>
             <td style="color: #8E92A3;">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td> 
             <td>
-                <span class="status-badge" style="color: ${lead.estatus === 'Lead Calificado' ? state.config.themeSecondary : (lead.estatus === 'Lead Condicionado' ? '#FFAA00' : '#FF4444')}; 
+                <span class="status-badge" style="color: ${isQualified(lead.estatus) ? state.config.themeSecondary : '#FF4444'}; 
                       background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
                     ${lead.estatus}
                 </span>
@@ -538,8 +714,36 @@ function parseCustomDate(str) {
 function normalizeStatus(status) {
     if (!status) return 'Desconocido';
     const s = status.toLowerCase().trim();
+
+    // Specific matches to preserve names
+    if (s.includes('rechazado cefemex')) return 'Rechazado CEFEMEX';
+    if (s.includes('documentacion') || s.includes('documentación')) return 'Documentación / Integración E1';
+    if (s.includes('financiera')) return 'Revisión Financiera / Integración E2';
+    if (s.includes('comité') || s.includes('comite')) return 'Comité / Autorización';
+
     if (s.includes('calificado')) return 'Lead Calificado';
     if (s.includes('condicionado')) return 'Lead Condicionado';
     if (s.includes('rechazado')) return 'Rechazado';
+
     return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function isQualified(status) {
+    if (!status) return false;
+    const s = status.toLowerCase();
+    const qualifiedTerms = [
+        'calificado',
+        'condicionado',
+        'rechazado cefemex',
+        'documentación',
+        'documentacion',
+        'integración',
+        'integracion',
+        'financiera',
+        'comité',
+        'comite',
+        'autorización',
+        'autorizacion'
+    ];
+    return qualifiedTerms.some(term => s.includes(term));
 }

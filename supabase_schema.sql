@@ -8,6 +8,8 @@ CREATE TABLE clients_config (
     sales_goal DECIMAL(12,2) DEFAULT 0,
     username TEXT,
     password TEXT,
+    theme_primary TEXT DEFAULT '#7551FF',
+    theme_secondary TEXT DEFAULT '#01F1E3',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
