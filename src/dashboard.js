@@ -462,9 +462,6 @@ function renderLogRow(lead, index) {
                     ${lead.estatus}
                 </span>
             </td>
-             <td>
-                <button class="view-btn" style="background:transparent; border:1px solid #2D3039; color:white; border-radius:6px; padding:4px 8px; cursor:pointer;">Ver</button>
-            </td>
         </tr>
     `;
 }

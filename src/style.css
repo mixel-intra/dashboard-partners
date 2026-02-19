@@ -37,6 +37,12 @@ body {
     height: 100vh;
     overflow-x: hidden;
     overflow-y: auto;
+    width: 100%;
+}
+
+.app-container {
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* === Layout === */
@@ -1135,10 +1141,35 @@ tr:hover td {
         height: auto;
         padding: 1.2rem;
         flex-direction: row;
-        /* Keep row but wrap if needed */
         justify-content: space-between;
         align-items: center;
         gap: 10px;
+    }
+
+    .content-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .header-title-area {
+        width: 100%;
+    }
+
+    .global-range-selector {
+        width: 100%;
+    }
+
+    .range-display {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .range-dropdown {
+        width: 100%;
+        left: 0;
+        right: 0;
     }
 
     .header-left {
@@ -1169,11 +1200,15 @@ tr:hover td {
     }
 
     .main-content {
-        padding: 1.5rem;
+        padding: 1rem;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
     }
 
     .section-headline {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
+        margin-bottom: 1rem;
     }
 
     .cards-grid {
@@ -1191,9 +1226,13 @@ tr:hover td {
         gap: 1rem;
     }
 
+    .big-chart-card {
+        min-height: 320px;
+    }
+
     .card-quantix {
-        min-height: 220px;
-        padding: 20px;
+        min-height: 200px;
+        padding: 1.5rem;
         border-radius: 24px;
     }
 
@@ -1201,16 +1240,84 @@ tr:hover td {
         font-size: 2.2rem;
     }
 
+    .table-card {
+        padding: 1rem;
+        border-radius: 24px;
+    }
+
     .table-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        margin: 0 -15px;
-        /* Pull to edges */
-        padding: 0 15px;
+        margin: 0;
+        padding: 0;
+        width: 100%;
     }
 
     table {
-        min-width: 500px;
+        min-width: 100%;
+        width: 100%;
+        table-layout: fixed;
+        /* Forzar que respete los anchos definidos */
+    }
+
+    /* Columna #: muy estrecha */
+    th:nth-child(1),
+    td:nth-child(1) {
+        width: 25px;
+        padding-left: 0;
+    }
+
+    /* Columna Nombre: lo que sobre */
+    th:nth-child(2),
+    td:nth-child(2) {
+        width: auto;
+    }
+
+    /* Columna Fecha: ancho fijo */
+    th:nth-child(3),
+    td:nth-child(3) {
+        width: 70px;
+        text-align: center;
+    }
+
+    /* Columna Estado: alineada a la derecha */
+    th:nth-child(4),
+    td:nth-child(4) {
+        width: 105px;
+        text-align: right;
+        padding-right: 0;
+    }
+
+    th,
+    td {
+        padding: 0.8rem 2px;
+        font-size: 0.75rem;
+    }
+
+    td img {
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    .status-badge {
+        font-size: 0.6rem !important;
+        padding: 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        width: 100%;
+        /* Ocupar el ancho de la columna */
+        min-height: 28px;
+        line-height: 1;
+        border-radius: 6px;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    th,
+    td {
+        padding: 0.8rem 0.5rem;
     }
 
     /* Modal Mobile */
