@@ -1173,20 +1173,28 @@ tr:hover td {
     }
 
     .header-left {
-        max-width: 50%;
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+
+    .welcome-area {
+        display: none !important;
+    }
+
+    .client-branding {
+        justify-content: center;
+        width: 100%;
     }
 
     .client-logo-img {
-        max-height: 35px;
-    }
-
-    .welcome-name {
-        font-size: 1.2rem;
+        max-height: 40px;
+        margin: 0 auto;
     }
 
     .header-right {
-        width: auto;
-        justify-content: flex-end;
+        position: absolute;
+        right: 1.2rem;
         gap: 12px;
     }
 
