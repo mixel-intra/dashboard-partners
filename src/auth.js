@@ -32,16 +32,23 @@ function clearSession() {
 // VALIDACIÓN DE AUTENTICACIÓN
 // ============================================================
 
+// Normaliza el nombre de página para funcionar tanto en local (.html)
+// como en Vercel/hosting que omite la extensión (ej: /login en vez de /login.html)
+function getCurrentPage() {
+    const raw = window.location.pathname.split('/').pop() || 'index';
+    return raw.replace(/\.html$/, '') || 'index';
+}
+
 function checkAuth() {
     const session = getSession();
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const currentPage = getCurrentPage();
     const urlParams = new URLSearchParams(window.location.search);
     const clientId = urlParams.get('client');
 
     // Si no hay sesión, redirigir a login
     if (!session) {
-        if (currentPage !== 'login.html') {
-            window.location.href = `login.html`;
+        if (currentPage !== 'login') {
+            window.location.href = 'login.html';
         }
         return false;
     }
@@ -56,7 +63,7 @@ function checkAuth() {
 
     // Si estamos en el dashboard y hay un clientId en la URL,
     // verificar que este usuario tenga acceso a ese cliente
-    if (currentPage === 'index.html' && clientId) {
+    if (currentPage === 'index' && clientId) {
         const hasAccess = session.role === 'admin' ||
             (session.clients && session.clients.includes(clientId));
 
@@ -67,8 +74,8 @@ function checkAuth() {
         }
     }
 
-    // Si está en index.html sin cliente en URL, ir al hub o al dashboard directo
-    if (currentPage === 'index.html' && !clientId) {
+    // Si está en index sin cliente en URL, ir al hub o al dashboard directo
+    if (currentPage === 'index' && !clientId) {
         if (session.clients && session.clients.length === 1) {
             window.location.href = `index.html?client=${session.clients[0]}`;
         } else {
@@ -176,9 +183,9 @@ function logout() {
 // VERIFICACIÓN AUTOMÁTICA (en páginas protegidas)
 // ============================================================
 
-const _currentPage = window.location.pathname.split('/').pop() || 'index.html';
+const _currentPage = getCurrentPage();
 
-if (_currentPage === 'admin.html') {
+if (_currentPage === 'admin') {
     // El panel admin solo es accesible para administradores
     const _session = getSession();
     if (!_session) {
@@ -188,6 +195,6 @@ if (_currentPage === 'admin.html') {
         console.warn('Acceso denegado al panel admin. Redirigiendo...');
         window.location.href = 'hub.html';
     }
-} else if (_currentPage !== 'login.html') {
+} else if (_currentPage !== 'login') {
     checkAuth();
 }
