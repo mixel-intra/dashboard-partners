@@ -359,6 +359,7 @@ function setupEventListeners() {
                 name: elements.clientNameInput.value.trim(),
                 webhook_url: elements.webhookInput.value,
                 investment: parseFloat(elements.investmentInput.value) || 0,
+                investment_updated_at: new Date().toISOString().split('T')[0],
                 sales_goal: parseFloat(elements.salesInput.value) || 0,
                 logo_url: logoUrl,
                 username: elements.clientUserInput.value.trim(),
@@ -428,4 +429,228 @@ function setupEventListeners() {
 }
 
 init();
+
+// ============================================================
+// MÓDULO DE GESTIÓN DE USUARIOS
+// ============================================================
+
+let allClients = [];
+let currentUserId = null;
+
+// --- Tab Switcher ---
+function switchTab(tab) {
+    const clientsTab = document.getElementById('tab-clients');
+    const usersTab = document.getElementById('tab-users');
+    const clientsPanel = document.getElementById('sidebar-clients-panel');
+    const usersPanel = document.getElementById('sidebar-users-panel');
+    const editorPlaceholder = document.getElementById('editor-placeholder');
+    const clientEditor = document.getElementById('client-editor');
+    const userEditor = document.getElementById('user-editor');
+
+    if (tab === 'clients') {
+        clientsTab.classList.add('active');
+        usersTab.classList.remove('active');
+        clientsPanel.classList.remove('hidden');
+        usersPanel.classList.add('hidden');
+        userEditor.classList.add('hidden');
+        editorPlaceholder.classList.remove('hidden');
+    } else {
+        usersTab.classList.add('active');
+        clientsTab.classList.remove('active');
+        usersPanel.classList.remove('hidden');
+        clientsPanel.classList.add('hidden');
+        clientEditor.classList.add('hidden');
+        userEditor.classList.add('hidden');
+        editorPlaceholder.classList.remove('hidden');
+        loadUsers();
+    }
+}
+
+// --- Cargar lista de usuarios ---
+async function loadUsers() {
+    const { data: users } = await supabase
+        .from('user_profiles')
+        .select('id, name, email, role, is_active')
+        .order('created_at', { ascending: false });
+
+    const list = document.getElementById('users-list');
+    if (!users || users.length === 0) {
+        list.innerHTML = `<p style="padding: 20px; color: rgba(255,255,255,0.3); font-size: 0.85rem; text-align: center;">No hay usuarios aún.</p>`;
+        return;
+    }
+
+    list.innerHTML = users.map(u => `
+        <div class="client-item ${u.id === currentUserId ? 'active' : ''}" onclick="loadUserEditor('${u.id}')">
+            <div>
+                <div class="client-id-label">${u.name}</div>
+                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.3); margin-top: 2px;">${u.email}</div>
+            </div>
+            <span class="client-meta">${u.role === 'admin' ? '👑' : '👤'} ${u.role}</span>
+        </div>
+    `).join('');
+}
+
+// --- Mostrar formulario de nuevo usuario ---
+async function showNewUserForm() {
+    currentUserId = null;
+    document.getElementById('user-id').value = '';
+    document.getElementById('user-name').value = '';
+    document.getElementById('user-email').value = '';
+    document.getElementById('user-password').value = '';
+    document.getElementById('user-role').value = 'partner';
+    document.getElementById('user-role-badge').textContent = 'Partner';
+    document.getElementById('user-editor-title').textContent = 'Nuevo Usuario';
+    document.getElementById('delete-user-btn').classList.add('hidden');
+    document.getElementById('user-save-status').style.display = 'none';
+
+    await renderClientCheckboxes([]);
+
+    document.getElementById('editor-placeholder').classList.add('hidden');
+    document.getElementById('client-editor').classList.add('hidden');
+    document.getElementById('user-editor').classList.remove('hidden');
+}
+
+// --- Cargar editor de usuario existente ---
+async function loadUserEditor(userId) {
+    currentUserId = userId;
+
+    const { data: user } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+    if (!user) return;
+
+    // Obtener accesos actuales del usuario
+    const { data: access } = await supabase
+        .from('user_client_access')
+        .select('client_slug')
+        .eq('user_id', userId);
+
+    const assignedSlugs = (access || []).map(a => a.client_slug);
+
+    document.getElementById('user-id').value = user.id;
+    document.getElementById('user-name').value = user.name;
+    document.getElementById('user-email').value = user.email;
+    document.getElementById('user-password').value = user.password;
+    document.getElementById('user-role').value = user.role;
+    document.getElementById('user-role-badge').textContent = user.role === 'admin' ? 'Administrador' : 'Partner';
+    document.getElementById('user-editor-title').textContent = user.name;
+    document.getElementById('delete-user-btn').classList.remove('hidden');
+    document.getElementById('user-save-status').style.display = 'none';
+
+    await renderClientCheckboxes(assignedSlugs);
+
+    document.getElementById('editor-placeholder').classList.add('hidden');
+    document.getElementById('client-editor').classList.add('hidden');
+    document.getElementById('user-editor').classList.remove('hidden');
+
+    // Highlight en sidebar
+    document.querySelectorAll('#users-list .client-item').forEach(el => el.classList.remove('active'));
+    const items = document.querySelectorAll('#users-list .client-item');
+    items.forEach(el => { if (el.getAttribute('onclick').includes(userId)) el.classList.add('active'); });
+}
+
+// --- Renderizar checkboxes de clientes ---
+async function renderClientCheckboxes(assignedSlugs = []) {
+    if (allClients.length === 0) {
+        const { data } = await supabase.from('clients_config').select('id_slug, name');
+        allClients = data || [];
+    }
+
+    const container = document.getElementById('client-checkboxes');
+    container.innerHTML = allClients.map(client => {
+        const isChecked = assignedSlugs.includes(client.id_slug);
+        return `
+            <label class="client-checkbox-card ${isChecked ? 'checked' : ''}" onclick="toggleCard(this)">
+                <input type="checkbox" name="client_access" value="${client.id_slug}" ${isChecked ? 'checked' : ''}>
+                <span style="font-size: 0.9rem; font-weight: 500;">${client.name}</span>
+            </label>
+        `;
+    }).join('');
+}
+
+function toggleCard(label) {
+    const checkbox = label.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    label.classList.toggle('checked', checkbox.checked);
+}
+
+// --- Generar contraseña ---
+function generateUserPass() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+    const pass = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    document.getElementById('user-password').value = pass;
+}
+
+// --- Guardar usuario ---
+document.getElementById('user-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const userId = document.getElementById('user-id').value;
+    const name = document.getElementById('user-name').value.trim();
+    const email = document.getElementById('user-email').value.trim();
+    const password = document.getElementById('user-password').value.trim();
+    const role = document.getElementById('user-role').value;
+
+    const selectedClients = Array.from(
+        document.querySelectorAll('input[name="client_access"]:checked')
+    ).map(cb => cb.value);
+
+    try {
+        let finalUserId = userId;
+
+        if (userId) {
+            // UPDATE
+            await supabase.from('user_profiles')
+                .update({ name, email, password, role })
+                .eq('id', userId);
+        } else {
+            // INSERT
+            const { data: newUser, error } = await supabase.from('user_profiles')
+                .insert({ name, email, password, role })
+                .select('id')
+                .single();
+
+            if (error) throw error;
+            finalUserId = newUser.id;
+            document.getElementById('user-id').value = finalUserId;
+            currentUserId = finalUserId;
+        }
+
+        // Actualizar accesos: borrar los anteriores e insertar los nuevos
+        await supabase.from('user_client_access').delete().eq('user_id', finalUserId);
+
+        if (selectedClients.length > 0) {
+            const accessRows = selectedClients.map(slug => ({
+                user_id: finalUserId,
+                client_slug: slug
+            }));
+            await supabase.from('user_client_access').insert(accessRows);
+        }
+
+        document.getElementById('user-save-status').style.display = 'block';
+        document.getElementById('user-editor-title').textContent = name;
+        await loadUsers();
+
+    } catch (err) {
+        console.error('Error guardando usuario:', err);
+        alert('Error: ' + (err.message || 'No se pudo guardar el usuario'));
+    }
+});
+
+// --- Eliminar usuario ---
+async function deleteUser() {
+    if (!currentUserId) return;
+    if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+
+    await supabase.from('user_profiles').delete().eq('id', currentUserId);
+
+    currentUserId = null;
+    document.getElementById('user-editor').classList.add('hidden');
+    document.getElementById('editor-placeholder').classList.remove('hidden');
+    await loadUsers();
+}
+
 

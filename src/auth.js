@@ -1,42 +1,89 @@
-// Auth Logic - Cefemex Capital
+// ============================================================
+// Auth.js v2.0 - Sistema de Usuarios Multi-Cliente
+// ============================================================
 
-// Simple session check
+// ============================================================
+// GESTIÓN DE SESIÓN
+// ============================================================
+
+function getSession() {
+    try {
+        const raw = localStorage.getItem('intra_session_v2');
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+function saveSession(userData) {
+    localStorage.setItem('intra_session_v2', JSON.stringify({
+        ...userData,
+        timestamp: Date.now()
+    }));
+}
+
+function clearSession() {
+    localStorage.removeItem('intra_session_v2');
+    // Compatibilidad: eliminar sesión anterior también
+    localStorage.removeItem('cefemex_session');
+}
+
+// ============================================================
+// VALIDACIÓN DE AUTENTICACIÓN
+// ============================================================
+
 function checkAuth() {
-    const session = localStorage.getItem('cefemex_session');
-    let currentPage = window.location.pathname.split('/').pop();
-
-    // Si es la raíz o index.html
-    if (currentPage === '' || currentPage === '/') currentPage = 'index.html';
-
-    // Get client from URL if exists
+    const session = getSession();
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     const urlParams = new URLSearchParams(window.location.search);
     const clientId = urlParams.get('client');
 
-    if (currentPage === 'index.html') {
-        if (!session) {
-            window.location.href = `login.html${clientId ? '?client=' + clientId : ''}`;
+    // Si no hay sesión, redirigir a login
+    if (!session) {
+        if (currentPage !== 'login.html') {
+            window.location.href = `login.html`;
+        }
+        return false;
+    }
+
+    // Verificar que el tiempo de sesión no haya expirado (24 horas)
+    const SESSION_DURATION = 24 * 60 * 60 * 1000;
+    if (Date.now() - session.timestamp > SESSION_DURATION) {
+        clearSession();
+        window.location.href = 'login.html';
+        return false;
+    }
+
+    // Si estamos en el dashboard y hay un clientId en la URL,
+    // verificar que este usuario tenga acceso a ese cliente
+    if (currentPage === 'index.html' && clientId) {
+        const hasAccess = session.role === 'admin' ||
+            (session.clients && session.clients.includes(clientId));
+
+        if (!hasAccess) {
+            console.warn('Acceso denegado al cliente:', clientId);
+            window.location.href = 'hub.html';
             return false;
-        } else {
-            const sessionData = JSON.parse(session);
-
-            // Si el cliente no está en la URL, lo mandamos a su dashboard específico
-            if (!clientId) {
-                window.location.href = `index.html?client=${sessionData.clientId}`;
-                return false;
-            }
-
-            // If the URL client doesn't match the session client, redirect or clear
-            if (clientId && sessionData.clientId !== clientId) {
-                localStorage.removeItem('cefemex_session');
-                window.location.href = `login.html?client=${clientId}`;
-                return false;
-            }
         }
     }
+
+    // Si está en index.html sin cliente en URL, ir al hub o al dashboard directo
+    if (currentPage === 'index.html' && !clientId) {
+        if (session.clients && session.clients.length === 1) {
+            window.location.href = `index.html?client=${session.clients[0]}`;
+        } else {
+            window.location.href = 'hub.html';
+        }
+        return false;
+    }
+
     return true;
 }
 
-// Login Handler
+// ============================================================
+// LÓGICA DE LOGIN
+// ============================================================
+
 if (document.getElementById('login-form')) {
     const loginForm = document.getElementById('login-form');
     const loginBtn = document.getElementById('login-btn');
@@ -45,64 +92,102 @@ if (document.getElementById('login-form')) {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value.trim();
-
-        // Get client from URL if present
-        const urlParams = new URLSearchParams(window.location.search);
-        const clientId = urlParams.get('client');
 
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Verificando...';
         errorBox.style.display = 'none';
 
         try {
-            // Simple validation against our table
-            let query = supabase
-                .from('clients_config')
-                .select('id_slug, username, password')
-                .eq('username', username)
-                .eq('password', password);
+            // 1. Buscar usuario en user_profiles
+            const { data: user, error: userError } = await supabase
+                .from('user_profiles')
+                .select('id, email, name, role, is_active')
+                .eq('email', email)
+                .eq('password', password)
+                .eq('is_active', true)
+                .single();
 
-            // If clientId is in URL, enforce it
-            if (clientId) {
-                query = query.eq('id_slug', clientId);
-            }
-
-            const { data, error } = await query.single();
-
-            if (error || !data) {
+            if (userError || !user) {
                 throw new Error('Credenciales inválidas');
             }
 
-            // Success: save session
-            const sessionData = {
-                clientId: data.id_slug,
-                username: data.username,
-                timestamp: Date.now()
-            };
-            localStorage.setItem('cefemex_session', JSON.stringify(sessionData));
+            // 2. Obtener los clientes a los que tiene acceso
+            let accessibleClients = [];
 
-            // Redirect to dashboard
-            window.location.href = `index.html?client=${data.id_slug}`;
+            if (user.role === 'admin') {
+                // Los admins tienen acceso a todos los clientes
+                const { data: allClients } = await supabase
+                    .from('clients_config')
+                    .select('id_slug');
+                accessibleClients = (allClients || []).map(c => c.id_slug);
+            } else {
+                // Los partners solo tienen acceso a sus clientes asignados
+                const { data: access } = await supabase
+                    .from('user_client_access')
+                    .select('client_slug')
+                    .eq('user_id', user.id);
+                accessibleClients = (access || []).map(a => a.client_slug);
+            }
+
+            if (accessibleClients.length === 0) {
+                throw new Error('Tu cuenta no tiene acceso a ningún cliente. Contacta al administrador.');
+            }
+
+            // 3. Guardar sesión
+            saveSession({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                clients: accessibleClients
+            });
+
+            // 4. Redirigir
+            if (accessibleClients.length === 1) {
+                // Acceso directo al único dashboard
+                window.location.href = `index.html?client=${accessibleClients[0]}`;
+            } else {
+                // Ir al hub de selección de clientes
+                window.location.href = 'hub.html';
+            }
 
         } catch (err) {
             console.error('Login error:', err);
+            errorBox.textContent = err.message || 'Usuario o contraseña incorrectos';
             errorBox.style.display = 'block';
             loginBtn.disabled = false;
-            loginBtn.innerHTML = 'Acceder';
+            loginBtn.innerHTML = '<span>Acceder</span>';
         }
     });
 }
 
-// Logout function (to be called from dashboard if needed)
+// ============================================================
+// LOGOUT
+// ============================================================
+
 function logout() {
-    localStorage.removeItem('cefemex_session');
+    clearSession();
     window.location.href = 'login.html';
 }
 
-// Run auth check if not on login page
-const isLoginPage = window.location.pathname.split('/').pop() === 'login.html';
-if (!isLoginPage) {
+// ============================================================
+// VERIFICACIÓN AUTOMÁTICA (en páginas protegidas)
+// ============================================================
+
+const _currentPage = window.location.pathname.split('/').pop() || 'index.html';
+
+if (_currentPage === 'admin.html') {
+    // El panel admin solo es accesible para administradores
+    const _session = getSession();
+    if (!_session) {
+        window.location.href = 'login.html';
+    } else if (_session.role !== 'admin') {
+        // Si es partner, lo mandamos a su hub (no tiene acceso al admin)
+        console.warn('Acceso denegado al panel admin. Redirigiendo...');
+        window.location.href = 'hub.html';
+    }
+} else if (_currentPage !== 'login.html') {
     checkAuth();
 }

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selecciona tu Dashboard | Intra Partner Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="./src/theme-intra.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #080A0F;
+            color: white;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(117, 81, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(1, 241, 227, 0.05) 0%, transparent 40%);
+        }
+
+        /* Header */
+        .hub-header {
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .hub-logo {
+            height: 32px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .user-name strong {
+            color: white;
+            display: block;
+            font-size: 1rem;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 77, 77, 0.1);
+            color: #FF4444;
+            border-color: rgba(255, 77, 77, 0.2);
+        }
+
+        /* Main Content */
+        .hub-main {
+            padding: 4rem 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hub-title-area {
+            margin-bottom: 3rem;
+        }
+
+        .hub-subtitle {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .hub-title {
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: -1px;
+        }
+
+        .hub-desc {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.5rem;
+        }
+
+        /* Grid de Clientes */
+        .clients-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .client-card {
+            background: linear-gradient(145deg, #121318 0%, #08090C 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 2rem;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .client-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-green));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .client-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(117, 81, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .client-card:hover::before {
+            opacity: 1;
+        }
+
+        .client-logo-area {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .client-logo-area img {
+            max-width: 80%;
+            max-height: 80%;
+            object-fit: contain;
+        }
+
+        .client-logo-area .logo-initials {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+        }
+
+        .client-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .client-slug {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 2px;
+        }
+
+        .client-arrow {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--accent-purple);
+            font-weight: 500;
+        }
+
+        /* Estado de carga */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 4rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+            font-size: 2rem;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Admin badge */
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(117, 81, 255, 0.15);
+            color: var(--accent-purple);
+            border: 1px solid rgba(117, 81, 255, 0.3);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .hub-header {
+                padding: 1rem 1.5rem;
+            }
+
+            .hub-main {
+                padding: 2rem 1.5rem;
+            }
+
+            .hub-title {
+                font-size: 1.8rem;
+            }
+
+            .clients-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="hub-header">
+        <img src="src/assets/intra-logo.png" alt="Intra" class="hub-logo">
+        <div class="user-info">
+            <div class="user-name">
+                <span>Bienvenido,</span>
+                <strong id="hub-user-name">Cargando...</strong>
+            </div>
+            <a id="admin-panel-btn" href="admin.html" class="logout-btn" title="Panel Administrador"
+                style="display:none; background: rgba(117,81,255,0.1); color: #7551FF; border-color: rgba(117,81,255,0.3); width: auto; padding: 0 14px; gap: 6px; font-size: 0.75rem; font-weight: 600; text-decoration: none;">
+                <ion-icon name="settings-outline"></ion-icon>
+                Admin
+            </a>
+            <button class="logout-btn" onclick="logout()" title="Cerrar sesión">
+                <ion-icon name="log-out-outline"></ion-icon>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="hub-main">
+        <div class="hub-title-area">
+            <div id="admin-badge-area"></div>
+            <p class="hub-subtitle">Partner Portal</p>
+            <h1 class="hub-title">Selecciona un Dashboard</h1>
+            <p class="hub-desc">Elige la empresa cuyo dashboard deseas consultar.</p>
+        </div>
+
+        <div id="clients-container" class="clients-grid">
+            <div class="loading-state">
+                <ion-icon name="sync-outline" class="spin"></ion-icon>
+                <span>Cargando tus accesos...</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="src/config.js"></script>
+    <script src="src/auth.js"></script>
+    <script>
+        async function loadHub() {
+            const session = getSession();
+
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Mostrar nombre de usuario
+            document.getElementById('hub-user-name').textContent = session.name || session.email;
+
+            // Mostrar botón de admin si aplica
+            if (session.role === 'admin') {
+                document.getElementById('admin-panel-btn').style.display = 'inline-flex';
+            }
+
+            // Mostrar badge de admin si aplica
+            if (session.role === 'admin') {
+                document.getElementById('admin-badge-area').innerHTML = `
+                    <span class="admin-badge">
+                        <ion-icon name="shield-checkmark-outline"></ion-icon>
+                        Administrador
+                    </span>
+                `;
+            }
+
+            // Cargar detalles de los clientes asignados
+            const { data: clients, error } = await supabase
+                .from('clients_config')
+                .select('id_slug, name, logo_url, theme_primary, theme_secondary')
+                .in('id_slug', session.clients);
+
+            const container = document.getElementById('clients-container');
+
+            if (error || !clients || clients.length === 0) {
+                container.innerHTML = `
+                    <div class="loading-state">
+                        <ion-icon name="alert-circle-outline" style="font-size:2rem; color: #FF4444;"></ion-icon>
+                        <span>No se encontraron dashboards asignados.</span>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = clients.map(client => {
+                const initials = client.name ? client.name.charAt(0).toUpperCase() : '?';
+                const logoHtml = client.logo_url
+                    ? `<img src="${client.logo_url}" alt="${client.name}">`
+                    : `<span class="logo-initials">${initials}</span>`;
+
+                return `
+                    <a class="client-card" href="index.html?client=${client.id_slug}">
+                        <div class="client-logo-area">${logoHtml}</div>
+                        <div>
+                            <div class="client-name">${client.name}</div>
+                            <div class="client-slug">${client.id_slug}</div>
+                        </div>
+                        <div class="client-arrow">
+                            Ver Dashboard <ion-icon name="arrow-forward-outline"></ion-icon>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        loadHub();
+    </script>
+</body>
+
+</html>

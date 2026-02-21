@@ -5,6 +5,7 @@
 const state = {
     leads: [],
     filteredLeads: [],
+    ventas: [],
     config: {
         clientName: 'Cargando...',
         webhookUrl: '',
@@ -21,6 +22,22 @@ const state = {
     flatpickr: null
 };
 
+// --- Loading Screen ---
+function setLoaderProgress(pct) {
+    const bar = document.getElementById('loader-bar');
+    if (bar) bar.style.width = pct + '%';
+}
+
+function hideLoader() {
+    setLoaderProgress(100);
+    setTimeout(() => {
+        const loader = document.getElementById('dashboard-loader');
+        if (!loader) return;
+        loader.classList.add('fade-out');
+        setTimeout(() => loader.remove(), 650);
+    }, 350);
+}
+
 // --- Initialization ---
 async function init() {
     console.log('--- QUANTIX DASHBOARD INIT ---');
@@ -32,15 +49,27 @@ async function init() {
     }
 
     try {
+        setLoaderProgress(15);
         await loadConfig();
+        setLoaderProgress(35);
+
         if (!state.config.webhookUrl) {
             console.warn('Configuración incompleta o sin cliente válido.');
+            hideLoader();
             return;
         }
+
         await fetchData();
+        setLoaderProgress(75);
+
+        await loadVentasForDashboard();
+        setLoaderProgress(92);
+
         renderDashboard();
+        hideLoader();
     } catch (err) {
         console.error('CRITICAL INIT ERROR:', err);
+        hideLoader();
     }
 }
 
@@ -80,6 +109,7 @@ async function loadConfig() {
             clientName: config.name,
             webhookUrl: config.webhook_url,
             investment: config.investment,
+            investmentUpdatedAt: config.investment_updated_at || null,
             sales: config.sales_goal,
             clientLogo: config.logo_url,
             themePrimary: config.theme_primary,
@@ -335,6 +365,22 @@ function applyDynamicTheme(primary, secondary) {
     `;
 }
 
+async function loadVentasForDashboard() {
+    if (!state.clientId) return;
+    const { data, error } = await supabase
+        .from('ventas')
+        .select('id, monto, fecha')
+        .eq('client_slug', state.clientId);
+    state.ventas = error ? [] : (data || []);
+}
+
+// Callable desde index.html para refrescar Card 3 tras guardar/eliminar una venta
+async function refreshVentasDashboard() {
+    await loadVentasForDashboard();
+    renderDashboard();
+}
+window.refreshVentasDashboard = refreshVentasDashboard;
+
 async function fetchData() {
     console.log('Fetching leads from:', state.config.webhookUrl);
     try {
@@ -372,9 +418,17 @@ function calculateMetrics() {
     const qualified = qualifiedLeads.length;
 
     const investment = parseFloat(state.config.investment) || 0;
-    const sales = parseFloat(state.config.sales) || 0;
 
-    // Fixed conversion logic (Leads / Qualified? No, usually Qualified / Total? Using what user had before: total/qualified resulted in 36.1 in screenshot)
+    // Filtrar ventas por el rango de fechas activo
+    const filteredVentas = state.ventas.filter(v => {
+        if (!v.fecha) return true;
+        const ventaDate = new Date(v.fecha + 'T00:00:00');
+        if (state.filters.start && ventaDate < state.filters.start) return false;
+        if (state.filters.end && ventaDate > state.filters.end) return false;
+        return true;
+    });
+    const sales = filteredVentas.reduce((sum, v) => sum + parseFloat(v.monto || 0), 0);
+
     const conversionRate = total > 0 ? (qualified / total) : 0;
     const roi = investment > 0 ? (sales / investment) : 0;
     const cpl = qualified > 0 ? (investment / qualified) : 0;
@@ -397,8 +451,20 @@ function updateUI(m) {
     setTxt('card-6-value', `$${m.investment.toLocaleString('en-US')}`);
     setTxt('card-7-value', `$${m.cpl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
+    // Fecha de actualización de inversión
+    const card6pill = document.getElementById('card-6-date');
+    if (card6pill) {
+        if (state.config.investmentUpdatedAt) {
+            const [y, mo, d] = state.config.investmentUpdatedAt.split('-');
+            card6pill.textContent = `Actualizada al ${d}/${mo}/${y}`;
+        } else {
+            card6pill.textContent = 'Presupuesto';
+        }
+    }
+
     // Dynamic Welcome & Logo
-    setTxt('welcome-name', state.config.clientName || 'Administrador');
+    const _session = typeof getSession === 'function' ? getSession() : null;
+    setTxt('welcome-name', (_session && _session.name) ? _session.name : (state.config.clientName || 'Administrador'));
 
     const logoImg = document.getElementById('client-logo');
     if (logoImg) {
@@ -431,6 +497,9 @@ function renderTable() {
     if (leadsToShow.length === 0 && state.leads.length > 0) {
         leadsToShow = state.filteredLeads;
     }
+
+    // Ordenar del más reciente al más antiguo
+    leadsToShow = [...leadsToShow].sort((a, b) => (b.fecha_parsed || 0) - (a.fecha_parsed || 0));
 
     // Main Dashboard Table (Clean fixed view - 8 leads)
     const mainTableHTML = leadsToShow.slice(0, 8).map((lead, index) => renderLogRow(lead, index)).join('');

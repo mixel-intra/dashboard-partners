@@ -5,6 +5,7 @@ CREATE TABLE clients_config (
     webhook_url TEXT,
     logo_url TEXT,
     investment NUMERIC DEFAULT 0,
+    investment_updated_at DATE,
     sales_goal DECIMAL(12,2) DEFAULT 0,
     username TEXT,
     password TEXT,
