@@ -24,8 +24,8 @@
             color: white;
             min-height: 100vh;
             background-image:
-                radial-gradient(circle at 20% 20%, rgba(117, 81, 255, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(1, 241, 227, 0.05) 0%, transparent 40%);
+                radial-gradient(circle at 20% 20%, rgba(117, 81, 255, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(1, 241, 227, 0.04) 0%, transparent 40%);
         }
 
         /* Header */
@@ -111,97 +111,107 @@
             margin-top: 0.5rem;
         }
 
-        /* Grid de Clientes */
+        /* ============================================
+           Grid de Clientes - Estilo Premium
+           ============================================ */
         .clients-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2.5rem;
         }
 
+        /* Contenedor externo: maneja el hover y el glow */
+        .client-card-outer {
+            position: relative;
+            transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+        }
+
+        .client-card-outer:hover {
+            transform: translateY(-6px);
+        }
+
+        /* Glow difuminado detrás de la card */
+        .client-card-glow {
+            position: absolute;
+            inset: -14px;
+            border-radius: 42px;
+            background: linear-gradient(135deg, var(--c1, #7551FF), var(--c2, #01F1E3));
+            opacity: 0.1;
+            filter: blur(28px);
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .client-card-outer:hover .client-card-glow {
+            opacity: 0.38;
+        }
+
+        /* Borde gradiente */
+        .client-card-wrap {
+            position: relative;
+            border-radius: 26px;
+            padding: 1.5px;
+            background: linear-gradient(135deg, var(--c1, #7551FF), var(--c2, #01F1E3));
+        }
+
+        /* Card oscura con contenido */
         .client-card {
-            background: linear-gradient(145deg, #121318 0%, #08090C 100%);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 24px;
+            background: #0C0D13;
+            border-radius: 24.5px;
             padding: 2rem;
-            cursor: pointer;
             text-decoration: none;
             color: white;
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
+            min-height: 230px;
         }
 
-        .client-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-purple), var(--accent-green));
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .client-card:hover {
-            transform: translateY(-6px);
-            border-color: rgba(117, 81, 255, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .client-card:hover::before {
-            opacity: 1;
-        }
-
+        /* Logo del cliente */
         .client-logo-area {
-            width: 60px;
-            height: 60px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .client-logo-area img {
-            max-width: 80%;
-            max-height: 80%;
+            max-width: 75%;
+            max-height: 75%;
             object-fit: contain;
         }
 
-        .client-logo-area .logo-initials {
+        .logo-initials {
             font-size: 1.4rem;
             font-weight: 700;
-            color: var(--accent-purple);
+            color: white;
+        }
+
+        /* Info del cliente, empujada al fondo */
+        .client-info {
+            margin-top: auto;
+            padding-top: 2rem;
         }
 
         .client-name {
             font-size: 1.2rem;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            margin-bottom: 0.35rem;
         }
 
         .client-slug {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.3);
-            margin-top: 2px;
-        }
-
-        .client-arrow {
-            margin-top: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
             font-size: 0.85rem;
-            color: var(--accent-purple);
-            font-weight: 500;
+            color: rgba(255, 255, 255, 0.38);
+            line-height: 1.5;
         }
 
-        /* Estado de carga */
+        /* Estado de carga / error */
         .loading-state {
             display: flex;
             flex-direction: column;
@@ -209,6 +219,7 @@
             gap: 16px;
             padding: 4rem;
             color: rgba(255, 255, 255, 0.4);
+            grid-column: 1 / -1;
         }
 
         .spin {
@@ -217,13 +228,8 @@
         }
 
         @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
         }
 
         /* Admin badge */
@@ -256,6 +262,7 @@
 
             .clients-grid {
                 grid-template-columns: 1fr;
+                gap: 1.5rem;
             }
         }
     </style>
@@ -347,22 +354,26 @@
             }
 
             container.innerHTML = clients.map(client => {
+                const c1 = client.theme_primary  || '#7551FF';
+                const c2 = client.theme_secondary || '#01F1E3';
                 const initials = client.name ? client.name.charAt(0).toUpperCase() : '?';
                 const logoHtml = client.logo_url
                     ? `<img src="${client.logo_url}" alt="${client.name}">`
                     : `<span class="logo-initials">${initials}</span>`;
 
                 return `
-                    <a class="client-card" href="index.html?client=${client.id_slug}">
-                        <div class="client-logo-area">${logoHtml}</div>
-                        <div>
-                            <div class="client-name">${client.name}</div>
-                            <div class="client-slug">${client.id_slug}</div>
+                    <div class="client-card-outer" style="--c1: ${c1}; --c2: ${c2}">
+                        <div class="client-card-glow"></div>
+                        <div class="client-card-wrap">
+                            <a class="client-card" href="index.html?client=${client.id_slug}">
+                                <div class="client-logo-area">${logoHtml}</div>
+                                <div class="client-info">
+                                    <div class="client-name">${client.name}</div>
+                                    <div class="client-slug">${client.id_slug}</div>
+                                </div>
+                            </a>
                         </div>
-                        <div class="client-arrow">
-                            Ver Dashboard <ion-icon name="arrow-forward-outline"></ion-icon>
-                        </div>
-                    </a>
+                    </div>
                 `;
             }).join('');
         }
