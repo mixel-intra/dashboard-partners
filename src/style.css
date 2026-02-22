@@ -1394,14 +1394,14 @@ tr:hover td {
 }
 
 .dash-tab:hover {
-    color: rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.7) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .dash-tab.active {
-    background: var(--accent-purple, #7551FF);
-    color: #fff;
-    box-shadow: 0 2px 12px rgba(117, 81, 255, 0.3);
+    background: #7551FF !important;
+    color: #fff !important;
+    box-shadow: 0 2px 12px rgba(117, 81, 255, 0.3) !important;
 }
 
 @media (max-width: 600px) {
