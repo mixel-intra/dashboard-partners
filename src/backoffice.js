@@ -15,6 +15,7 @@ const elements = {
     salesInput: document.getElementById('sales'),
     clientLogoInput: document.getElementById('client-logo-url'),
     clientLogoFile: document.getElementById('client-logo-file'),
+    clientTypeInput: document.getElementById('client-type'),
     clientUserInput: document.getElementById('client-user'),
     clientPassInput: document.getElementById('client-pass'),
     generatePassBtn: document.getElementById('generate-pass-btn'),
@@ -218,6 +219,7 @@ async function selectClient(clientId) {
     elements.investmentInput.value = currentConfig.investment || 0;
     elements.salesInput.value = currentConfig.sales_goal || 0;
     elements.clientLogoInput.value = currentConfig.logo_url || '';
+    elements.clientTypeInput.value = currentConfig.client_type || 'otro';
     elements.clientUserInput.value = currentConfig.username || '';
     elements.clientPassInput.value = currentConfig.password || '';
     elements.themePrimaryInput.value = currentConfig.theme_primary || '#7551FF';
@@ -286,6 +288,7 @@ function setupEventListeners() {
         elements.clientIdInput.focus();
         elements.previewLink.style.visibility = 'hidden';
 
+        elements.clientTypeInput.value = 'otro';
         elements.clientUserInput.value = '';
         elements.clientPassInput.value = '';
     });
@@ -357,6 +360,7 @@ function setupEventListeners() {
             const newConfig = {
                 id_slug: clientId,
                 name: elements.clientNameInput.value.trim(),
+                client_type: elements.clientTypeInput.value || 'otro',
                 webhook_url: elements.webhookInput.value,
                 investment: parseFloat(elements.investmentInput.value) || 0,
                 investment_updated_at: new Date().toISOString().split('T')[0],

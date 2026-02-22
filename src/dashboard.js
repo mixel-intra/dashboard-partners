@@ -14,6 +14,8 @@ const state = {
         themePrimary: '#7551FF',
         themeSecondary: '#01F1E3'
     },
+    clientType: 'otro',
+    activeTab: 'reservas',
     charts: {},
     filters: {
         start: null,
@@ -65,7 +67,7 @@ async function init() {
         await loadVentasForDashboard();
         setLoaderProgress(92);
 
-        renderDashboard();
+        applyGlobalFilters();
         hideLoader();
     } catch (err) {
         console.error('CRITICAL INIT ERROR:', err);
@@ -115,6 +117,9 @@ async function loadConfig() {
             themePrimary: config.theme_primary,
             themeSecondary: config.theme_secondary
         };
+
+        state.clientType = config.client_type || 'otro';
+        initHotelTabs();
 
         applyDynamicTheme(state.config.themePrimary, state.config.themeSecondary);
         setupEventListeners();
@@ -232,6 +237,45 @@ function setPredefinedRange(range) {
     applyGlobalFilters();
 }
 
+// --- Hotel Tabs ---
+
+const TAB_SERVICE_MAP = {
+    reservas: 'Reserva',
+    daypass: 'DayPass',
+    eventos: 'Evento'
+};
+
+function initHotelTabs() {
+    const tabsContainer = document.getElementById('hotel-tabs');
+    if (!tabsContainer) return;
+
+    if (state.clientType === 'hotel') {
+        tabsContainer.classList.remove('hidden');
+        state.activeTab = 'reservas';
+
+        tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchDashTab(btn.dataset.tab);
+            });
+        });
+    } else {
+        tabsContainer.classList.add('hidden');
+    }
+}
+
+function switchDashTab(tab) {
+    state.activeTab = tab;
+
+    const tabsContainer = document.getElementById('hotel-tabs');
+    if (tabsContainer) {
+        tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
+    }
+
+    applyGlobalFilters();
+}
+
 function applyGlobalFilters() {
     console.log('Applying global filters:', state.filters);
 
@@ -245,6 +289,15 @@ function applyGlobalFilters() {
         if (state.filters.end) {
             match = match && lead.fecha_parsed <= state.filters.end;
         }
+
+        // Filtrar por tipo de servicio si es hotel
+        if (match && state.clientType === 'hotel') {
+            const expectedType = TAB_SERVICE_MAP[state.activeTab];
+            if (expectedType) {
+                match = match && lead.tipo_servicio === expectedType;
+            }
+        }
+
         return match;
     });
 
