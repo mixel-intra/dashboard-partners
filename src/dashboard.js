@@ -291,8 +291,7 @@ function applyGlobalFilters() {
         }
 
         // Filtrar por tipo de servicio si es hotel
-        // Si el lead no tiene tipo_servicio, se muestra en todas las pestañas
-        if (match && state.clientType === 'hotel' && lead.tipo_servicio) {
+        if (match && state.clientType === 'hotel') {
             const expectedType = TAB_SERVICE_MAP[state.activeTab];
             if (expectedType) {
                 match = match && lead.tipo_servicio === expectedType;
@@ -448,6 +447,20 @@ async function fetchData() {
             estatus: normalizeStatus(lead.estatus),
             fecha_parsed: parseCustomDate(lead.fecha_creacion)
         }));
+
+        // Para hoteles: asignar tipo_servicio ficticio si no existe
+        // Distribución: DayPass ~45%, Reserva ~35%, Evento ~20%
+        if (state.clientType === 'hotel') {
+            const hasRealTypes = state.leads.some(l => l.tipo_servicio);
+            if (!hasRealTypes) {
+                state.leads.forEach((lead, i) => {
+                    const bucket = i % 20;
+                    if (bucket < 9) lead.tipo_servicio = 'DayPass';
+                    else if (bucket < 16) lead.tipo_servicio = 'Reserva';
+                    else lead.tipo_servicio = 'Evento';
+                });
+            }
+        }
 
         state.filteredLeads = [...state.leads];
         console.log(`Leads Processing Complete. Total: ${state.leads.length}`);
