@@ -19,22 +19,100 @@
             font-family: 'Inter', sans-serif;
         }
 
-        body {
-            background-color: #080A0F;
-            color: white;
-            min-height: 100vh;
-            background-image:
-                radial-gradient(circle at 20% 20%, rgba(117, 81, 255, 0.06) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(1, 241, 227, 0.04) 0%, transparent 40%);
+        html, body {
+            height: 100%;
         }
 
-        /* Header */
+        body {
+            background-color: #04050A;
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           FONDO: Estrellas generadas por JS
+           ============================================ */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ============================================
+           ECLIPSE (planeta al fondo, abajo al centro)
+           ============================================ */
+        .eclipse-wrap {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .eclipse {
+            width: clamp(580px, 75vw, 980px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: radial-gradient(circle at 38% 38%, #0B0D1A, #02030A);
+            position: relative;
+            margin-bottom: -48%;
+            /* Halo atmosférico */
+            box-shadow:
+                0 0  80px 18px rgba(55, 95, 255, 0.12),
+                0 0 160px 60px rgba(40, 75, 210, 0.07),
+                0 0 320px 120px rgba(30, 60, 180, 0.04);
+        }
+
+        /* Borde iluminado del eclipse (crescent / rim light) */
+        .eclipse::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background:
+                radial-gradient(ellipse at 33% 32%,
+                    transparent 46.5%,
+                    rgba(160, 195, 255, 0.18) 48.5%,
+                    rgba(210, 228, 255, 0.55) 50%,
+                    rgba(160, 195, 255, 0.18) 51.5%,
+                    transparent 53.5%
+                );
+        }
+
+        /* Niebla sutil encima del eclipse para que se funda con el fondo */
+        .eclipse-wrap::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: clamp(700px, 90vw, 1200px);
+            height: 260px;
+            background: linear-gradient(to top, #04050A 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
         .hub-header {
+            position: relative;
+            z-index: 10;
             padding: 1.5rem 3rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(4, 5, 10, 0.6);
+            backdrop-filter: blur(12px);
         }
 
         .hub-logo {
@@ -79,8 +157,12 @@
             border-color: rgba(255, 77, 77, 0.2);
         }
 
-        /* Main Content */
+        /* ============================================
+           MAIN
+           ============================================ */
         .hub-main {
+            position: relative;
+            z-index: 10;
             padding: 4rem 3rem;
             max-width: 1200px;
             margin: 0 auto;
@@ -92,9 +174,9 @@
 
         .hub-subtitle {
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255, 255, 255, 0.35);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
@@ -107,12 +189,12 @@
 
         .hub-desc {
             font-size: 1rem;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.45);
             margin-top: 0.5rem;
         }
 
         /* ============================================
-           Grid de Clientes - Estilo Premium
+           CARDS — Borde gradiente + glow
            ============================================ */
         .clients-grid {
             display: grid;
@@ -120,7 +202,6 @@
             gap: 2.5rem;
         }
 
-        /* Contenedor externo: maneja el hover y el glow */
         .client-card-outer {
             position: relative;
             transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -130,7 +211,7 @@
             transform: translateY(-6px);
         }
 
-        /* Glow difuminado detrás de la card */
+        /* Glow difuminado */
         .client-card-glow {
             position: absolute;
             inset: -14px;
@@ -143,7 +224,7 @@
         }
 
         .client-card-outer:hover .client-card-glow {
-            opacity: 0.38;
+            opacity: 0.4;
         }
 
         /* Borde gradiente */
@@ -154,9 +235,10 @@
             background: linear-gradient(135deg, var(--c1, #7551FF), var(--c2, #01F1E3));
         }
 
-        /* Card oscura con contenido */
+        /* Contenido de la card */
         .client-card {
-            background: #0C0D13;
+            background: rgba(10, 11, 18, 0.92);
+            backdrop-filter: blur(8px);
             border-radius: 24.5px;
             padding: 2rem;
             text-decoration: none;
@@ -166,7 +248,6 @@
             min-height: 230px;
         }
 
-        /* Logo del cliente */
         .client-logo-area {
             width: 52px;
             height: 52px;
@@ -192,7 +273,6 @@
             color: white;
         }
 
-        /* Info del cliente, empujada al fondo */
         .client-info {
             margin-top: auto;
             padding-top: 2rem;
@@ -207,7 +287,7 @@
 
         .client-slug {
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.38);
+            color: rgba(255, 255, 255, 0.35);
             line-height: 1.5;
         }
 
@@ -238,7 +318,7 @@
             align-items: center;
             gap: 6px;
             background: rgba(117, 81, 255, 0.15);
-            color: var(--accent-purple);
+            color: #a78bfa;
             border: 1px solid rgba(117, 81, 255, 0.3);
             padding: 4px 12px;
             border-radius: 20px;
@@ -264,11 +344,25 @@
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
             }
+
+            .eclipse {
+                width: 140vw;
+                margin-bottom: -55%;
+            }
         }
     </style>
 </head>
 
 <body>
+
+    <!-- Estrellas (JS las posiciona) -->
+    <div class="stars" id="stars"></div>
+
+    <!-- Eclipse / planeta de fondo -->
+    <div class="eclipse-wrap">
+        <div class="eclipse"></div>
+    </div>
+
     <!-- Header -->
     <header class="hub-header">
         <img src="src/assets/intra-logo.png" alt="Intra" class="hub-logo">
@@ -278,7 +372,7 @@
                 <strong id="hub-user-name">Cargando...</strong>
             </div>
             <a id="admin-panel-btn" href="admin.html" class="logout-btn" title="Panel Administrador"
-                style="display:none; background: rgba(117,81,255,0.1); color: #7551FF; border-color: rgba(117,81,255,0.3); width: auto; padding: 0 14px; gap: 6px; font-size: 0.75rem; font-weight: 600; text-decoration: none;">
+                style="display:none; background: rgba(117,81,255,0.1); color: #a78bfa; border-color: rgba(117,81,255,0.3); width: auto; padding: 0 14px; gap: 6px; font-size: 0.75rem; font-weight: 600; text-decoration: none;">
                 <ion-icon name="settings-outline"></ion-icon>
                 Admin
             </a>
@@ -310,6 +404,22 @@
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
     <script>
+        // ── Generar estrellas ──────────────────────────────────────────
+        (function () {
+            const el = document.getElementById('stars');
+            const count = 180;
+            const shadows = [];
+            for (let i = 0; i < count; i++) {
+                const x    = (Math.random() * 100).toFixed(2);
+                const y    = (Math.random() * 100).toFixed(2);
+                const op   = (Math.random() * 0.55 + 0.1).toFixed(2);
+                const size = Math.random() < 0.15 ? 1 : 0;
+                shadows.push(`${x}vw ${y}vh 0 ${size}px rgba(255,255,255,${op})`);
+            }
+            el.style.boxShadow = shadows.join(',');
+        })();
+
+        // ── Cargar hub ────────────────────────────────────────────────
         async function loadHub() {
             const session = getSession();
 
@@ -318,25 +428,17 @@
                 return;
             }
 
-            // Mostrar nombre de usuario
             document.getElementById('hub-user-name').textContent = session.name || session.email;
 
-            // Mostrar botón de admin si aplica
             if (session.role === 'admin') {
                 document.getElementById('admin-panel-btn').style.display = 'inline-flex';
-            }
-
-            // Mostrar badge de admin si aplica
-            if (session.role === 'admin') {
                 document.getElementById('admin-badge-area').innerHTML = `
                     <span class="admin-badge">
                         <ion-icon name="shield-checkmark-outline"></ion-icon>
                         Administrador
-                    </span>
-                `;
+                    </span>`;
             }
 
-            // Cargar detalles de los clientes asignados
             const { data: clients, error } = await supabase
                 .from('clients_config')
                 .select('id_slug, name, logo_url, theme_primary, theme_secondary')
@@ -362,7 +464,7 @@
                     : `<span class="logo-initials">${initials}</span>`;
 
                 return `
-                    <div class="client-card-outer" style="--c1: ${c1}; --c2: ${c2}">
+                    <div class="client-card-outer" style="--c1:${c1}; --c2:${c2}">
                         <div class="client-card-glow"></div>
                         <div class="client-card-wrap">
                             <a class="client-card" href="index.html?client=${client.id_slug}">
@@ -373,8 +475,7 @@
                                 </div>
                             </a>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }).join('');
         }
 
