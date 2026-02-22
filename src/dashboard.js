@@ -291,7 +291,8 @@ function applyGlobalFilters() {
         }
 
         // Filtrar por tipo de servicio si es hotel
-        if (match && state.clientType === 'hotel') {
+        // Si el lead no tiene tipo_servicio, se muestra en todas las pestañas
+        if (match && state.clientType === 'hotel' && lead.tipo_servicio) {
             const expectedType = TAB_SERVICE_MAP[state.activeTab];
             if (expectedType) {
                 match = match && lead.tipo_servicio === expectedType;
