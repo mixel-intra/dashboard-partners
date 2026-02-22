@@ -249,18 +249,19 @@
             background: rgba(10, 11, 20, 0.88);
             backdrop-filter: blur(12px);
             border-radius: 24.5px;
-            padding: 2rem;
+            padding: 1.5rem;
             text-decoration: none;
             color: white;
             display: flex;
-            flex-direction: column;
-            min-height: 220px;
+            flex-direction: row;
+            align-items: center;
+            gap: 1rem;
         }
 
         .client-logo-area {
-            width: 52px;
-            height: 52px;
-            border-radius: 14px;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
@@ -277,26 +278,41 @@
         }
 
         .logo-initials {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: white;
         }
 
         .client-info {
-            margin-top: auto;
-            padding-top: 2rem;
+            flex: 1;
+            min-width: 0;
         }
 
         .client-name {
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-            margin-bottom: 0.3rem;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            margin-bottom: 0.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .client-slug {
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             color: rgba(255, 255, 255, 0.32);
+        }
+
+        .client-arrow {
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            transition: color 0.2s, transform 0.2s;
+        }
+
+        .client-card-outer:hover .client-arrow {
+            color: rgba(255, 255, 255, 0.7);
+            transform: translateX(3px);
         }
 
         /* Estados de carga / error */
@@ -440,6 +456,7 @@
                                     <div class="client-name">${client.name}</div>
                                     <div class="client-slug">${client.id_slug}</div>
                                 </div>
+                                <ion-icon name="chevron-forward-outline" class="client-arrow"></ion-icon>
                             </a>
                         </div>
                     </div>`;
