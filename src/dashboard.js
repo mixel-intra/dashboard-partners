@@ -15,7 +15,8 @@ const state = {
         themeSecondary: '#01F1E3'
     },
     clientType: 'otro',
-    activeTab: 'reservas',
+    activeTab: 'eventos',
+    chartMode: 'total',
     charts: {},
     filters: {
         start: null,
@@ -149,6 +150,15 @@ function applyCardLabels(customLabels) {
 }
 
 function setupEventListeners() {
+    // Chart mode toggle (calificados / total)
+    document.querySelectorAll('.chart-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.chartMode = btn.dataset.mode;
+            document.querySelectorAll('.chart-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === state.chartMode));
+            createMainChart();
+        });
+    });
+
     // Global Range Selector Toggle
     const rangeToggle = document.getElementById('range-picker-toggle');
     const rangeDropdown = document.getElementById('range-dropdown');
@@ -262,9 +272,10 @@ function setPredefinedRange(range) {
 // --- Hotel Tabs ---
 
 const TAB_SERVICE_MAP = {
+    eventos: 'Evento',
     reservas: 'Reserva',
     daypass: 'DayPass',
-    eventos: 'Evento'
+    restaurante: 'Restaurante'
 };
 
 function initHotelTabs() {
@@ -273,7 +284,7 @@ function initHotelTabs() {
 
     if (state.clientType === 'hotel') {
         tabsContainer.classList.remove('hidden');
-        state.activeTab = 'reservas';
+        state.activeTab = 'eventos';
 
         tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -471,15 +482,16 @@ async function fetchData() {
         }));
 
         // Para hoteles: asignar tipo_servicio ficticio si no existe
-        // Distribución: DayPass ~45%, Reserva ~35%, Evento ~20%
+        // Distribución: DayPass ~40%, Reserva ~30%, Evento ~20%, Restaurante ~10%
         if (state.clientType === 'hotel') {
             const hasRealTypes = state.leads.some(l => l.tipo_servicio);
             if (!hasRealTypes) {
                 state.leads.forEach((lead, i) => {
                     const bucket = i % 20;
-                    if (bucket < 9) lead.tipo_servicio = 'DayPass';
-                    else if (bucket < 16) lead.tipo_servicio = 'Reserva';
-                    else lead.tipo_servicio = 'Evento';
+                    if (bucket < 8) lead.tipo_servicio = 'DayPass';
+                    else if (bucket < 14) lead.tipo_servicio = 'Reserva';
+                    else if (bucket < 18) lead.tipo_servicio = 'Evento';
+                    else lead.tipo_servicio = 'Restaurante';
                 });
             }
         }
@@ -784,7 +796,10 @@ function createMainChart() {
 
     // Grouping by Date
     const dailyData = {};
-    const sorted = [...state.filteredLeads].sort((a, b) => a.fecha_parsed - b.fecha_parsed);
+    const sourceLeads = state.chartMode === 'calificados'
+        ? state.filteredLeads.filter(l => isQualified(l.estatus))
+        : state.filteredLeads;
+    const sorted = [...sourceLeads].sort((a, b) => a.fecha_parsed - b.fecha_parsed);
 
     sorted.forEach(l => {
         if (!l.fecha_parsed || isNaN(l.fecha_parsed.getTime())) return;

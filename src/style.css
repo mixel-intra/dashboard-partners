@@ -1416,3 +1416,37 @@ tr:hover td {
         font-size: 0.78rem;
     }
 }
+
+/* ===== CHART MODE TOGGLE ===== */
+.chart-mode-toggle {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.chart-mode-btn {
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.chart-mode-btn:hover {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.chart-mode-btn.active {
+    background: #7551FF !important;
+    color: #fff !important;
+}
