@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intra | Nexus Engine (Admin)</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
@@ -19,11 +18,11 @@
         :root {
             --bg-master: #020202;
             --glass-base: rgba(12, 12, 14, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.06);
-            --glass-bright: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-bright: rgba(255, 255, 255, 0.15);
 
             --text-glow-main: #ffffff;
-            --text-muted: #6b6d7a;
+            --text-muted: #a1a1aa;
             --text-neon: #01F1E3;
             /* Cyan instead of purple */
 
@@ -50,6 +49,8 @@
             overflow: hidden;
             display: flex;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
             background-image:
                 radial-gradient(circle at 50% 0%, rgba(10, 132, 255, 0.08) 0%, transparent 40%),
                 radial-gradient(circle at 0% 100%, rgba(1, 241, 227, 0.05) 0%, transparent 40%);
@@ -89,7 +90,8 @@
             width: 100%;
             height: 100%;
             display: flex;
-            padding: 20px;gap: 20px;
+            padding: 20px;
+            gap: 20px;
             /* Increased from 24px */
         }
 
@@ -532,7 +534,8 @@
             flex: 1;
             min-height: 0;
             overflow-y: auto;
-            padding: 32px 40px 64px;gap: 20px;
+            padding: 32px 40px 64px;
+            gap: 20px;
         }
 
         /* breathed spacing */
@@ -599,15 +602,17 @@
         }
 
         .form-input {
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--glass-border);
             padding: 12px 16px;
-            border-radius: 14px;
+            border-radius: 12px;
             color: #fff;
             font-size: 0.95rem;
+            font-weight: 500;
             font-family: 'Plus Jakarta Sans', sans-serif;
             transition: all 0.3s ease;
             width: 100%;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         .form-input:focus {
@@ -1066,8 +1071,8 @@
                             <div class="form-group">
                                 <label class="form-label">ID Slug (Environment Key)</label>
                                 <input type="text" id="client-id" class="form-input"
-                                    style="font-family: 'Plus Jakarta Sans', sans-serif;" placeholder="ej. porsche-latam"
-                                    required>
+                                    style="font-family: 'Plus Jakarta Sans', sans-serif;"
+                                    placeholder="ej. porsche-latam" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Nombre Comercial</label>
