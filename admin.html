@@ -461,35 +461,100 @@
             color: var(--l3);
         }
 
-        /* ===== CARD LABELS EDITOR ===== */
-        .card-labels-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        .card-label-group {
+        /* ===== CARD LABELS EDITOR (Visual Map) ===== */
+        .dash-map {
+            background: #0d0f14;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 14px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            padding: 10px 12px;
-            background: var(--sys-bg-1);
-            border-radius: var(--r-md);
-            border: 1px solid var(--sep);
+            gap: 10px;
         }
-        .card-label-number {
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--l3);
+        .dash-map-row {
+            display: grid;
+            gap: 8px;
+        }
+        .dash-map-row.top { grid-template-columns: repeat(4, 1fr); }
+        .dash-map-row.mid { grid-template-columns: 1fr 1fr; }
+        .dash-map-row.bot { grid-template-columns: repeat(3, 1fr); }
+
+        .dash-map-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 8px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+        }
+        .dash-map-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 12px; right: 12px;
+            height: 2px;
+            border-radius: 0 0 2px 2px;
+        }
+        .dash-map-card.c-orange::before { background: #F59E0B; }
+        .dash-map-card.c-purple::before { background: #7551FF; }
+        .dash-map-card.c-cyan::before { background: #01F1E3; }
+        .dash-map-card.c-pink::before { background: #FF00E5; }
+
+        .dash-map-card .map-icon {
+            font-size: 0.75rem;
+            opacity: 0.5;
             margin-bottom: 2px;
         }
-        .form-input-sm {
-            padding: 7px 10px;
-            font-size: 0.78rem;
+        .dash-map-card.c-orange .map-icon { color: #F59E0B; }
+        .dash-map-card.c-purple .map-icon { color: #7551FF; }
+        .dash-map-card.c-cyan .map-icon { color: #01F1E3; }
+        .dash-map-card.c-pink .map-icon { color: #FF00E5; }
+
+        .dash-map-card input {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 4px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            padding: 5px 7px;
+            font-size: 0.7rem;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .dash-map-card input:focus {
+            outline: none;
+            border-color: rgba(117, 81, 255, 0.5);
+        }
+        .dash-map-card input.map-title {
+            font-weight: 600;
+            font-size: 0.72rem;
+        }
+        .dash-map-card input.map-desc {
+            font-size: 0.62rem;
+            color: rgba(255,255,255,0.5);
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .dash-map-placeholder {
+            background: rgba(255,255,255,0.02);
+            border: 1px dashed rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 16px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.15);
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.3px;
         }
         @media (max-width: 600px) {
-            .card-labels-grid { grid-template-columns: 1fr; }
+            .dash-map-row.top { grid-template-columns: repeat(2, 1fr); }
+            .dash-map-row.mid { grid-template-columns: 1fr; }
+            .dash-map-row.bot { grid-template-columns: 1fr; }
         }
 
         /* ===== COLOR PICKERS ===== */
@@ -991,49 +1056,68 @@
                             </div>
                         </div>
 
-                        <!-- Etiquetas del Dashboard -->
+                        <!-- Etiquetas del Dashboard (Visual Map) -->
                         <div class="form-group full-width">
                             <div class="form-section-title">
-                                <ion-icon name="pricetags-outline"></ion-icon>
+                                <ion-icon name="grid-outline"></ion-icon>
                                 <span>Etiquetas del Dashboard</span>
                             </div>
                         </div>
                         <div class="form-group full-width">
-                            <div class="card-labels-grid">
-                                <div class="card-label-group">
-                                    <span class="card-label-number">Tarjeta 1</span>
-                                    <input type="text" id="card-1-title" class="form-input" placeholder="Oportunidades calificadas">
-                                    <input type="text" id="card-1-desc" class="form-input form-input-sm" placeholder="CALIDAD">
+                            <div class="dash-map">
+                                <!-- Row 1: 4 cards -->
+                                <div class="dash-map-row top">
+                                    <div class="dash-map-card c-orange">
+                                        <ion-icon name="ribbon" class="map-icon"></ion-icon>
+                                        <input type="text" id="card-1-desc" class="map-desc" placeholder="CALIDAD">
+                                        <input type="text" id="card-1-title" class="map-title" placeholder="Oportunidades calificadas">
+                                    </div>
+                                    <div class="dash-map-card c-purple">
+                                        <ion-icon name="swap-vertical" class="map-icon"></ion-icon>
+                                        <input type="text" id="card-2-desc" class="map-desc" placeholder="Oportunidades calificadas / Leads">
+                                        <input type="text" id="card-2-title" class="map-title" placeholder="Tasa de Conversión">
+                                    </div>
+                                    <div class="dash-map-card c-cyan">
+                                        <ion-icon name="cash" class="map-icon"></ion-icon>
+                                        <input type="text" id="card-3-desc" class="map-desc" placeholder="INGRESOS TOTALES">
+                                        <input type="text" id="card-3-title" class="map-title" placeholder="Ventas">
+                                    </div>
+                                    <div class="dash-map-card c-pink">
+                                        <ion-icon name="rocket" class="map-icon"></ion-icon>
+                                        <input type="text" id="card-4-desc" class="map-desc" placeholder="VENTAS / INVERSIÓN">
+                                        <input type="text" id="card-4-title" class="map-title" placeholder="ROI">
+                                    </div>
                                 </div>
-                                <div class="card-label-group">
-                                    <span class="card-label-number">Tarjeta 2</span>
-                                    <input type="text" id="card-2-title" class="form-input" placeholder="Tasa de Conversión">
-                                    <input type="text" id="card-2-desc" class="form-input form-input-sm" placeholder="Oportunidades calificadas / Leads">
+
+                                <!-- Row 2: Chart + Table (not editable, just reference) -->
+                                <div class="dash-map-row mid">
+                                    <div class="dash-map-placeholder">
+                                        <ion-icon name="analytics-outline" style="margin-right: 6px;"></ion-icon>
+                                        Gráfica de tendencia
+                                    </div>
+                                    <div class="dash-map-placeholder">
+                                        <ion-icon name="list-outline" style="margin-right: 6px;"></ion-icon>
+                                        Tabla de leads
+                                    </div>
                                 </div>
-                                <div class="card-label-group">
-                                    <span class="card-label-number">Tarjeta 3</span>
-                                    <input type="text" id="card-3-title" class="form-input" placeholder="Ventas">
-                                    <input type="text" id="card-3-desc" class="form-input form-input-sm" placeholder="INGRESOS TOTALES">
-                                </div>
-                                <div class="card-label-group">
-                                    <span class="card-label-number">Tarjeta 4</span>
-                                    <input type="text" id="card-4-title" class="form-input" placeholder="ROI">
-                                    <input type="text" id="card-4-desc" class="form-input form-input-sm" placeholder="VENTAS / INVERSIÓN">
-                                </div>
-                                <div class="card-label-group">
-                                    <span class="card-label-number">Tarjeta 5</span>
-                                    <input type="text" id="card-5-title" class="form-input" placeholder="Total de Registros">
-                                    <input type="text" id="card-5-desc" class="form-input form-input-sm" placeholder="Personas que mandaron mensaje">
-                                </div>
-                                <div class="card-label-group">
-                                    <span class="card-label-number">Tarjeta 6</span>
-                                    <input type="text" id="card-6-title" class="form-input" placeholder="Inversión">
-                                    <input type="text" id="card-6-desc" class="form-input form-input-sm" placeholder="Sin descripción">
-                                </div>
-                                <div class="card-label-group">
-                                    <span class="card-label-number">Tarjeta 7</span>
-                                    <input type="text" id="card-7-title" class="form-input" placeholder="Costo por oportunidad calificada">
-                                    <input type="text" id="card-7-desc" class="form-input form-input-sm" placeholder="Sin descripción">
+
+                                <!-- Row 3: 3 cards -->
+                                <div class="dash-map-row bot">
+                                    <div class="dash-map-card c-orange">
+                                        <ion-icon name="people" class="map-icon"></ion-icon>
+                                        <input type="text" id="card-5-desc" class="map-desc" placeholder="Personas que mandaron mensaje">
+                                        <input type="text" id="card-5-title" class="map-title" placeholder="Total de Registros">
+                                    </div>
+                                    <div class="dash-map-card c-pink">
+                                        <ion-icon name="wallet" class="map-icon"></ion-icon>
+                                        <input type="text" id="card-6-desc" class="map-desc" placeholder="Sin descripción">
+                                        <input type="text" id="card-6-title" class="map-title" placeholder="Inversión">
+                                    </div>
+                                    <div class="dash-map-card c-cyan">
+                                        <ion-icon name="pricetag" class="map-icon"></ion-icon>
+                                        <input type="text" id="card-7-desc" class="map-desc" placeholder="Sin descripción">
+                                        <input type="text" id="card-7-title" class="map-title" placeholder="Costo por oportunidad calificada">
+                                    </div>
                                 </div>
                             </div>
                         </div>
