@@ -16,7 +16,7 @@ const state = {
     },
     clientType: 'otro',
     activeTab: 'eventos',
-    chartMode: 'total',
+    chartMode: 'calificados',
     charts: {},
     filters: {
         start: null,
