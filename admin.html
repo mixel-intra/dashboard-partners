@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intra | Nexus Engine (Admin)</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
@@ -18,7 +18,7 @@
         ================================================ */
         :root {
             --bg-master: #020202;
-            --glass-base: rgba(12, 12, 14, 0.65);
+            --glass-base: rgba(12, 12, 14, 0.85);
             --glass-border: rgba(255, 255, 255, 0.06);
             --glass-bright: rgba(255, 255, 255, 0.1);
 
@@ -45,7 +45,7 @@
         body {
             background-color: var(--bg-master);
             color: var(--text-glow-main);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             height: 100vh;
             overflow: hidden;
             display: flex;
@@ -101,8 +101,8 @@
             top: 32px;
             right: 32px;
             background: var(--glass-base);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
             border-radius: 100px;
             display: flex;
@@ -161,8 +161,8 @@
             width: 380px;
             /* Increased width to breathe */
             background: linear-gradient(180deg, var(--glass-base), rgba(5, 5, 5, 0.8));
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
             border-radius: var(--nexus-radius);
             display: flex;
@@ -187,7 +187,7 @@
         }
 
         .sidebar-header p {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 0.7rem;
             color: var(--brand-cyan);
             text-transform: uppercase;
@@ -371,7 +371,7 @@
         }
 
         .client-meta {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 0.7rem;
             color: var(--text-neon);
             text-transform: uppercase;
@@ -393,8 +393,8 @@
             flex: 1;
             position: relative;
             background: var(--glass-base);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
             border-radius: var(--nexus-radius);
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -484,7 +484,7 @@
         }
 
         .url-preview-pill {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 0.85rem;
             color: var(--brand-cyan);
         }
@@ -570,7 +570,7 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 0.75rem;
             color: var(--brand-cyan);
             text-transform: uppercase;
@@ -611,7 +611,7 @@
             border-radius: 14px;
             color: #fff;
             font-size: 1.05rem;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             transition: all 0.3s ease;
             width: 100%;
         }
@@ -676,7 +676,7 @@
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid var(--glass-border);
             color: #fff;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 0.9rem;
             padding: 8px 16px;
             border-radius: 8px;
@@ -822,7 +822,7 @@
         .map-node input.map-desc {
             font-size: 0.7rem;
             color: var(--text-muted);
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             text-transform: uppercase;
         }
 
@@ -905,7 +905,7 @@
         }
 
         .role-badge {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 0.8rem;
             background: var(--brand-core);
             color: #fff;
@@ -941,7 +941,7 @@
             position: absolute;
             right: 48px;
             top: -14px;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 0.9rem;
             color: #01F1E3;
             background: rgba(1, 241, 227, 0.1);
@@ -1072,7 +1072,7 @@
                             <div class="form-group">
                                 <label class="form-label">ID Slug (Environment Key)</label>
                                 <input type="text" id="client-id" class="form-input"
-                                    style="font-family: 'JetBrains Mono', monospace;" placeholder="ej. porsche-latam"
+                                    style="font-family: 'Plus Jakarta Sans', sans-serif;" placeholder="ej. porsche-latam"
                                     required>
                             </div>
                             <div class="form-group">
@@ -1091,7 +1091,7 @@
                             <div class="form-group">
                                 <label class="form-label">Endpoint de Datos (n8n Webhook)</label>
                                 <input type="url" id="webhook-url" class="form-input" placeholder="https://..."
-                                    style="font-family: 'JetBrains Mono', monospace;" required>
+                                    style="font-family: 'Plus Jakarta Sans', sans-serif;" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Inversión Benchmark ($)</label>
@@ -1276,7 +1276,7 @@
                                 <label class="form-label">Clave de Encriptación</label>
                                 <div style="display: flex; gap: 16px;">
                                     <input type="text" id="user-password" class="form-input" placeholder="********"
-                                        style="font-family: 'JetBrains Mono', monospace;" required>
+                                        style="font-family: 'Plus Jakarta Sans', sans-serif;" required>
                                     <button type="button" onclick="generateUserPass()" class="btn btn-ghost"
                                         style="padding: 0 20px;" title="Auto-Generar">
                                         <ion-icon name="flash-outline" style="font-size:1.4rem;"></ion-icon>
