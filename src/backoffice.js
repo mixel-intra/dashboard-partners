@@ -16,9 +16,6 @@ const elements = {
     clientLogoInput: document.getElementById('client-logo-url'),
     clientLogoFile: document.getElementById('client-logo-file'),
     clientTypeInput: document.getElementById('client-type'),
-    clientUserInput: document.getElementById('client-user'),
-    clientPassInput: document.getElementById('client-pass'),
-    generatePassBtn: document.getElementById('generate-pass-btn'),
     saveStatus: document.getElementById('save-status'),
     previewLink: document.getElementById('preview-link'),
     deleteClientBtn: document.getElementById('delete-client-btn'),
@@ -33,8 +30,18 @@ const elements = {
 };
 
 // State
+const DEFAULT_CARD_LABELS = {
+    "1": { title: "Oportunidades calificadas", description: "CALIDAD" },
+    "2": { title: "Tasa de Conversión", description: "Oportunidades calificadas / Leads" },
+    "3": { title: "Ventas", description: "INGRESOS TOTALES" },
+    "4": { title: "ROI", description: "VENTAS / INVERSIÓN" },
+    "5": { title: "Total de Registros", description: "Personas que mandaron mensaje" },
+    "6": { title: "Inversión", description: "" },
+    "7": { title: "Costo por oportunidad calificada", description: "" }
+};
+
 let state = {
-    clients: [], // Array of client IDs (slugs)
+    clients: [],
     currentClientId: null
 };
 
@@ -61,7 +68,7 @@ async function init() {
 async function loadRegistry() {
     const { data, error } = await supabase
         .from('clients_config')
-        .select('id_slug, webhook_url');
+        .select('id_slug, webhook_url, client_type');
 
     if (error) {
         console.error('Error loading registry:', error);
@@ -98,17 +105,6 @@ async function uploadLogo(clientId, file) {
         .getPublicUrl(filePath);
 
     return publicUrl;
-}
-
-function generateSecurePassword() {
-    const prefix = 'Cef-';
-    const year = new Date().getFullYear();
-    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    let random = '';
-    for (let i = 0; i < 6; i++) {
-        random += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return `${prefix}${random}-${year}`;
 }
 
 function updateThemePreview() {
@@ -167,12 +163,18 @@ function renderClientList() {
         return;
     }
 
+    const typeLabels = { hotel: 'Hotel', inmobiliaria: 'Inmobiliaria', otro: 'Otro' };
+
     elements.clientsList.innerHTML = state.clients.map(client => {
         const isActive = state.currentClientId === client.id_slug;
+        const typeLabel = typeLabels[client.client_type] || 'Otro';
 
         return `
             <div class="client-item ${isActive ? 'active' : ''}" data-id="${client.id_slug}">
-                <span class="client-id-label">${client.id_slug}</span>
+                <div>
+                    <span class="client-id-label">${client.id_slug}</span>
+                    <span class="client-type-label">${typeLabel}</span>
+                </div>
                 <span class="client-meta">${client.webhook_url ? 'Configurado' : 'Pendiente'}</span>
             </div>
         `;
@@ -220,8 +222,6 @@ async function selectClient(clientId) {
     elements.salesInput.value = currentConfig.sales_goal || 0;
     elements.clientLogoInput.value = currentConfig.logo_url || '';
     elements.clientTypeInput.value = currentConfig.client_type || 'otro';
-    elements.clientUserInput.value = currentConfig.username || '';
-    elements.clientPassInput.value = currentConfig.password || '';
     elements.themePrimaryInput.value = currentConfig.theme_primary || '#7551FF';
     elements.themeSecondaryInput.value = currentConfig.theme_secondary || '#01F1E3';
 
@@ -230,6 +230,15 @@ async function selectClient(clientId) {
     elements.hexSecondary.value = elements.themeSecondaryInput.value;
     elements.swatchPrimary.style.background = elements.themePrimaryInput.value;
     elements.swatchSecondary.style.background = elements.themeSecondaryInput.value;
+
+    // Populate card labels
+    const cardLabels = currentConfig.card_labels || {};
+    for (let i = 1; i <= 7; i++) {
+        const titleInput = document.getElementById(`card-${i}-title`);
+        const descInput = document.getElementById(`card-${i}-desc`);
+        if (titleInput) titleInput.value = (cardLabels[i] && cardLabels[i].title) || '';
+        if (descInput) descInput.value = (cardLabels[i] && cardLabels[i].description) || '';
+    }
 
     updateThemePreview();
     updatePreviewLink(clientId);
@@ -289,13 +298,14 @@ function setupEventListeners() {
         elements.previewLink.style.visibility = 'hidden';
 
         elements.clientTypeInput.value = 'otro';
-        elements.clientUserInput.value = '';
-        elements.clientPassInput.value = '';
-    });
 
-    // Password generator
-    elements.generatePassBtn.addEventListener('click', () => {
-        elements.clientPassInput.value = generateSecurePassword();
+        // Clear card labels
+        for (let i = 1; i <= 7; i++) {
+            const titleInput = document.getElementById(`card-${i}-title`);
+            const descInput = document.getElementById(`card-${i}-desc`);
+            if (titleInput) titleInput.value = '';
+            if (descInput) descInput.value = '';
+        }
     });
 
     // Hue Slider Sync
@@ -357,6 +367,20 @@ function setupEventListeners() {
                 logoUrl = await uploadLogo(clientId, elements.clientLogoFile.files[0]);
             }
 
+            // Build card labels JSON
+            const cardLabels = {};
+            for (let i = 1; i <= 7; i++) {
+                const titleInput = document.getElementById(`card-${i}-title`);
+                const descInput = document.getElementById(`card-${i}-desc`);
+                const title = titleInput ? titleInput.value.trim() : '';
+                const desc = descInput ? descInput.value.trim() : '';
+                if (title || desc) {
+                    cardLabels[i] = {};
+                    if (title) cardLabels[i].title = title;
+                    if (desc) cardLabels[i].description = desc;
+                }
+            }
+
             const newConfig = {
                 id_slug: clientId,
                 name: elements.clientNameInput.value.trim(),
@@ -366,10 +390,9 @@ function setupEventListeners() {
                 investment_updated_at: new Date().toISOString().split('T')[0],
                 sales_goal: parseFloat(elements.salesInput.value) || 0,
                 logo_url: logoUrl,
-                username: elements.clientUserInput.value.trim(),
-                password: elements.clientPassInput.value.trim(),
                 theme_primary: elements.themePrimaryInput.value,
-                theme_secondary: elements.themeSecondaryInput.value
+                theme_secondary: elements.themeSecondaryInput.value,
+                card_labels: Object.keys(cardLabels).length > 0 ? cardLabels : {}
             };
 
             const { error } = await supabase

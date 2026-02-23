@@ -297,6 +297,15 @@
 
         .client-item.active .client-meta { color: rgba(10,132,255,0.6); }
 
+        .client-type-label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--l4);
+            font-weight: 400;
+            margin-top: 1px;
+        }
+        .client-item.active .client-type-label { color: rgba(10,132,255,0.45); }
+
         /* ===== SIDEBAR FOOTER ===== */
         .sidebar-footer {
             padding: 8px 12px 10px;
@@ -450,6 +459,37 @@
             text-transform: uppercase;
             letter-spacing: 0.6px;
             color: var(--l3);
+        }
+
+        /* ===== CARD LABELS EDITOR ===== */
+        .card-labels-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .card-label-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 10px 12px;
+            background: var(--sys-bg-1);
+            border-radius: var(--r-md);
+            border: 1px solid var(--sep);
+        }
+        .card-label-number {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--l3);
+            margin-bottom: 2px;
+        }
+        .form-input-sm {
+            padding: 7px 10px;
+            font-size: 0.78rem;
+        }
+        @media (max-width: 600px) {
+            .card-labels-grid { grid-template-columns: 1fr; }
         }
 
         /* ===== COLOR PICKERS ===== */
@@ -951,28 +991,53 @@
                             </div>
                         </div>
 
-                        <!-- Credenciales de Acceso -->
+                        <!-- Etiquetas del Dashboard -->
                         <div class="form-group full-width">
                             <div class="form-section-title">
-                                <ion-icon name="key-outline"></ion-icon>
-                                <span>Credenciales de Acceso</span>
+                                <ion-icon name="pricetags-outline"></ion-icon>
+                                <span>Etiquetas del Dashboard</span>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Usuario</label>
-                            <input type="text" id="client-user" class="form-input" placeholder="ej. porsche_user">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Contraseña</label>
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="client-pass" class="form-input"
-                                    placeholder="Generar contraseña...">
-                                <button type="button" id="generate-pass-btn" class="btn btn-primary"
-                                    style="padding: 0 15px; flex-shrink: 0;">
-                                    <ion-icon name="key-outline"></ion-icon> Generar
-                                </button>
+                        <div class="form-group full-width">
+                            <div class="card-labels-grid">
+                                <div class="card-label-group">
+                                    <span class="card-label-number">Tarjeta 1</span>
+                                    <input type="text" id="card-1-title" class="form-input" placeholder="Oportunidades calificadas">
+                                    <input type="text" id="card-1-desc" class="form-input form-input-sm" placeholder="CALIDAD">
+                                </div>
+                                <div class="card-label-group">
+                                    <span class="card-label-number">Tarjeta 2</span>
+                                    <input type="text" id="card-2-title" class="form-input" placeholder="Tasa de Conversión">
+                                    <input type="text" id="card-2-desc" class="form-input form-input-sm" placeholder="Oportunidades calificadas / Leads">
+                                </div>
+                                <div class="card-label-group">
+                                    <span class="card-label-number">Tarjeta 3</span>
+                                    <input type="text" id="card-3-title" class="form-input" placeholder="Ventas">
+                                    <input type="text" id="card-3-desc" class="form-input form-input-sm" placeholder="INGRESOS TOTALES">
+                                </div>
+                                <div class="card-label-group">
+                                    <span class="card-label-number">Tarjeta 4</span>
+                                    <input type="text" id="card-4-title" class="form-input" placeholder="ROI">
+                                    <input type="text" id="card-4-desc" class="form-input form-input-sm" placeholder="VENTAS / INVERSIÓN">
+                                </div>
+                                <div class="card-label-group">
+                                    <span class="card-label-number">Tarjeta 5</span>
+                                    <input type="text" id="card-5-title" class="form-input" placeholder="Total de Registros">
+                                    <input type="text" id="card-5-desc" class="form-input form-input-sm" placeholder="Personas que mandaron mensaje">
+                                </div>
+                                <div class="card-label-group">
+                                    <span class="card-label-number">Tarjeta 6</span>
+                                    <input type="text" id="card-6-title" class="form-input" placeholder="Inversión">
+                                    <input type="text" id="card-6-desc" class="form-input form-input-sm" placeholder="Sin descripción">
+                                </div>
+                                <div class="card-label-group">
+                                    <span class="card-label-number">Tarjeta 7</span>
+                                    <input type="text" id="card-7-title" class="form-input" placeholder="Costo por oportunidad calificada">
+                                    <input type="text" id="card-7-desc" class="form-input form-input-sm" placeholder="Sin descripción">
+                                </div>
                             </div>
                         </div>
+
                     </div>
 
                     <p id="save-status" class="success-msg"

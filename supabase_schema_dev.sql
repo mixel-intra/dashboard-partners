@@ -28,6 +28,8 @@ CREATE TABLE clients_config (
     password TEXT,
     theme_primary TEXT DEFAULT '#7551FF',
     theme_secondary TEXT DEFAULT '#01F1E3',
+    investment_updated_at DATE,
+    card_labels JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

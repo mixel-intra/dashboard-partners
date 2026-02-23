@@ -24,6 +24,16 @@ const state = {
     flatpickr: null
 };
 
+const DEFAULT_CARD_LABELS = {
+    "1": { title: "Oportunidades calificadas", description: "CALIDAD" },
+    "2": { title: "Tasa de Conversión", description: "Oportunidades calificadas / Leads" },
+    "3": { title: "Ventas", description: "INGRESOS TOTALES" },
+    "4": { title: "ROI", description: "VENTAS / INVERSIÓN" },
+    "5": { title: "Total de Registros", description: "Personas que mandaron mensaje" },
+    "6": { title: "Inversión", description: "" },
+    "7": { title: "Costo por oportunidad calificada", description: "" }
+};
+
 // --- Loading Screen ---
 function setLoaderProgress(pct) {
     const bar = document.getElementById('loader-bar');
@@ -122,7 +132,19 @@ async function loadConfig() {
         initHotelTabs();
 
         applyDynamicTheme(state.config.themePrimary, state.config.themeSecondary);
+        applyCardLabels(config.card_labels || {});
         setupEventListeners();
+    }
+}
+
+function applyCardLabels(customLabels) {
+    for (let i = 1; i <= 7; i++) {
+        const custom = customLabels[i] || customLabels[String(i)] || {};
+        const defaults = DEFAULT_CARD_LABELS[String(i)];
+        const titleEl = document.getElementById(`label-main-${i}`);
+        const descEl = document.getElementById(`label-sub-${i}`);
+        if (titleEl) titleEl.textContent = custom.title || defaults.title;
+        if (descEl) descEl.textContent = custom.description !== undefined ? custom.description : defaults.description;
     }
 }
 
