@@ -68,7 +68,7 @@ async function init() {
 async function loadRegistry() {
     const { data, error } = await supabase
         .from('clients_config')
-        .select('id_slug, webhook_url, client_type');
+        .select('id_slug, webhook_url, client_type, logo_url');
 
     if (error) {
         console.error('Error loading registry:', error);
@@ -174,10 +174,17 @@ function renderClientList() {
         const isActive = state.currentClientId === client.id_slug;
         const typeLabel = typeLabels[client.client_type] || 'Otro';
 
+        const logoHTML = client.logo_url
+            ? `<img src="${client.logo_url}" alt="logo" style="width: 100%; height: 100%; object-fit: contain; padding: 4px; border-radius: 12px;">`
+            : client.id_slug.charAt(0).toUpperCase();
+
+        // Remove background styling slightly when showing an actual image
+        const placeholderStyle = client.logo_url ? "background: transparent; box-shadow: none; border: 1px solid rgba(255,255,255,0.08);" : "";
+
         return `
             <div class="client-item ${isActive ? 'active' : ''}" data-id="${client.id_slug}">
-                <div class="client-icon-placeholder">
-                    ${client.id_slug.charAt(0).toUpperCase()}
+                <div class="client-icon-placeholder" style="${placeholderStyle}">
+                    ${logoHTML}
                 </div>
                 <div style="flex: 1;">
                     <span class="client-id-label">${client.id_slug}</span>
