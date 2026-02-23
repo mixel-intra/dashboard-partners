@@ -116,6 +116,7 @@ function updateThemePreview() {
     const previewPath = document.getElementById('preview-path');
     const previewArea = document.getElementById('preview-area');
     const previewMockup = document.querySelector('.preview-card-mockup');
+    const previewDot = document.getElementById('preview-dot');
 
     if (previewIcon) {
         previewIcon.style.color = primary;
@@ -128,6 +129,10 @@ function updateThemePreview() {
     if (previewPath) previewPath.setAttribute('stroke', primary);
     if (previewArea) previewArea.setAttribute('fill', `${primary}1a`); // 10% opacity hex
     if (previewMockup) previewMockup.style.borderLeftColor = primary;
+    if (previewDot) {
+        previewDot.style.background = primary;
+        previewDot.style.boxShadow = `0 0 15px ${primary}`;
+    }
 
     // Sync swatches and text inputs
     if (elements.hexPrimary) elements.hexPrimary.value = primary.toUpperCase();
@@ -171,11 +176,14 @@ function renderClientList() {
 
         return `
             <div class="client-item ${isActive ? 'active' : ''}" data-id="${client.id_slug}">
-                <div>
+                <div class="client-icon-placeholder">
+                    ${client.id_slug.charAt(0).toUpperCase()}
+                </div>
+                <div style="flex: 1;">
                     <span class="client-id-label">${client.id_slug}</span>
                     <span class="client-type-label">${typeLabel}</span>
                 </div>
-                <span class="client-meta">${client.webhook_url ? 'Configurado' : 'Pendiente'}</span>
+                <span class="client-meta" style="flex-shrink: 0;">${client.webhook_url ? 'Configurado' : 'Pendiente'}</span>
             </div>
         `;
     }).join('');
@@ -185,6 +193,15 @@ function renderClientList() {
         item.addEventListener('click', () => selectClient(item.dataset.id));
     });
 }
+
+window.filterClients = function () {
+    const term = document.getElementById('client-search').value.toLowerCase();
+    const items = document.querySelectorAll('.client-item');
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(term) ? 'flex' : 'none';
+    });
+};
 
 async function selectClient(clientId) {
     state.currentClientId = clientId;

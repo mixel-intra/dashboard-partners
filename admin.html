@@ -1,718 +1,409 @@
-<!-- VERSION: REDESIGN_V2_FINAL -->
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Back Office | Dashboard partners</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Intra | Nexus Engine (Admin)</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <link rel="stylesheet" href="./src/theme-intra.css">
-    <link rel="stylesheet" href="./src/style.css">
+
     <style>
         /* ================================================
-           ADMIN PANEL — INTELLIGENT MODULE
-           macOS Dark Design System
+           NEXUS ENGINE v3 - ULTRA PREMIUM REDESIGN
+           (Con extra respiros y ZERO morado, puro Blue/Cyan)
         ================================================ */
         :root {
-            /* Surfaces — macOS dark mode layered grays */
-            --sys-bg:        #000000;
-            --sys-bg-1:      #1C1C1E;   /* systemBackground */
-            --sys-bg-2:      #2C2C2E;   /* secondarySystemBackground */
-            --sys-bg-3:      #3A3A3C;   /* tertiarySystemBackground */
-            --sys-fill:      rgba(120,120,128,0.32);
+            --bg-master: #020202;
+            --glass-base: rgba(12, 12, 14, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.06);
+            --glass-bright: rgba(255, 255, 255, 0.1);
 
-            /* Separator */
-            --sep:           rgba(255,255,255,0.08);
+            --text-glow-main: #ffffff;
+            --text-muted: #6b6d7a;
+            --text-neon: #01F1E3;
+            /* Cyan instead of purple */
 
-            /* Accent — system blue */
-            --accent:        #0A84FF;
-            --accent-bg:     rgba(10,132,255,0.16);
+            --brand-core: #0A84FF;
+            /* System Blue instead of purple */
+            --brand-cyan: #01F1E3;
+            --brand-danger: #ea3943;
 
-            /* Labels — Apple semantic colors */
-            --l1:            #FFFFFF;
-            --l2:            rgba(235,235,245,0.60);
-            --l3:            rgba(235,235,245,0.30);
-            --l4:            rgba(235,235,245,0.16);
-
-            /* Radii */
-            --r-lg:          14px;
-            --r-md:          10px;
-            --r-sm:          7px;
+            /* Sizing */
+            --nexus-radius: 20px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            background: var(--sys-bg);
+            background-color: var(--bg-master);
+            color: var(--text-glow-main);
+            font-family: 'Inter', sans-serif;
             height: 100vh;
             overflow: hidden;
-            font-family: 'Inter', sans-serif;
-            color: var(--l1);
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* ===== WRAPPER ===== */
-        .admin-wrapper {
             display: flex;
-            flex-direction: column;
-            height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            background-image:
+                radial-gradient(circle at 50% 0%, rgba(10, 132, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 0% 100%, rgba(1, 241, 227, 0.05) 0%, transparent 40%);
         }
 
-        /* ===== TOP BAR — thin, minimal, toolbar-style ===== */
-        .admin-topbar {
-            height: 52px;
-            flex-shrink: 0;
+        /* ===== BACKGROUND MESH & FX ===== */
+        .ambient-mesh {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .admin-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            padding: 32px;
+            /* Increased from 24px */
+            gap: 32px;
+            /* Increased from 24px */
+        }
+
+        /* ===== TOP NAV (FLOATING) ===== */
+        .floating-nav {
+            position: absolute;
+            top: 32px;
+            right: 32px;
+            background: var(--glass-base);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 100px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            background: rgba(28,28,30,0.92);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-bottom: 1px solid var(--sep);
-            z-index: 10;
+            padding: 10px 20px;
+            gap: 20px;
+            /* Breathe */
+            z-index: 100;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
 
-        .topbar-brand {
+        .nav-chip {
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        /* Remove chip look — just icon + text inline */
-        .topbar-badge-wrap {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: none;
-            border: none;
-            padding: 0;
-        }
-
-        .topbar-badge-wrap ion-icon {
-            color: var(--accent);
-            font-size: 1rem;
-        }
-
-        .topbar-badge-wrap span {
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--l1);
-            letter-spacing: -0.1px;
-        }
-
-        .topbar-divider {
-            width: 1px;
-            height: 16px;
-            background: var(--sep);
-        }
-
-        .topbar-title {
-            font-size: 0.82rem;
-            font-weight: 400;
-            color: var(--l3);
-        }
-
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .topbar-hub-btn {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 6px 12px;
-            border-radius: var(--r-sm);
-            border: none;
-            background: var(--sys-fill);
-            color: var(--l2);
+            color: var(--text-glow-main);
             text-decoration: none;
-            font-size: 0.78rem;
-            font-weight: 500;
-            transition: background 0.12s ease, color 0.12s ease;
-        }
-
-        .topbar-hub-btn:hover {
-            background: rgba(255,255,255,0.12);
-            color: var(--l1);
-        }
-
-        .topbar-logout-btn {
-            width: 32px; height: 32px;
-            border-radius: var(--r-sm);
-            border: none;
-            background: var(--sys-fill);
-            color: var(--l3);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 16px;
+            border-radius: 100px;
+            transition: all 0.3s;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.95rem;
-            transition: background 0.12s ease, color 0.12s ease;
+            border: none;
+            background: transparent;
         }
 
-        .topbar-logout-btn:hover {
-            background: rgba(255,69,58,0.2);
-            color: #FF453A;
+        .nav-chip ion-icon {
+            font-size: 1.3rem;
+            color: var(--brand-core);
         }
 
-        /* ===== LAYOUT ===== */
-        .admin-layout {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
+        .nav-chip:hover {
+            background: rgba(255, 255, 255, 0.05);
         }
 
-        /* ===== SIDEBAR — macOS source list ===== */
+        .nav-chip.danger ion-icon {
+            color: var(--brand-danger);
+        }
+
+        .nav-chip.danger:hover {
+            background: rgba(234, 57, 67, 0.1);
+            color: var(--brand-danger);
+        }
+
+        .nav-separator {
+            width: 1px;
+            height: 20px;
+            background: var(--glass-border);
+        }
+
+        /* ===== SIDEBAR (COMMAND CENTER) ===== */
         .panel-sidebar {
-            width: 240px;
-            background: var(--sys-bg-1);
-            border-right: 1px solid var(--sep);
+            width: 380px;
+            /* Increased width to breathe */
+            background: linear-gradient(180deg, var(--glass-base), rgba(5, 5, 5, 0.8));
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--nexus-radius);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            flex-shrink: 0;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
         }
 
-        /* ===== SEGMENTED CONTROL — tabs ===== */
+        /* Header lateral */
+        .sidebar-header {
+            padding: 40px 32px 24px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(180deg, #fff 0%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-header p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--brand-cyan);
+            text-transform: uppercase;
+            margin-top: 6px;
+            letter-spacing: 2px;
+        }
+
+        /* TABS */
         .sidebar-tabs-bar {
-            padding: 10px 12px 8px;
-            border-bottom: 1px solid var(--sep);
-        }
-
-        /* Repurpose the flex container as a segmented pill */
-        .sidebar-tabs-bar {
-            display: block;
-        }
-
-        .sidebar-tabs-bar::after {
-            content: '';
-            display: block;
+            padding: 0 32px 20px;
         }
 
         .tabs-segment {
             display: flex;
-            background: var(--sys-bg-3);
-            border-radius: var(--r-md);
-            padding: 2px;
-            gap: 2px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            padding: 6px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--glass-border);
         }
 
         .sidebar-tab {
             flex: 1;
-            background: transparent;
+            padding: 12px;
             border: none;
-            color: var(--l2);
-            padding: 7px 10px;
-            font-size: 0.75rem;
-            font-weight: 500;
+            background: transparent;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
-            transition: all 0.12s ease;
-            font-family: 'Inter', sans-serif;
-            border-radius: 8px;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .sidebar-tab:hover { color: var(--l1); }
+        .sidebar-tab ion-icon {
+            font-size: 1.2rem;
+        }
+
+        .sidebar-tab:hover {
+            color: #fff;
+        }
 
         .sidebar-tab.active {
-            background: rgba(255,255,255,0.14);
-            color: var(--l1);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.1);
+            background: var(--brand-core);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
         }
 
-        /* ===== ADD BUTTON — text-style, like macOS toolbar "+" ===== */
+        /* Add Button */
         .btn-add {
-            margin: 10px 12px 6px;
-            padding: 8px 14px;
-            background: var(--accent-bg);
-            border: none;
-            border-radius: var(--r-md);
-            color: var(--accent);
-            font-weight: 500;
-            font-size: 0.82rem;
+            margin: 0 32px 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
-            transition: background 0.12s ease;
+            transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            font-family: 'Inter', sans-serif;
+            gap: 10px;
         }
 
-        .btn-add ion-icon { font-size: 1rem; }
+        .btn-add ion-icon {
+            font-size: 1.5rem;
+            color: var(--brand-cyan);
+        }
 
-        .btn-add:hover { background: rgba(10,132,255,0.26); }
+        .btn-add:hover {
+            background: rgba(1, 241, 227, 0.1);
+            border-color: var(--brand-cyan);
+            box-shadow: 0 0 20px rgba(1, 241, 227, 0.1);
+            transform: translateY(-2px);
+        }
 
-        /* ===== SOURCE LIST ===== */
+        /* List Items */
         .client-list {
             flex: 1;
             overflow-y: auto;
-            padding: 4px 0 4px;
-            scrollbar-width: none;
+            padding: 0 24px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-
-        .client-list::-webkit-scrollbar { display: none; }
 
         .client-item {
-            padding: 8px 16px;
+            padding: 16px 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
             cursor: pointer;
-            transition: background 0.1s ease;
+            transition: all 0.3s;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            min-height: 36px;
+            background: rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            gap: 16px;
+            flex-shrink: 0;
         }
 
-        .client-item:hover { background: rgba(255,255,255,0.05); }
+        .client-item .client-icon-placeholder {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--brand-cyan);
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
 
-        .client-item.active { background: var(--accent-bg); }
+        .client-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(6px);
+            border-color: var(--glass-border);
+        }
+
+        .client-item.active {
+            background: rgba(10, 132, 255, 0.1);
+            border-color: rgba(10, 132, 255, 0.3);
+            transform: translateX(10px);
+        }
+
+        .client-item.active .client-icon-placeholder {
+            background: var(--brand-core);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4);
+        }
+
+        .client-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--brand-core);
+            transform: scaleY(0);
+            transition: transform 0.3s;
+        }
+
+        .client-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(6px);
+            border-color: var(--glass-border);
+        }
+
+        .client-item.active {
+            background: rgba(10, 132, 255, 0.1);
+            border-color: rgba(10, 132, 255, 0.3);
+            transform: translateX(10px);
+        }
+
+        .client-item.active::before {
+            transform: scaleY(1);
+        }
 
         .client-id-label {
-            font-size: 0.875rem;
-            font-weight: 400;
-            color: var(--l2);
-        }
-
-        .client-item.active .client-id-label {
-            color: var(--accent);
-            font-weight: 500;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+            display: block;
         }
 
         .client-meta {
-            font-size: 0.68rem;
-            color: var(--l4);
-            font-weight: 400;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-neon);
+            text-transform: uppercase;
         }
-
-        .client-item.active .client-meta { color: rgba(10,132,255,0.6); }
 
         .client-type-label {
-            display: block;
-            font-size: 0.65rem;
-            color: var(--l4);
-            font-weight: 400;
-            margin-top: 1px;
-        }
-        .client-item.active .client-type-label { color: rgba(10,132,255,0.45); }
-
-        /* ===== SIDEBAR FOOTER ===== */
-        .sidebar-footer {
-            padding: 8px 12px 10px;
-            border-top: 1px solid var(--sep);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 8px;
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 8px;
+            border-radius: 4px;
         }
 
-        .sidebar-logout-btn {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--l3);
-            padding: 8px 12px;
-            border-radius: var(--r-sm);
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 400;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: background 0.12s ease, color 0.12s ease;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .sidebar-logout-btn:hover {
-            background: rgba(255,69,58,0.1);
-            color: #FF453A;
-        }
-
-        /* ===== MAIN PANEL ===== */
+        /* ===== MAIN WORKSPACE ===== */
         .panel-main {
             flex: 1;
-            background: var(--sys-bg);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* ===== EDITOR HEADER ===== */
-        .editor-header {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--sep);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            background: rgba(28,28,30,0.4);
-        }
-
-        .editor-header h2 {
-            font-size: 1rem;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-            color: var(--l1);
-        }
-
-        .dashboard-quick-access {
-            background: var(--sys-bg-2);
-            padding: 7px 12px;
-            border-radius: var(--r-md);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .url-preview-pill {
-            font-family: 'SF Mono', 'Courier New', monospace;
-            color: var(--l3);
-            font-size: 0.72rem;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* ===== FORM ===== */
-        .form-container {
-            padding: 20px 24px 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            overflow-y: auto;
-            flex: 1;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.08) transparent;
-        }
-
-        .form-container::-webkit-scrollbar { width: 3px; }
-        .form-container::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .full-width { grid-column: span 2; }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        /* Labels — regular case, NOT uppercase */
-        .form-label {
-            font-size: 0.8rem;
-            color: var(--l2);
-            font-weight: 400;
-        }
-
-        .form-input {
-            background: var(--sys-bg-2);
-            border: none;
-            outline: none;
-            padding: 10px 13px;
-            border-radius: var(--r-md);
-            color: var(--l1);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.875rem;
-            transition: background 0.12s ease;
-            box-shadow: inset 0 0 0 1px var(--sep);
-        }
-
-        .form-input::placeholder { color: var(--l4); }
-
-        .form-input:focus {
-            background: var(--sys-bg-3);
-            box-shadow: inset 0 0 0 1.5px var(--accent);
-        }
-
-        select.form-input option { background: #2C2C2E; }
-
-        /* ===== SECTION HEADERS — Apple grouped table style ===== */
-        .form-section-title {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding-top: 8px;
-            border-top: 1px solid var(--sep);
-        }
-
-        .form-section-title ion-icon { display: none; }
-
-        .form-section-title span {
-            font-size: 0.68rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--l3);
-        }
-
-        /* ===== CARD LABELS EDITOR (Visual Map) ===== */
-        .dash-map {
-            background: #0d0f14;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.06);
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .dash-map-row {
-            display: grid;
-            gap: 8px;
-        }
-        .dash-map-row.top { grid-template-columns: repeat(4, 1fr); }
-        .dash-map-row.mid { grid-template-columns: 1fr 1fr; }
-        .dash-map-row.bot { grid-template-columns: repeat(3, 1fr); }
-
-        .dash-map-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 8px;
-            padding: 8px 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
             position: relative;
-        }
-        .dash-map-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 12px; right: 12px;
-            height: 2px;
-            border-radius: 0 0 2px 2px;
-        }
-        .dash-map-card.c-orange::before { background: #F59E0B; }
-        .dash-map-card.c-purple::before { background: #7551FF; }
-        .dash-map-card.c-cyan::before { background: #01F1E3; }
-        .dash-map-card.c-pink::before { background: #FF00E5; }
-
-        .dash-map-card .map-icon {
-            font-size: 0.75rem;
-            opacity: 0.5;
-            margin-bottom: 2px;
-        }
-        .dash-map-card.c-orange .map-icon { color: #F59E0B; }
-        .dash-map-card.c-purple .map-icon { color: #7551FF; }
-        .dash-map-card.c-cyan .map-icon { color: #01F1E3; }
-        .dash-map-card.c-pink .map-icon { color: #FF00E5; }
-
-        .dash-map-card input {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 4px;
-            color: #fff;
-            font-family: 'Inter', sans-serif;
-            padding: 5px 7px;
-            font-size: 0.7rem;
-            width: 100%;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-        .dash-map-card input:focus {
-            outline: none;
-            border-color: rgba(117, 81, 255, 0.5);
-        }
-        .dash-map-card input.map-title {
-            font-weight: 600;
-            font-size: 0.72rem;
-        }
-        .dash-map-card input.map-desc {
-            font-size: 0.62rem;
-            color: rgba(255,255,255,0.5);
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        .dash-map-placeholder {
-            background: rgba(255,255,255,0.02);
-            border: 1px dashed rgba(255,255,255,0.06);
-            border-radius: 8px;
-            padding: 16px 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(255,255,255,0.15);
-            font-size: 0.68rem;
-            font-weight: 500;
-            letter-spacing: 0.3px;
-        }
-        @media (max-width: 600px) {
-            .dash-map-row.top { grid-template-columns: repeat(2, 1fr); }
-            .dash-map-row.mid { grid-template-columns: 1fr; }
-            .dash-map-row.bot { grid-template-columns: 1fr; }
-        }
-
-        /* ===== COLOR PICKERS ===== */
-        .color-picker-style {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            opacity: 0;
-            cursor: pointer;
-            z-index: 2;
-        }
-
-        .color-swatch-box {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: var(--sys-bg-2);
-            padding: 10px 12px;
-            border-radius: var(--r-md);
-        }
-
-        .color-swatch-preview {
-            width: 44px;
-            height: 44px;
-            border-radius: 8px;
-            border: none;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-            flex-shrink: 0;
-            position: relative;
-            transition: box-shadow 0.12s;
-            cursor: pointer;
-        }
-
-        .color-swatch-preview:hover {
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
-        }
-
-        .hue-slider-custom {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: linear-gradient(to right,#ff0000 0%,#ffff00 17%,#00ff00 33%,#00ffff 50%,#0000ff 67%,#ff00ff 83%,#ff0000 100%);
-            outline: none;
-            margin: 6px 0;
-            cursor: pointer;
-        }
-
-        .hue-slider-custom::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px; height: 14px;
-            border-radius: 50%;
-            background: white;
-            border: 1.5px solid rgba(0,0,0,0.25);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            cursor: pointer;
-        }
-
-        .hex-display {
-            background: var(--sys-bg-3);
-            border: none;
-            box-shadow: inset 0 0 0 1px var(--sep);
-            color: var(--l1);
-            font-family: 'SF Mono', 'Courier New', monospace;
-            font-size: 0.8rem;
-            padding: 4px 8px;
-            border-radius: var(--r-sm);
-            width: 90px;
-            text-align: center;
-            outline: none;
-            transition: box-shadow 0.12s;
-        }
-
-        .hex-display:focus { box-shadow: inset 0 0 0 1.5px var(--accent); }
-
-        .grid-presets {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 5px;
-            margin-top: 6px;
-        }
-
-        .preset-dot {
-            width: 100%;
-            aspect-ratio: 1;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
-            transition: transform 0.1s ease;
-        }
-
-        .preset-dot:hover { transform: scale(1.1); }
-
-        /* ===== THEME PREVIEW BOX ===== */
-        .theme-preview-box {
-            background: #0A0A0A !important;
-            border-radius: var(--r-md) !important;
-            border: none !important;
-            box-shadow: inset 0 0 0 1px var(--sep) !important;
-            padding: 14px !important;
-            position: relative;
+            background: var(--glass-base);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--nexus-radius);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             overflow: hidden;
-        }
-
-        /* ===== ACTIONS FOOTER ===== */
-        .actions-footer {
-            padding: 14px 24px;
-            background: rgba(28,28,30,0.6);
-            border-top: 1px solid var(--sep);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
+            flex-direction: column;
         }
 
-        /* ===== BUTTONS — Apple style hierarchy ===== */
-        .btn {
-            padding: 9px 18px;
-            border-radius: var(--r-md);
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.12s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.85rem;
-            font-family: 'Inter', sans-serif;
-            border: none;
-        }
-
-        /* Filled — primary action */
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover { background: #1A8FFF; }
-
-        /* Destructive — minimal */
-        .btn-danger {
-            background: transparent;
-            color: #FF453A;
-        }
-
-        .btn-danger:hover { background: rgba(255,69,58,0.1); }
-
-        /* Secondary — gray */
-        .btn-ghost {
-            background: var(--sys-fill);
-            color: var(--l2);
-        }
-
-        .btn-ghost:hover {
-            background: rgba(255,255,255,0.1);
-            color: var(--l1);
-        }
-
-        /* ===== EMPTY / PLACEHOLDER STATE ===== */
+        /* ----- PLACEHOLDER ----- */
         .placeholder-state {
             flex: 1;
             display: flex;
@@ -720,496 +411,914 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            gap: 10px;
         }
 
         .placeholder-icon {
-            width: 56px; height: 56px;
-            border-radius: 14px;
-            background: var(--sys-bg-2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            color: var(--l3);
-            margin-bottom: 4px;
+            font-size: 6rem;
+            color: rgba(255, 255, 255, 0.05);
+            margin-bottom: 32px;
+            filter: drop-shadow(0 0 40px rgba(10, 132, 255, 0.2));
+            animation: floatSlow 6s ease-in-out infinite;
+        }
+
+        @keyframes floatSlow {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
         }
 
         .placeholder-state h3 {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--l2);
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #fff, var(--text-neon));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
         }
 
         .placeholder-state p {
-            color: var(--l3);
-            font-size: 0.8rem;
-            max-width: 200px;
-            line-height: 1.5;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 450px;
+            line-height: 1.6;
         }
 
-        /* ===== CHECKBOX CARDS ===== */
-        .client-checkbox-card {
+        /* ----- EDITOR ----- */
+        .admin-layout {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .editor-header {
+            padding: 48px 48px 36px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+        }
+
+        .editor-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .dashboard-quick-access {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            padding: 10px 20px;
+            border-radius: 100px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .url-preview-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--brand-cyan);
+        }
+
+        .access-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            cursor: pointer;
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 12px;
-            background: var(--sys-bg-2);
-            border: none;
-            border-radius: var(--r-md);
-            cursor: pointer;
-            transition: background 0.12s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .client-checkbox-card:hover { background: var(--sys-bg-3); }
+        .btn-neon {
+            background: var(--brand-core);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4);
+        }
+
+        .btn-neon:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(10, 132, 255, 0.6);
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .form-container {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
+        /* breathed spacing */
+
+        /* Grid system for forms */
+        .form-section {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 40px;
+            /* breathed padding */
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .form-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--brand-core), transparent);
+            opacity: 0.5;
+        }
+
+        .section-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--brand-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 32px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: relative;
+        }
+
+        /* Breathe */
+        .form-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            padding: 16px 24px;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1.05rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .form-input:focus {
+            outline: none;
+            background: rgba(10, 132, 255, 0.05);
+            border-color: var(--brand-core);
+            box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.1), inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        select.form-input {
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 20px center;
+        }
+
+        /* Color Visualizer Extravaganza */
+        .color-engine {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .color-module {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+        }
+
+        .swatch-display {
+            width: 100%;
+            height: 75px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .color-picker-style {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .color-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .hex-display {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            width: 110px;
+            text-align: center;
+        }
+
+        .hex-display:focus {
+            border-color: var(--brand-core);
+            outline: none;
+        }
+
+        .hue-slider-custom {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+            outline: none;
+            margin-top: 8px;
+        }
+
+        .hue-slider-custom::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        /* Live Preview Widget */
+        .live-preview-box {
+            background: linear-gradient(135deg, rgba(20, 20, 20, 0.9), rgba(5, 5, 5, 0.9));
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .preview-widget {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 24px;
+            border-radius: 16px;
+            position: relative;
+        }
+
+        .preview-mock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #preview-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        #preview-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-top: 5px;
+        }
+
+        #preview-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 8px;
+            margin-top: 12px;
+            text-transform: uppercase;
+        }
+
+        /* DASHBOARD MAP (Data Mapping) */
+        .mapping-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .map-node {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .map-node:hover {
+            background: rgba(255, 255, 255, 0.02);
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .node-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .map-node input {
+            background: transparent;
+            border: none;
+            width: 100%;
+            color: #fff;
+            padding: 6px 0;
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .map-node input:focus {
+            outline: none;
+            border-bottom-color: var(--brand-core);
+        }
+
+        .map-node input.map-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .map-node input.map-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+        }
+
+        /* Node Colors without Purple */
+        .node-primary .node-icon-wrapper {
+            color: #0A84FF;
+            background: rgba(10, 132, 255, 0.1);
+        }
+
+        .node-secondary .node-icon-wrapper {
+            color: #01F1E3;
+            background: rgba(1, 241, 227, 0.1);
+        }
+
+        .node-tertiary .node-icon-wrapper {
+            color: #FF00E5;
+            background: rgba(255, 0, 229, 0.1);
+        }
+
+        .node-quaternary .node-icon-wrapper {
+            color: #F59E0B;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        /* Footer Actions */
+        .actions-footer {
+            padding: 32px 48px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-destructive {
+            background: transparent;
+            color: var(--brand-danger);
+            border: 1px solid rgba(234, 57, 67, 0.3);
+        }
+
+        .btn-destructive:hover {
+            background: rgba(234, 57, 67, 0.1);
+            border-color: var(--brand-danger);
+            transform: scale(1.05);
+        }
+
+        /* Checkboxes Users */
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .client-checkbox-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .client-checkbox-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
 
         .client-checkbox-card.checked {
-            background: var(--accent-bg);
+            background: rgba(10, 132, 255, 0.1);
+            border-color: var(--brand-core);
         }
 
-        .client-checkbox-card input[type='checkbox'] {
-            width: 16px; height: 16px;
-            accent-color: var(--accent);
+        .client-checkbox-card input {
+            width: 22px;
+            height: 22px;
+            accent-color: var(--brand-core);
             cursor: pointer;
         }
 
-        /* ===== ROLE BADGE ===== */
         .role-badge {
-            font-size: 0.7rem;
-            padding: 3px 10px;
-            border-radius: 20px;
-            background: var(--sys-bg-3);
-            color: var(--l3);
-            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            background: var(--brand-core);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 100px;
+            text-transform: uppercase;
         }
 
-        /* ===== UTILITIES ===== */
-        .hidden { display: none !important; }
-
-        @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to   { opacity: 1; transform: translateY(0); }
+        /* Transitions */
+        .hidden {
+            display: none !important;
         }
 
-        .animate-fade { animation: fadeSlideIn 0.22s ease forwards; }
+        .animate-fade {
+            animation: hologramIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes hologramIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.98) translateY(10px);
+                filter: blur(10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        .success-msg {
+            position: absolute;
+            right: 48px;
+            top: -14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #01F1E3;
+            background: rgba(1, 241, 227, 0.1);
+            padding: 8px 20px;
+            border-radius: 100px;
+            border: 1px solid rgba(1, 241, 227, 0.3);
+            animation: slideDown 0.3s forwards;
+            display: none;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
 <body>
-<div class="admin-wrapper">
+    <div class="ambient-mesh"></div>
 
-    <!-- ===== TOP BAR ===== -->
-    <header class="admin-topbar">
-        <div class="topbar-brand">
-            <div class="topbar-badge-wrap">
-                <ion-icon name="shield-checkmark-outline"></ion-icon>
-                <span>Back Office</span>
+    <!-- Floating Global Actions -->
+    <div class="floating-nav">
+        <a href="hub.html" class="nav-chip">
+            <ion-icon name="apps-outline"></ion-icon> Hub
+        </a>
+        <div class="nav-separator"></div>
+        <button onclick="logout()" class="nav-chip danger" title="Cerrar sesión">
+            <ion-icon name="power-outline"></ion-icon> Salir
+        </button>
+    </div>
+
+    <div class="admin-wrapper">
+
+        <!-- ===== SIDEBAR (COMMAND CENTER) ===== -->
+        <aside class="panel-sidebar">
+            <div class="sidebar-header">
+                <h1>NEXUS</h1>
+                <p>Data Model Configuration API</p>
             </div>
-            <div class="topbar-divider"></div>
-            <span class="topbar-title">Panel de Administración</span>
-        </div>
-        <div class="topbar-actions">
-            <a href="hub.html" class="topbar-hub-btn">
-                <ion-icon name="grid-outline"></ion-icon>
-                <span>Hub</span>
-            </a>
-            <button onclick="logout()" class="topbar-logout-btn" title="Cerrar sesión">
-                <ion-icon name="log-out-outline"></ion-icon>
-            </button>
-        </div>
-    </header>
 
-    <div class="admin-layout">
-        <!-- Sidebar -->
-        <div class="panel-sidebar">
-            <!-- Segmented Control -->
             <div class="sidebar-tabs-bar">
                 <div class="tabs-segment">
                     <button id="tab-clients" class="sidebar-tab active" onclick="switchTab('clients')">
-                        <ion-icon name="business-outline"></ion-icon> Clientes
+                        <ion-icon name="server-outline"></ion-icon> Entornos
                     </button>
                     <button id="tab-users" class="sidebar-tab" onclick="switchTab('users')">
-                        <ion-icon name="people-outline"></ion-icon> Usuarios
+                        <ion-icon name="people-outline"></ion-icon> Accesos
                     </button>
                 </div>
             </div>
 
-            <!-- Clientes Panel -->
-            <div id="sidebar-clients-panel">
+            <!-- Panel Clientes -->
+            <div id="sidebar-clients-panel" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
                 <button id="add-client-btn" class="btn-add">
-                    <ion-icon name="add-circle-outline"></ion-icon>
-                    Nuevo Cliente
+                    <ion-icon name="add-circle"></ion-icon> Nueva Instancia
                 </button>
+                <div style="padding: 0 32px 16px;">
+                    <div
+                        style="position: relative; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 12px; display: flex; align-items: center; padding: 10px 16px;">
+                        <ion-icon name="search-outline" style="color: var(--text-muted); font-size: 1.2rem;"></ion-icon>
+                        <input type="text" id="client-search" placeholder="Buscar instancia..."
+                            style="background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-left: 10px; font-size: 0.85rem;"
+                            onkeyup="if(window.filterClients) window.filterClients()">
+                    </div>
+                </div>
                 <div id="clients-list" class="client-list">
                     <!-- JS Generated -->
                 </div>
             </div>
 
-            <!-- Usuarios Panel -->
-            <div id="sidebar-users-panel" class="hidden">
+            <!-- Panel Usuarios -->
+            <div id="sidebar-users-panel" class="hidden"
+                style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
                 <button id="add-user-btn" class="btn-add" onclick="showNewUserForm()">
-                    <ion-icon name="person-add-outline"></ion-icon>
-                    Nuevo Usuario
+                    <ion-icon name="person-add"></ion-icon> Registrar Llave
                 </button>
                 <div id="users-list" class="client-list">
                     <!-- JS Generated -->
                 </div>
             </div>
+        </aside>
 
-            <!-- Logout al fondo del sidebar -->
-            <div class="sidebar-footer" style="margin-top: auto;">
-                <button onclick="logout()" class="sidebar-logout-btn">
-                    <ion-icon name="log-out-outline"></ion-icon>
-                    Cerrar Sesión
-                </button>
-            </div>
-        </div>
-
-        <!-- Main Workspace -->
-        <div class="panel-main">
+        <!-- ===== MAIN WORKSPACE ===== -->
+        <main class="panel-main">
             <!-- Empty State -->
             <div id="editor-placeholder" class="placeholder-state">
                 <div class="placeholder-icon">
-                    <ion-icon name="layers-outline"></ion-icon>
+                    <ion-icon name="planet-outline"></ion-icon>
                 </div>
-                <h3>Gestión de Clientes</h3>
-                <p>Selecciona o crea un cliente para configurar su acceso y métricas.</p>
+                <h3>Esperando conexión de módulo</h3>
+                <p>Selecciona una instancia a la izquierda para cargar los parámetros del modelo de datos.</p>
             </div>
 
-            <!-- Client Editor -->
+            <!-- ===== CLIENT EDITOR ===== -->
             <div id="client-editor" class="hidden animate-fade"
                 style="height: 100%; display: flex; flex-direction: column;">
-                <div class="editor-header">
-                    <h2 id="editor-title">Editar Cliente</h2>
+                <header class="editor-header">
+                    <div>
+                        <div class="section-tag" style="margin-bottom: 12px;"><ion-icon
+                                name="radio-button-on"></ion-icon> Instancia Activa</div>
+                        <h2 id="editor-title">Configuración Global</h2>
+                    </div>
                     <div class="dashboard-quick-access">
-                        <code class="url-preview-pill" id="dashboard-url-text">index.html?client=...</code>
-                        <div style="display: flex; gap: 6px;">
-                            <button id="copy-link-btn" class="btn btn-ghost"
-                                style="padding: 6px 10px; font-size: 0.75rem;">
-                                <ion-icon name="copy-outline"></ion-icon>
-                            </button>
-                            <a href="#" id="preview-link" target="_blank" class="btn btn-primary"
-                                style="padding: 6px 12px; font-size: 0.75rem;">
-                                <ion-icon name="open-outline"></ion-icon> IR
-                            </a>
+                        <code class="url-preview-pill" id="dashboard-url-text">*.intra.ai/...</code>
+                        <div class="access-actions">
+                            <button id="copy-link-btn" class="btn btn-ghost" style="padding: 8px;"><ion-icon
+                                    name="copy-outline"></ion-icon></button>
+                            <a href="#" id="preview-link" target="_blank" class="btn btn-neon"
+                                style="padding: 8px 16px;">Lanzar <ion-icon name="rocket-outline"></ion-icon></a>
                         </div>
                     </div>
-                </div>
+                </header>
 
                 <form id="admin-form" class="form-container">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">ID del Cliente (Slug)</label>
-                            <input type="text" id="client-id" class="form-input" placeholder="ej. porsche-test"
-                                required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Nombre Comercial</label>
-                            <input type="text" id="client-display-name" class="form-input"
-                                placeholder="ej. Porsche Premium" required>
-                        </div>
-                        <div class="form-group full-width">
-                            <label class="form-label">Tipo de Cliente</label>
-                            <select id="client-type" class="form-input">
-                                <option value="otro">Otro</option>
-                                <option value="hotel">Hotel</option>
-                                <option value="inmobiliaria">Inmobiliaria</option>
-                            </select>
-                        </div>
-                        <div class="form-group full-width">
-                            <label class="form-label">Webhook URL (Datos n8n)</label>
-                            <input type="url" id="webhook-url" class="form-input" placeholder="https://..." required>
-                        </div>
-                        <div class="form-group full-width">
-                            <label class="form-label">Logo del Cliente (Subir archivo)</label>
-                            <input type="file" id="client-logo-file" class="form-input" accept="image/*">
-                            <input type="hidden" id="client-logo-url">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Inversión Mensual ($)</label>
-                            <input type="number" id="investment" class="form-input" placeholder="0">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Ventas Objetivo ($)</label>
-                            <input type="number" id="sales" class="form-input" placeholder="0">
-                        </div>
+                    <p id="save-status" class="success-msg">MÓDULO SINCRONIZADO</p>
 
-                        <!-- Colores del Tema con Previsualizador -->
-                        <div class="form-group full-width">
-                            <div class="form-section-title">
-                                <ion-icon name="color-palette-outline"></ion-icon>
-                                <span>Personalización Visual</span>
+                    <!-- Core Config -->
+                    <section class="form-section">
+                        <div class="section-tag"><ion-icon name="build-outline"></ion-icon> Parámetros Nucleares</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">ID Slug (Environment Key)</label>
+                                <input type="text" id="client-id" class="form-input"
+                                    style="font-family: 'JetBrains Mono', monospace;" placeholder="ej. porsche-latam"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nombre Comercial</label>
+                                <input type="text" id="client-display-name" class="form-input"
+                                    placeholder="Nombre visible" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sector Lógico</label>
+                                <select id="client-type" class="form-input">
+                                    <option value="otro">Genérico</option>
+                                    <option value="hotel">Hospitalidad</option>
+                                    <option value="inmobiliaria">Real Estate</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Endpoint de Datos (n8n Webhook)</label>
+                                <input type="url" id="webhook-url" class="form-input" placeholder="https://..."
+                                    style="font-family: 'JetBrains Mono', monospace;" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Inversión Benchmark ($)</label>
+                                <input type="number" id="investment" class="form-input" placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Target de Ingresos ($)</label>
+                                <input type="number" id="sales" class="form-input" placeholder="0">
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Logo / Identidad Vectorial</label>
+                                <input type="file" id="client-logo-file" class="form-input" accept="image/*">
+                                <input type="hidden" id="client-logo-url">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Theming Engine -->
+                    <section class="form-section">
+                        <div class="section-tag"><ion-icon name="color-filter-outline"></ion-icon> Motor Visual</div>
+                        <div class="color-engine">
+                            <!-- Controles -->
+                            <div style="display: flex; flex-direction: column; gap: 24px;">
+                                <div class="color-module">
+                                    <label class="form-label" style="display:block; margin-bottom: 16px;">Color Primario
+                                        (Intensidad Radial)</label>
+                                    <div class="swatch-display" id="swatch-primary" style="background:#0A84FF;">
+                                        <input type="color" id="theme-primary" class="color-picker-style"
+                                            value="#0A84FF">
+                                    </div>
+                                    <div class="color-meta">
+                                        <span class="form-label" style="font-size: 0.7rem;">HEXADECIMAL</span>
+                                        <input type="text" id="hex-primary" class="hex-display" value="#0A84FF">
+                                    </div>
+                                    <input type="range" id="hue-primary" class="hue-slider-custom" min="0" max="360"
+                                        value="211">
+                                </div>
+                                <div class="color-module">
+                                    <label class="form-label" style="display:block; margin-bottom: 16px;">Color
+                                        Secundario (Acentos de éxito)</label>
+                                    <div class="swatch-display" id="swatch-secondary" style="background:#30D158;">
+                                        <input type="color" id="theme-secondary" class="color-picker-style"
+                                            value="#30D158">
+                                    </div>
+                                    <div class="color-meta">
+                                        <span class="form-label" style="font-size: 0.7rem;">HEXADECIMAL</span>
+                                        <input type="text" id="hex-secondary" class="hex-display" value="#30D158">
+                                    </div>
+                                    <input type="range" id="hue-secondary" class="hue-slider-custom" min="0" max="360"
+                                        value="140">
+                                </div>
                             </div>
 
-                            <div class="theme-selection-container"
-                                style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px; margin-top: 15px;">
-                                <!-- Inputs y Presets -->
-                                <div class="color-controls" style="display: flex; flex-direction: column; gap: 15px;">
-                                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                                        <!-- Primary Picker Control -->
-                                        <div class="color-swatch-box">
-                                            <div class="color-swatch-preview" id="swatch-primary"
-                                                style="background: #0A84FF;">
-                                                <!-- Native picker is still here for advanced users but hidden visually -->
-                                                <input type="color" id="theme-primary" class="color-picker-style"
-                                                    value="#0A84FF">
-                                            </div>
-                                            <div style="flex: 1;">
-                                                <div
-                                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                                    <span class="form-label" style="font-size: 0.6rem;">COLOR
-                                                        PRIMARIO</span>
-                                                    <input type="text" id="hex-primary" class="hex-display"
-                                                        value="#0A84FF">
-                                                </div>
-                                                <input type="range" id="hue-primary" class="hue-slider-custom" min="0"
-                                                    max="360" value="211">
-                                            </div>
-                                        </div>
+                            <!-- Preview Box -->
+                            <div class="live-preview-box">
+                                <div class="section-tag" style="position:absolute; top: 32px; left: 32px;">Render en
+                                    Tiempo Real</div>
 
-                                        <!-- Secondary Picker Control -->
-                                        <div class="color-swatch-box">
-                                            <div class="color-swatch-preview" id="swatch-secondary"
-                                                style="background: #30D158;">
-                                                <input type="color" id="theme-secondary" class="color-picker-style"
-                                                    value="#30D158">
-                                            </div>
-                                            <div style="flex: 1;">
-                                                <div
-                                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                                    <span class="form-label" style="font-size: 0.6rem;">COLOR
-                                                        SECUNDARIO</span>
-                                                    <input type="text" id="hex-secondary" class="hex-display"
-                                                        value="#30D158">
-                                                </div>
-                                                <input type="range" id="hue-secondary" class="hue-slider-custom" min="0"
-                                                    max="360" value="140">
-                                            </div>
+                                <div class="preview-widget preview-card-mockup" id="theme-preview"
+                                    style="border-left: 6px solid #0A84FF; margin-top: 40px;">
+                                    <div class="preview-mock-header">
+                                        <div id="preview-icon"
+                                            style="background: rgba(10,132,255,0.15); color: #0A84FF;">
+                                            <ion-icon name="stats-chart"></ion-icon>
                                         </div>
-
-                                        <!-- Instant Presets Grid -->
-                                        <div style="margin-top: 5px;">
-                                            <span class="form-label" style="font-size: 0.6rem;">PALETAS
-                                                RECOMENDADAS</span>
-                                            <div class="grid-presets">
-                                                <div class="preset-dot" data-p="#0A84FF" data-s="#30D158"
-                                                    style="background: #0A84FF;"></div>
-                                                <div class="preset-dot" data-p="#00C74C" data-s="#FFFFFF"
-                                                    style="background: #00C74C;"></div>
-                                                <div class="preset-dot" data-p="#FF4444" data-s="#FFD700"
-                                                    style="background: #FF4444;"></div>
-                                                <div class="preset-dot" data-p="#3A86FF" data-s="#8338EC"
-                                                    style="background: #3A86FF;"></div>
-                                                <div class="preset-dot" data-p="#FF00E5" data-s="#3A86FF"
-                                                    style="background: #FF00E5;"></div>
-                                                <div class="preset-dot" data-p="#FFFFFF" data-s="#000000"
-                                                    style="background: #888;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Live Preview Card -->
-                                <div class="theme-preview-box" id="theme-preview"
-                                    style="background: #0A0A0A; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 15px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-                                    <div class="preview-card-mockup"
-                                        style="border-left: 3px solid #0A84FF; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 0 8px 8px 0;">
-                                        <div
-                                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                            <div style="display: flex; gap: 6px;">
-                                                <div id="preview-icon"
-                                                    style="width: 20px; height: 20px; border-radius: 4px; background: rgba(10, 132, 255, 0.15); color: #0A84FF; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;">
-                                                    <ion-icon name="stats-chart"></ion-icon>
-                                                </div>
-                                                <div
-                                                    style="width: 40px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 7px;">
-                                                </div>
-                                            </div>
-                                            <div
-                                                style="width: 15px; height: 15px; border-radius: 50%; background: rgba(255,255,255,0.05);">
-                                            </div>
-                                        </div>
-                                        <div id="preview-value"
-                                            style="font-size: 1.2rem; font-weight: 700; color: white; margin-bottom: 5px;">
-                                            $14,250</div>
-                                        <div id="preview-badge"
-                                            style="display: inline-block; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: rgba(48, 209, 88, 0.12); color: #30D158; font-weight: 700;">
-                                            +12.5% High Quality
-                                        </div>
-
-                                        <!-- Mini Chart Visualizer -->
-                                        <div style="margin-top: 12px; height: 30px; position: relative;">
-                                            <svg width="100%" height="100%" viewBox="0 0 100 30"
-                                                preserveAspectRatio="none">
-                                                <path id="preview-path" d="M0 25 Q 25 5, 50 15 T 100 0" fill="none"
-                                                    stroke="#0A84FF" stroke-width="2" />
-                                                <path id="preview-area"
-                                                    d="M0 25 Q 25 5, 50 15 T 100 0 L 100 30 L 0 30 Z"
-                                                    fill="rgba(10, 132, 255, 0.08)" />
-                                            </svg>
+                                        <div id="preview-dot"
+                                            style="width: 12px; height: 12px; border-radius: 50%; background: #0A84FF; box-shadow: 0 0 15px #0A84FF;">
                                         </div>
                                     </div>
                                     <div
-                                        style="position: absolute; bottom: 8px; right: 12px; font-size: 0.55rem; color: rgba(255,255,255,0.2); font-weight: 700; letter-spacing: 1px;">
-                                        THEME PREVIEW</div>
-                                </div>
-                            </div>
-                        </div>
+                                        style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">
+                                        Métrica Principal</div>
+                                    <div id="preview-value" style="color:#fff;">$124k</div>
+                                    <div id="preview-badge" style="background: rgba(48,209,88,0.15); color: #30D158;">
+                                        +24% Rendimiento</div>
 
-                        <!-- Etiquetas del Dashboard (Visual Map) -->
-                        <div class="form-group full-width">
-                            <div class="form-section-title">
-                                <ion-icon name="grid-outline"></ion-icon>
-                                <span>Etiquetas del Dashboard</span>
-                            </div>
-                        </div>
-                        <div class="form-group full-width">
-                            <div class="dash-map">
-                                <!-- Row 1: 4 cards -->
-                                <div class="dash-map-row top">
-                                    <div class="dash-map-card c-orange">
-                                        <ion-icon name="ribbon" class="map-icon"></ion-icon>
-                                        <input type="text" id="card-1-desc" class="map-desc" placeholder="CALIDAD">
-                                        <input type="text" id="card-1-title" class="map-title" placeholder="Oportunidades calificadas">
-                                    </div>
-                                    <div class="dash-map-card c-purple">
-                                        <ion-icon name="swap-vertical" class="map-icon"></ion-icon>
-                                        <input type="text" id="card-2-desc" class="map-desc" placeholder="Oportunidades calificadas / Leads">
-                                        <input type="text" id="card-2-title" class="map-title" placeholder="Tasa de Conversión">
-                                    </div>
-                                    <div class="dash-map-card c-cyan">
-                                        <ion-icon name="cash" class="map-icon"></ion-icon>
-                                        <input type="text" id="card-3-desc" class="map-desc" placeholder="INGRESOS TOTALES">
-                                        <input type="text" id="card-3-title" class="map-title" placeholder="Ventas">
-                                    </div>
-                                    <div class="dash-map-card c-pink">
-                                        <ion-icon name="rocket" class="map-icon"></ion-icon>
-                                        <input type="text" id="card-4-desc" class="map-desc" placeholder="VENTAS / INVERSIÓN">
-                                        <input type="text" id="card-4-title" class="map-title" placeholder="ROI">
-                                    </div>
-                                </div>
-
-                                <!-- Row 2: Chart + Table (not editable, just reference) -->
-                                <div class="dash-map-row mid">
-                                    <div class="dash-map-placeholder">
-                                        <ion-icon name="analytics-outline" style="margin-right: 6px;"></ion-icon>
-                                        Gráfica de tendencia
-                                    </div>
-                                    <div class="dash-map-placeholder">
-                                        <ion-icon name="list-outline" style="margin-right: 6px;"></ion-icon>
-                                        Tabla de leads
-                                    </div>
-                                </div>
-
-                                <!-- Row 3: 3 cards -->
-                                <div class="dash-map-row bot">
-                                    <div class="dash-map-card c-orange">
-                                        <ion-icon name="people" class="map-icon"></ion-icon>
-                                        <input type="text" id="card-5-desc" class="map-desc" placeholder="Personas que mandaron mensaje">
-                                        <input type="text" id="card-5-title" class="map-title" placeholder="Total de Registros">
-                                    </div>
-                                    <div class="dash-map-card c-pink">
-                                        <ion-icon name="wallet" class="map-icon"></ion-icon>
-                                        <input type="text" id="card-6-desc" class="map-desc" placeholder="Sin descripción">
-                                        <input type="text" id="card-6-title" class="map-title" placeholder="Inversión">
-                                    </div>
-                                    <div class="dash-map-card c-cyan">
-                                        <ion-icon name="pricetag" class="map-icon"></ion-icon>
-                                        <input type="text" id="card-7-desc" class="map-desc" placeholder="Sin descripción">
-                                        <input type="text" id="card-7-title" class="map-title" placeholder="Costo por oportunidad calificada">
+                                    <div style="height: 50px; margin-top: 24px;">
+                                        <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none">
+                                            <path id="preview-path" d="M0 25 Q 25 5, 50 15 T 100 0" fill="none"
+                                                stroke="#0A84FF" stroke-width="2" />
+                                            <path id="preview-area" d="M0 25 Q 25 5, 50 15 T 100 0 L 100 30 L 0 30 Z"
+                                                fill="rgba(10, 132, 255, 0.1)" />
+                                        </svg>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </section>
 
-                    </div>
-
-                    <p id="save-status" class="success-msg"
-                        style="margin: 0; text-align: right; display: none; color: #10B981;">✅ Cambios guardados</p>
+                    <!-- Dashboard Mapping Engine -->
+                    <section class="form-section">
+                        <div class="section-tag"><ion-icon name="hardware-chip-outline"></ion-icon> Nodos de Mapeo de
+                            Variables</div>
+                        <div class="mapping-grid">
+                            <!-- Nodos -->
+                            <div class="map-node node-primary">
+                                <div class="node-icon-wrapper"><ion-icon name="pulse-outline"></ion-icon></div>
+                                <input type="text" id="card-1-title" class="map-title" placeholder="Título Principal">
+                                <input type="text" id="card-1-desc" class="map-desc"
+                                    placeholder="VARIABLE / DESCRIPCIÓN">
+                            </div>
+                            <div class="map-node node-secondary">
+                                <div class="node-icon-wrapper"><ion-icon name="swap-vertical"></ion-icon></div>
+                                <input type="text" id="card-2-title" class="map-title" placeholder="Título Principal">
+                                <input type="text" id="card-2-desc" class="map-desc"
+                                    placeholder="VARIABLE / DESCRIPCIÓN">
+                            </div>
+                            <div class="map-node node-tertiary">
+                                <div class="node-icon-wrapper"><ion-icon name="pie-chart-outline"></ion-icon></div>
+                                <input type="text" id="card-3-title" class="map-title" placeholder="Título Principal">
+                                <input type="text" id="card-3-desc" class="map-desc"
+                                    placeholder="VARIABLE / DESCRIPCIÓN">
+                            </div>
+                            <div class="map-node node-quaternary">
+                                <div class="node-icon-wrapper"><ion-icon name="rocket-outline"></ion-icon></div>
+                                <input type="text" id="card-4-title" class="map-title" placeholder="Título Principal">
+                                <input type="text" id="card-4-desc" class="map-desc"
+                                    placeholder="VARIABLE / DESCRIPCIÓN">
+                            </div>
+                            <div class="map-node node-quaternary">
+                                <div class="node-icon-wrapper"><ion-icon name="people-outline"></ion-icon></div>
+                                <input type="text" id="card-5-title" class="map-title" placeholder="Título Principal">
+                                <input type="text" id="card-5-desc" class="map-desc"
+                                    placeholder="VARIABLE / DESCRIPCIÓN">
+                            </div>
+                            <div class="map-node node-primary">
+                                <div class="node-icon-wrapper"><ion-icon name="wallet-outline"></ion-icon></div>
+                                <input type="text" id="card-6-title" class="map-title" placeholder="Título">
+                                <input type="text" id="card-6-desc" class="map-desc" placeholder="(Opcional)">
+                            </div>
+                            <div class="map-node node-secondary">
+                                <div class="node-icon-wrapper"><ion-icon name="pricetag-outline"></ion-icon></div>
+                                <input type="text" id="card-7-title" class="map-title" placeholder="Título">
+                                <input type="text" id="card-7-desc" class="map-desc" placeholder="(Opcional)">
+                            </div>
+                        </div>
+                    </section>
                 </form>
 
                 <div class="actions-footer">
-                    <button type="button" id="delete-client-btn" class="btn btn-danger">
-                        <ion-icon name="trash-outline"></ion-icon> Eliminar
+                    <button type="button" id="delete-client-btn" class="btn btn-destructive">
+                        <ion-icon name="trash"></ion-icon> Purgar Instancia
                     </button>
-                    <button type="submit" form="admin-form" class="btn btn-primary">
-                        <ion-icon name="save-outline"></ion-icon> Guardar Configuración
+                    <button type="submit" form="admin-form" class="btn btn-neon">
+                        Sincronizar Arquitectura <ion-icon name="sync-outline" style="font-size: 1.4rem;"></ion-icon>
                     </button>
                 </div>
             </div>
-            <!-- User Editor -->
+
+            <!-- ===== USER EDITOR ===== -->
             <div id="user-editor" class="hidden animate-fade"
                 style="height: 100%; display: flex; flex-direction: column;">
-                <div class="editor-header">
-                    <h2 id="user-editor-title">Nuevo Usuario</h2>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span id="user-role-badge" class="role-badge">Partner</span>
+                <header class="editor-header">
+                    <div>
+                        <div class="section-tag" style="margin-bottom: 12px;"><ion-icon name="key-outline"></ion-icon>
+                            Protocolo de Acceso</div>
+                        <h2 id="user-editor-title">Registrar Llave</h2>
                     </div>
-                </div>
+                    <div>
+                        <span id="user-role-badge" class="role-badge">PARTNER</span>
+                    </div>
+                </header>
 
-                <form id="user-form" class="form-container" style="overflow-y: auto; flex: 1;">
+                <form id="user-form" class="form-container">
                     <input type="hidden" id="user-id">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Nombre Completo</label>
-                            <input type="text" id="user-name" class="form-input" placeholder="ej. Juan Pérez" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Correo Electrónico</label>
-                            <input type="email" id="user-email" class="form-input" placeholder="juan@empresa.com"
-                                required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Contraseña</label>
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="user-password" class="form-input" placeholder="Contraseña..."
+                    <p id="user-save-status" class="success-msg">CREDENCIALES CREADAS</p>
+
+                    <section class="form-section">
+                        <div class="section-tag"><ion-icon name="finger-print-outline"></ion-icon> Identidad</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Nombre Completo</label>
+                                <input type="text" id="user-name" class="form-input" placeholder="Nombre de Operador"
                                     required>
-                                <button type="button" onclick="generateUserPass()" class="btn btn-primary"
-                                    style="padding: 0 15px; flex-shrink: 0;">
-                                    <ion-icon name="key-outline"></ion-icon>
-                                </button>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email Segurizado</label>
+                                <input type="email" id="user-email" class="form-input" placeholder="correo@ejemplo.com"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Clave de Encriptación</label>
+                                <div style="display: flex; gap: 16px;">
+                                    <input type="text" id="user-password" class="form-input" placeholder="********"
+                                        style="font-family: 'JetBrains Mono', monospace;" required>
+                                    <button type="button" onclick="generateUserPass()" class="btn btn-ghost"
+                                        style="padding: 0 20px;" title="Auto-Generar">
+                                        <ion-icon name="flash-outline" style="font-size:1.4rem;"></ion-icon>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nivel de Privilegios</label>
+                                <select id="user-role" class="form-input"
+                                    onchange="document.getElementById('user-role-badge').textContent = this.options[this.selectedIndex].text">
+                                    <option value="partner">LECTURA (Partner)</option>
+                                    <option value="admin">ROOT (Administrador)</option>
+                                </select>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Rol</label>
-                            <select id="user-role" class="form-input"
-                                onchange="document.getElementById('user-role-badge').textContent = this.options[this.selectedIndex].text">
-                                <option value="partner">Partner (Acceso limitado)</option>
-                                <option value="admin">Administrador (Acceso total)</option>
-                            </select>
-                        </div>
-                    </div>
+                    </section>
 
-                    <!-- Asignación de Dashboards -->
-                    <div style="padding-top: 6px;">
-                        <div class="form-section-title" style="margin-bottom: 10px;">
-                            <ion-icon name="grid-outline"></ion-icon>
-                            <span>Dashboards Asignados</span>
-                        </div>
-                        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 14px; line-height: 1.5;">Selecciona a
-                            qué clientes tendrá acceso este usuario. Los administradores tienen acceso automático a
-                            todos.</p>
-                        <div id="client-checkboxes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <section class="form-section">
+                        <div class="section-tag"><ion-icon name="git-network-outline"></ion-icon> Enrutamiento de
+                            Entornos</div>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; line-height: 1.6;">
+                            Otorga acceso a las instancias que este operador puede observar. Los administradores ROOT
+                            evaden esta regla.</p>
+
+                        <div id="client-checkboxes" class="checkbox-grid">
                             <!-- JS Generated -->
                         </div>
-                    </div>
-
-                    <p id="user-save-status" style="margin: 0; text-align: right; display: none; color: #10B981;">✅
-                        Usuario guardado</p>
+                    </section>
                 </form>
 
                 <div class="actions-footer">
-                    <button type="button" id="delete-user-btn" class="btn btn-danger" onclick="deleteUser()">
-                        <ion-icon name="trash-outline"></ion-icon> Eliminar
+                    <button type="button" id="delete-user-btn" class="btn btn-destructive" onclick="deleteUser()">
+                        <ion-icon name="close-circle-outline"></ion-icon> Revocar Acceso
                     </button>
-                    <button type="submit" form="user-form" class="btn btn-primary">
-                        <ion-icon name="save-outline"></ion-icon> Guardar Usuario
+                    <button type="submit" form="user-form" class="btn btn-neon">
+                        Desplegar Permisos <ion-icon name="shield-checkmark" style="font-size: 1.4rem;"></ion-icon>
                     </button>
                 </div>
             </div>
-        </div>
-    </div><!-- /.admin-layout -->
-</div><!-- /.admin-wrapper -->
+
+        </main>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
