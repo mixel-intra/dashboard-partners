@@ -760,7 +760,8 @@ document.getElementById('copy-welcome-email-btn')?.addEventListener('click', () 
     const name = document.getElementById('user-name').value.trim();
     const email = document.getElementById('user-email').value.trim();
     const password = document.getElementById('user-password').value.trim();
-    const loginUrl = window.location.origin + window.location.pathname.replace('admin.html', 'login.html');
+    const currentUrl = window.location.href;
+    const loginUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/')) + '/login.html';
 
     const emailTemplate = `
 Hola ${name},
