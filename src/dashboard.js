@@ -582,34 +582,34 @@ async function fetchData() {
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const rawData = await response.json();
 
-        // Normalize leads immediately
-        state.leads = rawData.map(lead => ({
-            ...lead,
-            estatus: normalizeStatus(lead.estatus),
-            fecha_parsed: parseCustomDate(lead.fecha_creacion)
-        }));
+        // Normalize leads — extraer tipo_servicio del estatus ORIGINAL antes de normalizarlo
+        state.leads = rawData.map(lead => {
+            // Extraer tipo_servicio del estatus crudo (ej. "CALIFICADO RESERVA" → 'Reserva')
+            let tipoServicio = lead.tipo_servicio;
+            if (!tipoServicio && lead.estatus) {
+                const e = lead.estatus.toLowerCase();
+                if (e.includes('restaurante'))          tipoServicio = 'Restaurante';
+                else if (e.includes('daypass') || e.includes('day pass')) tipoServicio = 'DayPass';
+                else if (e.includes('reserva'))         tipoServicio = 'Reserva';
+                else if (e.includes('evento'))          tipoServicio = 'Evento';
+            }
+            return {
+                ...lead,
+                tipo_servicio: tipoServicio,
+                estatus: normalizeStatus(lead.estatus),
+                fecha_parsed: parseCustomDate(lead.fecha_creacion)
+            };
+        });
 
-        // Para hoteles: asignar tipo_servicio basado en estatus o ficticio si no existe
+        // Para hoteles: fallback ficticio si el lead aún no tiene tipo_servicio
         if (state.clientType === 'hotel') {
-            const isCefemex = state.clientId === 'cefemex';
-
             state.leads.forEach((lead, i) => {
-                // Si es hotel (y no cefemex), el estatus determina el tipo de servicio para los calificados
-                if (!isCefemex) {
-                    const s = (lead.estatus || '').toLowerCase();
-                    if (s.includes('reservas')) lead.tipo_servicio = 'Reserva';
-                    else if (s.includes('daypass')) lead.tipo_servicio = 'DayPass';
-                    else if (s.includes('eventos')) lead.tipo_servicio = 'Evento';
-                    else if (s.includes('restaurante')) lead.tipo_servicio = 'Restaurante';
-                }
-
-                // Fallback ficticio si NO es calificado y no tiene tipo 
                 if (!lead.tipo_servicio) {
                     const bucket = i % 20;
-                    if (bucket < 8) lead.tipo_servicio = 'DayPass';
+                    if (bucket < 8)       lead.tipo_servicio = 'DayPass';
                     else if (bucket < 14) lead.tipo_servicio = 'Reserva';
                     else if (bucket < 18) lead.tipo_servicio = 'Evento';
-                    else lead.tipo_servicio = 'Restaurante';
+                    else                  lead.tipo_servicio = 'Restaurante';
                 }
             });
         }
