@@ -358,11 +358,6 @@ function initHotelTabs() {
             bottomRow.appendChild(c6);
             bottomRow.appendChild(c2);
 
-            // Grid settings
-            bottomRow.style.display = 'grid';
-            bottomRow.style.gridTemplateColumns = 'repeat(3, 1fr)';
-            bottomRow.style.gap = '2rem';
-
             // Force visibility
             [c1, c2, c3, c4, c5, c6, c7].forEach(el => {
                 el.style.setProperty('display', 'flex', 'important');
