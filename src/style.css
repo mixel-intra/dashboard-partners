@@ -408,12 +408,12 @@ body {
 }
 
 .client-name-header {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 800;
     color: var(--text-neon);
-    margin-top: 4px;
-    line-height: 1;
-    letter-spacing: -0.02em;
+    margin-top: 2px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
     text-shadow: 0 0 20px rgba(1, 241, 227, 0.2);
 }
 
@@ -1231,11 +1231,12 @@ tr:hover td {
     }
 
     .client-name-header {
-        font-size: 0.9rem !important;
+        font-size: 0.8rem !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 180px;
+        max-width: 220px;
+        letter-spacing: 0;
     }
 
     .main-content {
