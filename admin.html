@@ -1304,7 +1304,14 @@
 
                 <form id="user-form" class="form-container">
                     <input type="hidden" id="user-id">
-                    <p id="user-save-status" class="success-msg">CREDENCIALES CREADAS</p>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <p id="user-save-status" class="success-msg" style="position: static; margin: 0;">CREDENCIALES
+                            CREADAS</p>
+                        <p id="email-copy-status" class="success-msg"
+                            style="position: static; margin: 0; background: rgba(10, 132, 255, 0.1); color: var(--brand-core); border-color: rgba(10, 132, 255, 0.3);">
+                            CORREO COPIADO</p>
+                    </div>
 
                     <section class="form-section">
                         <div class="section-tag"><ion-icon name="finger-print-outline"></ion-icon> Identidad</div>
@@ -1357,6 +1364,9 @@
                 <div class="actions-footer">
                     <button type="button" id="delete-user-btn" class="btn btn-destructive" onclick="deleteUser()">
                         <ion-icon name="close-circle-outline"></ion-icon> Revocar Acceso
+                    </button>
+                    <button type="button" id="copy-welcome-email-btn" class="btn btn-ghost hidden">
+                        Copiar Correo Bienvenida <ion-icon name="mail-outline" style="font-size: 1.4rem;"></ion-icon>
                     </button>
                     <button type="submit" form="user-form" class="btn btn-neon">
                         Desplegar Permisos <ion-icon name="shield-checkmark" style="font-size: 1.4rem;"></ion-icon>

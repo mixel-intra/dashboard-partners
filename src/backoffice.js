@@ -599,6 +599,8 @@ async function showNewUserForm() {
     document.getElementById('user-editor-title').textContent = 'Nuevo Usuario';
     document.getElementById('delete-user-btn').classList.add('hidden');
     document.getElementById('user-save-status').style.display = 'none';
+    document.getElementById('email-copy-status').style.display = 'none';
+    document.getElementById('copy-welcome-email-btn').classList.add('hidden');
 
     await renderClientCheckboxes([]);
 
@@ -636,6 +638,8 @@ async function loadUserEditor(userId) {
     document.getElementById('user-editor-title').textContent = user.name;
     document.getElementById('delete-user-btn').classList.remove('hidden');
     document.getElementById('user-save-status').style.display = 'none';
+    document.getElementById('email-copy-status').style.display = 'none';
+    document.getElementById('copy-welcome-email-btn').classList.remove('hidden');
 
     await renderClientCheckboxes(assignedSlugs);
 
@@ -729,6 +733,7 @@ document.getElementById('user-form')?.addEventListener('submit', async (e) => {
 
         document.getElementById('user-save-status').style.display = 'block';
         document.getElementById('user-editor-title').textContent = name;
+        document.getElementById('copy-welcome-email-btn').classList.remove('hidden');
         await loadUsers();
 
     } catch (err) {
@@ -749,5 +754,42 @@ async function deleteUser() {
     document.getElementById('editor-placeholder').classList.remove('hidden');
     await loadUsers();
 }
+
+// --- Copiar Correo de Bienvenida ---
+document.getElementById('copy-welcome-email-btn')?.addEventListener('click', () => {
+    const name = document.getElementById('user-name').value.trim();
+    const email = document.getElementById('user-email').value.trim();
+    const password = document.getElementById('user-password').value.trim();
+    const loginUrl = window.location.origin + window.location.pathname.replace('admin.html', 'login.html');
+
+    const emailTemplate = `
+Hola ${name},
+
+¡Bienvenido a tu Dashboard de Partners!
+
+Te escribo para informarte que hemos generado tus credenciales de acceso para que puedas comenzar a visualizar tus métricas y leads en tiempo real.
+
+Tus datos de acceso son:
+------------------------------------------
+📧 Correo: ${email}
+🔑 Contraseña: ${password}
+------------------------------------------
+
+Puedes acceder desde el siguiente enlace:
+${loginUrl}
+
+Si tienes alguna duda con el uso de la plataforma, por favor házmelo saber.
+
+Saludos.
+    `.trim();
+
+    navigator.clipboard.writeText(emailTemplate).then(() => {
+        const copyStatus = document.getElementById('email-copy-status');
+        copyStatus.style.display = 'block';
+        setTimeout(() => {
+            copyStatus.style.display = 'none';
+        }, 3000);
+    });
+});
 
 
