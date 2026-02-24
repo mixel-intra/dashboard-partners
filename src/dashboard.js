@@ -399,7 +399,12 @@ function switchDashTab(tab) {
 }
 
 function applyGlobalFilters() {
-    console.log('Applying global filters:', state.filters);
+    console.log('=== applyGlobalFilters ===',
+        '| leads:', state.leads.length,
+        '| activeTab:', state.activeTab,
+        '| clientType:', state.clientType,
+        '| filters:', JSON.stringify(state.filters));
+    console.trace();
 
     state.filteredLeads = state.leads.filter(lead => {
         if (!lead.fecha_parsed) return false;
@@ -438,6 +443,8 @@ function applyGlobalFilters() {
         return match;
     });
 
+    console.log('filteredLeads after filter:', state.filteredLeads.length,
+        '| qualified:', state.filteredLeads.filter(l => isQualified(l.estatus)).length);
     renderDashboard();
 }
 
@@ -582,12 +589,8 @@ async function fetchData() {
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const rawData = await response.json();
 
-        // DEBUG TEMPORAL — ver estructura real del webhook
-        if (rawData.length > 0) {
-            console.log('=== DEBUG RAW LEAD (primer registro) ===');
-            console.log(JSON.stringify(rawData[0], null, 2));
-            console.log('Campos disponibles:', Object.keys(rawData[0]).join(', '));
-        }
+        // DEBUG TEMPORAL
+        console.log('=== RAW campos del primer lead:', Object.keys(rawData[0] || {}).join(', '));
 
         // Normalize leads — extraer tipo_servicio siempre del campo crudo (tipo_servicio o estatus)
         // Se normaliza sin importar si tipo_servicio ya viene en el webhook, porque puede
@@ -623,6 +626,10 @@ async function fetchData() {
 
         state.filteredLeads = [...state.leads];
         console.log(`Leads Processing Complete. Total: ${state.leads.length}`);
+        if (state.leads.length > 0) {
+            const l0 = state.leads[0];
+            console.log('=== PRIMER LEAD NORMALIZADO:', {estatus: l0.estatus, tipo_servicio: l0.tipo_servicio, fecha_parsed: l0.fecha_parsed});
+        }
     } catch (error) {
         console.error('Fetch Data Failed:', error);
         state.leads = [];
