@@ -582,6 +582,13 @@ async function fetchData() {
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const rawData = await response.json();
 
+        // DEBUG TEMPORAL — ver estructura real del webhook
+        if (rawData.length > 0) {
+            console.log('=== DEBUG RAW LEAD (primer registro) ===');
+            console.log(JSON.stringify(rawData[0], null, 2));
+            console.log('Campos disponibles:', Object.keys(rawData[0]).join(', '));
+        }
+
         // Normalize leads — extraer tipo_servicio siempre del campo crudo (tipo_servicio o estatus)
         // Se normaliza sin importar si tipo_servicio ya viene en el webhook, porque puede
         // venir como "CALIFICADO RESERVA" (nombre completo del stage del CRM) en lugar de 'Reserva'
