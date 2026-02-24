@@ -980,6 +980,7 @@ function normalizeStatus(status) {
     if (s.includes('rechazado cefemex')) {
         return state.clientType === 'hotel' ? 'Cotizado' : 'Rechazado CEFEMEX';
     }
+    if (s.includes('continuidad cefemex')) return 'Continuidad CEFEMEX';
     if (s.includes('documentacion') || s.includes('documentación')) return 'Documentación / Integración E1';
     if (s.includes('financiera')) return 'Revisión Financiera / Integración E2';
     if (s.includes('comité') || s.includes('comite')) return 'Comité / Autorización';
@@ -994,12 +995,14 @@ function normalizeStatus(status) {
 function isQualified(status) {
     if (!status) return false;
     const s = status.toLowerCase();
+
+    // Especial para CEFEMEX y general
     const qualifiedTerms = [
         'calificado',
         'condicionado',
+        'continuidad cefemex',
         'rechazado cefemex',
-        'rechazado',
-        'cotizado',
+        'cotizado', // Para hoteles
         'documentación',
         'documentacion',
         'integración',
@@ -1010,5 +1013,8 @@ function isQualified(status) {
         'autorización',
         'autorizacion'
     ];
+
+    // NOTA: No incluimos 'rechazado' a secas porque CEFEMEX tiene muchos leads 
+    // rechazados de entrada que no deben contar como "Oportunidad Calificada".
     return qualifiedTerms.some(term => s.includes(term));
 }
