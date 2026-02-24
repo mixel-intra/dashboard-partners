@@ -11,6 +11,9 @@ CREATE TABLE clients_config (
     password TEXT,
     theme_primary TEXT DEFAULT '#7551FF',
     theme_secondary TEXT DEFAULT '#01F1E3',
+    client_type TEXT DEFAULT 'otro' CHECK (client_type IN ('hotel', 'inmobiliaria', 'otro')),
+    card_labels JSONB DEFAULT '{}',
+    hotel_services JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

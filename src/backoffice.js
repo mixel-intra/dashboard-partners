@@ -87,18 +87,24 @@ async function loadRegistry() {
 async function uploadLogo(clientId, file) {
     if (!file) return null;
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${clientId}-${Math.round(Date.now() / 1000)}.${fileExt}`;
-    const filePath = `${fileName}`;
+    // Limpiamos el clientId y la extensión para evitar caracteres raros
+    const cleanId = clientId.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const fileExt = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Generamos un nombre ultra-limpio
+    const fileName = `${cleanId}-${Date.now()}.${fileExt}`;
+    const filePath = fileName;
 
     const { data, error } = await supabase.storage
         .from('logos')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+            upsert: true
+        });
 
     if (error) {
-        console.error('Error uploading logo:', error);
+        console.error('Error detallado de Supabase Storage:', error);
         if (error.message.includes('Bucket not found')) {
-            alert('Error: No se encontró el bucket "logos" en Supabase. Asegúrate de crearlo en la sección Storage.');
+            alert('Error: No se encontró el bucket "logos".');
         } else {
             alert('Error al subir el logo: ' + error.message);
         }

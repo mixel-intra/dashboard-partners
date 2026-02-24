@@ -30,6 +30,7 @@ CREATE TABLE clients_config (
     theme_secondary TEXT DEFAULT '#01F1E3',
     investment_updated_at DATE,
     card_labels JSONB DEFAULT '{}',
+    hotel_services JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

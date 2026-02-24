@@ -414,9 +414,24 @@ function applyGlobalFilters() {
 
         // Filtrar por tipo de servicio si es hotel
         if (match && state.clientType === 'hotel') {
+            const isCefemex = state.clientId === 'cefemex';
             const expectedType = TAB_SERVICE_MAP[state.activeTab];
+
             if (expectedType) {
-                match = match && lead.tipo_servicio === expectedType;
+                if (isCefemex) {
+                    match = match && lead.tipo_servicio === expectedType;
+                } else {
+                    // Para otros hoteles: 
+                    // Un lead calificado aparece SOLO en su pestaña correspondiente.
+                    // Un lead general (no calificado) cuenta para TODAS las pestañas para sumar al total global e ingresos.
+                    const isQual = isQualified(lead.estatus);
+                    if (isQual) {
+                        match = match && lead.tipo_servicio === expectedType;
+                    } else {
+                        // Es un lead general, se queda para que sume al total de registros
+                        match = true;
+                    }
+                }
             }
         }
 
@@ -557,9 +572,13 @@ async function refreshVentasDashboard() {
 window.refreshVentasDashboard = refreshVentasDashboard;
 
 async function fetchData() {
-    console.log('Fetching leads from:', state.config.webhookUrl);
+    console.log('Fetching leads from (via proxy):', state.config.webhookUrl);
+
+    // Usamos el proxy serverless para evitar problemas de CORS
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(state.config.webhookUrl)}`;
+
     try {
-        const response = await fetch(state.config.webhookUrl);
+        const response = await fetch(proxyUrl);
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const rawData = await response.json();
 
@@ -570,19 +589,29 @@ async function fetchData() {
             fecha_parsed: parseCustomDate(lead.fecha_creacion)
         }));
 
-        // Para hoteles: asignar tipo_servicio ficticio si no existe
-        // Distribución: DayPass ~40%, Reserva ~30%, Evento ~20%, Restaurante ~10%
+        // Para hoteles: asignar tipo_servicio basado en estatus o ficticio si no existe
         if (state.clientType === 'hotel') {
-            const hasRealTypes = state.leads.some(l => l.tipo_servicio);
-            if (!hasRealTypes) {
-                state.leads.forEach((lead, i) => {
+            const isCefemex = state.clientId === 'cefemex';
+
+            state.leads.forEach((lead, i) => {
+                // Si es hotel (y no cefemex), el estatus determina el tipo de servicio para los calificados
+                if (!isCefemex) {
+                    const s = (lead.estatus || '').toLowerCase();
+                    if (s.includes('reservas')) lead.tipo_servicio = 'Reserva';
+                    else if (s.includes('daypass')) lead.tipo_servicio = 'DayPass';
+                    else if (s.includes('eventos')) lead.tipo_servicio = 'Evento';
+                    else if (s.includes('restaurante')) lead.tipo_servicio = 'Restaurante';
+                }
+
+                // Fallback ficticio si NO es calificado y no tiene tipo 
+                if (!lead.tipo_servicio) {
                     const bucket = i % 20;
                     if (bucket < 8) lead.tipo_servicio = 'DayPass';
                     else if (bucket < 14) lead.tipo_servicio = 'Reserva';
                     else if (bucket < 18) lead.tipo_servicio = 'Evento';
                     else lead.tipo_servicio = 'Restaurante';
-                });
-            }
+                }
+            });
         }
 
         state.filteredLeads = [...state.leads];
@@ -976,6 +1005,15 @@ function normalizeStatus(status) {
     if (!status) return 'Desconocido';
     const s = status.toLowerCase().trim();
 
+    // --- NORMALIZACIÓN PARA HOTELES (EXCEPTO CEFEMEX) ---
+    const isHotel = state.clientType === 'hotel' && state.clientId !== 'cefemex';
+    if (isHotel) {
+        if (s.includes('calificado reservas')) return 'Calificado Reservas';
+        if (s.includes('calificado daypass')) return 'Calificado DayPass';
+        if (s.includes('calificado eventos')) return 'Calificado Eventos';
+        if (s.includes('calificado restaurante')) return 'Calificado Restaurante';
+    }
+
     // Specific matches to preserve names
     if (s.includes('rechazado cefemex')) {
         return state.clientType === 'hotel' ? 'Cotizado' : 'Rechazado CEFEMEX';
@@ -996,13 +1034,22 @@ function isQualified(status) {
     if (!status) return false;
     const s = status.toLowerCase();
 
-    // Especial para CEFEMEX y general
+    // --- POLÍTICA ESPECIAL PARA HOTELES (EXCEPTO CEFEMEX) ---
+    const isHotel = state.clientType === 'hotel' && state.clientId !== 'cefemex';
+    if (isHotel) {
+        return s.includes('calificado reservas') ||
+            s.includes('calificado daypass') ||
+            s.includes('calificado eventos') ||
+            s.includes('calificado restaurante');
+    }
+
+    // --- POLÍTICA GENERAL / CEFEMEX ---
     const qualifiedTerms = [
         'calificado',
         'condicionado',
         'continuidad cefemex',
         'rechazado cefemex',
-        'cotizado', // Para hoteles
+        'cotizado',
         'documentación',
         'documentacion',
         'integración',
@@ -1014,7 +1061,5 @@ function isQualified(status) {
         'autorizacion'
     ];
 
-    // NOTA: No incluimos 'rechazado' a secas porque CEFEMEX tiene muchos leads 
-    // rechazados de entrada que no deben contar como "Oportunidad Calificada".
     return qualifiedTerms.some(term => s.includes(term));
 }
