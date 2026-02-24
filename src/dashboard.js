@@ -325,37 +325,49 @@ function initHotelTabs() {
         const modeToggle = document.getElementById('main-chart-toggle');
         if (modeToggle) modeToggle.style.visibility = 'hidden'; // Hide the "Totales" toggle
 
-        // Move cards
+        // Move cards - Capture all references first to avoid losing them when clearing rows
         const topRow = document.getElementById('top-cards-row');
+        const bottomRow = document.getElementById('bottom-cards-row');
+
         const c1 = document.getElementById('card-1-wrapper'); // Cotizaciones
+        const c2 = document.getElementById('card-2-wrapper'); // Tasa de Conversión
         const c3 = document.getElementById('card-3-wrapper'); // Ventas
         const c4 = document.getElementById('card-4-wrapper'); // ROI
+        const c5 = document.getElementById('card-5-wrapper'); // Total de Registros
+        const c6 = document.getElementById('card-6-wrapper'); // Inversión
         const c7 = document.getElementById('card-7-wrapper'); // Costo por cotización
 
-        if (topRow && c1 && c3 && c4 && c7) {
-            topRow.innerHTML = '';
+        if (topRow && bottomRow && c1 && c2 && c3 && c4 && c5 && c6 && c7) {
+            // Top Row: 1, 3, 4, 7
             topRow.appendChild(c1);
             topRow.appendChild(c3);
             topRow.appendChild(c4);
             topRow.appendChild(c7);
-        }
 
-        // Move remaining cards to bottom row (Total 7 cards: 4 on top, 3 on bottom)
-        const bottomRow = document.getElementById('bottom-cards-row');
-        const c2 = document.getElementById('card-2-wrapper'); // Tasa de Conversión
-        const c5 = document.getElementById('card-5-wrapper'); // Total de Registros
-        const c6 = document.getElementById('card-6-wrapper'); // Inversión
-
-        if (bottomRow && c2 && c5 && c6) {
-            bottomRow.innerHTML = '';
-            bottomRow.appendChild(c2);
+            // Bottom Row: 5, 6, 2 (Rightmost)
             bottomRow.appendChild(c5);
             bottomRow.appendChild(c6);
+            bottomRow.appendChild(c2);
 
-            // Ensure they are visible and the bottom grid has enough columns
+            // Grid settings
             bottomRow.style.display = 'grid';
             bottomRow.style.gridTemplateColumns = 'repeat(3, 1fr)';
-            [c2, c5, c6].forEach(el => el.style.display = 'flex');
+            bottomRow.style.gap = '2rem';
+
+            // Force visibility
+            [c1, c2, c3, c4, c5, c6, c7].forEach(el => {
+                el.style.setProperty('display', 'flex', 'important');
+                el.style.setProperty('visibility', 'visible', 'important');
+                el.style.setProperty('opacity', '1', 'important');
+                el.classList.remove('hidden');
+
+                // Clear any debug styles
+                el.style.border = '';
+                el.style.boxShadow = '';
+                el.style.zIndex = '';
+                const debugMsg = el.querySelector('.debug-msg');
+                if (debugMsg) debugMsg.remove();
+            });
         }
 
     } else {
@@ -579,7 +591,6 @@ async function fetchData() {
 }
 
 function renderDashboard() {
-    console.log('Rendering Dashboard...');
     const metrics = calculateMetrics();
     updateUI(metrics);
     renderAllCharts(metrics);
