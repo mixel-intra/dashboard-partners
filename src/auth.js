@@ -196,3 +196,86 @@ if (_currentPage === 'admin') {
 } else if (_currentPage !== 'login') {
     checkAuth();
 }
+
+// ============================================================
+// LÓGICA DE CAMBIO DE CONTRASEÑA
+// ============================================================
+
+function openChangePasswordModal() {
+    const modal = document.getElementById('change-pass-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('change-pass-error').style.display = 'none';
+        document.getElementById('change-pass-success').style.display = 'none';
+        document.getElementById('change-pass-form').reset();
+    }
+}
+
+function closeChangePasswordModal() {
+    const modal = document.getElementById('change-pass-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+if (document.getElementById('change-pass-form')) {
+    const changePassForm = document.getElementById('change-pass-form');
+    changePassForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newPass = document.getElementById('new-password').value.trim();
+        const confirmPass = document.getElementById('confirm-password').value.trim();
+        const errorBox = document.getElementById('change-pass-error');
+        const successBox = document.getElementById('change-pass-success');
+        const submitBtn = document.getElementById('submit-change-pass');
+
+        errorBox.style.display = 'none';
+        successBox.style.display = 'none';
+
+        if (newPass.length < 6) {
+            errorBox.textContent = 'La contraseña debe tener al menos 6 caracteres';
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        if (newPass !== confirmPass) {
+            errorBox.textContent = 'Las contraseñas no coinciden';
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        const session = getSession();
+        if (!session || !session.id) {
+            errorBox.textContent = 'Sesión no válida';
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Actualizando...';
+
+        try {
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({ password: newPass })
+                .eq('id', session.id);
+
+            if (error) throw error;
+
+            successBox.style.display = 'block';
+            submitBtn.innerHTML = 'Actualizar Clave';
+            submitBtn.style.background = '#30D158'; // Verde temporal
+
+            setTimeout(() => {
+                closeChangePasswordModal();
+                submitBtn.disabled = false;
+                submitBtn.style.background = '#7551FF';
+            }, 2000);
+
+        } catch (err) {
+            console.error('Error al cambiar contraseña:', err);
+            errorBox.textContent = 'Error al actualizar. Intenta de nuevo.';
+            errorBox.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Actualizar Clave';
+        }
+    });
+}

@@ -229,6 +229,9 @@
                     style="background: rgba(1,241,227,0.08); border-color: rgba(1,241,227,0.18); color: rgba(1,241,227,0.8);">
                     <ion-icon name="cash-outline"></ion-icon>
                 </button>
+                <button onclick="openChangePasswordModal()" class="logout-btn" title="Cambiar contraseña">
+                    <ion-icon name="key-outline"></ion-icon>
+                </button>
                 <button onclick="logout()" class="logout-btn" title="Cerrar sesión">
                     <ion-icon name="log-out-outline"></ion-icon>
                 </button>
@@ -543,6 +546,49 @@
             &copy; 2026 Intra. Todos los derechos reservados.
         </footer>
     </div><!-- /#app-wrapper -->
+
+    <!-- ===== MODAL CAMBIAR CONTRASEÑA ===== -->
+    <div id="change-pass-modal" class="modal-overlay"
+        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center;">
+        <div class="modal-content"
+            style="background: #0A0A0A; border: 1px solid rgba(255,255,255,0.08); padding: 32px; border-radius: 24px; width: 100%; max-width: 400px; position: relative;">
+            <button onclick="closeChangePasswordModal()"
+                style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; cursor: pointer; font-size: 1.5rem;">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+
+            <h2 style="font-size: 1.5rem; margin-bottom: 8px; color: #fff;">Cambiar Contraseña</h2>
+            <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-bottom: 24px;">Actualiza tu clave de
+                acceso al portal.</p>
+
+            <form id="change-pass-form">
+                <div style="margin-bottom: 20px;">
+                    <label
+                        style="display: block; font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Nueva
+                        Contraseña</label>
+                    <input type="password" id="new-password" required placeholder="••••••••"
+                        style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; outline: none; transition: border-color 0.3s; font-size: 1rem;">
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label
+                        style="display: block; font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Confirmar
+                        Contraseña</label>
+                    <input type="password" id="confirm-password" required placeholder="••••••••"
+                        style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; outline: none; transition: border-color 0.3s; font-size: 1rem;">
+                </div>
+                <div id="change-pass-error"
+                    style="color: #ff4444; font-size: 0.85rem; margin-bottom: 16px; display: none;"></div>
+                <div id="change-pass-success"
+                    style="color: #01F1E3; font-size: 0.85rem; margin-bottom: 16px; display: none;">Contraseña
+                    actualizada correctamente</div>
+
+                <button type="submit" id="submit-change-pass"
+                    style="width: 100%; padding: 14px; background: #7551FF; border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                    Actualizar Clave
+                </button>
+            </form>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
