@@ -26,7 +26,12 @@ const elements = {
     swatchPrimary: document.getElementById('swatch-primary'),
     swatchSecondary: document.getElementById('swatch-secondary'),
     huePrimary: document.getElementById('hue-primary'),
-    hueSecondary: document.getElementById('hue-secondary')
+    hueSecondary: document.getElementById('hue-secondary'),
+    hotelServicesSection: document.getElementById('hotel-services-section'),
+    hotelServiceEventos: document.getElementById('hotel-service-eventos'),
+    hotelServiceReservas: document.getElementById('hotel-service-reservas'),
+    hotelServiceDaypass: document.getElementById('hotel-service-daypass'),
+    hotelServiceRestaurante: document.getElementById('hotel-service-restaurante')
 };
 
 // State
@@ -249,6 +254,25 @@ async function selectClient(clientId) {
     elements.themePrimaryInput.value = currentConfig.theme_primary || '#7551FF';
     elements.themeSecondaryInput.value = currentConfig.theme_secondary || '#01F1E3';
 
+    // Handle Hotel Services visibility
+    if (elements.clientTypeInput.value === 'hotel') {
+        elements.hotelServicesSection.classList.remove('hidden');
+    } else {
+        elements.hotelServicesSection.classList.add('hidden');
+    }
+
+    // Populate Hotel Services
+    const hotelServices = currentConfig.hotel_services || {
+        eventos: 'unlocked',
+        reservas: 'locked',
+        daypass: 'locked',
+        restaurante: 'locked'
+    };
+    elements.hotelServiceEventos.value = hotelServices.eventos || 'unlocked';
+    elements.hotelServiceReservas.value = hotelServices.reservas || 'locked';
+    elements.hotelServiceDaypass.value = hotelServices.daypass || 'locked';
+    elements.hotelServiceRestaurante.value = hotelServices.restaurante || 'locked';
+
     // Sync UI Swatches and Hex
     elements.hexPrimary.value = elements.themePrimaryInput.value;
     elements.hexSecondary.value = elements.themeSecondaryInput.value;
@@ -330,6 +354,13 @@ function setupEventListeners() {
             if (titleInput) titleInput.value = '';
             if (descInput) descInput.value = '';
         }
+
+        // Reset Hotel Services
+        elements.hotelServicesSection.classList.add('hidden');
+        elements.hotelServiceEventos.value = 'unlocked';
+        elements.hotelServiceReservas.value = 'locked';
+        elements.hotelServiceDaypass.value = 'locked';
+        elements.hotelServiceRestaurante.value = 'locked';
     });
 
     // Hue Slider Sync
@@ -344,6 +375,15 @@ function setupEventListeners() {
 
     elements.themePrimaryInput.addEventListener('input', updateThemePreview);
     elements.themeSecondaryInput.addEventListener('input', updateThemePreview);
+
+    // Toggle Hotel Services Section
+    elements.clientTypeInput.addEventListener('change', () => {
+        if (elements.clientTypeInput.value === 'hotel') {
+            elements.hotelServicesSection.classList.remove('hidden');
+        } else {
+            elements.hotelServicesSection.classList.add('hidden');
+        }
+    });
 
     // Sync Hex Text -> Color Picker
     const syncHex = (hexEl, pickerEl) => {
@@ -416,7 +456,13 @@ function setupEventListeners() {
                 logo_url: logoUrl,
                 theme_primary: elements.themePrimaryInput.value,
                 theme_secondary: elements.themeSecondaryInput.value,
-                card_labels: Object.keys(cardLabels).length > 0 ? cardLabels : {}
+                card_labels: Object.keys(cardLabels).length > 0 ? cardLabels : {},
+                hotel_services: {
+                    eventos: elements.hotelServiceEventos.value,
+                    reservas: elements.hotelServiceReservas.value,
+                    daypass: elements.hotelServiceDaypass.value,
+                    restaurante: elements.hotelServiceRestaurante.value
+                }
             };
 
             const { error } = await supabase

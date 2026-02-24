@@ -184,6 +184,7 @@
             background: linear-gradient(180deg, #fff 0%, #888 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .sidebar-header p {
@@ -438,6 +439,7 @@
             background: linear-gradient(90deg, #fff, var(--text-neon));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 16px;
         }
 
@@ -623,6 +625,8 @@
         }
 
         select.form-input {
+            -webkit-appearance: none;
+            -moz-appearance: none;
             appearance: none;
             background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
             background-repeat: no-repeat;
@@ -690,6 +694,8 @@
 
         .hue-slider-custom {
             -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
             width: 100%;
             height: 6px;
             border-radius: 3px;
@@ -1225,6 +1231,48 @@
                                 <div class="node-icon-wrapper"><ion-icon name="pricetag-outline"></ion-icon></div>
                                 <input type="text" id="card-7-title" class="map-title" placeholder="Título">
                                 <input type="text" id="card-7-desc" class="map-desc" placeholder="(Opcional)">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Hotel Services Configuration -->
+                    <section id="hotel-services-section" class="form-section hidden">
+                        <div class="section-tag"><ion-icon name="bed-outline"></ion-icon> Servicios de Hospitalidad
+                            (Visibilidad)</div>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Configura el estado
+                            de cada pestaña para dashboards tipo Hotel.</p>
+                        <div class="mapping-grid">
+                            <div class="form-group">
+                                <label class="form-label">Eventos</label>
+                                <select id="hotel-service-eventos" class="form-input">
+                                    <option value="unlocked">Habilitado</option>
+                                    <option value="locked">Bloqueado</option>
+                                    <option value="hidden">Oculto</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Reservas</label>
+                                <select id="hotel-service-reservas" class="form-input">
+                                    <option value="unlocked">Habilitado</option>
+                                    <option value="locked">Bloqueado</option>
+                                    <option value="hidden">Oculto</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Day Pass</label>
+                                <select id="hotel-service-daypass" class="form-input">
+                                    <option value="unlocked">Habilitado</option>
+                                    <option value="locked">Bloqueado</option>
+                                    <option value="hidden">Oculto</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Restaurante</label>
+                                <select id="hotel-service-restaurante" class="form-input">
+                                    <option value="unlocked">Habilitado</option>
+                                    <option value="locked">Bloqueado</option>
+                                    <option value="hidden">Oculto</option>
+                                </select>
                             </div>
                         </div>
                     </section>

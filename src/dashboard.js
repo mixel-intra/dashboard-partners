@@ -287,9 +287,9 @@ function initHotelTabs() {
         const config = state.rawConfig || {};
         const services = config.hotel_services || {
             eventos: 'unlocked',
-            reservas: 'unlocked',
-            daypass: 'unlocked',
-            restaurante: 'unlocked'
+            reservas: 'locked',
+            daypass: 'locked',
+            restaurante: 'locked'
         };
 
         tabsContainer.classList.remove('hidden');
