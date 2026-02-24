@@ -340,25 +340,27 @@ function initHotelTabs() {
             topRow.appendChild(c7);
         }
 
-        // Move remaining cards to bottom row
+        // Move remaining cards to bottom row (Total 7 cards: 4 on top, 3 on bottom)
         const bottomRow = document.getElementById('bottom-cards-row');
         const c2 = document.getElementById('card-2-wrapper'); // Tasa de Conversión
         const c5 = document.getElementById('card-5-wrapper'); // Total de Registros
         const c6 = document.getElementById('card-6-wrapper'); // Inversión
-        
+
         if (bottomRow && c2 && c5 && c6) {
             bottomRow.innerHTML = '';
             bottomRow.appendChild(c2);
             bottomRow.appendChild(c5);
             bottomRow.appendChild(c6);
-            
-            // Ensure they are visible (removing any previous hidden style)
+
+            // Ensure they are visible and the bottom grid has enough columns
+            bottomRow.style.display = 'grid';
+            bottomRow.style.gridTemplateColumns = 'repeat(3, 1fr)';
             [c2, c5, c6].forEach(el => el.style.display = 'flex');
         }
 
     } else {
         tabsContainer.classList.add('hidden');
-        
+
         // Ensure all cards are visible for non-hotel types if they were hidden before
         ['card-1', 'card-2', 'card-3', 'card-4', 'card-5', 'card-6', 'card-7'].forEach(id => {
             const el = document.getElementById(`${id}-wrapper`);
