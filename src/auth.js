@@ -253,21 +253,34 @@ if (document.getElementById('change-pass-form')) {
         submitBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Actualizando...';
 
         try {
-            const { error } = await supabase
+            // Actualizar en la base de datos
+            const { data, error } = await supabase
                 .from('user_profiles')
                 .update({ password: newPass })
-                .eq('id', session.id);
+                .eq('id', session.id)
+                .select();
 
             if (error) throw error;
 
+            if (!data || data.length === 0) {
+                throw new Error('No se encontró el perfil de usuario para actualizar.');
+            }
+
+            // Actualizar el timestamp de la sesión local para evitar logout prematuro
+            saveSession({
+                ...session,
+                timestamp: Date.now()
+            });
+
             successBox.style.display = 'block';
-            submitBtn.innerHTML = 'Actualizar Clave';
-            submitBtn.style.background = '#30D158'; // Verde temporal
+            submitBtn.innerHTML = '¡Actualizado!';
+            submitBtn.style.background = '#30D158';
 
             setTimeout(() => {
                 closeChangePasswordModal();
                 submitBtn.disabled = false;
                 submitBtn.style.background = '#7551FF';
+                submitBtn.innerHTML = 'Actualizar Clave';
             }, 2000);
 
         } catch (err) {
