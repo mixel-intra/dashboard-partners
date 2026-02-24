@@ -983,7 +983,7 @@ function normalizeStatus(status) {
 
     // Specific matches to preserve names
     if (s.includes('rechazado cefemex')) {
-        return state.clientType === 'hotel' ? 'Rechazado' : 'Rechazado CEFEMEX';
+        return state.clientType === 'hotel' ? 'Cotizado' : 'Rechazado CEFEMEX';
     }
     if (s.includes('documentacion') || s.includes('documentación')) return 'Documentación / Integración E1';
     if (s.includes('financiera')) return 'Revisión Financiera / Integración E2';
@@ -1004,6 +1004,7 @@ function isQualified(status) {
         'condicionado',
         'rechazado cefemex',
         'rechazado',
+        'cotizado',
         'documentación',
         'documentacion',
         'integración',
