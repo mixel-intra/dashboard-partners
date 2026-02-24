@@ -1149,11 +1149,12 @@ tr:hover td {
 @media (max-width: 768px) {
     .main-header {
         height: auto;
-        padding: 1.2rem;
+        padding: 0.8rem 1.2rem;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        min-height: 70px;
     }
 
     .content-header-row {
@@ -1194,15 +1195,22 @@ tr:hover td {
         display: flex !important;
         flex-direction: column;
         align-items: flex-start;
+        gap: 0;
+    }
+
+    .welcome-label {
+        display: none;
+        /* Hide "Bienvenido," on mobile to save space */
     }
 
     .client-branding {
         justify-content: flex-start;
         width: auto;
+        gap: 12px;
     }
 
     .client-logo-img {
-        max-height: 32px;
+        max-height: 28px;
         margin: 0;
     }
 
@@ -1227,16 +1235,20 @@ tr:hover td {
     }
 
     .welcome-name {
-        font-size: 1.1rem !important;
+        font-size: 0.95rem !important;
+        font-weight: 700;
+        line-height: 1.2;
     }
 
     .client-name-header {
-        font-size: 0.8rem !important;
+        font-size: 0.75rem !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 220px;
-        letter-spacing: 0;
+        max-width: 160px;
+        /* Reduced to avoid pushing buttons */
+        opacity: 0.9;
+        margin-top: 0;
     }
 
     .main-content {
@@ -1386,7 +1398,12 @@ tr:hover td {
     }
 
     .welcome-name {
-        font-size: 1.2rem;
+        font-size: 0.85rem !important;
+    }
+
+    .client-name-header {
+        font-size: 0.7rem !important;
+        max-width: 130px;
     }
 }
 
