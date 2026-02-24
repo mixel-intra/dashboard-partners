@@ -253,20 +253,27 @@ if (document.getElementById('change-pass-form')) {
         submitBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Actualizando...';
 
         try {
+            console.log('Intentando actualizar contraseña para ID:', session.id);
+
             // Actualizar en la base de datos
-            const { data, error } = await supabase
+            const { data, error, status } = await supabase
                 .from('user_profiles')
                 .update({ password: newPass })
                 .eq('id', session.id)
                 .select();
 
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                throw new Error('No se encontró el perfil de usuario para actualizar.');
+            if (error) {
+                console.error('Error de Supabase:', error);
+                throw error;
             }
 
-            // Actualizar el timestamp de la sesión local para evitar logout prematuro
+            console.log('Respuesta de Supabase:', { status, data });
+
+            if (!data || data.length === 0) {
+                throw new Error('No se afectó ninguna fila. Verifica que tu ID de usuario sea correcto.');
+            }
+
+            // Actualizar el timestamp de la sesión local
             saveSession({
                 ...session,
                 timestamp: Date.now()
@@ -284,8 +291,8 @@ if (document.getElementById('change-pass-form')) {
             }, 2000);
 
         } catch (err) {
-            console.error('Error al cambiar contraseña:', err);
-            errorBox.textContent = 'Error al actualizar. Intenta de nuevo.';
+            console.error('Error detallado al cambiar contraseña:', err);
+            errorBox.textContent = 'Error: ' + (err.message || 'No se pudo actualizar.');
             errorBox.style.display = 'block';
             submitBtn.disabled = false;
             submitBtn.innerHTML = 'Actualizar Clave';
