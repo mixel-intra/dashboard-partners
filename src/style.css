@@ -1449,13 +1449,46 @@ tr:hover td {
 @media (max-width: 600px) {
     .dash-tabs-segment {
         width: 100%;
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        /* Firefox */
+        padding: 4px;
+        gap: 2px;
+    }
+
+    .dash-tabs-segment::-webkit-scrollbar {
+        display: none;
+        /* Chrome, Safari, etc. */
     }
 
     .dash-tab {
-        flex: 1;
+        flex: 1 0 auto;
+        /* No encoger, permitir crecer si hace falta */
+        min-width: fit-content;
         justify-content: center;
-        padding: 10px 12px;
-        font-size: 0.78rem;
+        padding: 8px 10px;
+        font-size: 0.72rem;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    .dash-tab ion-icon {
+        font-size: 0.9rem;
+    }
+}
+
+/* Specific fix for very small screens (iPhone SE, etc) */
+@media (max-width: 380px) {
+    .dash-tab ion-icon {
+        display: none;
+        /* Hide icons to save space */
+    }
+
+    .dash-tab {
+        padding: 8px 6px;
+        font-size: 0.7rem;
     }
 }
 
