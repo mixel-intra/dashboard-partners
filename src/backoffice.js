@@ -1,4 +1,4 @@
-// Back Office Admin Logic - Cefemex Capital
+// Back Office Admin Logic - Intra
 
 // DOM Elements
 const elements = {

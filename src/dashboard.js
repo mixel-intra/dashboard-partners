@@ -982,7 +982,9 @@ function normalizeStatus(status) {
     const s = status.toLowerCase().trim();
 
     // Specific matches to preserve names
-    if (s.includes('rechazado cefemex')) return 'Rechazado CEFEMEX';
+    if (s.includes('rechazado cefemex')) {
+        return state.clientType === 'hotel' ? 'Rechazado' : 'Rechazado CEFEMEX';
+    }
     if (s.includes('documentacion') || s.includes('documentación')) return 'Documentación / Integración E1';
     if (s.includes('financiera')) return 'Revisión Financiera / Integración E2';
     if (s.includes('comité') || s.includes('comite')) return 'Comité / Autorización';
@@ -1001,6 +1003,7 @@ function isQualified(status) {
         'calificado',
         'condicionado',
         'rechazado cefemex',
+        'rechazado',
         'documentación',
         'documentacion',
         'integración',

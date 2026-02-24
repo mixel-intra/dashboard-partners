@@ -24,8 +24,6 @@ function saveSession(userData) {
 
 function clearSession() {
     localStorage.removeItem('intra_session_v2');
-    // Compatibilidad: eliminar sesión anterior también
-    localStorage.removeItem('cefemex_session');
 }
 
 // ============================================================
