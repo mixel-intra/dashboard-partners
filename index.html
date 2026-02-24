@@ -26,91 +26,166 @@
     <!-- ===== LOADING SCREEN ===== -->
     <style>
         #dashboard-loader {
-            position: fixed; inset: 0; z-index: 9999;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
             background: #000;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         #dashboard-loader::before {
             content: '';
-            position: absolute; inset: 0;
+            position: absolute;
+            inset: 0;
             background: radial-gradient(ellipse 700px 500px at 50% 45%,
-                rgba(160, 0, 90, 0.07) 0%, transparent 70%);
+                    rgba(160, 0, 90, 0.07) 0%, transparent 70%);
             pointer-events: none;
         }
-        #dashboard-loader.fade-out { opacity: 0; pointer-events: none; }
+
+        #dashboard-loader.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
 
         .ld-inner {
-            display: flex; flex-direction: column;
-            align-items: center; gap: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
         }
+
         .ld-logo-wrap {
             position: relative;
-            width: 100px; height: 100px;
-            display: flex; align-items: center; justify-content: center;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
         /* Anillo exterior lento */
         .ld-ring-outer {
-            position: absolute; inset: -10px;
+            position: absolute;
+            inset: -10px;
             border-radius: 50%;
             border: 1px solid transparent;
             border-left-color: rgba(160, 0, 90, 0.35);
             border-bottom-color: rgba(160, 0, 90, 0.12);
             animation: ld-rev 3.2s linear infinite;
         }
+
         /* Anillo interior rápido */
         .ld-ring-inner {
-            position: absolute; inset: 0;
+            position: absolute;
+            inset: 0;
             border-radius: 50%;
             border: 1.5px solid rgba(255, 255, 255, 0.05);
             border-top-color: rgba(180, 0, 105, 0.95);
             border-right-color: rgba(180, 0, 105, 0.35);
             animation: ld-spin 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
-        @keyframes ld-spin { to { transform: rotate(360deg); } }
-        @keyframes ld-rev  { to { transform: rotate(-360deg); } }
+
+        @keyframes ld-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes ld-rev {
+            to {
+                transform: rotate(-360deg);
+            }
+        }
 
         .ld-logo {
-            width: 42px; height: auto; opacity: 0.9;
+            width: 42px;
+            height: auto;
+            opacity: 0.9;
             animation: ld-breathe 3s ease-in-out infinite;
         }
+
         @keyframes ld-breathe {
-            0%, 100% { opacity: 0.9; transform: scale(1); }
-            50%       { opacity: 0.55; transform: scale(0.91); }
+
+            0%,
+            100% {
+                opacity: 0.9;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.55;
+                transform: scale(0.91);
+            }
         }
+
         .ld-label {
             font-family: 'Inter', sans-serif;
-            font-size: 0.7rem; font-weight: 500;
+            font-size: 0.7rem;
+            font-weight: 500;
             color: rgba(255, 255, 255, 0.22);
-            letter-spacing: 0.16em; text-transform: uppercase;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
         }
+
         .ld-dots {
-            display: flex; gap: 7px; align-items: center;
+            display: flex;
+            gap: 7px;
+            align-items: center;
         }
+
         .ld-dots span {
-            width: 4px; height: 4px; border-radius: 50%;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
             background: rgba(180, 0, 105, 0.8);
             animation: ld-dot 1.4s ease-in-out infinite;
         }
-        .ld-dots span:nth-child(2) { animation-delay: 0.22s; }
-        .ld-dots span:nth-child(3) { animation-delay: 0.44s; }
-        @keyframes ld-dot {
-            0%, 80%, 100% { transform: scale(0.5); opacity: 0.25; }
-            40%            { transform: scale(1);   opacity: 1; }
+
+        .ld-dots span:nth-child(2) {
+            animation-delay: 0.22s;
         }
+
+        .ld-dots span:nth-child(3) {
+            animation-delay: 0.44s;
+        }
+
+        @keyframes ld-dot {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.5);
+                opacity: 0.25;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
         /* Barra de progreso inferior */
         .ld-bar-track {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 2px; background: rgba(255, 255, 255, 0.04);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.04);
         }
+
         .ld-bar-fill {
-            height: 100%; width: 0%;
+            height: 100%;
+            width: 0%;
             background: linear-gradient(90deg,
-                rgba(160, 0, 90, 0.6) 0%,
-                rgba(190, 0, 115, 1) 80%);
+                    rgba(160, 0, 90, 0.6) 0%,
+                    rgba(190, 0, 115, 1) 80%);
             box-shadow: 0 0 18px rgba(180, 0, 105, 0.5),
-                        0 0  5px rgba(180, 0, 105, 0.85);
+                0 0 5px rgba(180, 0, 105, 0.85);
             transition: width 0.75s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
@@ -149,7 +224,8 @@
                     <img src="src/assets/intra-logo.png" alt="Intra" class="intra-logo-img">
                     <span class="partner-tag">Partner Portal</span>
                 </div>
-                <button id="ventas-toggle-btn" onclick="toggleVentas()" class="logout-btn" title="Registrar ventas" style="background: rgba(1,241,227,0.08); border-color: rgba(1,241,227,0.18); color: rgba(1,241,227,0.8);">
+                <button id="ventas-toggle-btn" onclick="toggleVentas()" class="logout-btn" title="Registrar ventas"
+                    style="background: rgba(1,241,227,0.08); border-color: rgba(1,241,227,0.18); color: rgba(1,241,227,0.8);">
                     <ion-icon name="cash-outline"></ion-icon>
                 </button>
                 <button onclick="logout()" class="logout-btn" title="Cerrar sesión">
@@ -162,6 +238,8 @@
         <main class="main-content">
             <div class="content-header-row">
                 <div class="header-title-area">
+                    <h2 id="client-name-display" style="color:white; margin:0 0 10px 0; font-size:1.8rem;">Cargando...
+                    </h2>
                     <div class="live-label">
                         <div class="live-dot"></div>
                         <span>Última actualización: Ahora mismo</span>
@@ -220,9 +298,9 @@
             <div class="dashboard-grid">
 
                 <!-- Cards Row -->
-                <div class="cards-grid">
+                <div class="cards-grid" id="top-cards-row">
                     <!-- Card 1: Leads Calificados -->
-                    <div class="card-quantix card-orange">
+                    <div class="card-quantix card-orange" id="card-1-wrapper">
                         <div class="card-accent-line orange"></div>
                         <div class="card-header">
                             <div class="card-title-wrapper">
@@ -231,8 +309,8 @@
                                     <ion-icon name="ribbon"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub" id="label-sub-1">CALIDAD</span>
                                     <span class="label-main" id="label-main-1">Oportunidades calificadas</span>
+                                    <span class="label-sub" id="label-sub-1">CALIDAD</span>
                                 </div>
                             </div>
                         </div>
@@ -248,7 +326,7 @@
                     </div>
 
                     <!-- Card 2: Tasa de Conversión -->
-                    <div class="card-quantix card-purple">
+                    <div class="card-quantix card-purple" id="card-2-wrapper">
                         <div class="card-accent-line purple"></div>
                         <div class="card-header">
                             <div class="card-title-wrapper">
@@ -257,8 +335,8 @@
                                     <ion-icon name="swap-vertical"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub" id="label-sub-2">Oportunidades calificadas / Leads</span>
                                     <span class="label-main" id="label-main-2">Tasa de Conversión</span>
+                                    <span class="label-sub" id="label-sub-2">Oportunidades calificadas / Leads</span>
                                 </div>
                             </div>
                         </div>
@@ -275,7 +353,7 @@
                     </div>
 
                     <!-- Card 3: Ventas -->
-                    <div class="card-quantix card-cyan">
+                    <div class="card-quantix card-cyan" id="card-3-wrapper">
                         <div class="card-accent-line cyan"></div>
                         <div class="card-header">
                             <div class="card-title-wrapper">
@@ -284,8 +362,8 @@
                                     <ion-icon name="cash"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub" id="label-sub-3">INGRESOS TOTALES</span>
                                     <span class="label-main" id="label-main-3">Ventas</span>
+                                    <span class="label-sub" id="label-sub-3">INGRESOS TOTALES</span>
                                 </div>
                             </div>
                         </div>
@@ -299,7 +377,7 @@
                     </div>
 
                     <!-- Card 4: ROI -->
-                    <div class="card-quantix card-pink">
+                    <div class="card-quantix card-pink" id="card-4-wrapper">
                         <div class="card-accent-line pink"></div>
                         <div class="card-header">
                             <div class="card-title-wrapper">
@@ -308,8 +386,8 @@
                                     <ion-icon name="rocket"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub" id="label-sub-4">VENTAS / INVERSIÓN</span>
                                     <span class="label-main" id="label-main-4">ROI</span>
+                                    <span class="label-sub" id="label-sub-4">VENTAS / INVERSIÓN</span>
                                 </div>
                             </div>
                         </div>
@@ -327,12 +405,14 @@
                 <div class="split-row-grid">
                     <!-- Main Big Chart -->
                     <div class="card-quantix big-chart-card">
-                        <div class="card-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="card-header"
+                            style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start;">
                             <div>
                                 <span class="label-sub">TENDENCIA HISTÓRICA</span>
-                                <h3 class="section-headline" style="font-size: 1.5rem; margin: 0;">Comportamiento</h3>
+                                <h3 class="section-headline" id="main-chart-title"
+                                    style="font-size: 1.5rem; margin: 0;">Comportamiento</h3>
                             </div>
-                            <div class="chart-mode-toggle">
+                            <div class="chart-mode-toggle" id="main-chart-toggle">
                                 <button class="chart-mode-btn active" data-mode="calificados">Calificados</button>
                                 <button class="chart-mode-btn" data-mode="total">Totales</button>
                             </div>
@@ -346,9 +426,8 @@
                     <div class="table-card" style="display: flex; flex-direction: column;">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-secondary);">Últimos leads
-                                calificados
-                            </h3>
+                            <h3 id="table-title" style="margin: 0; font-size: 1.1rem; color: var(--text-secondary);">
+                                Últimos leads calificados</h3>
                             <button id="view-all-btn" class="header-icon-btn" title="Ver info completa">
                                 <ion-icon name="open-outline"></ion-icon>
                             </button>
@@ -372,9 +451,9 @@
                 </div>
 
                 <!-- Bottom Row: Remaining Cards -->
-                <div class="bottom-cards-row">
+                <div class="bottom-cards-row" id="bottom-cards-row">
                     <!-- Card 5: Total Leads -->
-                    <div class="card-quantix card-orange">
+                    <div class="card-quantix card-orange" id="card-5-wrapper">
                         <div class="card-accent-line orange"></div>
                         <div class="card-header">
                             <div class="card-title-wrapper">
@@ -383,8 +462,8 @@
                                     <ion-icon name="people"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub" id="label-sub-5">Personas que mandaron mensaje</span>
                                     <span class="label-main" id="label-main-5">Total de Registros</span>
+                                    <span class="label-sub" id="label-sub-5">Personas que mandaron mensaje</span>
                                 </div>
                             </div>
                         </div>
@@ -394,7 +473,7 @@
                     </div>
 
                     <!-- Card 6: Inversión -->
-                    <div class="card-quantix card-pink">
+                    <div class="card-quantix card-pink" id="card-6-wrapper">
                         <div class="card-accent-line pink"></div>
                         <div class="card-header">
                             <div class="card-title-wrapper">
@@ -403,8 +482,8 @@
                                     <ion-icon name="wallet"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub" id="label-sub-6"></span>
                                     <span class="label-main" id="label-main-6">Inversión</span>
+                                    <span class="label-sub" id="label-sub-6">Presupuesto</span>
                                 </div>
                             </div>
                         </div>
@@ -414,7 +493,7 @@
                     </div>
 
                     <!-- Card 7: CPL -->
-                    <div class="card-quantix card-cyan">
+                    <div class="card-quantix card-cyan" id="card-7-wrapper">
                         <div class="card-accent-line cyan"></div>
                         <div class="card-header">
                             <div class="card-title-wrapper">
@@ -423,8 +502,8 @@
                                     <ion-icon name="pricetag"></ion-icon>
                                 </div>
                                 <div class="label-group">
-                                    <span class="label-sub" id="label-sub-7"></span>
                                     <span class="label-main" id="label-main-7">Costo por oportunidad calificada</span>
+                                    <span class="label-sub" id="label-sub-7">Eficiencia</span>
                                 </div>
                             </div>
                         </div>
@@ -516,8 +595,13 @@
         }
 
         @keyframes fadeInBackdrop {
-            from { opacity: 0; }
-            to   { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         #switcher-backdrop.open {
@@ -682,7 +766,7 @@
             background: linear-gradient(135deg, rgba(117, 81, 255, 0.14), rgba(1, 241, 227, 0.05));
             border-color: rgba(117, 81, 255, 0.4);
             color: white;
-            box-shadow: 0 4px 20px rgba(117, 81, 255, 0.15), inset 0 1px 0 rgba(255,255,255,0.05);
+            box-shadow: 0 4px 20px rgba(117, 81, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .drawer-client-item.active::before {
@@ -701,7 +785,7 @@
             justify-content: center;
             overflow: hidden;
             flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .drawer-client-item.active .drawer-client-logo {
@@ -765,7 +849,7 @@
         }
 
         /* Ocultar botón cuando el drawer está abierto */
-        #client-switcher-drawer.open ~ #switcher-toggle-btn {
+        #client-switcher-drawer.open~#switcher-toggle-btn {
             opacity: 0;
             pointer-events: none;
             transform: scale(0.85);
@@ -794,7 +878,8 @@
             <a href="hub.html" class="drawer-hub-link">
                 <ion-icon name="grid-outline"></ion-icon>
                 Ver todos los dashboards
-                <ion-icon name="arrow-forward-outline" style="margin-left:auto; font-size:0.85rem; opacity:0.5;"></ion-icon>
+                <ion-icon name="arrow-forward-outline"
+                    style="margin-left:auto; font-size:0.85rem; opacity:0.5;"></ion-icon>
             </a>
         </div>
     </div>
@@ -806,76 +891,123 @@
     <!-- ===== PANEL DE VENTAS ===== -->
     <style>
         #ventas-backdrop {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.5);
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(4px);
             z-index: 1100;
-            opacity: 0; pointer-events: none;
+            opacity: 0;
+            pointer-events: none;
             transition: opacity 0.25s ease;
         }
-        #ventas-backdrop.open { opacity: 1; pointer-events: all; }
+
+        #ventas-backdrop.open {
+            opacity: 1;
+            pointer-events: all;
+        }
 
         #ventas-panel {
             position: fixed;
-            top: 0; right: -420px;
+            top: 0;
+            right: -420px;
             width: 400px;
             height: 100vh;
             background: #111114;
-            border-left: 1px solid rgba(255,255,255,0.07);
+            border-left: 1px solid rgba(255, 255, 255, 0.07);
             z-index: 1101;
             display: flex;
             flex-direction: column;
-            transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-family: 'Inter', sans-serif;
         }
-        #ventas-panel.open { right: 0; }
+
+        #ventas-panel.open {
+            right: 0;
+        }
 
         .vp-header {
             padding: 20px 20px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.07);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-shrink: 0;
         }
+
         .vp-title {
-            display: flex; align-items: center; gap: 10px;
-            font-size: 1rem; font-weight: 600; color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
         }
-        .vp-title ion-icon { color: #01F1E3; font-size: 1.1rem; }
+
+        .vp-title ion-icon {
+            color: #01F1E3;
+            font-size: 1.1rem;
+        }
+
         .vp-close {
-            width: 30px; height: 30px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px; color: rgba(255,255,255,0.4);
-            cursor: pointer; display: flex;
-            align-items: center; justify-content: center;
-            font-size: 1.1rem; transition: all 0.15s;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.15s;
         }
-        .vp-close:hover { background: rgba(255,69,58,0.12); color: #FF453A; }
+
+        .vp-close:hover {
+            background: rgba(255, 69, 58, 0.12);
+            color: #FF453A;
+        }
 
         /* Formulario */
         .vp-form {
             padding: 16px 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             flex-direction: column;
             gap: 10px;
             flex-shrink: 0;
-            background: rgba(255,255,255,0.015);
+            background: rgba(255, 255, 255, 0.015);
         }
+
         .vp-form-title {
-            font-size: 0.68rem; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.8px;
-            color: rgba(255,255,255,0.3);
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(255, 255, 255, 0.3);
             margin-bottom: 2px;
         }
-        .vp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .vp-field { display: flex; flex-direction: column; gap: 4px; }
-        .vp-label { font-size: 0.72rem; color: rgba(255,255,255,0.4); }
+
+        .vp-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .vp-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .vp-label {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
         .vp-input {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
             padding: 9px 12px;
             color: #fff;
@@ -884,67 +1016,113 @@
             outline: none;
             transition: border-color 0.15s;
         }
-        .vp-input:focus { border-color: #01F1E3; }
-        .vp-input::placeholder { color: rgba(255,255,255,0.2); }
-        .vp-actions { display: flex; gap: 8px; }
+
+        .vp-input:focus {
+            border-color: #01F1E3;
+        }
+
+        .vp-input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .vp-actions {
+            display: flex;
+            gap: 8px;
+        }
+
         .vp-btn-save {
-            flex: 1; padding: 10px;
-            background: rgba(1,241,227,0.12);
-            border: 1px solid rgba(1,241,227,0.25);
+            flex: 1;
+            padding: 10px;
+            background: rgba(1, 241, 227, 0.12);
+            border: 1px solid rgba(1, 241, 227, 0.25);
             border-radius: 8px;
             color: #01F1E3;
-            font-weight: 600; font-size: 0.82rem;
-            cursor: pointer; font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
             transition: all 0.15s;
         }
-        .vp-btn-save:hover { background: rgba(1,241,227,0.22); }
+
+        .vp-btn-save:hover {
+            background: rgba(1, 241, 227, 0.22);
+        }
+
         .vp-btn-cancel {
             padding: 10px 16px;
             background: transparent;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
-            color: rgba(255,255,255,0.35);
-            font-size: 0.82rem; cursor: pointer;
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 0.82rem;
+            cursor: pointer;
             font-family: 'Inter', sans-serif;
-            transition: all 0.15s; display: none;
+            transition: all 0.15s;
+            display: none;
         }
-        .vp-btn-cancel:hover { color: #FF453A; border-color: rgba(255,69,58,0.2); }
+
+        .vp-btn-cancel:hover {
+            color: #FF453A;
+            border-color: rgba(255, 69, 58, 0.2);
+        }
 
         /* Lista de ventas */
         .vp-list {
-            flex: 1; overflow-y: auto;
+            flex: 1;
+            overflow-y: auto;
             padding: 12px 20px;
             scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.1) transparent;
+            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
         }
-        .vp-list::-webkit-scrollbar { width: 3px; }
-        .vp-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+        .vp-list::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .vp-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
 
         .vp-list-header {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 10px;
         }
+
         .vp-list-title {
-            font-size: 0.68rem; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.8px;
-            color: rgba(255,255,255,0.3);
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(255, 255, 255, 0.3);
         }
+
         .vp-total {
-            font-size: 0.78rem; font-weight: 600;
+            font-size: 0.78rem;
+            font-weight: 600;
             color: #01F1E3;
         }
 
         .vp-empty {
-            display: flex; flex-direction: column;
-            align-items: center; gap: 8px;
-            padding: 40px 0; color: rgba(255,255,255,0.2);
-            font-size: 0.82rem; text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 40px 0;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.82rem;
+            text-align: center;
         }
-        .vp-empty ion-icon { font-size: 2rem; }
+
+        .vp-empty ion-icon {
+            font-size: 2rem;
+        }
 
         .vp-item {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 10px;
             padding: 12px 14px;
             margin-bottom: 8px;
@@ -953,39 +1131,89 @@
             gap: 12px;
             transition: border-color 0.15s;
         }
-        .vp-item:hover { border-color: rgba(255,255,255,0.12); }
-        .vp-item-info { flex: 1; min-width: 0; }
+
+        .vp-item:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .vp-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
         .vp-item-monto {
-            font-size: 0.95rem; font-weight: 600; color: #fff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #fff;
         }
+
         .vp-item-meta {
-            font-size: 0.72rem; color: rgba(255,255,255,0.35);
-            margin-top: 2px; white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+
         .vp-item-autor {
-            display: flex; align-items: center; gap: 3px;
-            font-size: 0.68rem; color: rgba(1,241,227,0.5);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.68rem;
+            color: rgba(1, 241, 227, 0.5);
             margin-top: 3px;
         }
-        .vp-item-autor ion-icon { font-size: 0.65rem; }
-        .vp-item-btns { display: flex; gap: 6px; flex-shrink: 0; }
+
+        .vp-item-autor ion-icon {
+            font-size: 0.65rem;
+        }
+
+        .vp-item-btns {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
         .vp-icon-btn {
-            width: 28px; height: 28px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 7px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem; color: rgba(255,255,255,0.3);
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 7px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.3);
             transition: all 0.15s;
         }
-        .vp-icon-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-        .vp-icon-btn.delete:hover { background: rgba(255,69,58,0.12); color: #FF453A; border-color: rgba(255,69,58,0.2); }
-        .vp-icon-btn.edit:hover { background: rgba(1,241,227,0.1); color: #01F1E3; border-color: rgba(1,241,227,0.2); }
+
+        .vp-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .vp-icon-btn.delete:hover {
+            background: rgba(255, 69, 58, 0.12);
+            color: #FF453A;
+            border-color: rgba(255, 69, 58, 0.2);
+        }
+
+        .vp-icon-btn.edit:hover {
+            background: rgba(1, 241, 227, 0.1);
+            color: #01F1E3;
+            border-color: rgba(1, 241, 227, 0.2);
+        }
 
         .vp-loading {
-            display: flex; align-items: center; justify-content: center;
-            gap: 8px; padding: 30px; color: rgba(255,255,255,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.25);
             font-size: 0.82rem;
         }
     </style>

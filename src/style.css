@@ -1404,6 +1404,17 @@ tr:hover td {
     box-shadow: 0 2px 12px rgba(117, 81, 255, 0.3) !important;
 }
 
+.dash-tab.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(1);
+    pointer-events: none;
+}
+
+.dash-tab.hidden {
+    display: none !important;
+}
+
 @media (max-width: 600px) {
     .dash-tabs-segment {
         width: 100%;

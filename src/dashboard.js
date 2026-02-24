@@ -130,6 +130,7 @@ async function loadConfig() {
         };
 
         state.clientType = config.client_type || 'otro';
+        state.rawConfig = config;
         initHotelTabs();
 
         applyDynamicTheme(state.config.themePrimary, state.config.themeSecondary);
@@ -283,14 +284,68 @@ function initHotelTabs() {
     if (!tabsContainer) return;
 
     if (state.clientType === 'hotel') {
+        const config = state.rawConfig || {};
+        const services = config.hotel_services || {
+            eventos: 'unlocked',
+            reservas: 'unlocked',
+            daypass: 'unlocked',
+            restaurante: 'unlocked'
+        };
+
         tabsContainer.classList.remove('hidden');
-        state.activeTab = 'eventos';
+
+        // Find the first unlocked service to set as active
+        const firstUnlocked = Object.keys(services).find(s => services[s] === 'unlocked');
+        state.activeTab = firstUnlocked || 'eventos';
 
         tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
+            const tabId = btn.dataset.tab;
+            const status = services[tabId] || 'unlocked';
+
+            if (status === 'hidden') {
+                btn.classList.add('hidden');
+            } else if (status === 'locked') {
+                btn.classList.add('locked');
+                btn.title = "Servicio no disponible";
+            } else {
+                btn.classList.remove('hidden', 'locked');
+                btn.classList.toggle('active', tabId === state.activeTab);
+            }
+
             btn.addEventListener('click', () => {
-                switchDashTab(btn.dataset.tab);
+                if (btn.classList.contains('locked')) return;
+                switchDashTab(tabId);
             });
         });
+
+        // Hotel-specific overrides
+        document.getElementById('table-title').textContent = 'Últimas cotizaciones enviadas a ventas';
+        document.getElementById('main-chart-title').textContent = 'Histórico de cotizaciones de eventos canalizados a ventas';
+
+        const modeToggle = document.getElementById('main-chart-toggle');
+        if (modeToggle) modeToggle.style.visibility = 'hidden'; // Hide the "Totales" toggle
+
+        // Move cards
+        const topRow = document.getElementById('top-cards-row');
+        const c1 = document.getElementById('card-1-wrapper'); // Cotizaciones
+        const c3 = document.getElementById('card-3-wrapper'); // Ventas
+        const c4 = document.getElementById('card-4-wrapper'); // ROI
+        const c7 = document.getElementById('card-7-wrapper'); // Costo por cotización
+
+        if (topRow && c1 && c3 && c4 && c7) {
+            topRow.innerHTML = '';
+            topRow.appendChild(c1);
+            topRow.appendChild(c3);
+            topRow.appendChild(c4);
+            topRow.appendChild(c7);
+        }
+
+        // Hide unused cards
+        ['card-2-wrapper', 'card-5-wrapper', 'card-6-wrapper'].forEach(cid => {
+            const el = document.getElementById(cid);
+            if (el) el.style.display = 'none';
+        });
+
     } else {
         tabsContainer.classList.add('hidden');
     }
@@ -576,6 +631,9 @@ function updateUI(m) {
             logoImg.classList.add('hidden');
         }
     }
+
+    // Client Title injection
+    setTxt('client-name-display', state.config.clientName || 'Cargando...');
 
     // Side panel inputs
     const setVal = (id, val) => {
