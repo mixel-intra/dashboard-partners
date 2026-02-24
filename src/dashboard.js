@@ -307,9 +307,18 @@ function initHotelTabs() {
             } else if (status === 'locked') {
                 btn.classList.add('locked');
                 btn.title = "Servicio no disponible";
+                // Add tiny lock if not already there
+                if (!btn.querySelector('.tab-lock-icon')) {
+                    const lock = document.createElement('ion-icon');
+                    lock.name = 'lock-closed';
+                    lock.className = 'tab-lock-icon';
+                    btn.appendChild(lock);
+                }
             } else {
                 btn.classList.remove('hidden', 'locked');
                 btn.classList.toggle('active', tabId === state.activeTab);
+                const lock = btn.querySelector('.tab-lock-icon');
+                if (lock) lock.remove();
             }
 
             btn.addEventListener('click', () => {
