@@ -1,5 +1,9 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "framework": null
+  "functions": {
+    "api/proxy.js": {
+      "runtime": "@vercel/node"
+    }
+  }
 }
