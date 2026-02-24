@@ -1185,36 +1185,57 @@ tr:hover td {
     .header-left {
         flex: 1;
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 12px;
     }
 
     .welcome-area {
-        display: none !important;
+        display: flex !important;
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .client-branding {
-        justify-content: center;
-        width: 100%;
+        justify-content: flex-start;
+        width: auto;
     }
 
     .client-logo-img {
-        max-height: 40px;
-        margin: 0 auto;
+        max-height: 32px;
+        margin: 0;
     }
 
     .header-right {
-        position: absolute;
-        right: 1.2rem;
-        gap: 12px;
+        position: relative;
+        right: 0;
+        gap: 8px;
     }
 
     .intra-branding {
         display: none;
-        /* Hide brand text/logo in very small to save space if needed, or simplify */
     }
 
     .intra-logo-img {
-        height: 24px;
+        height: 20px;
+    }
+
+    .logout-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 1.2rem;
+    }
+
+    .welcome-name {
+        font-size: 1.1rem !important;
+    }
+
+    .client-name-header {
+        font-size: 0.9rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
     }
 
     .main-content {
