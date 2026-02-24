@@ -1,7 +1,7 @@
 // api/proxy.js
 // Proxy serverless para evitar errores de CORS con webhooks de n8n
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // Preflight OPTIONS
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Origin', '*');
