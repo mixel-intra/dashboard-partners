@@ -1449,46 +1449,54 @@ tr:hover td {
 @media (max-width: 600px) {
     .dash-tabs-segment {
         width: 100%;
-        display: flex;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        /* Firefox */
-        padding: 4px;
-        gap: 2px;
-    }
-
-    .dash-tabs-segment::-webkit-scrollbar {
-        display: none;
-        /* Chrome, Safari, etc. */
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        background: transparent;
+        border: none;
+        padding: 0;
+        gap: 10px;
+        overflow: visible;
     }
 
     .dash-tab {
-        flex: 1 0 auto;
-        /* No encoger, permitir crecer si hace falta */
-        min-width: fit-content;
+        flex: none;
+        width: 100%;
         justify-content: center;
-        padding: 8px 10px;
-        font-size: 0.72rem;
-        gap: 4px;
-        white-space: nowrap;
+        padding: 14px 10px;
+        font-size: 0.82rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .dash-tab:active {
+        transform: scale(0.96);
     }
 
     .dash-tab ion-icon {
-        font-size: 0.9rem;
+        font-size: 1.1rem;
+    }
+
+    .dash-tab.active {
+        background: linear-gradient(135deg, #7551FF 0%, #5a3edb 100%) !important;
+        border-color: rgba(117, 81, 255, 0.5) !important;
+        box-shadow: 0 10px 20px rgba(117, 81, 255, 0.25) !important;
+    }
+
+    /* Keep hidden/locked consistent */
+    .dash-tab.locked {
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(255, 255, 255, 0.03);
     }
 }
 
-/* Specific fix for very small screens (iPhone SE, etc) */
+/* Adjust for even smaller screens */
 @media (max-width: 380px) {
-    .dash-tab ion-icon {
-        display: none;
-        /* Hide icons to save space */
-    }
-
     .dash-tab {
-        padding: 8px 6px;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
+        padding: 12px 8px;
     }
 }
 
