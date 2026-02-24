@@ -582,17 +582,17 @@ async function fetchData() {
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const rawData = await response.json();
 
-        // Normalize leads — extraer tipo_servicio del estatus ORIGINAL antes de normalizarlo
+        // Normalize leads — extraer tipo_servicio siempre del campo crudo (tipo_servicio o estatus)
+        // Se normaliza sin importar si tipo_servicio ya viene en el webhook, porque puede
+        // venir como "CALIFICADO RESERVA" (nombre completo del stage del CRM) en lugar de 'Reserva'
         state.leads = rawData.map(lead => {
-            // Extraer tipo_servicio del estatus crudo (ej. "CALIFICADO RESERVA" → 'Reserva')
-            let tipoServicio = lead.tipo_servicio;
-            if (!tipoServicio && lead.estatus) {
-                const e = lead.estatus.toLowerCase();
-                if (e.includes('restaurante'))          tipoServicio = 'Restaurante';
-                else if (e.includes('daypass') || e.includes('day pass')) tipoServicio = 'DayPass';
-                else if (e.includes('reserva'))         tipoServicio = 'Reserva';
-                else if (e.includes('evento'))          tipoServicio = 'Evento';
-            }
+            const rawSource = (lead.tipo_servicio || lead.estatus || '').toLowerCase();
+            let tipoServicio = null;
+            if (rawSource.includes('restaurante'))                      tipoServicio = 'Restaurante';
+            else if (rawSource.includes('daypass') || rawSource.includes('day pass')) tipoServicio = 'DayPass';
+            else if (rawSource.includes('reserva'))                     tipoServicio = 'Reserva';
+            else if (rawSource.includes('evento'))                      tipoServicio = 'Evento';
+
             return {
                 ...lead,
                 tipo_servicio: tipoServicio,
@@ -1006,12 +1006,13 @@ function normalizeStatus(status) {
     const s = status.toLowerCase().trim();
 
     // --- NORMALIZACIÓN PARA HOTELES (EXCEPTO CEFEMEX) ---
+    // Soporta tanto singular ("CALIFICADO RESERVA") como plural ("CALIFICADO RESERVAS")
     const isHotel = state.clientType === 'hotel' && state.clientId !== 'cefemex';
     if (isHotel) {
-        if (s.includes('calificado reservas')) return 'Calificado Reservas';
-        if (s.includes('calificado daypass')) return 'Calificado DayPass';
-        if (s.includes('calificado eventos')) return 'Calificado Eventos';
         if (s.includes('calificado restaurante')) return 'Calificado Restaurante';
+        if (s.includes('calificado daypass') || s.includes('calificado day pass')) return 'Calificado DayPass';
+        if (s.includes('calificado reserva'))     return 'Calificado Reserva';
+        if (s.includes('calificado evento'))      return 'Calificado Evento';
     }
 
     // Specific matches to preserve names
@@ -1035,12 +1036,10 @@ function isQualified(status) {
     const s = status.toLowerCase();
 
     // --- POLÍTICA ESPECIAL PARA HOTELES (EXCEPTO CEFEMEX) ---
+    // Cualquier status que comience con "calificado" cuenta como oportunidad calificada
     const isHotel = state.clientType === 'hotel' && state.clientId !== 'cefemex';
     if (isHotel) {
-        return s.includes('calificado reservas') ||
-            s.includes('calificado daypass') ||
-            s.includes('calificado eventos') ||
-            s.includes('calificado restaurante');
+        return s.startsWith('calificado');
     }
 
     // --- POLÍTICA GENERAL / CEFEMEX ---
