@@ -253,27 +253,25 @@ if (document.getElementById('change-pass-form')) {
         submitBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Actualizando...';
 
         try {
-            console.log('Intentando actualizar contraseña para ID:', session.id);
+            const session = getSession();
+            if (!session || !session.id) {
+                alert('Sesión inválida o expirada. Por favor, cierra sesión e ingresa de nuevo para reactivar tu acceso.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Actualizar Clave';
+                return;
+            }
 
-            // Actualizar en la base de datos
-            const { data, error, status } = await supabase
+            console.log('ID a actualizar:', session.id);
+
+            const { error } = await supabase
                 .from('user_profiles')
                 .update({ password: newPass })
-                .eq('id', session.id)
-                .select();
+                .eq('id', session.id);
 
-            if (error) {
-                console.error('Error de Supabase:', error);
-                throw error;
-            }
+            if (error) throw error;
 
-            console.log('Respuesta de Supabase:', { status, data });
+            console.log('¡Éxito en base de datos!');
 
-            if (!data || data.length === 0) {
-                throw new Error('No se afectó ninguna fila. Verifica que tu ID de usuario sea correcto.');
-            }
-
-            // Actualizar el timestamp de la sesión local
             saveSession({
                 ...session,
                 timestamp: Date.now()
@@ -291,8 +289,9 @@ if (document.getElementById('change-pass-form')) {
             }, 2000);
 
         } catch (err) {
-            console.error('Error detallado al cambiar contraseña:', err);
-            errorBox.textContent = 'Error: ' + (err.message || 'No se pudo actualizar.');
+            console.error('Error en proceso:', err);
+            alert('Error crítico: ' + (err.message || 'No se pudo conectar con la base de datos'));
+            errorBox.textContent = 'Error: ' + err.message;
             errorBox.style.display = 'block';
             submitBtn.disabled = false;
             submitBtn.innerHTML = 'Actualizar Clave';
