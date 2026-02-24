@@ -1449,56 +1449,52 @@ tr:hover td {
 @media (max-width: 600px) {
     .dash-tabs-segment {
         width: 100%;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        background: transparent;
-        border: none;
-        padding: 0;
-        gap: 10px;
-        overflow: visible;
+        display: flex;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 14px;
+        padding: 4px;
+        gap: 4px;
+        overflow: hidden;
     }
 
     .dash-tab {
-        flex: none;
-        width: 100%;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        /* Icon above text to save horizontal space */
+        align-items: center;
         justify-content: center;
-        padding: 14px 10px;
-        font-size: 0.82rem;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 16px;
-        backdrop-filter: blur(10px);
-        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .dash-tab:active {
-        transform: scale(0.96);
+        padding: 8px 2px;
+        font-size: 0.62rem;
+        /* Much smaller font to fit all in one row */
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
+        background: transparent;
+        border: none;
+        border-radius: 10px;
+        gap: 4px;
+        white-space: nowrap;
+        transition: all 0.2s ease;
     }
 
     .dash-tab ion-icon {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .dash-tab.active {
-        background: linear-gradient(135deg, #7551FF 0%, #5a3edb 100%) !important;
-        border-color: rgba(117, 81, 255, 0.5) !important;
-        box-shadow: 0 10px 20px rgba(117, 81, 255, 0.25) !important;
+        background: #7551FF !important;
+        color: #fff !important;
+        box-shadow: 0 4px 12px rgba(117, 81, 255, 0.2) !important;
     }
 
-    /* Keep hidden/locked consistent */
     .dash-tab.locked {
-        background: rgba(255, 255, 255, 0.02);
-        border-color: rgba(255, 255, 255, 0.03);
+        opacity: 0.3;
     }
 }
 
-/* Adjust for even smaller screens */
-@media (max-width: 380px) {
-    .dash-tab {
-        font-size: 0.75rem;
-        padding: 12px 8px;
-    }
-}
+
 
 /* ===== CHART MODE TOGGLE ===== */
 .chart-mode-toggle {
