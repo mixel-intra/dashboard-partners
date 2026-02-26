@@ -1,6 +1,12 @@
 // Back Office Admin Logic - Intra
 
 // DOM Elements
+// Permitir "DEMO" como valor válido en el campo webhook (evitar validación type=url)
+const _webhookEl = document.getElementById('webhook-url');
+if (_webhookEl) _webhookEl.type = 'text';
+const _adminFormEl = document.getElementById('admin-form');
+if (_adminFormEl) _adminFormEl.noValidate = true;
+
 const elements = {
     clientsList: document.getElementById('clients-list'),
     addClientBtn: document.getElementById('add-client-btn'),
