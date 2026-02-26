@@ -578,30 +578,108 @@ async function refreshVentasDashboard() {
 }
 window.refreshVentasDashboard = refreshVentasDashboard;
 
-async function fetchData() {
-    console.log('Fetching leads from (via proxy):', state.config.webhookUrl);
+// --- Fake Data Generator (modo DEMO para hoteles sin webhook real) ---
+function generateFakeHotelLeads() {
+    const nombres = [
+        'María González', 'Carlos Hernández', 'Ana López', 'Roberto Martínez',
+        'Laura García', 'Fernando Rodríguez', 'Patricia Sánchez', 'Miguel Ángel Torres',
+        'Gabriela Ramírez', 'José Luis Flores', 'Claudia Morales', 'Alejandro Díaz',
+        'Verónica Cruz', 'Ricardo Mendoza', 'Isabel Ortega', 'Daniel Vargas',
+        'Sofía Castillo', 'Eduardo Ríos', 'Carmen Jiménez', 'Andrés Navarro',
+        'Mariana Ruiz', 'Juan Pablo Reyes', 'Diana Guerrero', 'Héctor Medina',
+        'Valeria Peña', 'Francisco Aguilar', 'Lucía Domínguez', 'Sergio Romero',
+        'Paulina Herrera', 'Raúl Estrada', 'Natalia Bautista', 'Óscar Delgado',
+        'Andrea Vega', 'Luis Enrique Salazar', 'Mónica Acosta', 'Jorge Contreras',
+        'Teresa Fuentes', 'Emilio Guzmán', 'Adriana Campos', 'Pablo Sandoval',
+        'Daniela Ibarra', 'Arturo Espinoza', 'Renata Figueroa', 'Iván Lara',
+        'Fernanda Cabrera', 'Ximena Palacios', 'Gustavo Cervantes', 'Rosa Elena Soto'
+    ];
 
-    // Usamos el proxy serverless para evitar problemas de CORS
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(state.config.webhookUrl)}`;
+    const statuses = [
+        { estatus: 'CALIFICADO EVENTO',       weight: 22 },
+        { estatus: 'CALIFICADO RESERVA',       weight: 18 },
+        { estatus: 'CALIFICADO DAYPASS',       weight: 14 },
+        { estatus: 'CALIFICADO RESTAURANTE',   weight: 10 },
+        { estatus: 'NUEVO',                    weight: 15 },
+        { estatus: 'CONTACTADO',               weight: 12 },
+        { estatus: 'EN SEGUIMIENTO',           weight: 9 }
+    ];
+
+    const utmSources = ['facebook', 'google', 'instagram', 'tiktok', null, null];
+    const utmMediums = ['cpc', 'social', 'organic', 'referral', null, null];
+    const utmCampaigns = ['promo-verano', 'bodas-2026', 'daypass-especial', 'hotel-branding', null, null, null];
+
+    const totalLeads = 48 + Math.floor(Math.random() * 15); // 48-62 leads
+    const leads = [];
+    const totalWeight = statuses.reduce((s, st) => s + st.weight, 0);
+
+    for (let i = 0; i < totalLeads; i++) {
+        // Fecha aleatoria dentro de los últimos 45 días
+        const daysAgo = Math.floor(Math.random() * 45);
+        const hour = 8 + Math.floor(Math.random() * 12);
+        const min = Math.floor(Math.random() * 60);
+        const sec = Math.floor(Math.random() * 60);
+        const d = new Date();
+        d.setDate(d.getDate() - daysAgo);
+        d.setHours(hour, min, sec, 0);
+
+        const dayStr = d.getDate();
+        const monStr = d.getMonth() + 1;
+        const yearStr = d.getFullYear();
+        const ampm = hour >= 12 ? 'p.m.' : 'a.m.';
+        const h12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+        const fecha = `${dayStr}/${monStr}/${yearStr}, ${h12}:${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')} ${ampm}`;
+
+        // Seleccionar estatus por peso
+        let rand = Math.random() * totalWeight;
+        let estatus = statuses[0].estatus;
+        for (const st of statuses) {
+            rand -= st.weight;
+            if (rand <= 0) { estatus = st.estatus; break; }
+        }
+
+        leads.push({
+            id_lead: 20900000 + i,
+            nombre: nombres[i % nombres.length],
+            precio: 0,
+            estatus: estatus,
+            estatus_id: 100000000 + i,
+            fecha_creacion: fecha,
+            utm_source: utmSources[Math.floor(Math.random() * utmSources.length)],
+            utm_medium: utmMediums[Math.floor(Math.random() * utmMediums.length)],
+            utm_campaign: utmCampaigns[Math.floor(Math.random() * utmCampaigns.length)],
+            utm_content: null,
+            respuesta_ai: null
+        });
+    }
+
+    return leads;
+}
+
+async function fetchData() {
+    const isDemoMode = state.config.webhookUrl === 'DEMO';
+    console.log(isDemoMode ? 'MODO DEMO — Generando datos ficticios' : 'Fetching leads from (via proxy): ' + state.config.webhookUrl);
 
     try {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        const rawData = await response.json();
+        let rawData;
 
-        // DEBUG TEMPORAL
-        console.log('=== RAW campos del primer lead:', Object.keys(rawData[0] || {}).join(', '));
+        if (isDemoMode) {
+            rawData = generateFakeHotelLeads();
+        } else {
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(state.config.webhookUrl)}`;
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            rawData = await response.json();
+        }
 
-        // Normalize leads — extraer tipo_servicio siempre del campo crudo (tipo_servicio o estatus)
-        // Se normaliza sin importar si tipo_servicio ya viene en el webhook, porque puede
-        // venir como "CALIFICADO RESERVA" (nombre completo del stage del CRM) en lugar de 'Reserva'
+        // Normalize leads — extraer tipo_servicio del campo crudo (tipo_servicio o estatus)
         state.leads = rawData.map(lead => {
             const rawSource = (lead.tipo_servicio || lead.estatus || '').toLowerCase();
             let tipoServicio = null;
-            if (rawSource.includes('restaurante'))                      tipoServicio = 'Restaurante';
+            if (rawSource.includes('restaurante'))                                    tipoServicio = 'Restaurante';
             else if (rawSource.includes('daypass') || rawSource.includes('day pass')) tipoServicio = 'DayPass';
-            else if (rawSource.includes('reserva'))                     tipoServicio = 'Reserva';
-            else if (rawSource.includes('evento'))                      tipoServicio = 'Evento';
+            else if (rawSource.includes('reserva'))                                   tipoServicio = 'Reserva';
+            else if (rawSource.includes('evento'))                                    tipoServicio = 'Evento';
 
             return {
                 ...lead,
@@ -611,7 +689,7 @@ async function fetchData() {
             };
         });
 
-        // Para hoteles: fallback ficticio si el lead aún no tiene tipo_servicio
+        // Para hoteles: fallback si el lead no tiene tipo_servicio identificable
         if (state.clientType === 'hotel') {
             state.leads.forEach((lead, i) => {
                 if (!lead.tipo_servicio) {
@@ -625,11 +703,7 @@ async function fetchData() {
         }
 
         state.filteredLeads = [...state.leads];
-        console.log(`Leads Processing Complete. Total: ${state.leads.length}`);
-        if (state.leads.length > 0) {
-            const l0 = state.leads[0];
-            console.log('=== PRIMER LEAD NORMALIZADO:', {estatus: l0.estatus, tipo_servicio: l0.tipo_servicio, fecha_parsed: l0.fecha_parsed});
-        }
+        console.log(`Leads Processing Complete. Total: ${state.leads.length}` + (isDemoMode ? ' (DEMO)' : ''));
     } catch (error) {
         console.error('Fetch Data Failed:', error);
         state.leads = [];
