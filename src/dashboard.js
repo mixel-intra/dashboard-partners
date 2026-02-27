@@ -1,5 +1,6 @@
 // --- Quantix Pro | Dashboard Logic ---
 // Revised for maximum robustness and to fix empty chart/table issues
+console.log('%c DASHBOARD v2027-02-27B ', 'background:#0f0;color:#000;font-size:16px;font-weight:bold');
 
 // Global State
 const state = {
