@@ -1199,8 +1199,13 @@ async function fetchRestaurantReservations() {
 
     try {
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(webhookUrl)}`;
+        console.log('Fetching restaurant reservations from:', webhookUrl);
         const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        if (!response.ok) {
+            const errBody = await response.json().catch(() => ({}));
+            console.error('Proxy error detail:', errBody);
+            throw new Error(errBody.error || `HTTP Error: ${response.status}`);
+        }
         const rawData = await response.json();
 
         state.restaurantReservations = (Array.isArray(rawData) ? rawData : [rawData]).map(r => ({

@@ -35,15 +35,27 @@ module.exports = async function handler(req, res) {
         }
 
         const response = await fetch(targetUrl, fetchOptions);
+        const responseText = await response.text();
 
         if (!response.ok) {
+            console.error('Webhook error:', response.status, responseText.substring(0, 500));
             return res.status(response.status).json({
                 error: 'Error del webhook: ' + response.statusText,
-                status: response.status
+                status: response.status,
+                detail: responseText.substring(0, 500)
             });
         }
 
-        const data = await response.json();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseErr) {
+            console.error('JSON parse error:', parseErr.message, responseText.substring(0, 500));
+            return res.status(502).json({
+                error: 'La respuesta del webhook no es JSON válido',
+                detail: responseText.substring(0, 200)
+            });
+        }
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -51,7 +63,7 @@ module.exports = async function handler(req, res) {
 
         return res.status(200).json(data);
     } catch (error) {
-        console.error('Proxy Error:', error.message);
-        return res.status(500).json({ error: error.message });
+        console.error('Proxy Error:', error.message, error.stack);
+        return res.status(500).json({ error: error.message, type: error.name });
     }
 }
