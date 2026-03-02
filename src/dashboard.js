@@ -26,7 +26,7 @@ const state = {
     flatpickr: null,
     // Restaurant reservations
     restaurantReservations: [],
-    restaurantFilters: { status: 'all' },
+    restaurantFilters: { status: 'all', search: '' },
     restaurantViewMode: 'cards',
     restaurantSortField: 'fechaEvento',
     restaurantSortDir: 'desc',
@@ -1240,6 +1240,17 @@ function renderRestaurantReservations() {
         reservations = reservations.filter(r => r.estado === state.restaurantFilters.status);
     }
 
+    // Apply search filter
+    const q = state.restaurantFilters.search.trim().toLowerCase();
+    if (q) {
+        reservations = reservations.filter(r =>
+            (r.nombre || '').toLowerCase().includes(q) ||
+            (r.telefono || '').toLowerCase().includes(q) ||
+            (r.email || '').toLowerCase().includes(q) ||
+            (r.tipoEvento || '').toLowerCase().includes(q)
+        );
+    }
+
     // Compute stats
     const now = new Date();
     const startOfWeek = new Date(now);
@@ -1497,6 +1508,11 @@ function filterRestaurantByStatus(status) {
     renderRestaurantReservations();
 }
 
+function searchRestaurantReservations(value) {
+    state.restaurantFilters.search = value;
+    renderRestaurantReservations();
+}
+
 function confirmReservation(index) {
     const reservation = state.restaurantReservations[index];
     if (!reservation) return;
@@ -1613,3 +1629,4 @@ window.toggleCardDetails = toggleCardDetails;
 window.toggleRestaurantView = toggleRestaurantView;
 window.sortRestaurantTable = sortRestaurantTable;
 window.toggleTableRowDetails = toggleTableRowDetails;
+window.searchRestaurantReservations = searchRestaurantReservations;

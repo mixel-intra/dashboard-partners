@@ -196,12 +196,20 @@
         .rest-stat-info { display:flex; flex-direction:column; }
         .rest-stat-value { font-size:1.5rem; font-weight:700; color:#fff; line-height:1; }
         .rest-stat-label { font-size:0.7rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
-        /* Filters */
+        /* Toolbar: filters + search */
+        .rest-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+        .rest-filters-row { display:flex; gap:8px; flex-wrap:wrap; }
         .rest-filter-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:10px; color:rgba(255,255,255,0.5); font-size:0.85rem; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s ease; }
         .rest-filter-btn:hover { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.8); }
         .rest-filter-btn.active { background:var(--accent-primary,#7551FF); color:#fff; border-color:var(--accent-primary,#7551FF); box-shadow:0 2px 12px rgba(117,81,255,0.3); }
         .rest-count-badge { background:rgba(255,255,255,0.15); padding:1px 7px; border-radius:6px; font-size:0.75rem; font-weight:700; }
         .rest-filter-btn.active .rest-count-badge { background:rgba(255,255,255,0.25); }
+        /* Search */
+        .rest-search-wrapper { position:relative; min-width:200px; max-width:280px; }
+        .rest-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.3); font-size:1rem; pointer-events:none; }
+        .rest-search-input { width:100%; padding:9px 12px 9px 36px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#fff; font-size:0.85rem; font-family:'Inter',sans-serif; outline:none; transition:all 0.2s ease; }
+        .rest-search-input::placeholder { color:rgba(255,255,255,0.3); }
+        .rest-search-input:focus { border-color:var(--accent-primary,#7551FF); background:rgba(255,255,255,0.06); box-shadow:0 0 0 3px rgba(117,81,255,0.15); }
         /* View toggle */
         .rest-view-toggle { display:inline-flex; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:3px; gap:2px; }
         .rest-view-btn { border:none; background:transparent; color:rgba(255,255,255,0.4); font-size:1.1rem; padding:7px 10px; border-radius:7px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
@@ -678,20 +686,26 @@
                     </div>
                 </div>
 
-                <!-- Filtros por Estado -->
-                <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
-                    <button class="rest-filter-btn active" data-status="all" onclick="filterRestaurantByStatus('all')">
-                        Todos <span id="rest-count-all" class="rest-count-badge">0</span>
-                    </button>
-                    <button class="rest-filter-btn" data-status="Nuevo Lead" onclick="filterRestaurantByStatus('Nuevo Lead')">
-                        Nuevos <span id="rest-count-nuevo" class="rest-count-badge">0</span>
-                    </button>
-                    <button class="rest-filter-btn" data-status="Confirmado" onclick="filterRestaurantByStatus('Confirmado')">
-                        Confirmados <span id="rest-count-confirmado" class="rest-count-badge">0</span>
-                    </button>
-                    <button class="rest-filter-btn" data-status="Rechazado" onclick="filterRestaurantByStatus('Rechazado')">
-                        Rechazados <span id="rest-count-rechazado" class="rest-count-badge">0</span>
-                    </button>
+                <!-- Filtros por Estado + Búsqueda -->
+                <div class="rest-toolbar">
+                    <div class="rest-filters-row">
+                        <button class="rest-filter-btn active" data-status="all" onclick="filterRestaurantByStatus('all')">
+                            Todos <span id="rest-count-all" class="rest-count-badge">0</span>
+                        </button>
+                        <button class="rest-filter-btn" data-status="Nuevo Lead" onclick="filterRestaurantByStatus('Nuevo Lead')">
+                            Nuevos <span id="rest-count-nuevo" class="rest-count-badge">0</span>
+                        </button>
+                        <button class="rest-filter-btn" data-status="Confirmado" onclick="filterRestaurantByStatus('Confirmado')">
+                            Confirmados <span id="rest-count-confirmado" class="rest-count-badge">0</span>
+                        </button>
+                        <button class="rest-filter-btn" data-status="Rechazado" onclick="filterRestaurantByStatus('Rechazado')">
+                            Rechazados <span id="rest-count-rechazado" class="rest-count-badge">0</span>
+                        </button>
+                    </div>
+                    <div class="rest-search-wrapper">
+                        <ion-icon name="search-outline" class="rest-search-icon"></ion-icon>
+                        <input type="text" id="rest-search-input" class="rest-search-input" placeholder="Buscar nombre, tel, email..." oninput="searchRestaurantReservations(this.value)">
+                    </div>
                 </div>
 
                 <!-- Cards View -->
