@@ -412,7 +412,7 @@ function switchDashTab(tab) {
     const dashboardGrid = document.querySelector('.dashboard-grid');
     const restaurantPanel = document.getElementById('restaurant-panel');
 
-    if (tab === 'restaurante' && state.restaurantConfig.airtableWebhookUrl) {
+    if (tab === 'restaurante') {
         if (dashboardGrid) dashboardGrid.classList.add('hidden');
         if (restaurantPanel) {
             restaurantPanel.classList.remove('hidden');
