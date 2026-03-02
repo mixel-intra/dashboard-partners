@@ -27,6 +27,9 @@ const state = {
     // Restaurant reservations
     restaurantReservations: [],
     restaurantFilters: { status: 'all' },
+    restaurantViewMode: 'cards',
+    restaurantSortField: 'fechaEvento',
+    restaurantSortDir: 'desc',
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '' }
 };
 
@@ -1229,11 +1232,6 @@ async function fetchRestaurantReservations() {
 }
 
 function renderRestaurantReservations() {
-    const container = document.getElementById('rest-cards-container');
-    const todaySection = document.getElementById('rest-today-section');
-    const todayContainer = document.getElementById('rest-today-cards');
-    if (!container) return;
-
     const all = state.restaurantReservations;
     let reservations = [...all];
 
@@ -1260,108 +1258,189 @@ function renderRestaurantReservations() {
     setEl('rest-count-confirmado', all.filter(r => r.estado === 'Confirmado').length);
     setEl('rest-count-rechazado', all.filter(r => r.estado === 'Rechazado').length);
 
-    // Split today vs rest
-    const todayReservations = reservations.filter(r => isReservationToday(r.fechaEvento));
-    const otherReservations = reservations.filter(r => !isReservationToday(r.fechaEvento));
+    // Sort: today first, then by sortField
+    reservations.sort((a, b) => {
+        const aToday = isReservationToday(a.fechaEvento) ? 0 : 1;
+        const bToday = isReservationToday(b.fechaEvento) ? 0 : 1;
+        if (aToday !== bToday) return aToday - bToday;
+        return 0;
+    });
 
-    // Render today section
-    if (todayReservations.length > 0 && todaySection && todayContainer) {
-        todaySection.classList.remove('hidden');
-        todayContainer.innerHTML = todayReservations.map(r => buildReservationCard(r, true)).join('');
-    } else if (todaySection) {
-        todaySection.classList.add('hidden');
+    // Dispatch to current view mode
+    const cardsEl = document.getElementById('rest-cards-container');
+    const tableEl = document.getElementById('rest-table-container');
+
+    if (state.restaurantViewMode === 'table') {
+        if (cardsEl) cardsEl.classList.add('hidden');
+        if (tableEl) tableEl.classList.remove('hidden');
+        renderRestaurantTable(reservations);
+    } else {
+        if (tableEl) tableEl.classList.add('hidden');
+        if (cardsEl) cardsEl.classList.remove('hidden');
+        renderRestaurantCards(reservations);
     }
+}
 
-    // Render main grid
+// ---- CARDS VIEW ----
+function renderRestaurantCards(reservations) {
+    const container = document.getElementById('rest-cards-container');
+    if (!container) return;
     if (reservations.length === 0) {
         container.innerHTML = `<div class="rest-empty-state" style="grid-column:1/-1;">
             <ion-icon name="restaurant-outline"></ion-icon>
             <div style="font-size:1rem; margin-bottom:4px;">No hay reservas con este filtro</div>
-            <div style="font-size:0.82rem;">Cambia los filtros o espera nuevas reservas</div>
         </div>`;
         return;
     }
-
-    const mainList = todayReservations.length > 0 ? otherReservations : reservations;
-    container.innerHTML = mainList.length > 0
-        ? mainList.map(r => buildReservationCard(r, false)).join('')
-        : '';
+    container.innerHTML = reservations.map(r => buildReservationCard(r)).join('');
 }
 
-function buildReservationCard(r, isToday) {
-    const originalIndex = state.restaurantReservations.indexOf(r);
-    const statusClass = r.estado === 'Confirmado' ? 'status-confirmado'
-                      : r.estado === 'Rechazado' ? 'status-rechazado' : 'status-nuevo';
-    const statusColor = r.estado === 'Confirmado' ? '#10B981'
-                      : r.estado === 'Rechazado' ? '#FF4444' : '#F59E0B';
-    const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)'
-                   : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)' : 'rgba(245,158,11,0.12)';
-    const showActions = r.estado === 'Nuevo Lead';
+function buildReservationCard(r) {
+    const idx = state.restaurantReservations.indexOf(r);
+    const statusClass = r.estado === 'Confirmado' ? 'status-confirmado' : r.estado === 'Rechazado' ? 'status-rechazado' : 'status-nuevo';
+    const statusColor = r.estado === 'Confirmado' ? '#10B981' : r.estado === 'Rechazado' ? '#FF4444' : '#F59E0B';
+    const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)' : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)' : 'rgba(245,158,11,0.12)';
+    const isToday = isReservationToday(r.fechaEvento);
     const cleanPhone = (r.telefono || '').replace(/[\s\-\+\(\)]/g, '');
-    const todayClass = isToday ? ' is-today' : '';
-    const escapedName = (r.nombre || 'R').replace(/'/g, "\\'");
+    const showActions = r.estado === 'Nuevo Lead';
 
-    return `<div class="rest-card ${statusClass}${todayClass}">
-        <div class="rest-card-main" onclick="toggleCardDetails(${originalIndex})">
+    return `<div class="rest-card ${statusClass}${isToday ? ' is-today' : ''}" onclick="toggleCardDetails(${idx})">
+        <div class="rest-card-main">
             <div class="rest-card-top">
-                <div class="rest-card-client">
-                    <img class="rest-card-avatar" loading="lazy"
-                         src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.nombre || 'R')}&background=1a1a2e&color=fff&size=40&rounded=true"
-                         alt="${escapedName}">
-                    <div style="min-width:0;">
-                        <div class="rest-card-name">${r.nombre || 'Sin nombre'}</div>
-                        ${r.email ? `<div class="rest-card-email">${r.email}</div>` : ''}
-                    </div>
+                <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                    <span class="rest-card-name">${r.nombre || 'Sin nombre'}</span>
+                    ${isToday ? '<span class="rest-today-badge">HOY</span>' : ''}
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="rest-card-status-pill" style="color:${statusColor}; background:${statusBg};">${r.estado}</span>
-                    <ion-icon name="chevron-down-outline" class="rest-card-chevron" id="chevron-${originalIndex}"></ion-icon>
-                </div>
+                <span class="rest-card-status-pill" style="color:${statusColor}; background:${statusBg};">${r.estado}</span>
             </div>
             <div class="rest-card-meta">
-                <div class="rest-card-meta-item">
-                    <ion-icon name="calendar-outline"></ion-icon>
-                    <strong>${formatReservationDate(r.fechaEvento)}</strong>
-                </div>
-                <div class="rest-card-meta-item">
-                    <ion-icon name="people-outline"></ion-icon>
-                    <strong>${r.pax}</strong> personas
-                </div>
-                <div class="rest-card-meta-item">
-                    <ion-icon name="pricetag-outline"></ion-icon>
-                    ${r.tipoEvento || 'N/A'}
-                </div>
+                <strong>${formatReservationDate(r.fechaEvento)}</strong> &middot; <strong>${r.pax}</strong> personas &middot; ${r.tipoEvento || 'N/A'}
             </div>
         </div>
-        <div class="rest-card-details" id="details-${originalIndex}">
+        <div class="rest-card-details" id="details-${idx}">
             <div class="rest-card-details-inner">
                 ${r.telefono ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Teléfono</span><span class="rest-card-detail-value">${r.telefono}</span></div>` : ''}
                 ${r.email ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Email</span><span class="rest-card-detail-value">${r.email}</span></div>` : ''}
-                ${r.tipoEvento ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Tipo</span><span class="rest-card-detail-value">${r.tipoEvento}</span></div>` : ''}
                 ${(r.detalles || r.conversacion) ? `<div class="rest-card-convo">${r.detalles || r.conversacion}</div>` : ''}
             </div>
-        </div>
-        <div class="rest-card-actions">
-            ${cleanPhone ? `
-                <a href="https://wa.me/${cleanPhone}" target="_blank" class="rest-card-action-btn whatsapp" onclick="event.stopPropagation();">
-                    <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
-                </a>
-                <a href="tel:${r.telefono}" class="rest-card-action-btn call" onclick="event.stopPropagation();">
-                    <ion-icon name="call-outline"></ion-icon> Llamar
-                </a>
-            ` : ''}
-            ${showActions ? `
-                <button onclick="event.stopPropagation(); confirmReservation(${originalIndex})" class="rest-card-action-btn confirm">
-                    <ion-icon name="checkmark-circle-outline"></ion-icon> Confirmar
-                </button>
-                <button onclick="event.stopPropagation(); rejectReservation(${originalIndex})" class="rest-card-action-btn reject">
-                    <ion-icon name="close-circle-outline"></ion-icon> Rechazar
-                </button>
-            ` : ''}
+            <div class="rest-card-actions">
+                ${cleanPhone ? `
+                    <a href="https://wa.me/${cleanPhone}" target="_blank" class="rest-card-action-btn whatsapp" onclick="event.stopPropagation();">
+                        <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+                    </a>
+                    <a href="tel:${r.telefono}" class="rest-card-action-btn call" onclick="event.stopPropagation();">
+                        <ion-icon name="call-outline"></ion-icon> Llamar
+                    </a>
+                ` : ''}
+                ${showActions ? `
+                    <button onclick="event.stopPropagation(); confirmReservation(${idx})" class="rest-card-action-btn confirm">
+                        <ion-icon name="checkmark-circle-outline"></ion-icon> Confirmar
+                    </button>
+                    <button onclick="event.stopPropagation(); rejectReservation(${idx})" class="rest-card-action-btn reject">
+                        <ion-icon name="close-circle-outline"></ion-icon> Rechazar
+                    </button>
+                ` : ''}
+            </div>
         </div>
     </div>`;
 }
 
+// ---- TABLE VIEW ----
+function renderRestaurantTable(reservations) {
+    const tbody = document.getElementById('rest-table-body');
+    if (!tbody) return;
+
+    // Apply sorting
+    const sorted = [...reservations].sort((a, b) => {
+        const field = state.restaurantSortField;
+        let valA = a[field] || '';
+        let valB = b[field] || '';
+        if (field === 'pax') { valA = Number(valA) || 0; valB = Number(valB) || 0; }
+        else { valA = String(valA).toLowerCase(); valB = String(valB).toLowerCase(); }
+        const cmp = valA < valB ? -1 : valA > valB ? 1 : 0;
+        return state.restaurantSortDir === 'asc' ? cmp : -cmp;
+    });
+
+    // Update active header
+    document.querySelectorAll('.rest-th-sortable').forEach(th => {
+        th.classList.toggle('active', th.dataset.sort === state.restaurantSortField);
+        const arrow = state.restaurantSortDir === 'asc' ? ' ↑' : ' ↓';
+        const base = th.textContent.replace(/ [↑↓]$/, '');
+        th.textContent = th.dataset.sort === state.restaurantSortField ? base + arrow : base;
+    });
+
+    if (sorted.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:rgba(255,255,255,0.35);">No hay reservas con este filtro</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = sorted.map(r => {
+        const idx = state.restaurantReservations.indexOf(r);
+        const statusColor = r.estado === 'Confirmado' ? '#10B981' : r.estado === 'Rechazado' ? '#FF4444' : '#F59E0B';
+        const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)' : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)' : 'rgba(245,158,11,0.12)';
+        const isToday = isReservationToday(r.fechaEvento);
+        const cleanPhone = (r.telefono || '').replace(/[\s\-\+\(\)]/g, '');
+        const showActions = r.estado === 'Nuevo Lead';
+
+        return `<tr class="rest-row" onclick="toggleTableRowDetails(${idx})">
+            <td><span style="color:${statusColor}; background:${statusBg}; padding:3px 9px; border-radius:8px; font-size:0.78rem; font-weight:600; white-space:nowrap;">${r.estado}</span></td>
+            <td style="color:#fff; font-weight:500;">${r.nombre || 'Sin nombre'}</td>
+            <td>${formatReservationDate(r.fechaEvento)} ${isToday ? '<span class="rest-today-badge">HOY</span>' : ''}</td>
+            <td style="text-align:center; font-weight:600; color:#fff;">${r.pax}</td>
+            <td>${r.tipoEvento || 'N/A'}</td>
+            <td onclick="event.stopPropagation();">
+                <div style="display:flex; gap:6px;">
+                    ${cleanPhone ? `
+                        <a href="https://wa.me/${cleanPhone}" target="_blank" class="rest-table-action-icon whatsapp" title="WhatsApp"><ion-icon name="logo-whatsapp"></ion-icon></a>
+                        <a href="tel:${r.telefono}" class="rest-table-action-icon call" title="Llamar"><ion-icon name="call-outline"></ion-icon></a>
+                    ` : ''}
+                </div>
+            </td>
+        </tr>
+        <tr class="rest-table-detail-row hidden" id="table-detail-${idx}">
+            <td colspan="6">
+                <div style="display:flex; gap:24px; flex-wrap:wrap; margin-bottom:12px;">
+                    ${r.telefono ? `<div><span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">Teléfono</span><div style="color:#fff; font-weight:500;">${r.telefono}</div></div>` : ''}
+                    ${r.email ? `<div><span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">Email</span><div style="color:#fff; font-weight:500;">${r.email}</div></div>` : ''}
+                </div>
+                ${(r.detalles || r.conversacion) ? `<div class="rest-card-convo" style="margin-bottom:12px;">${r.detalles || r.conversacion}</div>` : ''}
+                ${showActions ? `<div style="display:flex; gap:8px;">
+                    <button onclick="event.stopPropagation(); confirmReservation(${idx})" class="rest-card-action-btn confirm"><ion-icon name="checkmark-circle-outline"></ion-icon> Confirmar</button>
+                    <button onclick="event.stopPropagation(); rejectReservation(${idx})" class="rest-card-action-btn reject"><ion-icon name="close-circle-outline"></ion-icon> Rechazar</button>
+                </div>` : ''}
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function toggleRestaurantView(mode) {
+    state.restaurantViewMode = mode;
+    document.querySelectorAll('.rest-view-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === mode);
+    });
+    renderRestaurantReservations();
+}
+
+function sortRestaurantTable(field) {
+    if (state.restaurantSortField === field) {
+        state.restaurantSortDir = state.restaurantSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        state.restaurantSortField = field;
+        state.restaurantSortDir = 'asc';
+    }
+    renderRestaurantReservations();
+}
+
+function toggleTableRowDetails(index) {
+    const row = document.getElementById(`table-detail-${index}`);
+    if (!row) return;
+    const isVisible = !row.classList.contains('hidden');
+    // Close all others
+    document.querySelectorAll('.rest-table-detail-row').forEach(el => el.classList.add('hidden'));
+    if (!isVisible) row.classList.remove('hidden');
+}
+
+// ---- HELPERS ----
 function isReservationToday(dateStr) {
     if (!dateStr) return false;
     try {
@@ -1383,16 +1462,10 @@ function isReservationInWeek(dateStr, start, end) {
 
 function toggleCardDetails(index) {
     const details = document.getElementById(`details-${index}`);
-    const chevron = document.getElementById(`chevron-${index}`);
     if (!details) return;
     const isExpanded = details.classList.contains('expanded');
-    // Close all others (accordion)
     document.querySelectorAll('.rest-card-details.expanded').forEach(el => el.classList.remove('expanded'));
-    document.querySelectorAll('.rest-card-chevron.rotated').forEach(el => el.classList.remove('rotated'));
-    if (!isExpanded) {
-        details.classList.add('expanded');
-        if (chevron) chevron.classList.add('rotated');
-    }
+    if (!isExpanded) details.classList.add('expanded');
 }
 
 function renderRestaurantEmpty(message) {
@@ -1403,8 +1476,8 @@ function renderRestaurantEmpty(message) {
             <div style="font-size:1rem; margin-bottom:4px;">${message}</div>
         </div>`;
     }
-    const todaySection = document.getElementById('rest-today-section');
-    if (todaySection) todaySection.classList.add('hidden');
+    const tableBody = document.getElementById('rest-table-body');
+    if (tableBody) tableBody.innerHTML = '';
 }
 
 function formatReservationDate(dateStr) {
@@ -1537,3 +1610,6 @@ window.closeConfirmModal = closeConfirmModal;
 window.closeConversationModal = closeConversationModal;
 window.fetchRestaurantReservations = fetchRestaurantReservations;
 window.toggleCardDetails = toggleCardDetails;
+window.toggleRestaurantView = toggleRestaurantView;
+window.sortRestaurantTable = sortRestaurantTable;
+window.toggleTableRowDetails = toggleTableRowDetails;
