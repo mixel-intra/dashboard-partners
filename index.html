@@ -277,6 +277,36 @@
         }
         @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
         .spin { animation:spin 1s linear infinite; }
+        /* Toast notifications */
+        .toast-container { position:fixed; bottom:24px; right:24px; z-index:3000; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
+        .toast { pointer-events:auto; display:flex; align-items:center; gap:10px; padding:14px 20px; border-radius:14px; font-size:0.85rem; font-family:'Inter',sans-serif; color:#fff; box-shadow:0 8px 30px rgba(0,0,0,0.4); backdrop-filter:blur(12px); animation:toast-in 0.3s ease forwards; max-width:380px; }
+        .toast.success { background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); }
+        .toast.error { background:rgba(255,68,68,0.15); border:1px solid rgba(255,68,68,0.3); }
+        .toast.warning { background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); }
+        .toast.fade-out { animation:toast-out 0.3s ease forwards; }
+        @keyframes toast-in { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes toast-out { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(20px); } }
+        /* Confirm modal message textarea */
+        .rest-confirm-message { width:100%; min-height:70px; padding:10px 12px; margin-top:16px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.85rem; font-family:'Inter',sans-serif; resize:vertical; outline:none; }
+        .rest-confirm-message:focus { border-color:var(--accent-primary,#7551FF); }
+        .rest-confirm-message::placeholder { color:rgba(255,255,255,0.3); }
+        /* Notes */
+        .rest-notes-area { width:100%; min-height:60px; max-height:120px; margin-top:10px; padding:10px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:rgba(255,255,255,0.7); font-size:0.8rem; font-family:'Inter',sans-serif; resize:vertical; outline:none; transition:border-color 0.2s; }
+        .rest-notes-area:focus { border-color:var(--accent-primary,#7551FF); background:rgba(255,255,255,0.05); }
+        .rest-notes-area::placeholder { color:rgba(255,255,255,0.25); }
+        .rest-has-notes-dot { width:7px; height:7px; border-radius:50%; background:#F59E0B; display:inline-block; flex-shrink:0; margin-left:4px; vertical-align:middle; }
+        /* Edit modal */
+        .rest-card-action-btn.edit { background:rgba(117,81,255,0.08); border-color:rgba(117,81,255,0.2); color:#7551FF; }
+        .rest-card-action-btn.edit:hover { background:rgba(117,81,255,0.18); border-color:rgba(117,81,255,0.4); }
+        .rest-edit-field { display:flex; flex-direction:column; gap:4px; }
+        .rest-edit-label { font-size:0.75rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.5px; }
+        .rest-edit-input { padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#fff; font-size:0.85rem; font-family:'Inter',sans-serif; outline:none; }
+        .rest-edit-input:focus { border-color:var(--accent-primary,#7551FF); background:rgba(255,255,255,0.06); }
+        .rest-warning-inline { display:flex; align-items:center; gap:8px; padding:10px 14px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.15); border-radius:10px; font-size:0.8rem; color:#F59E0B; margin-top:12px; }
+        /* New badge on tab */
+        .rest-new-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#FF4444; color:#fff; font-size:0.65rem; font-weight:700; margin-left:6px; line-height:1; animation:badge-pulse 2s ease-in-out infinite; }
+        @keyframes badge-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(255,68,68,0.4); } 50% { box-shadow:0 0 0 6px rgba(255,68,68,0); } }
+        .rest-new-badge:empty { display:none; }
     </style>
 
     <div id="dashboard-loader">
@@ -380,7 +410,7 @@
                         <ion-icon name="sunny-outline"></ion-icon> Day Pass
                     </button>
                     <button class="dash-tab" data-tab="restaurante">
-                        <ion-icon name="restaurant-outline"></ion-icon> Restaurante
+                        <ion-icon name="restaurant-outline"></ion-icon> Restaurante <span id="rest-new-badge" class="rest-new-badge"></span>
                     </button>
                 </div>
             </div>
@@ -759,7 +789,11 @@
                                     </div>
                                 </div>
                             </div>
-                            <div style="display:flex; gap:12px;">
+                            <div style="margin-top:16px;">
+                                <label style="font-size:0.8rem; color:rgba(255,255,255,0.5); display:block; margin-bottom:6px;">Mensaje para el cliente (opcional)</label>
+                                <textarea id="confirm-modal-message" class="rest-confirm-message" placeholder="Ej: Tu reserva está confirmada para el viernes a las 8pm. ¡Te esperamos!"></textarea>
+                            </div>
+                            <div style="display:flex; gap:12px; margin-top:16px;">
                                 <button onclick="closeConfirmModal()"
                                         style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1);
                                                background:transparent; border-radius:12px; color:white; cursor:pointer; font-family:'Inter',sans-serif;">
@@ -791,6 +825,53 @@
                                         font-family:'Inter',sans-serif; font-size:0.9rem; line-height:1.6;
                                         background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
                                         border-radius:12px; padding:20px; max-height:400px; overflow-y:auto;"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Editar Reservación -->
+                <div id="restaurant-edit-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
+                    <div style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:480px; width:90%; overflow:hidden;">
+                        <div style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
+                            <h3 style="font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                <ion-icon name="create-outline"></ion-icon> Editar Reservación
+                            </h3>
+                            <button onclick="closeEditModal()" style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+                        </div>
+                        <div style="padding:24px; display:grid; gap:16px;">
+                            <input type="hidden" id="edit-modal-index">
+                            <div class="rest-edit-field">
+                                <span class="rest-edit-label">Personas (PAX)</span>
+                                <input type="number" id="edit-modal-pax" class="rest-edit-input" min="1">
+                            </div>
+                            <div class="rest-edit-field">
+                                <span class="rest-edit-label">Tipo de evento</span>
+                                <input type="text" id="edit-modal-tipo" class="rest-edit-input">
+                            </div>
+                            <div class="rest-edit-field">
+                                <span class="rest-edit-label">Teléfono</span>
+                                <input type="tel" id="edit-modal-telefono" class="rest-edit-input">
+                            </div>
+                            <div class="rest-edit-field">
+                                <span class="rest-edit-label">Email</span>
+                                <input type="email" id="edit-modal-email" class="rest-edit-input">
+                            </div>
+                            <div id="edit-modal-warning" class="rest-warning-inline hidden">
+                                <ion-icon name="alert-circle-outline"></ion-icon>
+                                <span>No hay webhook configurado. Los cambios se guardarán solo localmente.</span>
+                            </div>
+                            <div style="display:flex; gap:12px; margin-top:4px;">
+                                <button onclick="closeEditModal()"
+                                        style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1);
+                                               background:transparent; border-radius:12px; color:white; cursor:pointer; font-family:'Inter',sans-serif;">
+                                    Cancelar
+                                </button>
+                                <button id="edit-modal-save-btn" onclick="saveEditedReservation()"
+                                        style="flex:1; padding:12px; border:none; background:#7551FF;
+                                               border-radius:12px; color:white; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">
+                                    Guardar Cambios
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1790,6 +1871,8 @@
             document.getElementById('switcher-toggle-btn').style.display = 'flex';
         })();
     </script>
+<!-- Toast Notifications -->
+<div id="toast-container" class="toast-container"></div>
 </body>
 
 </html>

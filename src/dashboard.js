@@ -30,6 +30,7 @@ const state = {
     restaurantViewMode: 'cards',
     restaurantSortField: 'fechaEvento',
     restaurantSortDir: 'desc',
+    restaurantNewIds: [],
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '' }
 };
 
@@ -420,6 +421,7 @@ function switchDashTab(tab) {
         if (restaurantPanel) {
             restaurantPanel.classList.remove('hidden');
             fetchRestaurantReservations();
+            markRestaurantAsSeen();
         }
     } else {
         if (dashboardGrid) dashboardGrid.classList.remove('hidden');
@@ -476,6 +478,11 @@ function applyGlobalFilters() {
     console.log('filteredLeads after filter:', state.filteredLeads.length,
         '| qualified:', state.filteredLeads.filter(l => isQualified(l.estatus)).length);
     renderDashboard();
+
+    // Re-render restaurant panel if active (uses global date filter)
+    if (state.activeTab === 'restaurante' && state.restaurantReservations.length > 0) {
+        renderRestaurantReservations();
+    }
 }
 
 async function exportToPDF() {
@@ -1185,6 +1192,212 @@ function isQualified(status) {
 // MÓDULO: Panel de Reservas de Restaurante
 // =============================================
 
+// --- Toast notifications ---
+function showToast(message, type = 'success', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const icons = { success: 'checkmark-circle', error: 'alert-circle', warning: 'warning' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<ion-icon name="${icons[type] || icons.success}-outline"></ion-icon><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// --- Parsing de fechas en español ---
+const MESES_MAP = { enero:0, febrero:1, marzo:2, abril:3, mayo:4, junio:5, julio:6, agosto:7, septiembre:8, octubre:9, noviembre:10, diciembre:11,
+    ene:0, feb:1, mar:2, abr:3, may:4, jun:5, jul:6, ago:7, sep:8, sept:8, oct:9, nov:10, dic:11 };
+
+function applyTime(date, match) {
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2] || '0');
+    const ampm = (match[3] || '').toLowerCase();
+    if (ampm === 'pm' && h < 12) h += 12;
+    if (ampm === 'am' && h === 12) h = 0;
+    date.setHours(h, m, 0, 0);
+}
+
+function parseFechaEvento(dateStr) {
+    if (!dateStr) return null;
+    const str = dateStr.trim();
+
+    // Intentar parseo nativo ISO / standard
+    const native = new Date(str);
+    if (!isNaN(native.getTime()) && native.getFullYear() > 2000) return native;
+
+    const lower = str.toLowerCase();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    // "mañana" / "manana" + hora opcional
+    if (/^ma[nñ]ana/.test(lower)) {
+        const d = new Date(now); d.setDate(d.getDate() + 1);
+        const timeMatch = lower.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
+        if (timeMatch) applyTime(d, timeMatch);
+        return d;
+    }
+
+    // "hoy" + hora opcional
+    if (/^hoy/.test(lower)) {
+        const d = new Date(now);
+        const timeMatch = lower.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
+        if (timeMatch) applyTime(d, timeMatch);
+        return d;
+    }
+
+    // "DD de MONTH [de YYYY]" — "14 de marzo", "27 de junio de 2026"
+    const p1 = lower.match(/(\d{1,2})\s+de\s+(\w+)(?:\s+(?:de\s+)?(\d{4}))?/);
+    if (p1) {
+        const day = parseInt(p1[1]);
+        const mes = MESES_MAP[p1[2]];
+        if (mes !== undefined) return new Date(p1[3] ? parseInt(p1[3]) : currentYear, mes, day);
+    }
+
+    // "Día, DD de MONTH" — "Miércoles, 14 de marzo"
+    const p2 = lower.match(/\w+,?\s+(\d{1,2})\s+de\s+(\w+)/);
+    if (p2) {
+        const day = parseInt(p2[1]);
+        const mes = MESES_MAP[p2[2]];
+        if (mes !== undefined) return new Date(currentYear, mes, day);
+    }
+
+    // "DD MON YYYY" — "05 mar 2026", "28 feb 2024"
+    const p3 = lower.match(/(\d{1,2})\s+(\w{3,})\s+(\d{4})/);
+    if (p3) {
+        const day = parseInt(p3[1]);
+        const mes = MESES_MAP[p3[2]];
+        const year = parseInt(p3[3]);
+        if (mes !== undefined) return new Date(year, mes, day);
+    }
+
+    // "DD MON" sin año — "28 feb"
+    const p4 = lower.match(/^(\d{1,2})\s+(\w{3,})$/);
+    if (p4) {
+        const day = parseInt(p4[1]);
+        const mes = MESES_MAP[p4[2]];
+        if (mes !== undefined) return new Date(currentYear, mes, day);
+    }
+
+    return null;
+}
+
+// --- Notas internas (localStorage) ---
+function getReservationNotes(reservationId) {
+    if (!reservationId) return '';
+    return localStorage.getItem(`rest_notes_${state.clientId}_${reservationId}`) || '';
+}
+
+function saveReservationNotes(reservationId, text) {
+    if (!reservationId) return;
+    const key = `rest_notes_${state.clientId}_${reservationId}`;
+    if (text.trim()) {
+        localStorage.setItem(key, text);
+    } else {
+        localStorage.removeItem(key);
+    }
+    renderRestaurantReservations();
+}
+
+function hasReservationNotes(reservationId) {
+    if (!reservationId) return false;
+    return !!localStorage.getItem(`rest_notes_${state.clientId}_${reservationId}`);
+}
+
+// --- Badge de nuevas reservaciones ---
+function getSeenReservationIds() {
+    try { return JSON.parse(localStorage.getItem(`rest_seen_${state.clientId}`) || '[]'); }
+    catch { return []; }
+}
+
+function saveSeenReservationIds(ids) {
+    localStorage.setItem(`rest_seen_${state.clientId}`, JSON.stringify(ids));
+}
+
+function updateNewReservationsBadge() {
+    const seen = getSeenReservationIds();
+    const allIds = state.restaurantReservations.map(r => r.id).filter(Boolean);
+    const newIds = allIds.filter(id => !seen.includes(id));
+    state.restaurantNewIds = newIds;
+    const badge = document.getElementById('rest-new-badge');
+    if (badge) badge.textContent = newIds.length > 0 ? newIds.length : '';
+}
+
+function markRestaurantAsSeen() {
+    const allIds = state.restaurantReservations.map(r => r.id).filter(Boolean);
+    saveSeenReservationIds(allIds);
+    state.restaurantNewIds = [];
+    const badge = document.getElementById('rest-new-badge');
+    if (badge) badge.textContent = '';
+}
+
+// --- Editar reservación ---
+function openEditModal(index) {
+    const r = state.restaurantReservations[index];
+    if (!r) return;
+    document.getElementById('edit-modal-index').value = index;
+    document.getElementById('edit-modal-pax').value = r.pax || '';
+    document.getElementById('edit-modal-tipo').value = r.tipoEvento || '';
+    document.getElementById('edit-modal-telefono').value = r.telefono || '';
+    document.getElementById('edit-modal-email').value = r.email || '';
+    const warning = document.getElementById('edit-modal-warning');
+    if (warning) warning.classList.toggle('hidden', !!state.restaurantConfig.confirmWebhookUrl);
+    document.getElementById('restaurant-edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('restaurant-edit-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function saveEditedReservation() {
+    const index = parseInt(document.getElementById('edit-modal-index').value);
+    const r = state.restaurantReservations[index];
+    if (!r) return;
+
+    const newData = {
+        pax: parseInt(document.getElementById('edit-modal-pax').value) || r.pax,
+        tipoEvento: document.getElementById('edit-modal-tipo').value || r.tipoEvento,
+        telefono: document.getElementById('edit-modal-telefono').value || r.telefono,
+        email: document.getElementById('edit-modal-email').value || r.email
+    };
+
+    const saveBtn = document.getElementById('edit-modal-save-btn');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Guardando...';
+
+    const webhookUrl = state.restaurantConfig.confirmWebhookUrl;
+    if (webhookUrl) {
+        try {
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(webhookUrl)}`;
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: r.id, action: 'update', ...newData,
+                    clientSlug: state.clientId, hotelName: state.config.clientName
+                })
+            });
+            if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+            showToast('Reservación actualizada correctamente', 'success');
+        } catch (error) {
+            console.error('Error actualizando reservación:', error);
+            showToast('Error al enviar al servidor: ' + error.message, 'error');
+        }
+    } else {
+        showToast('Cambios guardados localmente (sin webhook)', 'warning');
+    }
+
+    Object.assign(state.restaurantReservations[index], newData);
+    closeEditModal();
+    renderRestaurantReservations();
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalText;
+}
+
 async function fetchRestaurantReservations() {
     const webhookUrl = state.restaurantConfig.airtableWebhookUrl;
     if (!webhookUrl) {
@@ -1224,7 +1437,13 @@ async function fetchRestaurantReservations() {
             conversacion: r.Conversacion || r.conversacion || ''
         }));
 
+        // Parsear fechas
+        state.restaurantReservations.forEach(r => {
+            r.fecha_parsed = parseFechaEvento(r.fechaEvento);
+        });
+
         renderRestaurantReservations();
+        updateNewReservationsBadge();
     } catch (error) {
         console.error('Error fetching restaurant reservations:', error);
         renderRestaurantEmpty('Error al cargar las reservas. Intenta de nuevo.');
@@ -1261,20 +1480,32 @@ function renderRestaurantReservations() {
     endOfWeek.setHours(23, 59, 59, 999);
 
     const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setEl('rest-stat-hoy', all.filter(r => isReservationToday(r.fechaEvento)).length);
-    setEl('rest-stat-semana', all.filter(r => isReservationInWeek(r.fechaEvento, startOfWeek, endOfWeek)).length);
+    setEl('rest-stat-hoy', all.filter(r => isReservationToday(r)).length);
+    setEl('rest-stat-semana', all.filter(r => isReservationInWeek(r, startOfWeek, endOfWeek)).length);
     setEl('rest-stat-pendientes', all.filter(r => r.estado === 'Nuevo Lead').length);
     setEl('rest-count-all', all.length);
     setEl('rest-count-nuevo', all.filter(r => r.estado === 'Nuevo Lead').length);
     setEl('rest-count-confirmado', all.filter(r => r.estado === 'Confirmado').length);
     setEl('rest-count-rechazado', all.filter(r => r.estado === 'Rechazado').length);
 
-    // Sort: today first, then by sortField
+    // Apply global date filter if set
+    if (state.filters.start || state.filters.end) {
+        reservations = reservations.filter(r => {
+            if (!r.fecha_parsed) return true;
+            if (state.filters.start && r.fecha_parsed < state.filters.start) return false;
+            if (state.filters.end && r.fecha_parsed > state.filters.end) return false;
+            return true;
+        });
+    }
+
+    // Sort: today first, then by fecha_parsed
     reservations.sort((a, b) => {
-        const aToday = isReservationToday(a.fechaEvento) ? 0 : 1;
-        const bToday = isReservationToday(b.fechaEvento) ? 0 : 1;
+        const aToday = isReservationToday(a) ? 0 : 1;
+        const bToday = isReservationToday(b) ? 0 : 1;
         if (aToday !== bToday) return aToday - bToday;
-        return 0;
+        const aDate = a.fecha_parsed ? a.fecha_parsed.getTime() : 0;
+        const bDate = b.fecha_parsed ? b.fecha_parsed.getTime() : 0;
+        return bDate - aDate;
     });
 
     // Dispatch to current view mode
@@ -1311,21 +1542,22 @@ function buildReservationCard(r) {
     const statusClass = r.estado === 'Confirmado' ? 'status-confirmado' : r.estado === 'Rechazado' ? 'status-rechazado' : 'status-nuevo';
     const statusColor = r.estado === 'Confirmado' ? '#10B981' : r.estado === 'Rechazado' ? '#FF4444' : '#F59E0B';
     const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)' : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)' : 'rgba(245,158,11,0.12)';
-    const isToday = isReservationToday(r.fechaEvento);
+    const isToday = isReservationToday(r);
     const cleanPhone = (r.telefono || '').replace(/[\s\-\+\(\)]/g, '');
     const showActions = r.estado === 'Nuevo Lead';
+    const notesDot = hasReservationNotes(r.id) ? '<span class="rest-has-notes-dot" title="Tiene notas"></span>' : '';
 
     return `<div class="rest-card ${statusClass}${isToday ? ' is-today' : ''}" onclick="toggleCardDetails(${idx})">
         <div class="rest-card-main">
             <div class="rest-card-top">
                 <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
-                    <span class="rest-card-name">${r.nombre || 'Sin nombre'}</span>
+                    <span class="rest-card-name">${r.nombre || 'Sin nombre'}${notesDot}</span>
                     ${isToday ? '<span class="rest-today-badge">HOY</span>' : ''}
                 </div>
                 <span class="rest-card-status-pill" style="color:${statusColor}; background:${statusBg};">${r.estado}</span>
             </div>
             <div class="rest-card-meta">
-                <strong>${formatReservationDate(r.fechaEvento)}</strong> &middot; <strong>${r.pax}</strong> personas &middot; ${r.tipoEvento || 'N/A'}
+                <strong>${formatReservationDate(r)}</strong> &middot; <strong>${r.pax}</strong> personas &middot; ${r.tipoEvento || 'N/A'}
             </div>
         </div>
         <div class="rest-card-details" id="details-${idx}">
@@ -1333,6 +1565,11 @@ function buildReservationCard(r) {
                 ${r.telefono ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Teléfono</span><span class="rest-card-detail-value">${r.telefono}</span></div>` : ''}
                 ${r.email ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Email</span><span class="rest-card-detail-value">${r.email}</span></div>` : ''}
                 ${(r.detalles || r.conversacion) ? `<div class="rest-card-convo">${r.detalles || r.conversacion}</div>` : ''}
+                <div style="margin-top:10px;" onclick="event.stopPropagation();">
+                    <label style="font-size:0.72rem; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px;">Notas internas</label>
+                    <textarea class="rest-notes-area" placeholder="Agregar notas del staff..."
+                              onblur="saveReservationNotes('${r.id}', this.value)">${getReservationNotes(r.id)}</textarea>
+                </div>
             </div>
             <div class="rest-card-actions">
                 ${cleanPhone ? `
@@ -1351,6 +1588,9 @@ function buildReservationCard(r) {
                         <ion-icon name="close-circle-outline"></ion-icon> Rechazar
                     </button>
                 ` : ''}
+                <button onclick="event.stopPropagation(); openEditModal(${idx})" class="rest-card-action-btn edit">
+                    <ion-icon name="create-outline"></ion-icon> Editar
+                </button>
             </div>
         </div>
     </div>`;
@@ -1389,14 +1629,15 @@ function renderRestaurantTable(reservations) {
         const idx = state.restaurantReservations.indexOf(r);
         const statusColor = r.estado === 'Confirmado' ? '#10B981' : r.estado === 'Rechazado' ? '#FF4444' : '#F59E0B';
         const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)' : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)' : 'rgba(245,158,11,0.12)';
-        const isToday = isReservationToday(r.fechaEvento);
+        const isToday = isReservationToday(r);
         const cleanPhone = (r.telefono || '').replace(/[\s\-\+\(\)]/g, '');
         const showActions = r.estado === 'Nuevo Lead';
+        const notesDot = hasReservationNotes(r.id) ? '<span class="rest-has-notes-dot" title="Tiene notas"></span>' : '';
 
         return `<tr class="rest-row" onclick="toggleTableRowDetails(${idx})">
             <td><span style="color:${statusColor}; background:${statusBg}; padding:3px 9px; border-radius:8px; font-size:0.78rem; font-weight:600; white-space:nowrap;">${r.estado}</span></td>
-            <td style="color:#fff; font-weight:500;">${r.nombre || 'Sin nombre'}</td>
-            <td>${formatReservationDate(r.fechaEvento)} ${isToday ? '<span class="rest-today-badge">HOY</span>' : ''}</td>
+            <td style="color:#fff; font-weight:500;">${r.nombre || 'Sin nombre'}${notesDot}</td>
+            <td>${formatReservationDate(r)} ${isToday ? '<span class="rest-today-badge">HOY</span>' : ''}</td>
             <td style="text-align:center; font-weight:600; color:#fff;">${r.pax}</td>
             <td>${r.tipoEvento || 'N/A'}</td>
             <td onclick="event.stopPropagation();">
@@ -1415,10 +1656,18 @@ function renderRestaurantTable(reservations) {
                     ${r.email ? `<div><span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">Email</span><div style="color:#fff; font-weight:500;">${r.email}</div></div>` : ''}
                 </div>
                 ${(r.detalles || r.conversacion) ? `<div class="rest-card-convo" style="margin-bottom:12px;">${r.detalles || r.conversacion}</div>` : ''}
-                ${showActions ? `<div style="display:flex; gap:8px;">
-                    <button onclick="event.stopPropagation(); confirmReservation(${idx})" class="rest-card-action-btn confirm"><ion-icon name="checkmark-circle-outline"></ion-icon> Confirmar</button>
-                    <button onclick="event.stopPropagation(); rejectReservation(${idx})" class="rest-card-action-btn reject"><ion-icon name="close-circle-outline"></ion-icon> Rechazar</button>
-                </div>` : ''}
+                <div style="margin-bottom:12px;" onclick="event.stopPropagation();">
+                    <label style="font-size:0.72rem; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px;">Notas internas</label>
+                    <textarea class="rest-notes-area" placeholder="Agregar notas del staff..."
+                              onblur="saveReservationNotes('${r.id}', this.value)">${getReservationNotes(r.id)}</textarea>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    ${showActions ? `
+                        <button onclick="event.stopPropagation(); confirmReservation(${idx})" class="rest-card-action-btn confirm"><ion-icon name="checkmark-circle-outline"></ion-icon> Confirmar</button>
+                        <button onclick="event.stopPropagation(); rejectReservation(${idx})" class="rest-card-action-btn reject"><ion-icon name="close-circle-outline"></ion-icon> Rechazar</button>
+                    ` : ''}
+                    <button onclick="event.stopPropagation(); openEditModal(${idx})" class="rest-card-action-btn edit"><ion-icon name="create-outline"></ion-icon> Editar</button>
+                </div>
             </td>
         </tr>`;
     }).join('');
@@ -1452,23 +1701,17 @@ function toggleTableRowDetails(index) {
 }
 
 // ---- HELPERS ----
-function isReservationToday(dateStr) {
-    if (!dateStr) return false;
-    try {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return false;
-        const now = new Date();
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-    } catch { return false; }
+function isReservationToday(r) {
+    const d = typeof r === 'object' ? r.fecha_parsed : parseFechaEvento(r);
+    if (!d) return false;
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
-function isReservationInWeek(dateStr, start, end) {
-    if (!dateStr) return false;
-    try {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return false;
-        return d >= start && d <= end;
-    } catch { return false; }
+function isReservationInWeek(r, start, end) {
+    const d = typeof r === 'object' ? r.fecha_parsed : parseFechaEvento(r);
+    if (!d) return false;
+    return d >= start && d <= end;
 }
 
 function toggleCardDetails(index) {
@@ -1491,13 +1734,12 @@ function renderRestaurantEmpty(message) {
     if (tableBody) tableBody.innerHTML = '';
 }
 
-function formatReservationDate(dateStr) {
-    if (!dateStr) return 'N/A';
-    try {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
-        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch { return dateStr; }
+function formatReservationDate(input) {
+    if (!input) return 'N/A';
+    // Accept object with fecha_parsed or string
+    const d = typeof input === 'object' && input.fecha_parsed ? input.fecha_parsed : parseFechaEvento(typeof input === 'string' ? input : input.fechaEvento);
+    if (d) return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    return (typeof input === 'string' ? input : input.fechaEvento) || 'N/A';
 }
 
 function filterRestaurantByStatus(status) {
@@ -1543,6 +1785,10 @@ function showConfirmModal(reservation, action) {
     confirmBtn.style.background = isConfirm ? '#10B981' : '#FF4444';
     confirmBtn.onclick = () => executeReservationAction(reservation, action);
 
+    // Limpiar textarea de mensaje
+    const msgField = document.getElementById('confirm-modal-message');
+    if (msgField) msgField.value = '';
+
     modal.classList.remove('hidden');
 }
 
@@ -1575,6 +1821,7 @@ async function executeReservationAction(reservation, newStatus) {
                 fechaEvento: reservation.fechaEvento,
                 detalles: reservation.detalles,
                 nuevoEstado: newStatus,
+                mensajeCliente: document.getElementById('confirm-modal-message')?.value || '',
                 clientSlug: state.clientId,
                 hotelName: state.config.clientName
             })
@@ -1587,11 +1834,12 @@ async function executeReservationAction(reservation, newStatus) {
         if (idx !== -1) state.restaurantReservations[idx].estado = newStatus;
 
         closeConfirmModal();
+        showToast(newStatus === 'Confirmado' ? 'Reserva confirmada exitosamente' : 'Reserva rechazada', newStatus === 'Confirmado' ? 'success' : 'warning');
         renderRestaurantReservations();
 
     } catch (error) {
         console.error('Error en acción de reserva:', error);
-        alert('Error al procesar la reserva: ' + error.message);
+        showToast('Error al procesar la reserva: ' + error.message, 'error');
     } finally {
         confirmBtn.disabled = false;
         confirmBtn.textContent = originalText;
@@ -1630,3 +1878,9 @@ window.toggleRestaurantView = toggleRestaurantView;
 window.sortRestaurantTable = sortRestaurantTable;
 window.toggleTableRowDetails = toggleTableRowDetails;
 window.searchRestaurantReservations = searchRestaurantReservations;
+window.showToast = showToast;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.saveEditedReservation = saveEditedReservation;
+window.saveReservationNotes = saveReservationNotes;
+window.markRestaurantAsSeen = markRestaurantAsSeen;
