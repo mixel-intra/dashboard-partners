@@ -1275,6 +1275,27 @@
                                 </select>
                             </div>
                         </div>
+
+                        <!-- Webhooks de Restaurante -->
+                        <div id="restaurant-webhooks-section" class="hidden" style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px;">
+                            <div class="section-tag" style="margin-bottom: 16px;">
+                                <ion-icon name="restaurant-outline"></ion-icon> Webhooks de Restaurante (AirTable)
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Webhook GET Reservas (n8n → AirTable)</label>
+                                    <input type="text" id="rest-airtable-webhook" class="form-input"
+                                        placeholder="https://n8n.../webhook/reservas-get"
+                                        style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Webhook POST Confirmación (n8n → Kommo)</label>
+                                    <input type="text" id="rest-confirm-webhook" class="form-input"
+                                        placeholder="https://n8n.../webhook/reservas-confirm"
+                                        style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                                </div>
+                            </div>
+                        </div>
                     </section>
                 </form>
 

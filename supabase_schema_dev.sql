@@ -31,6 +31,7 @@ CREATE TABLE clients_config (
     investment_updated_at DATE,
     card_labels JSONB DEFAULT '{}',
     hotel_services JSONB DEFAULT '{}',
+    restaurant_config JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

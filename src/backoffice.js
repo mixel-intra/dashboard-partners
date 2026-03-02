@@ -37,7 +37,10 @@ const elements = {
     hotelServiceEventos: document.getElementById('hotel-service-eventos'),
     hotelServiceReservas: document.getElementById('hotel-service-reservas'),
     hotelServiceDaypass: document.getElementById('hotel-service-daypass'),
-    hotelServiceRestaurante: document.getElementById('hotel-service-restaurante')
+    hotelServiceRestaurante: document.getElementById('hotel-service-restaurante'),
+    restAirtableWebhook: document.getElementById('rest-airtable-webhook'),
+    restConfirmWebhook: document.getElementById('rest-confirm-webhook'),
+    restaurantWebhooksSection: document.getElementById('restaurant-webhooks-section')
 };
 
 // State
@@ -285,6 +288,12 @@ async function selectClient(clientId) {
     elements.hotelServiceDaypass.value = hotelServices.daypass || 'locked';
     elements.hotelServiceRestaurante.value = hotelServices.restaurante || 'locked';
 
+    // Populate restaurant config
+    const restConfig = currentConfig.restaurant_config || {};
+    if (elements.restAirtableWebhook) elements.restAirtableWebhook.value = restConfig.airtable_webhook_url || '';
+    if (elements.restConfirmWebhook) elements.restConfirmWebhook.value = restConfig.confirm_webhook_url || '';
+    toggleRestaurantWebhooks();
+
     // Sync UI Swatches and Hex
     elements.hexPrimary.value = elements.themePrimaryInput.value;
     elements.hexSecondary.value = elements.themeSecondaryInput.value;
@@ -373,6 +382,11 @@ function setupEventListeners() {
         elements.hotelServiceReservas.value = 'locked';
         elements.hotelServiceDaypass.value = 'locked';
         elements.hotelServiceRestaurante.value = 'locked';
+
+        // Clear restaurant webhooks
+        if (elements.restAirtableWebhook) elements.restAirtableWebhook.value = '';
+        if (elements.restConfirmWebhook) elements.restConfirmWebhook.value = '';
+        if (elements.restaurantWebhooksSection) elements.restaurantWebhooksSection.classList.add('hidden');
     });
 
     // Hue Slider Sync
@@ -395,7 +409,11 @@ function setupEventListeners() {
         } else {
             elements.hotelServicesSection.classList.add('hidden');
         }
+        toggleRestaurantWebhooks();
     });
+
+    // Toggle restaurant webhooks when restaurante service changes
+    elements.hotelServiceRestaurante.addEventListener('change', toggleRestaurantWebhooks);
 
     // Sync Hex Text -> Color Picker
     const syncHex = (hexEl, pickerEl) => {
@@ -474,6 +492,10 @@ function setupEventListeners() {
                     reservas: elements.hotelServiceReservas.value,
                     daypass: elements.hotelServiceDaypass.value,
                     restaurante: elements.hotelServiceRestaurante.value
+                },
+                restaurant_config: {
+                    airtable_webhook_url: elements.restAirtableWebhook ? elements.restAirtableWebhook.value.trim() : '',
+                    confirm_webhook_url: elements.restConfirmWebhook ? elements.restConfirmWebhook.value.trim() : ''
                 }
             };
 
@@ -535,6 +557,18 @@ function setupEventListeners() {
             elements.editorPlaceholder.classList.remove('hidden');
         }
     });
+}
+
+function toggleRestaurantWebhooks() {
+    const isHotel = elements.clientTypeInput.value === 'hotel';
+    const isRestUnlocked = elements.hotelServiceRestaurante.value === 'unlocked';
+    if (elements.restaurantWebhooksSection) {
+        if (isHotel && isRestUnlocked) {
+            elements.restaurantWebhooksSection.classList.remove('hidden');
+        } else {
+            elements.restaurantWebhooksSection.classList.add('hidden');
+        }
+    }
 }
 
 init();

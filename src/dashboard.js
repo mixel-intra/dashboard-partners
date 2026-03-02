@@ -23,7 +23,11 @@ const state = {
         start: null,
         end: null
     },
-    flatpickr: null
+    flatpickr: null,
+    // Restaurant reservations
+    restaurantReservations: [],
+    restaurantFilters: { status: 'all' },
+    restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '' }
 };
 
 const DEFAULT_CARD_LABELS = {
@@ -132,6 +136,14 @@ async function loadConfig() {
 
         state.clientType = config.client_type || 'otro';
         state.rawConfig = config;
+
+        // Load restaurant config
+        const restConfig = config.restaurant_config || {};
+        state.restaurantConfig = {
+            airtableWebhookUrl: restConfig.airtable_webhook_url || '',
+            confirmWebhookUrl: restConfig.confirm_webhook_url || ''
+        };
+
         initHotelTabs();
 
         applyDynamicTheme(state.config.themePrimary, state.config.themeSecondary);
@@ -396,7 +408,21 @@ function switchDashTab(tab) {
         });
     }
 
-    applyGlobalFilters();
+    // Toggle between regular dashboard and restaurant panel
+    const dashboardGrid = document.querySelector('.dashboard-grid');
+    const restaurantPanel = document.getElementById('restaurant-panel');
+
+    if (tab === 'restaurante' && state.restaurantConfig.airtableWebhookUrl) {
+        if (dashboardGrid) dashboardGrid.classList.add('hidden');
+        if (restaurantPanel) {
+            restaurantPanel.classList.remove('hidden');
+            fetchRestaurantReservations();
+        }
+    } else {
+        if (dashboardGrid) dashboardGrid.classList.remove('hidden');
+        if (restaurantPanel) restaurantPanel.classList.add('hidden');
+        applyGlobalFilters();
+    }
 }
 
 function applyGlobalFilters() {
@@ -1151,3 +1177,266 @@ function isQualified(status) {
 
     return qualifiedTerms.some(term => s.includes(term));
 }
+
+// =============================================
+// MÓDULO: Panel de Reservas de Restaurante
+// =============================================
+
+async function fetchRestaurantReservations() {
+    const webhookUrl = state.restaurantConfig.airtableWebhookUrl;
+    if (!webhookUrl) {
+        renderRestaurantEmpty('No hay webhook de AirTable configurado para restaurante.');
+        return;
+    }
+
+    const container = document.getElementById('restaurant-table-body');
+    if (container) {
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">
+            <ion-icon name="sync-outline" class="spin" style="font-size:1.5rem;"></ion-icon>
+            <div style="margin-top:8px;">Cargando reservas...</div>
+        </td></tr>`;
+    }
+
+    try {
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(webhookUrl)}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        const rawData = await response.json();
+
+        state.restaurantReservations = (Array.isArray(rawData) ? rawData : [rawData]).map(r => ({
+            id: r.id || r.ID || r.record_id || '',
+            nombre: r['Nombre Cliente'] || r.nombre_cliente || r.nombre || '',
+            email: r.email || r.Email || '',
+            telefono: r['Telefono'] || r.telefono || r.Telefono || '',
+            tipoEvento: r['TipoEvento'] || r.tipo_evento || r.tipoEvento || '',
+            pax: r.PAX || r.pax || 0,
+            fechaEvento: r['FechaEvento'] || r.fecha_evento || r.fechaEvento || '',
+            estado: r.Estado || r.estado || 'Nuevo Lead',
+            detalles: r.Detalles || r.detalles || '',
+            conversacion: r.Conversacion || r.conversacion || ''
+        }));
+
+        renderRestaurantReservations();
+    } catch (error) {
+        console.error('Error fetching restaurant reservations:', error);
+        renderRestaurantEmpty('Error al cargar las reservas. Intenta de nuevo.');
+    }
+}
+
+function renderRestaurantReservations() {
+    const tableBody = document.getElementById('restaurant-table-body');
+    if (!tableBody) return;
+
+    let reservations = [...state.restaurantReservations];
+
+    // Apply status filter
+    if (state.restaurantFilters.status !== 'all') {
+        reservations = reservations.filter(r => r.estado === state.restaurantFilters.status);
+    }
+
+    // Update counters
+    const total = state.restaurantReservations.length;
+    const nuevos = state.restaurantReservations.filter(r => r.estado === 'Nuevo Lead').length;
+    const confirmados = state.restaurantReservations.filter(r => r.estado === 'Confirmado').length;
+    const rechazados = state.restaurantReservations.filter(r => r.estado === 'Rechazado').length;
+
+    const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setCount('rest-count-all', total);
+    setCount('rest-count-nuevo', nuevos);
+    setCount('rest-count-confirmado', confirmados);
+    setCount('rest-count-rechazado', rechazados);
+
+    if (reservations.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">
+            No hay reservas con este filtro.
+        </td></tr>`;
+        return;
+    }
+
+    tableBody.innerHTML = reservations.map((r, i) => {
+        const statusColor = r.estado === 'Confirmado' ? '#10B981'
+                          : r.estado === 'Rechazado' ? '#FF4444'
+                          : '#F59E0B';
+        const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)'
+                       : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)'
+                       : 'rgba(245,158,11,0.12)';
+        const showActions = r.estado === 'Nuevo Lead';
+        const originalIndex = state.restaurantReservations.indexOf(r);
+
+        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="color:#565969; padding:14px 12px;">${i + 1}</td>
+            <td style="padding:14px 12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.nombre || 'R')}&background=random&color=fff&size=28" style="width:28px; height:28px; border-radius:50%;">
+                    <div>
+                        <div style="color:white; font-weight:600; font-size:0.9rem;">${r.nombre}</div>
+                        <div style="font-size:0.75rem; color:var(--text-dim); font-weight:400;">${r.email}</div>
+                    </div>
+                </div>
+            </td>
+            <td style="color:#8E92A3; padding:14px 12px; font-size:0.85rem;">${r.telefono}</td>
+            <td style="color:#8E92A3; padding:14px 12px; font-size:0.85rem;">${r.tipoEvento}</td>
+            <td style="color:white; font-weight:600; text-align:center; padding:14px 12px;">${r.pax}</td>
+            <td style="color:#8E92A3; padding:14px 12px; font-size:0.85rem;">${formatReservationDate(r.fechaEvento)}</td>
+            <td style="padding:14px 12px;">
+                <span style="color:${statusColor}; background:${statusBg}; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:600;">
+                    ${r.estado}
+                </span>
+            </td>
+            <td style="padding:14px 12px;">
+                <div style="display:flex; gap:6px;">
+                    ${showActions ? `
+                        <button onclick="confirmReservation(${originalIndex})" class="rest-action-btn confirm" title="Confirmar reserva">
+                            <ion-icon name="checkmark-circle-outline"></ion-icon>
+                        </button>
+                        <button onclick="rejectReservation(${originalIndex})" class="rest-action-btn reject" title="Rechazar reserva">
+                            <ion-icon name="close-circle-outline"></ion-icon>
+                        </button>
+                    ` : ''}
+                    <button onclick="viewConversation(${originalIndex})" class="rest-action-btn view" title="Ver detalles">
+                        <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function renderRestaurantEmpty(message) {
+    const tableBody = document.getElementById('restaurant-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">
+            ${message}
+        </td></tr>`;
+    }
+}
+
+function formatReservationDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return dateStr; }
+}
+
+function filterRestaurantByStatus(status) {
+    state.restaurantFilters.status = status;
+    document.querySelectorAll('.rest-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+    });
+    renderRestaurantReservations();
+}
+
+function confirmReservation(index) {
+    const reservation = state.restaurantReservations[index];
+    if (!reservation) return;
+    showConfirmModal(reservation, 'Confirmado');
+}
+
+function rejectReservation(index) {
+    const reservation = state.restaurantReservations[index];
+    if (!reservation) return;
+    showConfirmModal(reservation, 'Rechazado');
+}
+
+function showConfirmModal(reservation, action) {
+    const modal = document.getElementById('restaurant-confirm-modal');
+    if (!modal) return;
+
+    const isConfirm = action === 'Confirmado';
+
+    document.getElementById('confirm-modal-title').textContent =
+        `${isConfirm ? 'Confirmar' : 'Rechazar'} Reserva`;
+    document.getElementById('confirm-modal-name').textContent = reservation.nombre;
+    document.getElementById('confirm-modal-pax').textContent = `${reservation.pax} personas`;
+    document.getElementById('confirm-modal-date').textContent = formatReservationDate(reservation.fechaEvento);
+    document.getElementById('confirm-modal-type').textContent = reservation.tipoEvento;
+
+    const confirmBtn = document.getElementById('confirm-modal-action-btn');
+    confirmBtn.textContent = isConfirm ? 'Confirmar Reserva' : 'Rechazar Reserva';
+    confirmBtn.style.background = isConfirm ? '#10B981' : '#FF4444';
+    confirmBtn.onclick = () => executeReservationAction(reservation, action);
+
+    modal.classList.remove('hidden');
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('restaurant-confirm-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function executeReservationAction(reservation, newStatus) {
+    const confirmBtn = document.getElementById('confirm-modal-action-btn');
+    const originalText = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Enviando...';
+
+    try {
+        const webhookUrl = state.restaurantConfig.confirmWebhookUrl;
+        if (!webhookUrl) throw new Error('No hay webhook de confirmación configurado');
+
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(webhookUrl)}`;
+        const response = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: reservation.id,
+                nombre: reservation.nombre,
+                email: reservation.email,
+                telefono: reservation.telefono,
+                tipoEvento: reservation.tipoEvento,
+                pax: reservation.pax,
+                fechaEvento: reservation.fechaEvento,
+                detalles: reservation.detalles,
+                nuevoEstado: newStatus,
+                clientSlug: state.clientId,
+                hotelName: state.config.clientName
+            })
+        });
+
+        if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+
+        // Update local state
+        const idx = state.restaurantReservations.findIndex(r => r.id === reservation.id);
+        if (idx !== -1) state.restaurantReservations[idx].estado = newStatus;
+
+        closeConfirmModal();
+        renderRestaurantReservations();
+
+    } catch (error) {
+        console.error('Error en acción de reserva:', error);
+        alert('Error al procesar la reserva: ' + error.message);
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+    }
+}
+
+function viewConversation(index) {
+    const reservation = state.restaurantReservations[index];
+    if (!reservation) return;
+
+    const modal = document.getElementById('conversation-modal');
+    if (!modal) return;
+
+    document.getElementById('convo-modal-name').textContent = reservation.nombre;
+    document.getElementById('convo-modal-content').textContent =
+        reservation.detalles || reservation.conversacion || 'No hay detalles registrados para esta reserva.';
+
+    modal.classList.remove('hidden');
+}
+
+function closeConversationModal() {
+    const modal = document.getElementById('conversation-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+// Expose restaurant functions globally
+window.confirmReservation = confirmReservation;
+window.rejectReservation = rejectReservation;
+window.viewConversation = viewConversation;
+window.filterRestaurantByStatus = filterRestaurantByStatus;
+window.closeConfirmModal = closeConfirmModal;
+window.closeConversationModal = closeConversationModal;
+window.fetchRestaurantReservations = fetchRestaurantReservations;
