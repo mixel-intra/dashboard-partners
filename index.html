@@ -189,36 +189,105 @@
             transition: width 0.75s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* ===== PANEL DE RESERVAS RESTAURANTE ===== */
-        .rest-filter-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px; background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;
-            color: rgba(255,255,255,0.5); font-size: 0.85rem; font-family: 'Inter', sans-serif;
-            cursor: pointer; transition: all 0.2s ease;
+        /* ===== PANEL DE RESERVAS RESTAURANTE — CARD VIEW ===== */
+        .rest-stat-card {
+            display:flex; align-items:center; gap:12px; padding:16px 20px;
+            background:linear-gradient(145deg, #121318 0%, #08090C 100%);
+            border:1px solid rgba(255,255,255,0.03); border-radius:16px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.3);
         }
-        .rest-filter-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
-        .rest-filter-btn.active {
-            background: var(--accent-primary, #7551FF); color: #fff;
-            border-color: var(--accent-primary, #7551FF);
-            box-shadow: 0 2px 12px rgba(117,81,255,0.3);
-        }
-        .rest-count-badge {
-            background: rgba(255,255,255,0.15); padding: 1px 7px;
-            border-radius: 6px; font-size: 0.75rem; font-weight: 700;
-        }
-        .rest-filter-btn.active .rest-count-badge { background: rgba(255,255,255,0.25); }
+        .rest-stat-icon { font-size:1.4rem; opacity:0.9; }
+        .rest-stat-info { display:flex; flex-direction:column; }
+        .rest-stat-value { font-size:1.5rem; font-weight:700; color:#fff; line-height:1; }
+        .rest-stat-label { font-size:0.7rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
 
-        .rest-action-btn {
-            width: 32px; height: 32px; border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
-            color: rgba(255,255,255,0.5); cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; transition: all 0.2s ease;
+        .rest-filter-btn {
+            display:inline-flex; align-items:center; gap:6px;
+            padding:8px 16px; background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.06); border-radius:10px;
+            color:rgba(255,255,255,0.5); font-size:0.85rem; font-family:'Inter',sans-serif;
+            cursor:pointer; transition:all 0.2s ease;
         }
-        .rest-action-btn.confirm:hover { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #10B981; }
-        .rest-action-btn.reject:hover { background: rgba(255,68,68,0.15); border-color: rgba(255,68,68,0.4); color: #FF4444; }
-        .rest-action-btn.view:hover { background: rgba(117,81,255,0.15); border-color: rgba(117,81,255,0.4); color: #7551FF; }
+        .rest-filter-btn:hover { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.8); }
+        .rest-filter-btn.active {
+            background:var(--accent-primary,#7551FF); color:#fff;
+            border-color:var(--accent-primary,#7551FF);
+            box-shadow:0 2px 12px rgba(117,81,255,0.3);
+        }
+        .rest-count-badge { background:rgba(255,255,255,0.15); padding:1px 7px; border-radius:6px; font-size:0.75rem; font-weight:700; }
+        .rest-filter-btn.active .rest-count-badge { background:rgba(255,255,255,0.25); }
+
+        .rest-cards-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:16px; }
+
+        .rest-card {
+            background:linear-gradient(145deg, #121318 0%, #08090C 100%);
+            border:1px solid rgba(255,255,255,0.03); border-radius:20px;
+            overflow:hidden; position:relative;
+            transition:all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow:0 8px 30px rgba(0,0,0,0.3);
+        }
+        .rest-card:hover { transform:translateY(-3px); border-color:rgba(255,255,255,0.08); box-shadow:0 16px 40px rgba(0,0,0,0.45); }
+        .rest-card::before {
+            content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+            border-radius:4px 0 0 4px;
+        }
+        .rest-card.status-nuevo::before { background:#F59E0B; box-shadow:0 0 12px rgba(245,158,11,0.4); }
+        .rest-card.status-confirmado::before { background:#10B981; box-shadow:0 0 12px rgba(16,185,129,0.4); }
+        .rest-card.status-rechazado::before { background:#FF4444; box-shadow:0 0 12px rgba(255,68,68,0.4); }
+        .rest-card.is-today { border-color:rgba(245,158,11,0.15); box-shadow:0 8px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(245,158,11,0.1); }
+
+        .rest-card-main { padding:20px 20px 16px 24px; cursor:pointer; }
+        .rest-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+        .rest-card-client { display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+        .rest-card-avatar { width:40px; height:40px; border-radius:12px; flex-shrink:0; }
+        .rest-card-name { font-size:1rem; font-weight:600; color:#fff; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .rest-card-email { font-size:0.75rem; color:rgba(255,255,255,0.35); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .rest-card-status-pill { padding:4px 10px; border-radius:8px; font-size:0.75rem; font-weight:600; flex-shrink:0; }
+
+        .rest-card-meta { display:flex; gap:16px; flex-wrap:wrap; }
+        .rest-card-meta-item { display:flex; align-items:center; gap:6px; font-size:0.82rem; color:rgba(255,255,255,0.55); }
+        .rest-card-meta-item ion-icon { font-size:0.95rem; opacity:0.7; }
+        .rest-card-meta-item strong { color:rgba(255,255,255,0.85); font-weight:600; }
+
+        .rest-card-actions { display:flex; gap:8px; padding:0 20px 16px 24px; flex-wrap:wrap; }
+        .rest-card-action-btn {
+            display:inline-flex; align-items:center; gap:6px;
+            padding:8px 14px; border-radius:10px;
+            border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
+            color:rgba(255,255,255,0.6); font-size:0.8rem; font-family:'Inter',sans-serif;
+            cursor:pointer; transition:all 0.2s ease; text-decoration:none;
+        }
+        .rest-card-action-btn:hover { background:rgba(255,255,255,0.08); color:#fff; }
+        .rest-card-action-btn.whatsapp:hover { background:rgba(37,211,102,0.12); border-color:rgba(37,211,102,0.3); color:#25D366; }
+        .rest-card-action-btn.call:hover { background:rgba(58,134,255,0.12); border-color:rgba(58,134,255,0.3); color:#3A86FF; }
+        .rest-card-action-btn.confirm { background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.2); color:#10B981; }
+        .rest-card-action-btn.confirm:hover { background:rgba(16,185,129,0.18); border-color:rgba(16,185,129,0.4); }
+        .rest-card-action-btn.reject { background:rgba(255,68,68,0.08); border-color:rgba(255,68,68,0.2); color:#FF4444; }
+        .rest-card-action-btn.reject:hover { background:rgba(255,68,68,0.18); border-color:rgba(255,68,68,0.4); }
+
+        .rest-card-details { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .rest-card-details.expanded { max-height:400px; border-top:1px solid rgba(255,255,255,0.06); }
+        .rest-card-details-inner { padding:16px 20px 16px 24px; }
+        .rest-card-detail-row { display:flex; justify-content:space-between; padding:6px 0; font-size:0.82rem; }
+        .rest-card-detail-label { color:rgba(255,255,255,0.4); }
+        .rest-card-detail-value { color:rgba(255,255,255,0.8); font-weight:500; }
+        .rest-card-convo {
+            margin-top:10px; padding:12px; background:rgba(255,255,255,0.02);
+            border:1px solid rgba(255,255,255,0.05); border-radius:10px;
+            font-size:0.8rem; color:rgba(255,255,255,0.55); line-height:1.5;
+            max-height:120px; overflow-y:auto; white-space:pre-wrap; word-break:break-word;
+        }
+        .rest-card-chevron { transition:transform 0.3s ease; font-size:1rem; color:rgba(255,255,255,0.3); }
+        .rest-card-chevron.rotated { transform:rotate(180deg); }
+
+        .rest-empty-state { text-align:center; padding:60px 20px; color:rgba(255,255,255,0.35); }
+        .rest-empty-state ion-icon { font-size:3rem; margin-bottom:12px; opacity:0.3; }
+
+        @media (max-width:768px) {
+            .rest-cards-grid { grid-template-columns:1fr; }
+            #rest-stats-bar { grid-template-columns:1fr !important; }
+            .rest-card-meta { flex-direction:column; gap:8px; }
+        }
 
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }
@@ -579,62 +648,76 @@
 
             <!-- ===== PANEL DE RESERVAS RESTAURANTE ===== -->
             <div id="restaurant-panel" class="hidden" style="padding: 0 24px 24px;">
-                    <!-- Header del Panel -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-                        <div>
-                            <span class="label-sub" style="font-size:0.7rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">GESTIÓN DE RESERVAS</span>
-                            <h3 style="font-size:1.4rem; font-weight:700; margin:4px 0 0; display:flex; align-items:center; gap:8px;">
-                                <ion-icon name="restaurant-outline" style="color:var(--accent-primary);"></ion-icon>
-                                Restaurante
-                            </h3>
+                <!-- Header -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div>
+                        <span class="label-sub" style="font-size:0.7rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">GESTIÓN DE RESERVAS</span>
+                        <h3 style="font-size:1.4rem; font-weight:700; margin:4px 0 0; display:flex; align-items:center; gap:8px;">
+                            <ion-icon name="restaurant-outline" style="color:var(--accent-primary);"></ion-icon>
+                            Restaurante
+                        </h3>
+                    </div>
+                    <button onclick="fetchRestaurantReservations()" title="Actualizar reservas"
+                            style="padding:8px 16px; display:flex; align-items:center; gap:6px; border-radius:12px;
+                                   background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+                                   color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.85rem; font-family:'Inter',sans-serif;">
+                        <ion-icon name="refresh-outline"></ion-icon> Actualizar
+                    </button>
+                </div>
+
+                <!-- Stats Bar -->
+                <div id="rest-stats-bar" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:20px;">
+                    <div class="rest-stat-card">
+                        <div class="rest-stat-icon" style="color:#F59E0B;"><ion-icon name="today-outline"></ion-icon></div>
+                        <div class="rest-stat-info">
+                            <span class="rest-stat-value" id="rest-stat-hoy">0</span>
+                            <span class="rest-stat-label">Hoy</span>
                         </div>
-                        <button onclick="fetchRestaurantReservations()" title="Actualizar reservas"
-                                style="padding:8px 16px; display:flex; align-items:center; gap:6px; border-radius:12px;
-                                       background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
-                                       color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.85rem; font-family:'Inter',sans-serif;">
-                            <ion-icon name="refresh-outline"></ion-icon> Actualizar
-                        </button>
                     </div>
-
-                    <!-- Filtros por Estado -->
-                    <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
-                        <button class="rest-filter-btn active" data-status="all" onclick="filterRestaurantByStatus('all')">
-                            Todos <span id="rest-count-all" class="rest-count-badge">0</span>
-                        </button>
-                        <button class="rest-filter-btn" data-status="Nuevo Lead" onclick="filterRestaurantByStatus('Nuevo Lead')">
-                            Nuevos <span id="rest-count-nuevo" class="rest-count-badge">0</span>
-                        </button>
-                        <button class="rest-filter-btn" data-status="Confirmado" onclick="filterRestaurantByStatus('Confirmado')">
-                            Confirmados <span id="rest-count-confirmado" class="rest-count-badge">0</span>
-                        </button>
-                        <button class="rest-filter-btn" data-status="Rechazado" onclick="filterRestaurantByStatus('Rechazado')">
-                            Rechazados <span id="rest-count-rechazado" class="rest-count-badge">0</span>
-                        </button>
+                    <div class="rest-stat-card">
+                        <div class="rest-stat-icon" style="color:#7551FF;"><ion-icon name="calendar-outline"></ion-icon></div>
+                        <div class="rest-stat-info">
+                            <span class="rest-stat-value" id="rest-stat-semana">0</span>
+                            <span class="rest-stat-label">Esta semana</span>
+                        </div>
                     </div>
-
-                    <!-- Tabla de Reservas -->
-                    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:24px; overflow:hidden;">
-                        <div style="overflow-x:auto;">
-                            <table style="width:100%; min-width:800px; border-collapse:collapse;">
-                                <thead>
-                                    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                                        <th style="padding:14px 12px; text-align:left; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:600; width:40px;">#</th>
-                                        <th style="padding:14px 12px; text-align:left; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:600;">Cliente</th>
-                                        <th style="padding:14px 12px; text-align:left; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:600;">Teléfono</th>
-                                        <th style="padding:14px 12px; text-align:left; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:600;">Tipo</th>
-                                        <th style="padding:14px 12px; text-align:center; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:600;">PAX</th>
-                                        <th style="padding:14px 12px; text-align:left; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:600;">Fecha</th>
-                                        <th style="padding:14px 12px; text-align:left; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:600;">Estado</th>
-                                        <th style="padding:14px 12px; text-align:left; font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:600; width:140px;">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="restaurant-table-body">
-                                    <!-- JS Injection -->
-                                </tbody>
-                            </table>
+                    <div class="rest-stat-card">
+                        <div class="rest-stat-icon" style="color:#01F1E3;"><ion-icon name="hourglass-outline"></ion-icon></div>
+                        <div class="rest-stat-info">
+                            <span class="rest-stat-value" id="rest-stat-pendientes">0</span>
+                            <span class="rest-stat-label">Pendientes</span>
                         </div>
                     </div>
                 </div>
+
+                <!-- Filtros por Estado -->
+                <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+                    <button class="rest-filter-btn active" data-status="all" onclick="filterRestaurantByStatus('all')">
+                        Todos <span id="rest-count-all" class="rest-count-badge">0</span>
+                    </button>
+                    <button class="rest-filter-btn" data-status="Nuevo Lead" onclick="filterRestaurantByStatus('Nuevo Lead')">
+                        Nuevos <span id="rest-count-nuevo" class="rest-count-badge">0</span>
+                    </button>
+                    <button class="rest-filter-btn" data-status="Confirmado" onclick="filterRestaurantByStatus('Confirmado')">
+                        Confirmados <span id="rest-count-confirmado" class="rest-count-badge">0</span>
+                    </button>
+                    <button class="rest-filter-btn" data-status="Rechazado" onclick="filterRestaurantByStatus('Rechazado')">
+                        Rechazados <span id="rest-count-rechazado" class="rest-count-badge">0</span>
+                    </button>
+                </div>
+
+                <!-- Sección Reservas de Hoy -->
+                <div id="rest-today-section" class="hidden" style="margin-bottom:24px;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                        <div style="width:8px; height:8px; background:#F59E0B; border-radius:50%; box-shadow:0 0 8px #F59E0B;"></div>
+                        <span style="font-size:0.8rem; font-weight:600; color:#F59E0B; text-transform:uppercase; letter-spacing:1px;">Reservas para hoy</span>
+                    </div>
+                    <div id="rest-today-cards" class="rest-cards-grid"></div>
+                </div>
+
+                <!-- Grid de Tarjetas -->
+                <div id="rest-cards-container" class="rest-cards-grid"></div>
+            </div>
 
                 <!-- Modal de Confirmación de Reserva -->
                 <div id="restaurant-confirm-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">

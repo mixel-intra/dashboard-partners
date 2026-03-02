@@ -1189,12 +1189,12 @@ async function fetchRestaurantReservations() {
         return;
     }
 
-    const container = document.getElementById('restaurant-table-body');
+    const container = document.getElementById('rest-cards-container');
     if (container) {
-        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">
-            <ion-icon name="sync-outline" class="spin" style="font-size:1.5rem;"></ion-icon>
-            <div style="margin-top:8px;">Cargando reservas...</div>
-        </td></tr>`;
+        container.innerHTML = `<div class="rest-empty-state" style="grid-column:1/-1;">
+            <ion-icon name="sync-outline" class="spin" style="font-size:2rem;"></ion-icon>
+            <div style="margin-top:12px; font-size:0.9rem;">Cargando reservas...</div>
+        </div>`;
     }
 
     try {
@@ -1229,91 +1229,182 @@ async function fetchRestaurantReservations() {
 }
 
 function renderRestaurantReservations() {
-    const tableBody = document.getElementById('restaurant-table-body');
-    if (!tableBody) return;
+    const container = document.getElementById('rest-cards-container');
+    const todaySection = document.getElementById('rest-today-section');
+    const todayContainer = document.getElementById('rest-today-cards');
+    if (!container) return;
 
-    let reservations = [...state.restaurantReservations];
+    const all = state.restaurantReservations;
+    let reservations = [...all];
 
     // Apply status filter
     if (state.restaurantFilters.status !== 'all') {
         reservations = reservations.filter(r => r.estado === state.restaurantFilters.status);
     }
 
-    // Update counters
-    const total = state.restaurantReservations.length;
-    const nuevos = state.restaurantReservations.filter(r => r.estado === 'Nuevo Lead').length;
-    const confirmados = state.restaurantReservations.filter(r => r.estado === 'Confirmado').length;
-    const rechazados = state.restaurantReservations.filter(r => r.estado === 'Rechazado').length;
+    // Compute stats
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
 
-    const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setCount('rest-count-all', total);
-    setCount('rest-count-nuevo', nuevos);
-    setCount('rest-count-confirmado', confirmados);
-    setCount('rest-count-rechazado', rechazados);
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('rest-stat-hoy', all.filter(r => isReservationToday(r.fechaEvento)).length);
+    setEl('rest-stat-semana', all.filter(r => isReservationInWeek(r.fechaEvento, startOfWeek, endOfWeek)).length);
+    setEl('rest-stat-pendientes', all.filter(r => r.estado === 'Nuevo Lead').length);
+    setEl('rest-count-all', all.length);
+    setEl('rest-count-nuevo', all.filter(r => r.estado === 'Nuevo Lead').length);
+    setEl('rest-count-confirmado', all.filter(r => r.estado === 'Confirmado').length);
+    setEl('rest-count-rechazado', all.filter(r => r.estado === 'Rechazado').length);
 
+    // Split today vs rest
+    const todayReservations = reservations.filter(r => isReservationToday(r.fechaEvento));
+    const otherReservations = reservations.filter(r => !isReservationToday(r.fechaEvento));
+
+    // Render today section
+    if (todayReservations.length > 0 && todaySection && todayContainer) {
+        todaySection.classList.remove('hidden');
+        todayContainer.innerHTML = todayReservations.map(r => buildReservationCard(r, true)).join('');
+    } else if (todaySection) {
+        todaySection.classList.add('hidden');
+    }
+
+    // Render main grid
     if (reservations.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">
-            No hay reservas con este filtro.
-        </td></tr>`;
+        container.innerHTML = `<div class="rest-empty-state" style="grid-column:1/-1;">
+            <ion-icon name="restaurant-outline"></ion-icon>
+            <div style="font-size:1rem; margin-bottom:4px;">No hay reservas con este filtro</div>
+            <div style="font-size:0.82rem;">Cambia los filtros o espera nuevas reservas</div>
+        </div>`;
         return;
     }
 
-    tableBody.innerHTML = reservations.map((r, i) => {
-        const statusColor = r.estado === 'Confirmado' ? '#10B981'
-                          : r.estado === 'Rechazado' ? '#FF4444'
-                          : '#F59E0B';
-        const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)'
-                       : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)'
-                       : 'rgba(245,158,11,0.12)';
-        const showActions = r.estado === 'Nuevo Lead';
-        const originalIndex = state.restaurantReservations.indexOf(r);
+    const mainList = todayReservations.length > 0 ? otherReservations : reservations;
+    container.innerHTML = mainList.length > 0
+        ? mainList.map(r => buildReservationCard(r, false)).join('')
+        : '';
+}
 
-        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-            <td style="color:#565969; padding:14px 12px;">${i + 1}</td>
-            <td style="padding:14px 12px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.nombre || 'R')}&background=random&color=fff&size=28" style="width:28px; height:28px; border-radius:50%;">
-                    <div>
-                        <div style="color:white; font-weight:600; font-size:0.9rem;">${r.nombre}</div>
-                        <div style="font-size:0.75rem; color:var(--text-dim); font-weight:400;">${r.email}</div>
+function buildReservationCard(r, isToday) {
+    const originalIndex = state.restaurantReservations.indexOf(r);
+    const statusClass = r.estado === 'Confirmado' ? 'status-confirmado'
+                      : r.estado === 'Rechazado' ? 'status-rechazado' : 'status-nuevo';
+    const statusColor = r.estado === 'Confirmado' ? '#10B981'
+                      : r.estado === 'Rechazado' ? '#FF4444' : '#F59E0B';
+    const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)'
+                   : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)' : 'rgba(245,158,11,0.12)';
+    const showActions = r.estado === 'Nuevo Lead';
+    const cleanPhone = (r.telefono || '').replace(/[\s\-\+\(\)]/g, '');
+    const todayClass = isToday ? ' is-today' : '';
+    const escapedName = (r.nombre || 'R').replace(/'/g, "\\'");
+
+    return `<div class="rest-card ${statusClass}${todayClass}">
+        <div class="rest-card-main" onclick="toggleCardDetails(${originalIndex})">
+            <div class="rest-card-top">
+                <div class="rest-card-client">
+                    <img class="rest-card-avatar" loading="lazy"
+                         src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.nombre || 'R')}&background=1a1a2e&color=fff&size=40&rounded=true"
+                         alt="${escapedName}">
+                    <div style="min-width:0;">
+                        <div class="rest-card-name">${r.nombre || 'Sin nombre'}</div>
+                        ${r.email ? `<div class="rest-card-email">${r.email}</div>` : ''}
                     </div>
                 </div>
-            </td>
-            <td style="color:#8E92A3; padding:14px 12px; font-size:0.85rem;">${r.telefono}</td>
-            <td style="color:#8E92A3; padding:14px 12px; font-size:0.85rem;">${r.tipoEvento}</td>
-            <td style="color:white; font-weight:600; text-align:center; padding:14px 12px;">${r.pax}</td>
-            <td style="color:#8E92A3; padding:14px 12px; font-size:0.85rem;">${formatReservationDate(r.fechaEvento)}</td>
-            <td style="padding:14px 12px;">
-                <span style="color:${statusColor}; background:${statusBg}; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:600;">
-                    ${r.estado}
-                </span>
-            </td>
-            <td style="padding:14px 12px;">
-                <div style="display:flex; gap:6px;">
-                    ${showActions ? `
-                        <button onclick="confirmReservation(${originalIndex})" class="rest-action-btn confirm" title="Confirmar reserva">
-                            <ion-icon name="checkmark-circle-outline"></ion-icon>
-                        </button>
-                        <button onclick="rejectReservation(${originalIndex})" class="rest-action-btn reject" title="Rechazar reserva">
-                            <ion-icon name="close-circle-outline"></ion-icon>
-                        </button>
-                    ` : ''}
-                    <button onclick="viewConversation(${originalIndex})" class="rest-action-btn view" title="Ver detalles">
-                        <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
-                    </button>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="rest-card-status-pill" style="color:${statusColor}; background:${statusBg};">${r.estado}</span>
+                    <ion-icon name="chevron-down-outline" class="rest-card-chevron" id="chevron-${originalIndex}"></ion-icon>
                 </div>
-            </td>
-        </tr>`;
-    }).join('');
+            </div>
+            <div class="rest-card-meta">
+                <div class="rest-card-meta-item">
+                    <ion-icon name="calendar-outline"></ion-icon>
+                    <strong>${formatReservationDate(r.fechaEvento)}</strong>
+                </div>
+                <div class="rest-card-meta-item">
+                    <ion-icon name="people-outline"></ion-icon>
+                    <strong>${r.pax}</strong> personas
+                </div>
+                <div class="rest-card-meta-item">
+                    <ion-icon name="pricetag-outline"></ion-icon>
+                    ${r.tipoEvento || 'N/A'}
+                </div>
+            </div>
+        </div>
+        <div class="rest-card-details" id="details-${originalIndex}">
+            <div class="rest-card-details-inner">
+                ${r.telefono ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Teléfono</span><span class="rest-card-detail-value">${r.telefono}</span></div>` : ''}
+                ${r.email ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Email</span><span class="rest-card-detail-value">${r.email}</span></div>` : ''}
+                ${r.tipoEvento ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Tipo</span><span class="rest-card-detail-value">${r.tipoEvento}</span></div>` : ''}
+                ${(r.detalles || r.conversacion) ? `<div class="rest-card-convo">${r.detalles || r.conversacion}</div>` : ''}
+            </div>
+        </div>
+        <div class="rest-card-actions">
+            ${cleanPhone ? `
+                <a href="https://wa.me/${cleanPhone}" target="_blank" class="rest-card-action-btn whatsapp" onclick="event.stopPropagation();">
+                    <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+                </a>
+                <a href="tel:${r.telefono}" class="rest-card-action-btn call" onclick="event.stopPropagation();">
+                    <ion-icon name="call-outline"></ion-icon> Llamar
+                </a>
+            ` : ''}
+            ${showActions ? `
+                <button onclick="event.stopPropagation(); confirmReservation(${originalIndex})" class="rest-card-action-btn confirm">
+                    <ion-icon name="checkmark-circle-outline"></ion-icon> Confirmar
+                </button>
+                <button onclick="event.stopPropagation(); rejectReservation(${originalIndex})" class="rest-card-action-btn reject">
+                    <ion-icon name="close-circle-outline"></ion-icon> Rechazar
+                </button>
+            ` : ''}
+        </div>
+    </div>`;
+}
+
+function isReservationToday(dateStr) {
+    if (!dateStr) return false;
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return false;
+        const now = new Date();
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    } catch { return false; }
+}
+
+function isReservationInWeek(dateStr, start, end) {
+    if (!dateStr) return false;
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return false;
+        return d >= start && d <= end;
+    } catch { return false; }
+}
+
+function toggleCardDetails(index) {
+    const details = document.getElementById(`details-${index}`);
+    const chevron = document.getElementById(`chevron-${index}`);
+    if (!details) return;
+    const isExpanded = details.classList.contains('expanded');
+    // Close all others (accordion)
+    document.querySelectorAll('.rest-card-details.expanded').forEach(el => el.classList.remove('expanded'));
+    document.querySelectorAll('.rest-card-chevron.rotated').forEach(el => el.classList.remove('rotated'));
+    if (!isExpanded) {
+        details.classList.add('expanded');
+        if (chevron) chevron.classList.add('rotated');
+    }
 }
 
 function renderRestaurantEmpty(message) {
-    const tableBody = document.getElementById('restaurant-table-body');
-    if (tableBody) {
-        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">
-            ${message}
-        </td></tr>`;
+    const container = document.getElementById('rest-cards-container');
+    if (container) {
+        container.innerHTML = `<div class="rest-empty-state" style="grid-column:1/-1;">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <div style="font-size:1rem; margin-bottom:4px;">${message}</div>
+        </div>`;
     }
+    const todaySection = document.getElementById('rest-today-section');
+    if (todaySection) todaySection.classList.add('hidden');
 }
 
 function formatReservationDate(dateStr) {
@@ -1445,3 +1536,4 @@ window.filterRestaurantByStatus = filterRestaurantByStatus;
 window.closeConfirmModal = closeConfirmModal;
 window.closeConversationModal = closeConversationModal;
 window.fetchRestaurantReservations = fetchRestaurantReservations;
+window.toggleCardDetails = toggleCardDetails;
