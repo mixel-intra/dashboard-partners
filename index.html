@@ -333,6 +333,9 @@
         <!-- Main Header -->
         <header class="main-header">
             <div class="header-left">
+                <button id="mobile-switcher-btn" onclick="toggleSwitcher()" title="Cambiar dashboard">
+                    <ion-icon name="apps-outline"></ion-icon>
+                </button>
                 <div class="client-branding">
                     <img id="client-logo" src="" alt="Client Logo" class="client-logo-img hidden">
                     <div class="welcome-area">
@@ -1240,10 +1243,22 @@
             transform: scale(0.85);
         }
 
+        /* Mobile: show switcher in header instead of floating btn */
+        #mobile-switcher-btn {
+            display: none;
+            width: 38px; height: 38px;
+            border-radius: 11px;
+            background: rgba(117,81,255,0.12);
+            border: 1px solid rgba(117,81,255,0.28);
+            color: rgba(255,255,255,0.75);
+            align-items: center; justify-content: center;
+            cursor: pointer;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
         @media (max-width: 768px) {
-            #switcher-toggle-btn {
-                display: none !important;
-            }
+            #switcher-toggle-btn { display: none !important; }
+            #mobile-switcher-btn { display: flex; }
         }
     </style>
 
