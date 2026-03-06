@@ -28,245 +28,79 @@
         /* ===== ECLIPSE LOADING SCREEN ===== */
         #dashboard-loader {
             position: fixed; inset: 0; z-index: 9999;
-            background: #00000c;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            transition: opacity 1s ease;
+            background: #000;
+            display: flex;
+            transition: opacity 1.2s ease;
             overflow: hidden;
         }
         #dashboard-loader.fade-out { opacity: 0; pointer-events: none; }
 
-        /* Stars */
-        .ecl-stars { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-        .ecl-stars::before, .ecl-stars::after {
-            content: ''; position: absolute; top: 0; left: 0;
-            width: 1px; height: 1px; background: rgba(255,255,255,0.9); border-radius: 50%;
-        }
-        .ecl-stars::before {
-            box-shadow:
-                34px 78px 0 0 rgba(255,255,255,0.9), 89px 234px 0 0 rgba(255,255,255,0.6),
-                142px 412px 0 0 rgba(255,255,255,0.5), 67px 567px 0 0 rgba(255,255,255,0.8),
-                198px 145px 0 0 rgba(255,255,255,0.7), 256px 689px 0 0 rgba(255,255,255,0.6),
-                312px 89px 0 0 rgba(255,255,255,0.45), 345px 234px 0 0 rgba(255,255,255,0.85),
-                401px 534px 0 0 rgba(255,255,255,0.55), 423px 178px 0 0 rgba(255,255,255,0.75),
-                934px 123px 0 0 rgba(255,255,255,0.7), 1012px 456px 0 0 rgba(255,255,255,0.9),
-                1078px 67px 0 0 rgba(255,255,255,0.6), 1145px 312px 0 0 rgba(255,255,255,0.75),
-                1189px 623px 0 0 rgba(255,255,255,0.85), 1234px 189px 0 0 rgba(255,255,255,0.5),
-                1298px 489px 0 0 rgba(255,255,255,0.8), 1356px 134px 0 0 rgba(255,255,255,0.65),
-                1389px 756px 0 0 rgba(255,255,255,0.55), 512px 34px 0 0 rgba(255,255,255,0.8),
-                623px 89px 0 0 rgba(255,255,255,0.6), 756px 23px 0 0 rgba(255,255,255,0.9),
-                845px 156px 0 0 rgba(255,255,255,0.7), 567px 712px 0 0 rgba(255,255,255,0.7),
-                634px 834px 0 0 rgba(255,255,255,0.55), 723px 678px 0 0 rgba(255,255,255,0.8),
-                812px 789px 0 0 rgba(255,255,255,0.6),
-                156px 267px 2px 1px rgba(255,255,255,0.35), 1123px 234px 2px 1px rgba(255,255,255,0.3),
-                389px 712px 2px 1px rgba(255,255,255,0.35), 1278px 623px 2px 1px rgba(255,255,255,0.4);
-            animation: ecl-stars-shimmer 9s ease-in-out infinite;
-        }
-        .ecl-stars::after {
-            box-shadow:
-                534px 178px 0 0 rgba(255,255,255,0.4), 612px 534px 0 0 rgba(255,255,255,0.35),
-                823px 289px 0 0 rgba(255,255,255,0.4), 867px 623px 0 0 rgba(255,255,255,0.3),
-                178px 345px 0 0 rgba(255,255,255,0.45), 1234px 456px 0 0 rgba(255,255,255,0.35),
-                78px 789px 0 0 rgba(255,255,255,0.4), 1345px 267px 0 0 rgba(255,255,255,0.4),
-                456px 845px 0 0 rgba(255,255,255,0.3), 923px 734px 0 0 rgba(255,255,255,0.45),
-                267px 534px 0 0 rgba(255,255,255,0.3), 1089px 534px 0 0 rgba(255,255,255,0.4),
-                45px 145px 0 0 rgba(255,255,255,0.5), 1412px 445px 0 0 rgba(255,255,255,0.35);
-            animation: ecl-stars-shimmer 13s ease-in-out infinite 3s;
+        /* Foto real del eclipse con Ken Burns */
+        .ecl-photo {
+            position: absolute; inset: -5%;
+            background: url('./total-solar-eclipse-close-up-of-solar-flares-2026-01-07-06-35-16-utc.jpg') center/cover no-repeat;
+            animation: ecl-zoom 18s ease-in-out infinite alternate;
         }
 
-        /* Eclipse scene container */
-        .ecl-scene {
-            position: relative; width: 340px; height: 340px;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 52px;
-        }
-
-        /* 1. Far ambient corona glow */
-        .ecl-corona-far {
-            position: absolute; inset: -80px; border-radius: 50%;
-            background: radial-gradient(circle,
-                transparent 22%, rgba(255,200,80,0.05) 32%,
-                rgba(255,160,40,0.08) 48%, rgba(255,100,20,0.05) 62%,
-                rgba(200,60,10,0.03) 75%, transparent 88%
+        /* Vignette: oscurece bordes, deja el centro brillar */
+        .ecl-vignette {
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse 68% 62% at 50% 48%,
+                transparent 0%,
+                transparent 32%,
+                rgba(0,0,0,0.45) 58%,
+                rgba(0,0,0,0.88) 100%
             );
-            animation: ecl-breathe 6s ease-in-out infinite;
         }
 
-        /* 2. Corona rays — conic gradient, slow rotation */
-        .ecl-corona-rays {
-            position: absolute; width: 290px; height: 290px; border-radius: 50%;
-            background: conic-gradient(
-                from 0deg,
-                transparent 0deg, rgba(255,220,100,0.28) 5deg, transparent 11deg,
-                transparent 25deg, rgba(255,200,80,0.18) 28deg, transparent 32deg,
-                transparent 48deg, rgba(255,225,110,0.32) 52deg, transparent 59deg,
-                transparent 73deg, rgba(255,200,80,0.20) 76deg, transparent 80deg,
-                transparent 97deg, rgba(255,210,90,0.25) 101deg, transparent 107deg,
-                transparent 122deg, rgba(255,200,80,0.16) 124deg, transparent 128deg,
-                transparent 145deg, rgba(255,220,100,0.29) 149deg, transparent 156deg,
-                transparent 170deg, rgba(255,200,80,0.19) 173deg, transparent 177deg,
-                transparent 193deg, rgba(255,215,95,0.26) 197deg, transparent 203deg,
-                transparent 218deg, rgba(255,200,80,0.17) 221deg, transparent 225deg,
-                transparent 241deg, rgba(255,220,100,0.30) 245deg, transparent 252deg,
-                transparent 268deg, rgba(255,200,80,0.20) 271deg, transparent 275deg,
-                transparent 291deg, rgba(255,215,95,0.22) 295deg, transparent 301deg,
-                transparent 318deg, rgba(255,200,80,0.15) 320deg, transparent 324deg,
-                transparent 340deg, rgba(255,220,100,0.25) 344deg, transparent 360deg
+        /* Gradiente inferior para legibilidad del texto */
+        .ecl-bottom-fade {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.75) 70%, rgba(0,0,0,0.92) 100%);
+        }
+
+        /* Pulso sutil sobre la corona — simula que respira */
+        .ecl-pulse {
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse 40% 35% at 50% 48%,
+                rgba(255,160,50,0.04) 0%, transparent 70%
             );
-            -webkit-mask: radial-gradient(circle, transparent 37%, white 42%);
-            mask: radial-gradient(circle, transparent 37%, white 42%);
-            animation: ecl-rays-spin 90s linear infinite;
-        }
-
-        /* 3. Secondary fainter rays, counter-rotating */
-        .ecl-corona-rays2 {
-            position: absolute; width: 258px; height: 258px; border-radius: 50%;
-            background: conic-gradient(
-                from 18deg,
-                transparent 0deg, rgba(255,210,90,0.14) 4deg, transparent 9deg,
-                transparent 35deg, rgba(255,200,80,0.10) 38deg, transparent 42deg,
-                transparent 68deg, rgba(255,215,95,0.16) 71deg, transparent 76deg,
-                transparent 104deg, rgba(255,200,80,0.12) 107deg, transparent 111deg,
-                transparent 138deg, rgba(255,210,90,0.15) 141deg, transparent 146deg,
-                transparent 173deg, rgba(255,200,80,0.11) 176deg, transparent 180deg,
-                transparent 209deg, rgba(255,215,95,0.14) 212deg, transparent 217deg,
-                transparent 244deg, rgba(255,200,80,0.13) 247deg, transparent 251deg,
-                transparent 279deg, rgba(255,210,90,0.15) 282deg, transparent 287deg,
-                transparent 314deg, rgba(255,200,80,0.10) 317deg, transparent 321deg,
-                transparent 349deg, rgba(255,215,95,0.13) 352deg, transparent 357deg,
-                transparent 360deg
-            );
-            -webkit-mask: radial-gradient(circle, transparent 34%, white 39%);
-            mask: radial-gradient(circle, transparent 34%, white 39%);
-            animation: ecl-rays-spin 65s linear infinite reverse;
-            opacity: 0.65;
-        }
-
-        /* 4. Inner white/silver corona halo, right at moon rim */
-        .ecl-corona-inner {
-            position: absolute; width: 198px; height: 198px; border-radius: 50%;
-            box-shadow:
-                0 0 0 2px rgba(255,255,255,0.1),
-                0 0 7px 4px rgba(255,240,200,0.18),
-                0 0 20px 9px rgba(255,200,100,0.14),
-                0 0 45px 16px rgba(255,160,50,0.09),
-                0 0 90px 28px rgba(255,120,30,0.05);
-            animation: ecl-halo-pulse 5s ease-in-out infinite alternate;
-            z-index: 2;
-        }
-
-        /* 5. Chromosphere — hot red/pink rim */
-        .ecl-chromosphere {
-            position: absolute; width: 184px; height: 184px; border-radius: 50%;
-            box-shadow:
-                0 0 0 2px rgba(255,90,30,0.55),
-                0 0 7px 3px rgba(255,60,20,0.35),
-                0 0 16px 5px rgba(255,30,10,0.18);
-            z-index: 3;
-            animation: ecl-chrom-pulse 3.5s ease-in-out infinite alternate;
-        }
-
-        /* 6. Solar prominences */
-        .ecl-prominence {
-            position: absolute; border-radius: 50%; z-index: 4; filter: blur(1.5px);
-        }
-        .ecl-p1 {
-            width: 22px; height: 46px;
-            background: radial-gradient(ellipse at 50% 80%, rgba(255,80,30,1) 0%, rgba(255,60,20,0.55) 45%, transparent 100%);
-            top: 64px; right: 96px;
-            transform: rotate(45deg);
-            animation: ecl-prom 5.5s ease-in-out infinite;
-        }
-        .ecl-p2 {
-            width: 17px; height: 36px;
-            background: radial-gradient(ellipse at 50% 80%, rgba(255,100,40,0.95) 0%, rgba(255,60,20,0.5) 50%, transparent 100%);
-            bottom: 56px; left: 100px;
-            transform: rotate(-135deg);
-            animation: ecl-prom 7.5s ease-in-out infinite 1.2s;
-        }
-        .ecl-p3 {
-            width: 13px; height: 28px;
-            background: radial-gradient(ellipse at 50% 80%, rgba(255,90,35,0.9) 0%, rgba(255,50,15,0.45) 50%, transparent 100%);
-            top: 150px; right: 52px;
-            transform: rotate(90deg);
-            animation: ecl-prom 4.2s ease-in-out infinite 0.7s;
-        }
-
-        /* 7. Moon disk */
-        .ecl-moon {
-            position: absolute; width: 180px; height: 180px; border-radius: 50%;
-            background: radial-gradient(circle at 42% 38%, #0d0d1a 0%, #060610 40%, #020208 100%);
-            z-index: 5;
-        }
-
-        /* 8. Diamond ring — bead of light at totality */
-        .ecl-diamond {
-            position: absolute; width: 7px; height: 7px; border-radius: 50%;
-            background: #fff;
-            top: 89px; right: 121px;
-            z-index: 6;
-            box-shadow:
-                0 0 3px 1px rgba(255,255,255,1),
-                0 0 9px 4px rgba(255,240,180,0.95),
-                0 0 22px 8px rgba(255,200,80,0.75),
-                0 0 50px 16px rgba(255,150,40,0.45),
-                0 0 100px 30px rgba(255,100,20,0.18);
-            animation: ecl-diamond 4.5s ease-in-out infinite;
-        }
-
-        /* ===== Keyframes ===== */
-        @keyframes ecl-breathe {
-            0%, 100% { transform: scale(1); opacity: 0.85; }
-            50% { transform: scale(1.08); opacity: 1; }
-        }
-        @keyframes ecl-rays-spin {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
-        }
-        @keyframes ecl-halo-pulse {
-            from { box-shadow: 0 0 0 2px rgba(255,255,255,0.1), 0 0 7px 4px rgba(255,240,200,0.18), 0 0 20px 9px rgba(255,200,100,0.14), 0 0 45px 16px rgba(255,160,50,0.09); }
-            to   { box-shadow: 0 0 0 3px rgba(255,255,255,0.16), 0 0 11px 6px rgba(255,240,200,0.27), 0 0 32px 14px rgba(255,200,100,0.21), 0 0 65px 22px rgba(255,160,50,0.14); }
-        }
-        @keyframes ecl-chrom-pulse {
-            from { box-shadow: 0 0 0 2px rgba(255,90,30,0.55), 0 0 7px 3px rgba(255,60,20,0.35), 0 0 16px 5px rgba(255,30,10,0.18); }
-            to   { box-shadow: 0 0 0 3px rgba(255,110,50,0.68), 0 0 11px 5px rgba(255,80,30,0.46), 0 0 24px 8px rgba(255,50,20,0.28); }
-        }
-        @keyframes ecl-prom {
-            0%, 100% { opacity: 0.9; transform: scaleY(1) rotate(var(--r, 45deg)); }
-            30%      { opacity: 0.45; transform: scaleY(0.7) rotate(var(--r, 45deg)); }
-            65%      { opacity: 1; transform: scaleY(1.2) rotate(var(--r, 45deg)); }
-        }
-        @keyframes ecl-diamond {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            20%      { opacity: 0.5; transform: scale(0.65); }
-            55%      { opacity: 1; transform: scale(1.35); }
-            78%      { opacity: 0.78; transform: scale(0.88); }
-        }
-        @keyframes ecl-stars-shimmer {
-            0%, 100% { opacity: 0.8; }
-            50%      { opacity: 0.35; }
+            animation: ecl-breathe 5s ease-in-out infinite;
         }
 
         /* Bottom UI */
-        .ecl-bottom { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .ld-logo { width: 32px; height: auto; opacity: 0.55; }
+        .ecl-bottom {
+            position: absolute; bottom: 56px; left: 0; right: 0;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            z-index: 10;
+        }
+        .ld-logo { width: 30px; height: auto; opacity: 0.65; }
         .ld-label {
             font-family: 'Inter', sans-serif;
             font-size: 0.68rem; font-weight: 500;
-            color: rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.3);
             letter-spacing: 0.18em; text-transform: uppercase;
         }
 
         /* Progress bar */
         .ld-bar-track {
             position: absolute; bottom: 0; left: 0; right: 0;
-            height: 2px; background: rgba(255,255,255,0.04);
+            height: 2px; background: rgba(255,255,255,0.04); z-index: 10;
         }
         .ld-bar-fill {
             height: 100%; width: 0%;
             background: linear-gradient(90deg, rgba(200,80,20,0.6) 0%, rgba(255,180,60,1) 80%);
             box-shadow: 0 0 18px rgba(255,140,40,0.5), 0 0 5px rgba(255,180,60,0.85);
             transition: width 0.75s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        @keyframes ecl-zoom {
+            from { transform: scale(1) translate(0, 0); }
+            to   { transform: scale(1.08) translate(-1%, 0.5%); }
+        }
+        @keyframes ecl-breathe {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50%      { opacity: 1; transform: scale(1.12); }
         }
 
         /* ===== PANEL DE RESERVAS RESTAURANTE ===== */
@@ -390,19 +224,10 @@
     </style>
 
     <div id="dashboard-loader">
-        <div class="ecl-stars"></div>
-        <div class="ecl-scene">
-            <div class="ecl-corona-far"></div>
-            <div class="ecl-corona-rays"></div>
-            <div class="ecl-corona-rays2"></div>
-            <div class="ecl-corona-inner"></div>
-            <div class="ecl-prominence ecl-p1"></div>
-            <div class="ecl-prominence ecl-p2"></div>
-            <div class="ecl-prominence ecl-p3"></div>
-            <div class="ecl-chromosphere"></div>
-            <div class="ecl-moon"></div>
-            <div class="ecl-diamond"></div>
-        </div>
+        <div class="ecl-photo"></div>
+        <div class="ecl-vignette"></div>
+        <div class="ecl-pulse"></div>
+        <div class="ecl-bottom-fade"></div>
         <div class="ecl-bottom">
             <img src="src/assets/intra-logo.png" class="ld-logo" alt="Intra">
             <span class="ld-label">Casi listo</span>
