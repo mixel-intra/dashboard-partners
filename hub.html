@@ -437,44 +437,107 @@
             }
         }
 
-        /* Responsive */
-        @media (max-width: 1024px) {
-            body {
-                flex-direction: column;
-                overflow: auto;
-            }
-
-            .left-panel {
-                flex: none;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                padding: 3rem;
-            }
-
-            .right-panel {
-                padding: 3rem;
-                overflow: visible;
-            }
-
-            .title-container h1 {
-                font-size: 3.5rem;
-            }
+        /* ===== TABLET ===== */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .left-panel { flex: 0 0 38%; padding: 2.5rem; }
+            .right-panel { padding: 2.5rem; }
+            .title-container h1 { font-size: 3rem; }
         }
 
-        @media (max-width: 600px) {
+        /* ===== MOBILE — rediseño completo ===== */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: 100dvh;
+                overflow: hidden;
+            }
 
-            .left-panel,
+            /* Panel de branding oculto — no hay espacio en mobile */
+            .left-panel { display: none; }
+
+            /* Panel derecho = pantalla completa scrollable */
             .right-panel {
-                padding: 2rem;
+                flex: 1;
+                min-height: 0;                  /* clave para que flex-child scrollee */
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
             }
 
-            .title-container h1 {
-                font-size: 2.8rem;
+            /* Header sticky con logo + saludo + acciones */
+            .user-greeting {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                flex-shrink: 0;
+                background: rgba(5, 5, 5, 0.97);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                padding: 13px 18px;
+                margin-bottom: 0;
+                gap: 10px;
             }
 
-            .grid-container {
+            /* Logo intra mini en header */
+            .user-greeting::before {
+                content: '';
+                display: block;
+                width: 44px;
+                height: 18px;
+                background: url('src/assets/intra-logo.png') no-repeat center/contain;
+                flex-shrink: 0;
+                opacity: 0.7;
+                order: -1;
+            }
+
+            .avatar { width: 30px; height: 30px; font-size: 0.78rem; }
+
+            .greeting-text h2 { font-size: 1rem; letter-spacing: -0.2px; }
+            .greeting-text p  { font-size: 0.72rem; }
+
+            .sess-btn { width: 34px; height: 34px; font-size: 0.95rem; border-radius: 9px; }
+
+            /* Área de contenido scrollable */
+            #admin-badge-area {
+                padding: 14px 18px 0;
+                flex-shrink: 0;
+            }
+
+            .env-badge { font-size: 0.72rem; padding: 5px 12px; margin-bottom: 0; }
+
+            .hub-search-wrap {
+                flex-shrink: 0;
+                margin: 12px 18px 10px;
+                width: auto;
+            }
+
+            /* Grid 2 columnas en mobile */
+            #clients-container.grid-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                padding: 0 18px 32px;
+                flex: 1;
+            }
+
+            /* Cards más compactas */
+            .client-card { height: 148px; }
+            .card-logo-stage { padding: 16px 14px 6px; }
+            .card-logo-stage img { max-width: 90px; max-height: 44px; }
+            .card-letter { font-size: 2rem; }
+            .card-info { padding: 0 10px 10px; }
+            .card-name { font-size: 0.78rem; }
+            .card-slug { font-size: 0.62rem; }
+        }
+
+        /* Pantallas muy pequeñas — 1 columna */
+        @media (max-width: 380px) {
+            #clients-container.grid-container {
                 grid-template-columns: 1fr;
             }
+            .client-card { height: 130px; }
         }
     </style>
 </head>
