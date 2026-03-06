@@ -333,9 +333,6 @@
         <!-- Main Header -->
         <header class="main-header">
             <div class="header-left">
-                <button id="mobile-switcher-btn" onclick="toggleSwitcher()" title="Cambiar dashboard">
-                    <ion-icon name="apps-outline"></ion-icon>
-                </button>
                 <div class="client-branding">
                     <img id="client-logo" src="" alt="Client Logo" class="client-logo-img hidden">
                     <div class="welcome-area">
@@ -1243,22 +1240,143 @@
             transform: scale(0.85);
         }
 
-        /* Mobile: show switcher in header instead of floating btn */
-        #mobile-switcher-btn {
+        /* ===== MOBILE BOTTOM NAV ===== */
+        .mobile-bottom-nav {
             display: none;
-            width: 38px; height: 38px;
-            border-radius: 11px;
-            background: rgba(117,81,255,0.12);
-            border: 1px solid rgba(117,81,255,0.28);
-            color: rgba(255,255,255,0.75);
-            align-items: center; justify-content: center;
-            cursor: pointer;
-            font-size: 1.15rem;
-            flex-shrink: 0;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 62px;
+            background: rgba(7, 8, 14, 0.97);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            z-index: 500;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            grid-template-columns: repeat(4, 1fr);
+            align-items: center;
+            justify-items: center;
+            box-shadow: 0 -1px 0 rgba(255,255,255,0.04), 0 -12px 40px rgba(0,0,0,0.6);
         }
+        .mob-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 8px 4px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.3);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.6rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            width: 100%;
+            -webkit-tap-highlight-color: transparent;
+            transition: color 0.18s;
+            position: relative;
+        }
+        .mob-nav-item ion-icon {
+            font-size: 1.4rem;
+            transition: color 0.18s, transform 0.18s;
+        }
+        .mob-nav-item:active ion-icon { transform: scale(0.84); }
+        .mob-nav-item.active { color: #7551FF; }
+        .mob-nav-item.active ion-icon {
+            filter: drop-shadow(0 0 7px rgba(117,81,255,0.6));
+        }
+        .mob-nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 20px; height: 2px;
+            background: #7551FF;
+            border-radius: 2px 2px 0 0;
+            box-shadow: 0 0 8px rgba(117,81,255,0.6);
+        }
+
+        /* More sheet */
+        .mob-more-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 499;
+        }
+        .mob-more-backdrop.open { display: block; }
+        .mob-more-sheet {
+            position: fixed;
+            bottom: 70px;
+            left: 12px; right: 12px;
+            background: rgba(12, 13, 22, 0.99);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 20px;
+            z-index: 501;
+            padding: 6px;
+            transform: translateY(14px);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.26s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+            box-shadow: 0 -4px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(117,81,255,0.08);
+        }
+        .mob-more-sheet.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .mob-more-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.72);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            border-radius: 14px;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s;
+        }
+        .mob-more-item:active { background: rgba(255,255,255,0.06); }
+        .mob-more-item ion-icon { font-size: 1.25rem; opacity: 0.65; flex-shrink: 0; }
+        .mob-more-item.danger { color: rgba(255, 75, 75, 0.88); }
+        .mob-more-item.danger ion-icon { opacity: 1; }
+        .mob-more-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 2px 10px; }
+        .mob-more-label {
+            padding: 10px 18px 4px;
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.22);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
+        }
+
         @media (max-width: 768px) {
             #switcher-toggle-btn { display: none !important; }
-            #mobile-switcher-btn { display: flex; }
+            .mobile-bottom-nav { display: grid; }
+            /* Espacio para que el contenido no quede bajo el nav */
+            .main-content { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important; }
+            /* Header minimalista — solo branding */
+            .main-header {
+                height: 56px !important;
+                min-height: 56px !important;
+                padding: 0 18px !important;
+            }
+            /* Esconder botones del header — se mueven al bottom nav */
+            #ventas-toggle-btn,
+            button[onclick="openChangePasswordModal()"],
+            button[onclick="logout()"] {
+                display: none !important;
+            }
         }
     </style>
 
@@ -1886,12 +2004,72 @@
                 `;
             }).join('');
 
-            // Mostrar el botón toggle
+            // Mostrar el botón toggle (solo en desktop; en mobile lo oculta el CSS)
             document.getElementById('switcher-toggle-btn').style.display = 'flex';
         })();
+
+        // ===== MOBILE MORE SHEET =====
+        function toggleMobileMore() {
+            const sheet    = document.getElementById('mob-more-sheet');
+            const backdrop = document.getElementById('mob-more-backdrop');
+            const btn      = document.getElementById('mob-more-btn');
+            const isOpen   = sheet.classList.contains('open');
+            if (isOpen) {
+                sheet.classList.remove('open');
+                backdrop.classList.remove('open');
+                btn.classList.remove('active');
+            } else {
+                sheet.classList.add('open');
+                backdrop.classList.add('open');
+                btn.classList.add('active');
+            }
+        }
+        function closeMobileMore() {
+            document.getElementById('mob-more-sheet').classList.remove('open');
+            document.getElementById('mob-more-backdrop').classList.remove('open');
+            document.getElementById('mob-more-btn').classList.remove('active');
+        }
+        // Cerrar sheet cuando se abre el switcher o ventas
+        const _origToggleSwitcher = window.toggleSwitcher;
+        window.toggleSwitcher = function() { closeMobileMore(); if(_origToggleSwitcher) _origToggleSwitcher(); };
     </script>
 <!-- Toast Notifications -->
 <div id="toast-container" class="toast-container"></div>
+
+<!-- ===== MOBILE BOTTOM NAV ===== -->
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <button class="mob-nav-item active" id="mob-home-btn">
+        <ion-icon name="grid-outline"></ion-icon>
+        <span>Dashboard</span>
+    </button>
+    <button class="mob-nav-item" onclick="toggleVentas()" id="mob-ventas-btn">
+        <ion-icon name="cash-outline"></ion-icon>
+        <span>Ventas</span>
+    </button>
+    <button class="mob-nav-item" onclick="toggleSwitcher()" id="mob-clients-btn">
+        <ion-icon name="swap-horizontal-outline"></ion-icon>
+        <span>Clientes</span>
+    </button>
+    <button class="mob-nav-item" onclick="toggleMobileMore()" id="mob-more-btn">
+        <ion-icon name="ellipsis-horizontal"></ion-icon>
+        <span>Más</span>
+    </button>
+</nav>
+
+<!-- More sheet (sube sobre el nav) -->
+<div class="mob-more-backdrop" id="mob-more-backdrop" onclick="closeMobileMore()"></div>
+<div class="mob-more-sheet" id="mob-more-sheet">
+    <div class="mob-more-label">Cuenta</div>
+    <button class="mob-more-item" onclick="openChangePasswordModal(); closeMobileMore()">
+        <ion-icon name="key-outline"></ion-icon>
+        Cambiar contraseña
+    </button>
+    <div class="mob-more-divider"></div>
+    <button class="mob-more-item danger" onclick="logout()">
+        <ion-icon name="log-out-outline"></ion-icon>
+        Cerrar sesión
+    </button>
+</div>
 </body>
 
 </html>
