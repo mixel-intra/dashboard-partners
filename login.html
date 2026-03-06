@@ -66,10 +66,9 @@
         }
 
         .brand-logo {
-            height: 30px;
-            width: auto;
-            filter: brightness(0) invert(1);
-            opacity: 0.85;
+            width: 80px;
+            height: auto;
+            display: block;
         }
 
         .brand-tagline {
@@ -143,81 +142,125 @@
         .form-wrap > p {
             color: rgba(255, 255, 255, 0.38);
             font-size: 0.92rem;
-            margin-bottom: 2.25rem;
+            margin-bottom: 2rem;
             line-height: 1.5;
         }
 
         .field-group {
-            margin-bottom: 1.1rem;
+            margin-bottom: 10px;
         }
 
-        .field-group label {
-            display: block;
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.38);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-weight: 600;
-            margin-bottom: 8px;
+        .input-row {
+            display: flex;
+            align-items: center;
+            height: 62px;
+            background: #1c1c1e;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            border-radius: 18px;
+            padding: 0 14px;
+            gap: 12px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+            transition: border-color 0.2s;
         }
 
-        .field-group input {
-            width: 100%;
-            padding: 13px 16px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 0.95rem;
-            font-family: 'Inter', sans-serif;
-            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+        .input-row:focus-within {
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+
+        .input-icon-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .input-icon-box ion-icon {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .input-row input {
+            flex: 1;
+            background: none;
+            border: none;
             outline: none;
+            color: #fff;
+            font-size: 0.97rem;
+            font-weight: 400;
+            font-family: 'Inter', sans-serif;
+            height: 100%;
+            letter-spacing: -0.1px;
         }
 
-        .field-group input::placeholder {
-            color: rgba(255, 255, 255, 0.2);
+        .input-row input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
         }
 
-        .field-group input:focus {
-            border-color: rgba(117, 81, 255, 0.5);
-            background: rgba(117, 81, 255, 0.04);
-            box-shadow: 0 0 0 3px rgba(117, 81, 255, 0.1);
+        .input-row input:-webkit-autofill,
+        .input-row input:-webkit-autofill:hover,
+        .input-row input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 100px #1c1c1e inset !important;
+            -webkit-text-fill-color: #fff !important;
+            caret-color: #fff;
         }
 
         #login-btn {
             width: 100%;
-            padding: 14px 20px;
-            margin-top: 0.75rem;
-            background: #ffffff;
-            color: #050505;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.93rem;
-            font-weight: 600;
+            height: 62px;
+            padding: 0 10px 0 18px;
+            margin-top: 10px;
+            background: #1c1c1e;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2);
+            border-radius: 18px;
+            font-size: 0.97rem;
+            font-weight: 500;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+            transition: border-color 0.2s, background 0.2s;
             font-family: 'Inter', sans-serif;
             letter-spacing: -0.1px;
         }
 
+        .btn-arrow {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
         #login-btn:hover {
-            background: rgba(255, 255, 255, 0.9);
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.09);
+        }
+
+        #login-btn:hover .btn-arrow {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         #login-btn:disabled {
-            opacity: 0.55;
+            opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
 
         #login-btn ion-icon {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
         }
 
         .hint {
@@ -264,6 +307,40 @@
             width: 100%;
         }
 
+        .session-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .sess-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .sess-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .sess-btn.danger:hover {
+            background: rgba(255, 68, 68, 0.1);
+            border-color: rgba(255, 68, 68, 0.25);
+            color: #ff5555;
+        }
+
         .user-avatar {
             width: 52px;
             height: 52px;
@@ -291,136 +368,193 @@
             font-size: 0.88rem;
         }
 
+        /* ===========================
+           SEARCH HUB
+           =========================== */
+
+        .hub-search-wrap {
+            position: relative;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        .hub-search-wrap ion-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.3);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+
+        #hub-search {
+            width: 100%;
+            height: 46px;
+            background: #1c1c1e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 0 16px 0 44px;
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #hub-search:focus { border-color: rgba(255,255,255,0.22); }
+        #hub-search::placeholder { color: rgba(255,255,255,0.25); }
+        #hub-search:-webkit-autofill { -webkit-box-shadow: 0 0 0 100px #1c1c1e inset !important; -webkit-text-fill-color: #fff !important; }
+
+        /* ===========================
+           GRID + CARDS
+           =========================== */
+
         .clients-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 1.25rem;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
             width: 100%;
         }
 
-        /* ===========================
-           CARDS DE DASHBOARDS
-           =========================== */
-
         .client-card {
             position: relative;
-            height: 210px;
-            border-radius: 20px;
+            height: 185px;
+            border-radius: 18px;
             text-decoration: none;
             color: #fff;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 1.6rem;
-            background: rgba(18, 18, 18, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(10px);
-            /* Card entry animation */
+            background: #131315;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            cursor: pointer;
             opacity: 0;
-            transform: translateY(22px);
+            transform: translateY(18px);
             transition:
                 opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
                 transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-                border-color 0.35s ease,
-                box-shadow 0.35s ease,
-                background 0.35s ease;
+                border-color 0.3s,
+                box-shadow 0.3s;
         }
 
-        .client-card::before {
+        /* Glow ambiental con brand color */
+        .client-card::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(var(--brand-rgb), 0.18) 0%, transparent 60%);
-            opacity: 0.45;
-            transition: opacity 0.35s ease;
+            background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(var(--brand-rgb), 0.18) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
             pointer-events: none;
         }
 
         .client-card:hover {
-            transform: translateY(-7px) !important;
-            border-color: rgba(var(--brand-rgb), 0.4);
-            background: rgba(28, 28, 28, 0.7);
+            border-color: rgba(var(--brand-rgb), 0.35);
             box-shadow:
-                0 20px 40px rgba(0, 0, 0, 0.5),
-                0 0 50px rgba(var(--brand-rgb), 0.12),
-                inset 0 0 0 1px rgba(var(--brand-rgb), 0.25);
+                0 0 0 1px rgba(var(--brand-rgb), 0.08),
+                0 20px 40px rgba(0,0,0,0.55),
+                0 0 60px rgba(var(--brand-rgb), 0.1);
         }
 
-        .client-card:hover::before {
-            opacity: 1;
-        }
+        .client-card:hover::after { opacity: 1; }
 
         .client-card.card-visible {
             opacity: 1;
             transform: translateY(0);
         }
 
-        .card-top {
+        /* LOGO STAGE — protagonista */
+        .card-logo-stage {
+            flex: 1;
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
+            padding: 22px 20px 8px;
             position: relative;
             z-index: 1;
         }
 
-        .client-logo {
-            width: 54px;
-            height: 54px;
-            border-radius: 14px;
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px;
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+        .card-logo-stage img {
+            max-width: 130px;
+            max-height: 62px;
+            width: 100%;
+            object-fit: contain;
+            transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        .client-logo img { width: 100%; height: 100%; object-fit: contain; }
-        .client-logo span { font-size: 1.5rem; font-weight: 700; color: rgba(255,255,255,0.65); }
-
-        .arrow-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            color: rgba(255, 255, 255, 0.35);
-            transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        .card-letter {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: -2px;
+            transition: color 0.3s;
         }
 
-        .client-card:hover .arrow-icon {
-            background: rgb(var(--brand-rgb));
-            color: #000;
-            border-color: transparent;
-            box-shadow: 0 0 18px rgba(var(--brand-rgb), 0.55);
-        }
+        .client-card:hover .card-logo-stage img { transform: scale(1.07); }
+        .client-card:hover .card-letter { color: rgba(var(--brand-rgb), 0.8); }
 
-        .card-bottom {
+        /* INFO BOTTOM */
+        .card-info {
+            padding: 0 14px 14px;
             position: relative;
             z-index: 1;
         }
 
-        .card-bottom h3 {
-            font-size: 1.25rem;
+        .card-name {
+            display: block;
+            font-size: 0.86rem;
             font-weight: 600;
-            letter-spacing: -0.3px;
-            margin-bottom: 4px;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255,255,255,0.88);
         }
 
         .card-slug {
-            font-size: 0.78rem;
-            color: rgba(255, 255, 255, 0.3);
+            display: block;
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.25);
             font-family: 'SF Mono', 'Fira Code', monospace;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* FLECHA — aparece en hover */
+        .card-arrow {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.3);
+            z-index: 2;
+            opacity: 0;
+            transform: scale(0.6);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .client-card:hover .card-arrow {
+            opacity: 1;
+            transform: scale(1);
+            background: rgb(var(--brand-rgb));
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 0 14px rgba(var(--brand-rgb), 0.55);
         }
 
         /* Spinning arrow for single-client */
-        .arrow-icon.spinning ion-icon {
+        .card-arrow.spinning ion-icon {
             animation: spin 1s linear infinite;
         }
 
@@ -512,8 +646,7 @@
     <div class="panel-left">
         <div class="panel-overlay"></div>
         <div class="panel-left-content">
-            <img src="src/assets/intra-logo.png" alt="Intra" class="brand-logo"
-                onerror="this.style.display='none'">
+            <img src="src/assets/intra-logo.png" alt="Intra" class="brand-logo">
 
             <div class="brand-tagline">
                 <h1>Sistemas<br>Inteligentes.</h1>
@@ -541,17 +674,27 @@
 
                 <form id="login-form" autocomplete="off">
                     <div class="field-group">
-                        <label for="username">Usuario</label>
-                        <input type="text" id="username" placeholder="Tu usuario" required autocomplete="username">
+                        <div class="input-row">
+                            <div class="input-icon-box">
+                                <ion-icon name="person-outline"></ion-icon>
+                            </div>
+                            <input type="text" id="username" placeholder="Usuario" required autocomplete="username">
+                        </div>
                     </div>
                     <div class="field-group">
-                        <label for="password">Contraseña</label>
-                        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                        <div class="input-row">
+                            <div class="input-icon-box">
+                                <ion-icon name="lock-closed-outline"></ion-icon>
+                            </div>
+                            <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password">
+                        </div>
                     </div>
 
                     <button type="submit" id="login-btn">
                         <span>Acceder</span>
-                        <ion-icon name="arrow-forward-outline"></ion-icon>
+                        <div class="btn-arrow">
+                            <ion-icon name="arrow-forward-outline"></ion-icon>
+                        </div>
                     </button>
                 </form>
 
@@ -567,6 +710,22 @@
                     <h2>Hola, <span id="user-name"></span></h2>
                     <p>Selecciona tu entorno de trabajo</p>
                 </div>
+                <div class="session-actions">
+                    <a id="admin-btn" href="admin.html" class="sess-btn" style="display:none;" title="Base de Datos">
+                        <ion-icon name="server-outline"></ion-icon>
+                    </a>
+                    <button class="sess-btn" onclick="openChangePasswordModal()" title="Cambiar contraseña">
+                        <ion-icon name="key-outline"></ion-icon>
+                    </button>
+                    <button class="sess-btn danger" onclick="doLogout()" title="Cerrar sesión">
+                        <ion-icon name="power-outline"></ion-icon>
+                    </button>
+                </div>
+            </div>
+
+            <div class="hub-search-wrap">
+                <ion-icon name="search-outline"></ion-icon>
+                <input type="text" id="hub-search" placeholder="Buscar cliente..." autocomplete="off" oninput="filterHubClients(this.value)">
             </div>
 
             <div id="clients-grid" class="clients-grid">
@@ -574,6 +733,32 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Modal Cambiar Contraseña -->
+    <div id="change-pass-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10000; align-items:center; justify-content:center;">
+        <div style="background:#0A0A0A; border:1px solid rgba(255,255,255,0.08); padding:32px; border-radius:24px; width:100%; max-width:400px; position:relative;">
+            <button onclick="closeChangePasswordModal()" style="position:absolute; top:20px; right:20px; background:none; border:none; color:#fff; cursor:pointer; font-size:1.5rem;">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+            <h2 style="font-size:1.5rem; margin-bottom:8px; color:#fff;">Cambiar Contraseña</h2>
+            <p style="color:rgba(255,255,255,0.4); font-size:0.9rem; margin-bottom:24px;">Actualiza tu clave de acceso al portal.</p>
+            <form id="change-pass-form" onsubmit="submitChangePass(event)">
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Nueva Contraseña</label>
+                    <input type="password" id="new-password" required placeholder="••••••••" style="width:100%; padding:12px 16px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:1rem; outline:none;">
+                </div>
+                <div style="margin-bottom:24px;">
+                    <label style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Confirmar Contraseña</label>
+                    <input type="password" id="confirm-password" required placeholder="••••••••" style="width:100%; padding:12px 16px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:1rem; outline:none;">
+                </div>
+                <div id="change-pass-error" style="color:#ff4444; font-size:0.85rem; margin-bottom:16px; display:none;"></div>
+                <div id="change-pass-success" style="color:#10B981; font-size:0.85rem; margin-bottom:16px; display:none;">Contraseña actualizada correctamente</div>
+                <button type="submit" id="submit-change-pass" style="width:100%; padding:14px; background:#7551FF; border:none; border-radius:12px; color:#fff; font-weight:600; cursor:pointer; font-size:0.95rem; font-family:'Inter',sans-serif;">
+                    Actualizar Clave
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Scripts -->
@@ -628,7 +813,7 @@
                 const password = document.getElementById('password').value.trim();
 
                 btn.disabled = true;
-                btn.innerHTML = '<span>Verificando...</span><ion-icon name="sync-outline" style="animation:spin 1s linear infinite"></ion-icon>';
+                btn.innerHTML = '<span>Verificando...</span><div class="btn-arrow"><ion-icon name="sync-outline" style="animation:spin 1s linear infinite"></ion-icon></div>';
                 errorBox.style.display = 'none';
 
                 try {
@@ -682,7 +867,7 @@
                     errorBox.textContent = err.message || 'Error al ingresar';
                     errorBox.style.display = 'block';
                     btn.disabled = false;
-                    btn.innerHTML = '<span>Acceder</span><ion-icon name="arrow-forward-outline"></ion-icon>';
+                    btn.innerHTML = '<span>Acceder</span><div class="btn-arrow"><ion-icon name="arrow-forward-outline"></ion-icon></div>';
                 }
             });
         });
@@ -719,6 +904,9 @@
             const displayName = session.name || session.email || 'Usuario';
             document.getElementById('user-name').textContent = displayName;
             document.getElementById('user-avatar').textContent = displayName.charAt(0).toUpperCase();
+            if (session.role === 'admin') {
+                document.getElementById('admin-btn').style.display = 'flex';
+            }
 
             // Inyectar cards
             renderClientCards(clients);
@@ -745,15 +933,13 @@
 
             document.getElementById('clients-grid').innerHTML = `
                 <div class="client-card" id="single-card" style="--brand-rgb:${rgb}; cursor:default;">
-                    <div class="card-top">
-                        <div class="client-logo">${logo}</div>
-                        <div class="arrow-icon spinning">
-                            <ion-icon name="sync-outline"></ion-icon>
-                        </div>
-                    </div>
-                    <div class="card-bottom">
-                        <h3>${client.name}</h3>
+                    <div class="card-logo-stage">${logo}</div>
+                    <div class="card-info">
+                        <span class="card-name">${client.name}</span>
                         <span class="card-slug">Accediendo...</span>
+                    </div>
+                    <div class="card-arrow spinning">
+                        <ion-icon name="sync-outline"></ion-icon>
                     </div>
                 </div>
             `;
@@ -773,22 +959,89 @@
                 const rgb = hexToRgb(c.theme_primary);
                 const logo = c.logo_url
                     ? `<img src="${c.logo_url}" alt="${c.name}">`
-                    : `<span>${c.name.charAt(0).toUpperCase()}</span>`;
+                    : `<span class="card-letter">${c.name.charAt(0).toUpperCase()}</span>`;
                 return `
-                    <a class="client-card" href="index.html?client=${c.id_slug}" style="--brand-rgb:${rgb}">
-                        <div class="card-top">
-                            <div class="client-logo">${logo}</div>
-                            <div class="arrow-icon">
-                                <ion-icon name="arrow-forward-outline"></ion-icon>
-                            </div>
-                        </div>
-                        <div class="card-bottom">
-                            <h3>${c.name}</h3>
+                    <a class="client-card" href="index.html?client=${c.id_slug}"
+                       style="--brand-rgb:${rgb}"
+                       data-name="${c.name.toLowerCase()}"
+                       data-slug="${c.id_slug.toLowerCase()}">
+                        <div class="card-logo-stage">${logo}</div>
+                        <div class="card-info">
+                            <span class="card-name">${c.name}</span>
                             <span class="card-slug">${c.id_slug}</span>
+                        </div>
+                        <div class="card-arrow">
+                            <ion-icon name="arrow-forward-outline"></ion-icon>
                         </div>
                     </a>
                 `;
             }).join('');
+
+            // 3D tilt effect
+            document.querySelectorAll('.client-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const r = card.getBoundingClientRect();
+                    const x = (e.clientX - r.left) / r.width - 0.5;
+                    const y = (e.clientY - r.top) / r.height - 0.5;
+                    card.style.transition = 'opacity 0.5s, border-color 0.3s, box-shadow 0.3s';
+                    card.style.transform = `translateY(-5px) perspective(600px) rotateX(${-y * 9}deg) rotateY(${x * 9}deg)`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transition = '';
+                    card.style.transform = '';
+                });
+            });
+        }
+
+        function filterHubClients(query) {
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('.client-card').forEach(card => {
+                const match = !q || card.dataset.name.includes(q) || card.dataset.slug.includes(q);
+                card.style.opacity = match ? '' : '0.12';
+                card.style.pointerEvents = match ? '' : 'none';
+                card.style.transform = match ? '' : 'scale(0.95)';
+            });
+        }
+
+        async function submitChangePass(e) {
+            e.preventDefault();
+            const newPass = document.getElementById('new-password').value.trim();
+            const confirmPass = document.getElementById('confirm-password').value.trim();
+            const errorBox = document.getElementById('change-pass-error');
+            const successBox = document.getElementById('change-pass-success');
+            const btn = document.getElementById('submit-change-pass');
+            errorBox.style.display = 'none';
+            if (newPass.length < 6) { errorBox.textContent = 'Mínimo 6 caracteres'; errorBox.style.display = 'block'; return; }
+            if (newPass !== confirmPass) { errorBox.textContent = 'Las contraseñas no coinciden'; errorBox.style.display = 'block'; return; }
+            btn.disabled = true; btn.textContent = 'Actualizando...';
+            try {
+                const session = getSession();
+                if (!session) throw new Error('Sesión expirada');
+                const { error } = await supabase.from('user_profiles').update({ password: newPass }).eq('id', session.id);
+                if (error) throw error;
+                successBox.style.display = 'block';
+                btn.textContent = '¡Listo!';
+                setTimeout(() => { closeChangePasswordModal(); btn.disabled = false; btn.textContent = 'Actualizar Clave'; successBox.style.display = 'none'; }, 2000);
+            } catch (err) {
+                errorBox.textContent = err.message; errorBox.style.display = 'block';
+                btn.disabled = false; btn.textContent = 'Actualizar Clave';
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem('intra_session_v2');
+            window.location.reload();
+        }
+
+        function openChangePasswordModal() {
+            document.getElementById('change-pass-modal').style.display = 'flex';
+            document.getElementById('change-pass-form')?.reset();
+            document.getElementById('change-pass-error').style.display = 'none';
+            document.getElementById('change-pass-success').style.display = 'none';
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('change-pass-modal').style.display = 'none';
         }
 
         function transition(onComplete) {

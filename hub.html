@@ -84,117 +84,125 @@
 
         /* ----- Left Panel (Branding) ----- */
         .left-panel {
-            flex: 0 0 40%;
-            padding: 4rem;
+            flex: 0 0 45%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             position: relative;
             z-index: 10;
-            border-right: 1px solid var(--border-color);
-            background: linear-gradient(135deg, rgba(10, 10, 12, 0.8), rgba(5, 5, 5, 1));
-            backdrop-filter: blur(20px);
+            overflow: hidden;
+            background-image: url('./total-solar-eclipse-close-up-of-solar-flares-2026-01-07-06-35-16-utc.jpg');
+            background-size: cover;
+            background-position: center;
+            padding: 3rem;
         }
 
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to right,
+                rgba(0,0,0,0.25) 0%,
+                rgba(0,0,0,0.15) 50%,
+                rgba(5,5,5,0.85) 80%,
+                rgba(5,5,5,1) 100%
+            );
+            pointer-events: none;
+        }
+
+        .left-panel > * { position: relative; z-index: 1; }
+
         .brand-logo {
-            height: 32px;
-            margin-bottom: 2rem;
+            width: 80px;
+            height: auto;
+            display: block;
         }
 
         .title-container h1 {
-            font-size: 4.5rem;
-            font-weight: 700;
-            line-height: 1.1;
-            letter-spacing: -2px;
-            background: linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%);
+            font-size: 3.8rem;
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -2.5px;
+            background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.55) 100%);
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 1.5rem;
-            padding-top: 0.1em;
-            padding-bottom: 0.1em;
+            margin-bottom: 1rem;
         }
 
         .title-container p {
-            font-size: 1.1rem;
-            color: var(--text-muted);
+            font-size: 1rem;
+            color: rgba(255,255,255,0.45);
             line-height: 1.6;
-            max-width: 80%;
         }
 
-        .user-profile {
+        /* ----- User Greeting ----- */
+        .user-greeting {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            width: 100%;
         }
 
         .avatar {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: var(--intra-accent);
+            background: #7551FF;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
-            font-size: 1.2rem;
-            box-shadow: 0 0 20px rgba(117, 81, 255, 0.4);
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(117,81,255,0.4);
         }
 
-        .user-info-text {
+        .greeting-text h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .greeting-text p {
+            color: rgba(255,255,255,0.38);
+            font-size: 0.88rem;
+        }
+
+        .session-actions {
+            margin-left: auto;
             display: flex;
-            flex-direction: column;
-        }
-
-        .user-info-text span {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .user-info-text strong {
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        .actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
             gap: 8px;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 500;
+        }
+
+        .sess-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
             text-decoration: none;
-            border: 1px solid transparent;
+            transition: all 0.2s;
         }
 
-        .btn-outline {
-            background: rgba(255, 255, 255, 0.03);
-            border-color: var(--border-color);
-            color: var(--text-main);
+        .sess-btn:hover {
+            background: rgba(255,255,255,0.09);
+            color: #fff;
+            border-color: rgba(255,255,255,0.15);
         }
 
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-outline.danger:hover {
+        .sess-btn.danger:hover {
+            background: rgba(255,68,68,0.1);
+            border-color: rgba(255,68,68,0.25);
             color: #ff5555;
-            background: rgba(255, 85, 85, 0.1);
-            border-color: rgba(255, 85, 85, 0.3);
         }
 
         /* ----- Right Panel (Selection) ----- */
@@ -237,127 +245,161 @@
             margin-bottom: 2rem;
         }
 
+        /* Search */
+        .hub-search-wrap {
+            position: relative;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        .hub-search-wrap ion-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.3);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+        #hub-search {
+            width: 100%;
+            height: 46px;
+            background: #1c1c1e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 0 16px 0 44px;
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #hub-search:focus { border-color: rgba(255,255,255,0.22); }
+        #hub-search::placeholder { color: rgba(255,255,255,0.25); }
+
+        /* Grid */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
         }
 
-        /* ----- Ultra Premium Cards ----- */
+        /* Cards */
         .client-card {
             position: relative;
-            height: 260px;
-            border-radius: 24px;
+            height: 185px;
+            border-radius: 18px;
             text-decoration: none;
             color: var(--text-main);
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 2rem;
-            background: rgba(20, 20, 20, 0.5);
-            border: 1px solid var(--border-color);
-            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            backdrop-filter: blur(10px);
+            background: #131315;
+            border: 1px solid rgba(255,255,255,0.07);
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(18px);
+            transition:
+                opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+                transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+                border-color 0.3s,
+                box-shadow 0.3s;
         }
-
-        .client-card::before {
+        .client-card::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(var(--brand-rgb), 0.2) 0%, transparent 60%);
-            opacity: 0.5;
-            transition: opacity 0.4s ease;
+            background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(var(--brand-rgb), 0.18) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
             pointer-events: none;
         }
-
-        /* Hover effect pushes card up and creates a massive glow */
         .client-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(var(--brand-rgb), 0.5);
-            background: rgba(30, 30, 30, 0.6);
+            border-color: rgba(var(--brand-rgb), 0.35);
             box-shadow:
-                0 20px 40px rgba(0, 0, 0, 0.6),
-                0 0 60px rgba(var(--brand-rgb), 0.15),
-                inset 0 0 0 1px rgba(var(--brand-rgb), 0.3);
+                0 0 0 1px rgba(var(--brand-rgb), 0.08),
+                0 20px 40px rgba(0,0,0,0.55),
+                0 0 60px rgba(var(--brand-rgb), 0.1);
         }
+        .client-card:hover::after { opacity: 1; }
+        .client-card.card-visible { opacity: 1; transform: translateY(0); }
 
-        .client-card:hover::before {
-            opacity: 1;
-        }
-
-        .card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 2;
-            position: relative;
-        }
-
-        .client-logo {
-            width: 64px;
-            height: 64px;
-            border-radius: 16px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border-color);
+        .card-logo-stage {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 10px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            padding: 22px 20px 8px;
+            position: relative;
+            z-index: 1;
         }
-
-        .client-logo img {
+        .card-logo-stage img {
+            max-width: 130px;
+            max-height: 62px;
             width: 100%;
-            height: 100%;
             object-fit: contain;
+            transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-
-        .client-logo span {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.7);
+        .card-letter {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: -2px;
+            transition: color 0.3s;
         }
+        .client-card:hover .card-logo-stage img { transform: scale(1.07); }
+        .client-card:hover .card-letter { color: rgba(var(--brand-rgb), 0.8); }
 
-        .play-icon {
-            width: 44px;
-            height: 44px;
+        .card-info {
+            padding: 0 14px 14px;
+            position: relative;
+            z-index: 1;
+        }
+        .card-name {
+            display: block;
+            font-size: 0.86rem;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255,255,255,0.88);
+        }
+        .card-slug {
+            display: block;
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.25);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-arrow {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(5px);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: rgba(255, 255, 255, 0.5);
-            transition: all 0.4s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .client-card:hover .play-icon {
-            background: rgba(var(--brand-rgb), 1);
-            color: #000;
-            transform: scale(1.1);
-            border-color: transparent;
-            box-shadow: 0 0 20px rgba(var(--brand-rgb), 0.6);
-        }
-
-        .card-bottom {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.3);
             z-index: 2;
-            position: relative;
+            opacity: 0;
+            transform: scale(0.6);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-
-        .client-name {
-            font-size: 1.5rem;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            margin-bottom: 6px;
-        }
-
-        .client-slug {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            font-family: 'SF Mono', monospace;
+        .client-card:hover .card-arrow {
+            opacity: 1;
+            transform: scale(1);
+            background: rgb(var(--brand-rgb));
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 0 14px rgba(var(--brand-rgb), 0.55);
         }
 
         /* Status indicator */
@@ -439,45 +481,48 @@
 
 <body>
 
-    <div class="noise-overlay"></div>
-    <div class="glow-blob"></div>
-    <div class="glow-blob blue"></div>
 
-    <!-- Panel Izquierdo (Branding & Info) -->
+    <!-- Panel Izquierdo -->
     <aside class="left-panel">
-        <div>
-            <img src="src/assets/intra-logo.png" alt="Intra" class="brand-logo">
-            <div class="title-container">
-                <h1>Sistemas<br>Inteligentes.</h1>
-                <p>Accede a resultados en tiempo real.</p>
-            </div>
+        <img src="src/assets/intra-logo.png" alt="Intra" class="brand-logo">
+
+        <div class="title-container">
+            <h1>Sistemas<br>Inteligentes.</h1>
+            <p>Accede a resultados en tiempo real.</p>
         </div>
 
-        <div>
-            <div class="user-profile">
-                <div class="avatar" id="user-avatar">?</div>
-                <div class="user-info-text">
-                    <span>Sesión actual</span>
-                    <strong id="hub-user-name">Cargando...</strong>
-                </div>
-            </div>
-            <div class="actions">
-                <a id="admin-panel-btn" href="admin.html" class="btn btn-outline" style="display:none;">
-                    <ion-icon name="server-outline"></ion-icon> Base de Datos
-                </a>
-                <button onclick="openChangePasswordModal()" class="btn btn-outline" title="Cambiar contraseña">
-                    <ion-icon name="key-outline"></ion-icon> Pass
-                </button>
-                <button onclick="logout()" class="btn btn-outline danger">
-                    <ion-icon name="power-outline"></ion-icon> Desconectar
-                </button>
-            </div>
-        </div>
+        <footer style="font-size:0.72rem; color:rgba(255,255,255,0.25); line-height:1.5;">
+            &copy; 2026 Dashboard Partners.<br>Todos los derechos reservados.
+        </footer>
     </aside>
 
-    <!-- Panel Derecho (Grid de Dashboards) -->
+    <!-- Panel Derecho -->
     <main class="right-panel">
+        <div class="user-greeting">
+            <div class="avatar" id="user-avatar">?</div>
+            <div class="greeting-text">
+                <h2>Hola, <span id="hub-user-name">...</span></h2>
+                <p>Selecciona tu entorno de trabajo</p>
+            </div>
+            <div class="session-actions">
+                <a id="admin-panel-btn" href="admin.html" class="sess-btn" style="display:none;" title="Base de Datos">
+                    <ion-icon name="server-outline"></ion-icon>
+                </a>
+                <button class="sess-btn" onclick="openChangePasswordModal()" title="Cambiar contraseña">
+                    <ion-icon name="key-outline"></ion-icon>
+                </button>
+                <button class="sess-btn danger" onclick="logout()" title="Cerrar sesión">
+                    <ion-icon name="power-outline"></ion-icon>
+                </button>
+            </div>
+        </div>
+
         <div id="admin-badge-area"></div>
+
+        <div class="hub-search-wrap">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" id="hub-search" placeholder="Buscar cliente..." autocomplete="off" oninput="filterHubClients(this.value)">
+        </div>
 
         <div id="clients-container" class="grid-container">
             <div class="loading-wrap">
@@ -545,20 +590,51 @@
                 const init = client.name ? client.name.charAt(0).toUpperCase() : '?';
                 const logo = client.logo_url
                     ? `<img src="${client.logo_url}" alt="${client.name}">`
-                    : `<span>${init}</span>`;
+                    : `<span class="card-letter">${init}</span>`;
 
                 return `
-                    <a class="client-card" href="index.html?client=${client.id_slug}" style="--brand-rgb: ${rgb};">
-                        <div class="card-top">
-                            <div class="client-logo">${logo}</div>
-                            <div class="play-icon"><ion-icon name="arrow-forward"></ion-icon></div>
+                    <a class="client-card" href="index.html?client=${client.id_slug}"
+                       style="--brand-rgb: ${rgb};"
+                       data-name="${client.name.toLowerCase()}"
+                       data-slug="${client.id_slug.toLowerCase()}">
+                        <div class="card-logo-stage">${logo}</div>
+                        <div class="card-info">
+                            <span class="card-name">${client.name}</span>
+                            <span class="card-slug">${client.id_slug}</span>
                         </div>
-                        <div class="card-bottom">
-                            <h3 class="client-name">${client.name}</h3>
+                        <div class="card-arrow">
+                            <ion-icon name="arrow-forward-outline"></ion-icon>
                         </div>
                     </a>
                 `;
             }).join('');
+
+            // Entrada animada + tilt 3D
+            const cards = container.querySelectorAll('.client-card');
+            cards.forEach((card, i) => {
+                setTimeout(() => card.classList.add('card-visible'), 60 + i * 80);
+                card.addEventListener('mousemove', (e) => {
+                    const r = card.getBoundingClientRect();
+                    const x = (e.clientX - r.left) / r.width - 0.5;
+                    const y = (e.clientY - r.top) / r.height - 0.5;
+                    card.style.transition = 'opacity 0.5s, border-color 0.3s, box-shadow 0.3s';
+                    card.style.transform = `translateY(-5px) perspective(600px) rotateX(${-y * 9}deg) rotateY(${x * 9}deg)`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transition = '';
+                    card.style.transform = '';
+                });
+            });
+        }
+
+        function filterHubClients(query) {
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('.client-card').forEach(card => {
+                const match = !q || card.dataset.name.includes(q) || card.dataset.slug.includes(q);
+                card.style.opacity = match ? '' : '0.12';
+                card.style.pointerEvents = match ? '' : 'none';
+                card.style.transform = match ? '' : 'scale(0.95)';
+            });
         }
 
         loadHub();
