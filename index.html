@@ -1240,6 +1240,48 @@
             transform: scale(0.85);
         }
 
+        /* Drag handle pill — solo visible en mobile */
+        .drawer-handle {
+            display: none;
+            width: 38px; height: 4px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 2px;
+            margin: 10px auto 0;
+            flex-shrink: 0;
+        }
+
+        /* Buscador dentro del drawer */
+        .drawer-search-wrap {
+            position: relative;
+            padding: 4px 12px 10px;
+            flex-shrink: 0;
+        }
+        .drawer-search-wrap ion-icon {
+            position: absolute;
+            left: 24px; top: 50%;
+            transform: translateY(-60%);
+            color: rgba(255,255,255,0.28);
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+        .drawer-search-input {
+            width: 100%; height: 38px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 11px;
+            padding: 0 12px 0 36px;
+            color: #fff;
+            font-size: 0.83rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .drawer-search-input::placeholder { color: rgba(255,255,255,0.22); }
+        .drawer-search-input:focus { border-color: rgba(117,81,255,0.45); }
+
+        /* clients list needs min-height: 0 to scroll inside flex parent */
+        .drawer-clients-list { min-height: 0; }
+
         /* ===== MOBILE BOTTOM NAV ===== */
         .mobile-bottom-nav {
             display: none;
@@ -1377,17 +1419,58 @@
             button[onclick="logout()"] {
                 display: none !important;
             }
+
+            /* ── Drawer → Bottom Sheet ─────────────────────── */
+            #client-switcher-drawer {
+                /* Cancelar posicionamiento lateral */
+                left: 0 !important;
+                right: 0 !important;
+                top: auto !important;
+                width: 100% !important;
+                /* Oculto debajo de la pantalla */
+                bottom: -92dvh !important;
+                max-height: 92dvh !important;
+                /* Forma de sheet */
+                border-right: none !important;
+                border-top: 1px solid rgba(117,81,255,0.18) !important;
+                border-radius: 26px 26px 0 0 !important;
+                /* Animación vertical */
+                transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                box-shadow: 0 -28px 70px rgba(0,0,0,0.9) !important;
+            }
+            #client-switcher-drawer.open {
+                bottom: 0 !important;
+            }
+            /* Línea accent → arriba del sheet */
+            #client-switcher-drawer::after {
+                top: -1px !important;
+                bottom: auto !important;
+                right: auto !important;
+                left: 10% !important;
+                width: 80% !important;
+                height: 2px !important;
+            }
+            /* Mostrar handle y busqueda */
+            .drawer-handle { display: block; }
+            /* Ajustar padding de la lista para que quepa bien */
+            .drawer-clients-list { padding: 8px 10px 12px !important; }
         }
     </style>
 
     <!-- Drawer HTML (injected here, not inside app-wrapper) -->
     <div id="switcher-backdrop" onclick="closeSwitcher()"></div>
     <div id="client-switcher-drawer">
+        <div class="drawer-handle"></div>
         <div class="drawer-header">
             <span>Mis Dashboards</span>
             <button class="drawer-close-btn" onclick="closeSwitcher()">
                 <ion-icon name="close-outline"></ion-icon>
             </button>
+        </div>
+        <div class="drawer-search-wrap">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" class="drawer-search-input" placeholder="Buscar cliente..."
+                   oninput="filterDrawerClients(this.value)" autocomplete="off" id="drawer-search-input">
         </div>
         <div id="drawer-clients-list" class="drawer-clients-list">
             <!-- JS Generated -->
@@ -2031,7 +2114,27 @@
         }
         // Cerrar sheet cuando se abre el switcher o ventas
         const _origToggleSwitcher = window.toggleSwitcher;
-        window.toggleSwitcher = function() { closeMobileMore(); if(_origToggleSwitcher) _origToggleSwitcher(); };
+        window.toggleSwitcher = function() {
+            closeMobileMore();
+            if (_origToggleSwitcher) _origToggleSwitcher();
+        };
+
+        // Búsqueda dentro del drawer
+        function filterDrawerClients(query) {
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('.drawer-client-item').forEach(item => {
+                const name = (item.querySelector('.drawer-client-name')?.textContent || '').toLowerCase();
+                item.style.display = (!q || name.includes(q)) ? '' : 'none';
+            });
+        }
+
+        // Limpiar búsqueda al cerrar el drawer
+        const _origCloseSwitcher = window.closeSwitcher;
+        window.closeSwitcher = function() {
+            if (_origCloseSwitcher) _origCloseSwitcher();
+            const inp = document.getElementById('drawer-search-input');
+            if (inp) { inp.value = ''; filterDrawerClients(''); }
+        };
     </script>
 <!-- Toast Notifications -->
 <div id="toast-container" class="toast-container"></div>
