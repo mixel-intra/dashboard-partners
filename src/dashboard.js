@@ -1149,6 +1149,9 @@ function normalizeStatus(status) {
     if (s.includes('financiera')) return 'Revisión Financiera / Integración E2';
     if (s.includes('comité') || s.includes('comite')) return 'Comité / Autorización';
 
+    // Específicos ANTES del genérico 'calificado' para evitar falsos matches
+    if (s.includes('no_calificado') || s === 'no calificado') return 'No Calificado';
+    if (s.includes('calificado cita')) return 'Calificado Cita';
     if (s.includes('calificado')) return 'Lead Calificado';
     if (s.includes('condicionado')) return 'Lead Condicionado';
     if (s.includes('rechazado')) return 'Rechazado';
