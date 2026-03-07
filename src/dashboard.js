@@ -1160,15 +1160,29 @@ function isQualified(status) {
     if (!status) return false;
     const s = status.toLowerCase();
 
-    // --- POLÍTICA ESPECIAL PARA HOTELES (EXCEPTO CEFEMEX) ---
-    // Cualquier status que comience con "calificado" cuenta como oportunidad calificada
-    const isHotel = state.clientType === 'hotel' && state.clientId !== 'cefemex';
-    if (isHotel) {
+    // --- HOTELES (excepto CEFEMEX) ---
+    if (state.clientType === 'hotel' && state.clientId !== 'cefemex') {
         return s.startsWith('calificado');
     }
 
+    // --- INMOBILIARIA / REAL ESTATE ---
+    if (state.clientType === 'inmobiliaria') {
+        return [
+            'calificado cita',
+            'calificado',
+            'condicionado',
+            'cotizado',
+            'documentación',
+            'documentacion',
+            'integración',
+            'integracion',
+            'comité',
+            'comite',
+        ].some(term => s.includes(term));
+    }
+
     // --- POLÍTICA GENERAL / CEFEMEX ---
-    const qualifiedTerms = [
+    return [
         'calificado',
         'condicionado',
         'continuidad cefemex',
@@ -1183,9 +1197,7 @@ function isQualified(status) {
         'comite',
         'autorización',
         'autorizacion'
-    ];
-
-    return qualifiedTerms.some(term => s.includes(term));
+    ].some(term => s.includes(term));
 }
 
 // =============================================
