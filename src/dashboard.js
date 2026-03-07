@@ -1166,19 +1166,9 @@ function isQualified(status) {
     }
 
     // --- INMOBILIARIA / REAL ESTATE ---
+    // Solo cuenta "calificado cita" — el genérico "lead calificado" NO cuenta
     if (state.clientType === 'inmobiliaria') {
-        return [
-            'calificado cita',
-            'calificado',
-            'condicionado',
-            'cotizado',
-            'documentación',
-            'documentacion',
-            'integración',
-            'integracion',
-            'comité',
-            'comite',
-        ].some(term => s.includes(term));
+        return s.includes('calificado cita');
     }
 
     // --- POLÍTICA GENERAL / CEFEMEX ---
