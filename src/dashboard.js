@@ -34,6 +34,21 @@ const state = {
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '' }
 };
 
+// Theme-aware chart colors (Linear/Vercel style)
+function getChartTheme() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    return {
+        gridColor: isLight ? '#E5E7EB' : 'rgba(255,255,255,0.05)',
+        tickColor: isLight ? '#6B7280' : '#8E92A3',
+        tooltipBg: isLight ? '#FFFFFF' : '#1E1F25',
+        tooltipTitle: isLight ? '#111827' : '#fff',
+        tooltipBody: isLight ? '#4B5563' : '#ccc',
+        tooltipBorder: isLight ? '#E5E7EB' : 'rgba(255,255,255,0.1)',
+        pointBorder: isLight ? '#FFFFFF' : '#fff',
+        canvasBg: isLight ? '#FFFFFF' : '#0B0C10'
+    };
+}
+
 const DEFAULT_CARD_LABELS = {
     "1": { title: "Oportunidades calificadas", description: "CALIDAD" },
     "2": { title: "Tasa de Conversión", description: "Oportunidades calificadas / Leads" },
@@ -504,7 +519,7 @@ async function exportToPDF() {
         const canvas = await html2canvas(dashboard, {
             scale: 2,
             useCORS: true,
-            backgroundColor: '#0B0C10',
+            backgroundColor: getChartTheme().canvasBg,
             logging: false
         });
 
@@ -556,46 +571,47 @@ function applyDynamicTheme(primary, secondary) {
     window.hexToRgba = hexToRgba;
 
     styleEl.innerHTML = `
+        /* === Dark mode variables === */
         :root {
             --accent-purple: ${primary};
             --accent-purple-glow: ${primaryGlow};
             --accent-green: ${secondary};
             --border-highlight: ${primaryBorder};
         }
-        
-        /* Apply dynamic glow to body background if needed */
-        body {
+
+        /* Dark mode body glow */
+        :root:not([data-theme="light"]) body {
             background-image:
                 radial-gradient(circle at 0% 0%, ${hexToRgba(primary, 0.08)} 0%, transparent 50%),
                 radial-gradient(circle at 100% 100%, ${hexToRgba(secondary, 0.05)} 0%, transparent 40%);
         }
 
-        /* Clear specific card accents/colors from index.html */
-        .card-accent-line { background: ${primary} !important; opacity: 0.8; }
-        .card-accent-line.orange, .card-accent-line.purple, .card-accent-line.cyan, .card-accent-line.pink { background: ${primary} !important; }
-        
-        /* Icon Boxes (Overriding inline styles) */
-        .icon-box { 
-            background: ${hexToRgba(primary, 0.1)} !important; 
-            border-color: ${hexToRgba(primary, 0.3)} !important; 
-            color: ${primary} !important; 
-        }
-        
-        /* Specific card indices if they need to vary */
-        .card-quantix:nth-child(odd) .icon-box { color: ${secondary} !important; background: ${hexToRgba(secondary, 0.1)} !important; border-color: ${hexToRgba(secondary, 0.3)} !important; }
-        .card-quantix:nth-child(odd) .card-accent-line { background: ${secondary} !important; }
+        /* Dark mode — card accents */
+        :root:not([data-theme="light"]) .card-accent-line { background: ${primary} !important; opacity: 0.8; }
+        :root:not([data-theme="light"]) .card-accent-line.orange, 
+        :root:not([data-theme="light"]) .card-accent-line.purple, 
+        :root:not([data-theme="light"]) .card-accent-line.cyan, 
+        :root:not([data-theme="light"]) .card-accent-line.pink { background: ${primary} !important; }
 
-        /* Pills and Badges */
-        .pill-change { 
-            background: ${hexToRgba(primary, 0.15)} !important; 
-            color: ${primary} !important; 
+        /* Dark mode — icon boxes */
+        :root:not([data-theme="light"]) .icon-box {
+            background: ${hexToRgba(primary, 0.1)} !important;
+            border-color: ${hexToRgba(primary, 0.3)} !important;
+            color: ${primary} !important;
         }
-        .pill-change.pill-green { 
-            background: ${hexToRgba(secondary, 0.15)} !important; 
+        :root:not([data-theme="light"]) .card-quantix:nth-child(odd) .icon-box { 
             color: ${secondary} !important; 
+            background: ${hexToRgba(secondary, 0.1)} !important; 
+            border-color: ${hexToRgba(secondary, 0.3)} !important; 
         }
-        
-        .view-btn:hover { border-color: ${primary} !important; color: ${primary} !important; }
+        :root:not([data-theme="light"]) .card-quantix:nth-child(odd) .card-accent-line { background: ${secondary} !important; }
+
+        /* Dark mode — pills */
+        :root:not([data-theme="light"]) .pill-change { background: ${hexToRgba(primary, 0.15)} !important; color: ${primary} !important; }
+        :root:not([data-theme="light"]) .pill-change.pill-green { background: ${hexToRgba(secondary, 0.15)} !important; color: ${secondary} !important; }
+        :root:not([data-theme="light"]) .view-btn:hover { border-color: ${primary} !important; color: ${primary} !important; }
+
+        /* Light mode is handled entirely by CSS (no client-specific colors) */
     `;
 }
 
@@ -633,13 +649,13 @@ function generateFakeHotelLeads() {
     ];
 
     const statuses = [
-        { estatus: 'CALIFICADO EVENTO',       weight: 22 },
-        { estatus: 'CALIFICADO RESERVA',       weight: 18 },
-        { estatus: 'CALIFICADO DAYPASS',       weight: 14 },
-        { estatus: 'CALIFICADO RESTAURANTE',   weight: 10 },
-        { estatus: 'NUEVO',                    weight: 15 },
-        { estatus: 'CONTACTADO',               weight: 12 },
-        { estatus: 'EN SEGUIMIENTO',           weight: 9 }
+        { estatus: 'CALIFICADO EVENTO', weight: 22 },
+        { estatus: 'CALIFICADO RESERVA', weight: 18 },
+        { estatus: 'CALIFICADO DAYPASS', weight: 14 },
+        { estatus: 'CALIFICADO RESTAURANTE', weight: 10 },
+        { estatus: 'NUEVO', weight: 15 },
+        { estatus: 'CONTACTADO', weight: 12 },
+        { estatus: 'EN SEGUIMIENTO', weight: 9 }
     ];
 
     const utmSources = ['facebook', 'google', 'instagram', 'tiktok', null, null];
@@ -713,10 +729,10 @@ async function fetchData() {
         state.leads = rawData.map(lead => {
             const rawSource = (lead.tipo_servicio || lead.estatus || '').toLowerCase();
             let tipoServicio = null;
-            if (rawSource.includes('restaurante'))                                    tipoServicio = 'Restaurante';
+            if (rawSource.includes('restaurante')) tipoServicio = 'Restaurante';
             else if (rawSource.includes('daypass') || rawSource.includes('day pass')) tipoServicio = 'DayPass';
-            else if (rawSource.includes('reserva'))                                   tipoServicio = 'Reserva';
-            else if (rawSource.includes('evento'))                                    tipoServicio = 'Evento';
+            else if (rawSource.includes('reserva')) tipoServicio = 'Reserva';
+            else if (rawSource.includes('evento')) tipoServicio = 'Evento';
 
             return {
                 ...lead,
@@ -731,10 +747,10 @@ async function fetchData() {
             state.leads.forEach((lead, i) => {
                 if (!lead.tipo_servicio) {
                     const bucket = i % 20;
-                    if (bucket < 8)       lead.tipo_servicio = 'DayPass';
+                    if (bucket < 8) lead.tipo_servicio = 'DayPass';
                     else if (bucket < 14) lead.tipo_servicio = 'Reserva';
                     else if (bucket < 18) lead.tipo_servicio = 'Evento';
-                    else                  lead.tipo_servicio = 'Restaurante';
+                    else lead.tipo_servicio = 'Restaurante';
                 }
             });
         }
@@ -862,18 +878,18 @@ function renderTable() {
 
 function renderLogRow(lead, index) {
     return `
-        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-            <td style="color: #565969; padding: 12px 0;">${index + 1}</td>
-            <td style="color: white; font-weight: 600;">
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="color: var(--text-muted); padding: 12px 0;">${index + 1}</td>
+            <td style="color: var(--text-primary); font-weight: 600;">
                  <div style="display:flex; align-items:center; gap:10px;">
                     <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(lead.nombre || 'L')}&background=random&color=fff" style="width:24px; border-radius:50%;">
                     ${lead.nombre || 'Lead Anonymous'}
                 </div>
             </td>
-            <td style="color: #8E92A3;">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td> 
+            <td style="color: var(--text-secondary);">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td> 
             <td>
-                <span class="status-badge" style="color: ${isQualified(lead.estatus) ? state.config.themeSecondary : '#FF4444'}; 
-                      background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
+                <span class="status-badge" style="color: ${isQualified(lead.estatus) ? state.config.themeSecondary : 'var(--accent-red)'};
+                      background: var(--border-subtle); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;">
                     ${lead.estatus}
                 </span>
             </td>
@@ -903,16 +919,21 @@ function setupModalEvents() {
 
 function renderAllCharts(metrics) {
     console.log('--- renderAllCharts START ---');
-    // 1. Small Mini-Charts (Manual/Fake data for sparklines) - Using theme colors for consistency
-    createSmoothChart('chart-1', [12, 19, 15, 25, 22, 30, 28, 35, 40, 45, 50, 60], state.config.themeSecondary);
-    createSmoothChart('chart-2', [5, 8, 12, 10, 15, 20, 25, 22, 28, 35, 30, 40], state.config.themePrimary);
-    createSmoothChart('chart-3', [10, 12, 14, 18, 16, 20, 22, 26, 30, 28, 35, 40], state.config.themeSecondary);
-    createSmoothChart('chart-4', [2, 3, 3.5, 3.2, 4, 4.5, 5.0, 5.2, 5.5, 6, 6.5, 7], state.config.themePrimary);
+    // 1. Small Mini-Charts (Manual/Fake data for sparklines)
+    const isLightTheme = document.documentElement.getAttribute('data-theme') === 'light';
+    const LIGHT_BLUE = '#2563EB';
+    const sparkPrimary = isLightTheme ? LIGHT_BLUE : state.config.themePrimary;
+    const sparkSecondary = isLightTheme ? '#60A5FA' : state.config.themeSecondary;
+
+    createSmoothChart('chart-1', [12, 19, 15, 25, 22, 30, 28, 35, 40, 45, 50, 60], sparkPrimary);
+    createSmoothChart('chart-2', [5, 8, 12, 10, 15, 20, 25, 22, 28, 35, 30, 40], sparkSecondary);
+    createSmoothChart('chart-3', [10, 12, 14, 18, 16, 20, 22, 26, 30, 28, 35, 40], sparkPrimary);
+    createSmoothChart('chart-4', [2, 3, 3.5, 3.2, 4, 4.5, 5.0, 5.2, 5.5, 6, 6.5, 7], sparkSecondary);
 
     // Bottom SPARKLINES
-    createSmoothChart('chart-5', [100, 110, 105, 120, 130, 125, 140, 150, 160, 155, 170, 180], state.config.themeSecondary);
-    createSmoothChart('chart-6', [50, 55, 52, 60, 62, 58, 65, 70, 75, 72, 80, 85], state.config.themePrimary);
-    createSmoothChart('chart-7', [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45], state.config.themeSecondary);
+    createSmoothChart('chart-5', [100, 110, 105, 120, 130, 125, 140, 150, 160, 155, 170, 180], sparkPrimary);
+    createSmoothChart('chart-6', [50, 55, 52, 60, 62, 58, 65, 70, 75, 72, 80, 85], sparkSecondary);
+    createSmoothChart('chart-7', [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45], sparkPrimary);
 
     // 2. MAIN BIG CHART (Actual Data)
     createMainChart();
@@ -948,8 +969,8 @@ function createUTMChart() {
             datasets: [{
                 label: 'Leads Calificados',
                 data: values,
-                backgroundColor: hexToRgba(state.config.themeSecondary, 0.6),
-                borderColor: state.config.themeSecondary,
+                backgroundColor: hexToRgba(document.documentElement.getAttribute('data-theme') === 'light' ? '#2563EB' : state.config.themeSecondary, 0.6),
+                borderColor: document.documentElement.getAttribute('data-theme') === 'light' ? '#2563EB' : state.config.themeSecondary,
                 borderWidth: 1,
                 borderRadius: 8
             }]
@@ -959,11 +980,11 @@ function createUTMChart() {
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: { backgroundColor: '#1E1F25' }
+                tooltip: { backgroundColor: getChartTheme().tooltipBg, titleColor: getChartTheme().tooltipTitle, bodyColor: getChartTheme().tooltipBody, borderColor: getChartTheme().tooltipBorder, borderWidth: 1 }
             },
             scales: {
-                x: { grid: { display: false }, ticks: { color: '#8E92A3' } },
-                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8E92A3', precision: 0 } }
+                x: { grid: { display: false }, ticks: { color: getChartTheme().tickColor } },
+                y: { beginAtZero: true, grid: { color: getChartTheme().gridColor }, ticks: { color: getChartTheme().tickColor, precision: 0 } }
             }
         }
     });
@@ -982,8 +1003,8 @@ function createUTMChart() {
             .slice(0, 5);
 
         listContainer.innerHTML = sortedSources.map(([name, count]) => `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <span style="color: white; font-size: 0.9rem;">${name}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-subtle);">
+                <span style="color: var(--text-primary); font-size: 0.9rem;">${name}</span>
                 <span style="color: var(--accent-green); font-weight: 700;">${count}</span>
             </div>
         `).join('');
@@ -1061,9 +1082,10 @@ function createMainChart() {
         values = [0];
     }
 
-    const color = state.config.themePrimary;
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const color = isLight ? '#2563EB' : state.config.themePrimary;
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, hexToRgba(color, 0.3));
+    gradient.addColorStop(0, hexToRgba(color, isLight ? 0.15 : 0.3));
     gradient.addColorStop(1, hexToRgba(color, 0));
 
     state.charts['main-chart'] = new Chart(ctx, {
@@ -1080,7 +1102,7 @@ function createMainChart() {
                 tension: 0.4,
                 pointRadius: 4,
                 pointBackgroundColor: color,
-                pointBorderColor: '#fff',
+                pointBorderColor: getChartTheme().pointBorder,
                 pointBorderWidth: 2
             }]
         },
@@ -1089,17 +1111,17 @@ function createMainChart() {
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: { backgroundColor: '#1E1F25', padding: 12, titleColor: '#fff', bodyColor: '#ccc' }
+                tooltip: { backgroundColor: getChartTheme().tooltipBg, padding: 12, titleColor: getChartTheme().tooltipTitle, bodyColor: getChartTheme().tooltipBody, borderColor: getChartTheme().tooltipBorder, borderWidth: 1 }
             },
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#8E92A3', font: { size: 10 } }
+                    ticks: { color: getChartTheme().tickColor, font: { size: 10 } }
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#8E92A3', precision: 0 }
+                    grid: { color: getChartTheme().gridColor },
+                    ticks: { color: getChartTheme().tickColor, precision: 0 }
                 }
             }
         }
@@ -1136,8 +1158,8 @@ function normalizeStatus(status) {
     if (isHotel) {
         if (s.includes('calificado restaurante')) return 'Calificado Restaurante';
         if (s.includes('calificado daypass') || s.includes('calificado day pass')) return 'Calificado DayPass';
-        if (s.includes('calificado reserva'))     return 'Calificado Reserva';
-        if (s.includes('calificado evento'))      return 'Calificado Evento';
+        if (s.includes('calificado reserva')) return 'Calificado Reserva';
+        if (s.includes('calificado evento')) return 'Calificado Evento';
     }
 
     // Specific matches to preserve names
@@ -1213,8 +1235,10 @@ function showToast(message, type = 'success', duration = 3500) {
 }
 
 // --- Parsing de fechas en español ---
-const MESES_MAP = { enero:0, febrero:1, marzo:2, abril:3, mayo:4, junio:5, julio:6, agosto:7, septiembre:8, octubre:9, noviembre:10, diciembre:11,
-    ene:0, feb:1, mar:2, abr:3, may:4, jun:5, jul:6, ago:7, sep:8, sept:8, oct:9, nov:10, dic:11 };
+const MESES_MAP = {
+    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11,
+    ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, sept: 8, oct: 9, nov: 10, dic: 11
+};
 
 function applyTime(date, match) {
     let h = parseInt(match[1]);

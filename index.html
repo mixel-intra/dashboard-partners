@@ -22,6 +22,32 @@
 </head>
 
 <body>
+    <!-- Theme init — antes de cualquier render para evitar flash -->
+    <script>
+    (function(){
+        var t = localStorage.getItem('intra-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+    })();
+    function toggleTheme() {
+        var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+        var next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('intra-theme', next);
+        var icon = document.getElementById('theme-icon');
+        if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
+        // Re-render charts with new theme colors
+        if (typeof renderDashboard === 'function') {
+            try { renderDashboard(); } catch(e) {}
+        }
+    }
+    // Actualizar icono cuando DOM cargue
+    document.addEventListener('DOMContentLoaded', function() {
+        var t = document.documentElement.getAttribute('data-theme');
+        var icon = document.getElementById('theme-icon');
+        if (icon) icon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
+    });
+    </script>
 
     <!-- ===== LOADING SCREEN ===== -->
     <style>
@@ -179,6 +205,70 @@
         .rest-new-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#FF4444; color:#fff; font-size:0.65rem; font-weight:700; margin-left:6px; line-height:1; animation:badge-pulse 2s ease-in-out infinite; }
         @keyframes badge-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(255,68,68,0.4); } 50% { box-shadow:0 0 0 6px rgba(255,68,68,0); } }
         .rest-new-badge:empty { display:none; }
+
+        /* ===== LIGHT THEME — Restaurant & Inline ===== */
+        [data-theme="light"] .rest-stat-card { background:#FFFFFF; border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); }
+        [data-theme="light"] .rest-stat-value { color:var(--text-primary); }
+        [data-theme="light"] .rest-stat-label { color:var(--text-muted); }
+        [data-theme="light"] .rest-search-icon { color:var(--text-muted); }
+        [data-theme="light"] .rest-search-input { background:var(--surface-100); border:1px solid transparent; color:var(--text-primary); }
+        [data-theme="light"] .rest-search-input::placeholder { color:var(--text-muted); }
+        [data-theme="light"] .rest-search-input:focus { background:#FFFFFF; border:1px solid var(--surface-300); box-shadow:0 0 0 3px rgba(0,0,0,0.04); }
+        [data-theme="light"] .rest-view-toggle { background:var(--surface-100); border:none; }
+        [data-theme="light"] .rest-view-btn { color:var(--text-muted); }
+        [data-theme="light"] .rest-view-btn:hover { color:var(--text-primary); }
+        [data-theme="light"] .rest-filter-btn { background:var(--surface-100); border:1px solid var(--border-subtle); color:var(--text-secondary); }
+        [data-theme="light"] .rest-filter-btn:hover { background:var(--surface-200); color:var(--text-primary); }
+        [data-theme="light"] .rest-count-badge { background:var(--surface-200); }
+        [data-theme="light"] .rest-card { background:#FFFFFF; border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); }
+        [data-theme="light"] .rest-card:hover { border-color:var(--surface-300); box-shadow:var(--shadow-md); }
+        [data-theme="light"] .rest-card-name { color:var(--text-primary); }
+        [data-theme="light"] .rest-card-meta { color:var(--text-secondary); }
+        [data-theme="light"] .rest-card-meta strong { color:var(--text-primary); }
+        [data-theme="light"] .rest-card-details.expanded { border-top-color:var(--border-subtle); }
+        [data-theme="light"] .rest-card-detail-label { color:var(--text-muted); }
+        [data-theme="light"] .rest-card-detail-value { color:var(--text-primary); }
+        [data-theme="light"] .rest-card-convo { background:var(--surface-100); border:none; color:var(--text-secondary); }
+        [data-theme="light"] .rest-card-action-btn { border:1px solid var(--border-subtle); background:#FFFFFF; color:var(--text-secondary); }
+        [data-theme="light"] .rest-card-action-btn:hover { background:var(--surface-100); color:var(--text-primary); }
+        [data-theme="light"] .rest-table-wrapper { background:#FFFFFF; border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); }
+        [data-theme="light"] .rest-table thead th { color:var(--text-muted); border-bottom-color:var(--border-subtle); }
+        [data-theme="light"] .rest-table tbody tr.rest-row { border-bottom-color:var(--surface-100); }
+        [data-theme="light"] .rest-table tbody tr.rest-row:hover { background:var(--surface-50); }
+        [data-theme="light"] .rest-table tbody td { color:var(--text-primary); }
+        [data-theme="light"] .rest-table-detail-row { background:var(--surface-50); }
+        [data-theme="light"] .rest-table-action-icon { border:1px solid var(--border-subtle); background:#FFFFFF; color:var(--text-secondary); }
+        [data-theme="light"] .rest-empty-state { color:var(--text-muted); }
+        [data-theme="light"] .rest-confirm-message { background:var(--surface-100); border:1px solid var(--border-subtle); color:var(--text-primary); }
+        [data-theme="light"] .rest-confirm-message::placeholder { color:var(--text-muted); }
+        [data-theme="light"] .rest-notes-area { background:var(--surface-100); border:1px solid transparent; color:var(--text-primary); }
+        [data-theme="light"] .rest-notes-area:focus { background:#FFFFFF; border:1px solid var(--surface-300); }
+        [data-theme="light"] .rest-notes-area::placeholder { color:var(--text-muted); }
+        [data-theme="light"] .rest-edit-label { color:var(--text-muted); }
+        [data-theme="light"] .rest-edit-input { background:var(--surface-100); border:1px solid transparent; color:var(--text-primary); }
+        [data-theme="light"] .rest-edit-input:focus { background:#FFFFFF; border:1px solid var(--surface-300); }
+
+        /* Modal overrides */
+        [data-theme="light"] #restaurant-confirm-modal > div,
+        [data-theme="light"] #conversation-modal > div,
+        [data-theme="light"] #restaurant-edit-modal > div { background:#FFFFFF !important; border:1px solid var(--border-subtle) !important; box-shadow:var(--shadow-lg) !important; }
+        [data-theme="light"] #restaurant-confirm-modal > div > div:first-child,
+        [data-theme="light"] #conversation-modal > div > div:first-child,
+        [data-theme="light"] #restaurant-edit-modal > div > div:first-child { border-bottom-color:var(--border-subtle) !important; }
+        /* Toast — vibrant in light mode */
+        [data-theme="light"] .toast { color:var(--text-primary); background:#FFFFFF; border:1px solid var(--border-subtle); box-shadow:0 8px 30px rgba(0,0,0,0.1); }
+        [data-theme="light"] .toast.success { background:#ECFDF5; border:1px solid rgba(16,185,129,0.3); color:#065F46; }
+        [data-theme="light"] .toast.error { background:#FEF2F2; border:1px solid rgba(239,68,68,0.3); color:#991B1B; }
+        [data-theme="light"] .toast.warning { background:#FFFBEB; border:1px solid rgba(245,158,11,0.3); color:#92400E; }
+        /* Password modal */
+        [data-theme="light"] #change-pass-modal { background:rgba(0,0,0,0.4) !important; backdrop-filter:blur(4px); }
+        [data-theme="light"] #change-pass-modal .modal-content { background:#FFFFFF !important; border:1px solid var(--border-subtle) !important; box-shadow:var(--shadow-lg) !important; }
+        [data-theme="light"] #change-pass-modal h2 { color:var(--text-primary) !important; }
+        [data-theme="light"] #change-pass-modal p { color:var(--text-secondary) !important; }
+        [data-theme="light"] #change-pass-modal label { color:var(--text-muted) !important; }
+        [data-theme="light"] #change-pass-modal input[type="password"] { background:var(--surface-100) !important; border:1px solid var(--border-subtle) !important; color:var(--text-primary) !important; }
+        [data-theme="light"] #change-pass-modal input[type="password"]:focus { background:#FFFFFF !important; border-color:var(--surface-300) !important; }
+        [data-theme="light"] #change-pass-modal button[onclick] { color:var(--text-secondary) !important; }
     </style>
 
     <div id="dashboard-loader">
@@ -348,6 +438,9 @@
                     <img src="src/assets/intra-logo.png" alt="Intra" class="intra-logo-img">
                     <span class="partner-tag">Partner Portal</span>
                 </div>
+                <button onclick="toggleTheme()" class="logout-btn" id="theme-toggle-btn" title="Cambiar tema">
+                    <ion-icon name="moon-outline" id="theme-icon"></ion-icon>
+                </button>
                 <button id="ventas-toggle-btn" onclick="toggleVentas()" class="logout-btn" title="Registrar ventas"
                     style="background: rgba(1,241,227,0.08); border-color: rgba(1,241,227,0.18); color: rgba(1,241,227,0.8);">
                     <ion-icon name="cash-outline"></ion-icon>
@@ -882,7 +975,7 @@
 
         </main>
 
-        <footer style="text-align: center; padding: 16px; color: var(--text-dim); font-size: 0.8rem; opacity: 0.5;">
+        <footer style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.8rem; opacity: 0.5;">
             &copy; 2026 Intra. Todos los derechos reservados.
         </footer>
     </div><!-- /#app-wrapper -->
@@ -1282,144 +1375,7 @@
         /* clients list needs min-height: 0 to scroll inside flex parent */
         .drawer-clients-list { min-height: 0; }
 
-        /* ===== MOBILE BOTTOM NAV ===== */
-        .mobile-bottom-nav {
-            display: none;
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            height: 62px;
-            background: rgba(7, 8, 14, 0.97);
-            backdrop-filter: blur(28px) saturate(180%);
-            -webkit-backdrop-filter: blur(28px) saturate(180%);
-            border-top: 1px solid rgba(255,255,255,0.06);
-            z-index: 500;
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-            grid-template-columns: repeat(4, 1fr);
-            align-items: center;
-            justify-items: center;
-            box-shadow: 0 -1px 0 rgba(255,255,255,0.04), 0 -12px 40px rgba(0,0,0,0.6);
-        }
-        .mob-nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-            padding: 8px 4px;
-            border: none;
-            background: transparent;
-            color: rgba(255,255,255,0.3);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.6rem;
-            font-weight: 500;
-            letter-spacing: 0.02em;
-            cursor: pointer;
-            width: 100%;
-            -webkit-tap-highlight-color: transparent;
-            transition: color 0.18s;
-            position: relative;
-        }
-        .mob-nav-item ion-icon {
-            font-size: 1.4rem;
-            transition: color 0.18s, transform 0.18s;
-        }
-        .mob-nav-item:active ion-icon { transform: scale(0.84); }
-        .mob-nav-item.active { color: #7551FF; }
-        .mob-nav-item.active ion-icon {
-            filter: drop-shadow(0 0 7px rgba(117,81,255,0.6));
-        }
-        .mob-nav-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 50%;
-            transform: translateX(-50%);
-            width: 20px; height: 2px;
-            background: #7551FF;
-            border-radius: 2px 2px 0 0;
-            box-shadow: 0 0 8px rgba(117,81,255,0.6);
-        }
-
-        /* More sheet */
-        .mob-more-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 499;
-        }
-        .mob-more-backdrop.open { display: block; }
-        .mob-more-sheet {
-            position: fixed;
-            bottom: 70px;
-            left: 12px; right: 12px;
-            background: rgba(12, 13, 22, 0.99);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 20px;
-            z-index: 501;
-            padding: 6px;
-            transform: translateY(14px);
-            opacity: 0;
-            pointer-events: none;
-            transition: transform 0.26s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
-            box-shadow: 0 -4px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(117,81,255,0.08);
-        }
-        .mob-more-sheet.open {
-            transform: translateY(0);
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .mob-more-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 18px;
-            border: none;
-            background: transparent;
-            color: rgba(255,255,255,0.72);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.92rem;
-            font-weight: 500;
-            cursor: pointer;
-            width: 100%;
-            text-align: left;
-            border-radius: 14px;
-            -webkit-tap-highlight-color: transparent;
-            transition: background 0.15s;
-        }
-        .mob-more-item:active { background: rgba(255,255,255,0.06); }
-        .mob-more-item ion-icon { font-size: 1.25rem; opacity: 0.65; flex-shrink: 0; }
-        .mob-more-item.danger { color: rgba(255, 75, 75, 0.88); }
-        .mob-more-item.danger ion-icon { opacity: 1; }
-        .mob-more-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 2px 10px; }
-        .mob-more-label {
-            padding: 10px 18px 4px;
-            font-size: 0.62rem;
-            font-weight: 600;
-            color: rgba(255,255,255,0.22);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            font-family: 'Inter', sans-serif;
-        }
-
         @media (max-width: 768px) {
-            #switcher-toggle-btn { display: none !important; }
-            .mobile-bottom-nav { display: grid; }
-            /* Espacio para que el contenido no quede bajo el nav */
-            .main-content { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important; }
-            /* Header minimalista — solo branding */
-            .main-header {
-                height: 56px !important;
-                min-height: 56px !important;
-                padding: 0 18px !important;
-            }
-            /* Esconder botones del header — se mueven al bottom nav */
-            #ventas-toggle-btn,
-            button[onclick="openChangePasswordModal()"],
-            button[onclick="logout()"] {
-                display: none !important;
-            }
-
             /* ── Drawer → Bottom Sheet ─────────────────────── */
             #client-switcher-drawer {
                 /* Cancelar posicionamiento lateral */
@@ -1454,6 +1410,83 @@
             .drawer-handle { display: block; }
             /* Ajustar padding de la lista para que quepa bien */
             .drawer-clients-list { padding: 8px 10px 12px !important; }
+        }
+
+        /* ===== DRAWER LIGHT THEME ===== */
+        [data-theme="light"] #switcher-backdrop {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+        }
+        [data-theme="light"] #client-switcher-drawer {
+            background: #FFFFFF;
+            border-right: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-lg);
+        }
+        [data-theme="light"] .drawer-header {
+            border-bottom-color: var(--border-subtle);
+        }
+        [data-theme="light"] .drawer-close-btn {
+            background: var(--surface-100);
+            border: none;
+            color: var(--text-secondary);
+        }
+        [data-theme="light"] .drawer-close-btn:hover {
+            background: var(--surface-200);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .drawer-client-item {
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+        }
+        [data-theme="light"] .drawer-client-item:hover {
+            background: var(--surface-100);
+            color: var(--text-primary);
+            border: none;
+        }
+        [data-theme="light"] .drawer-client-item.active {
+            background: var(--surface-100);
+            border: none;
+            color: var(--text-primary);
+            box-shadow: none;
+            font-weight: 600;
+        }
+        [data-theme="light"] .drawer-client-logo {
+            background: var(--surface-100);
+            border: 1px solid var(--border-subtle);
+            box-shadow: none;
+        }
+        [data-theme="light"] .drawer-footer {
+            border-top-color: var(--border-subtle);
+        }
+        [data-theme="light"] .drawer-hub-link {
+            color: var(--text-muted);
+        }
+        [data-theme="light"] .drawer-hub-link:hover {
+            background: var(--surface-100);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .drawer-handle {
+            background: var(--surface-300);
+        }
+        [data-theme="light"] .drawer-search-wrap ion-icon {
+            color: var(--text-muted);
+        }
+        [data-theme="light"] .drawer-search-input {
+            background: var(--surface-100);
+            border: 1px solid transparent;
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .drawer-search-input::placeholder { color: var(--text-muted); }
+        [data-theme="light"] .drawer-search-input:focus { background: #FFFFFF; border-color: var(--surface-300); }
+        [data-theme="light"] #switcher-toggle-btn {
+            background: var(--accent-purple) !important;
+            border: none !important;
+            color: #FFFFFF !important;
+            box-shadow: var(--shadow-md) !important;
+        }
+        [data-theme="light"] #switcher-toggle-btn:hover {
+            box-shadow: var(--shadow-lg) !important;
         }
     </style>
 
@@ -1817,6 +1850,52 @@
             color: rgba(255, 255, 255, 0.25);
             font-size: 0.82rem;
         }
+
+        /* ===== VENTAS PANEL LIGHT ===== */
+        [data-theme="light"] #ventas-backdrop { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); }
+        [data-theme="light"] #ventas-panel { background: #FFFFFF; border-left: 1px solid var(--border-subtle); box-shadow: var(--shadow-lg); }
+        [data-theme="light"] .vp-header { border-bottom-color: var(--border-subtle); }
+        [data-theme="light"] .vp-title { color: var(--text-primary); }
+        [data-theme="light"] .vp-close { background: var(--surface-100); border: none; color: var(--text-secondary); }
+        [data-theme="light"] .vp-close:hover { background: var(--surface-200); color: var(--text-primary); }
+        [data-theme="light"] .vp-form { border-bottom-color: var(--border-subtle); background: var(--surface-50); }
+        [data-theme="light"] .vp-form-title { color: var(--text-muted); }
+        [data-theme="light"] .vp-label { color: var(--text-muted); }
+        [data-theme="light"] .vp-input { background: #FFFFFF; border: 1px solid var(--border-subtle); color: var(--text-primary); }
+        [data-theme="light"] .vp-input:focus { border-color: var(--surface-300); box-shadow: 0 0 0 3px rgba(0,0,0,0.04); }
+        [data-theme="light"] .vp-input::placeholder { color: var(--text-muted); }
+        [data-theme="light"] .vp-btn-cancel { border: 1px solid var(--border-subtle); color: var(--text-secondary); background: #FFFFFF; }
+        [data-theme="light"] .vp-list-title { color: var(--text-muted); }
+        [data-theme="light"] .vp-empty { color: var(--text-muted); }
+        [data-theme="light"] .vp-item { background: #FFFFFF; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-xs); }
+        [data-theme="light"] .vp-item:hover { border-color: var(--surface-300); box-shadow: var(--shadow-sm); }
+        [data-theme="light"] .vp-item-monto { color: var(--text-primary); }
+        [data-theme="light"] .vp-item-meta { color: var(--text-muted); }
+        [data-theme="light"] .vp-icon-btn { background: var(--surface-100); border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+        [data-theme="light"] .vp-icon-btn:hover { background: var(--surface-200); color: var(--text-primary); }
+        [data-theme="light"] .vp-loading { color: var(--text-muted); }
+        [data-theme="light"] .vp-list::-webkit-scrollbar-thumb { background: var(--surface-200); border-radius: 999px; }
+        /* Guardar Venta button */
+        [data-theme="light"] .vp-btn-save {
+            background: #2563EB !important;
+            border: none !important;
+            color: #FFFFFF !important;
+            border-radius: 10px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+        }
+        [data-theme="light"] .vp-btn-save:hover {
+            background: #1D4ED8 !important;
+        }
+        /* Input focus */
+        [data-theme="light"] .vp-input:focus {
+            border-color: #2563EB !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+        }
+        /* Date input styling */
+        [data-theme="light"] .vp-input[type="date"] {
+            color-scheme: light;
+        }
     </style>
 
     <div id="ventas-backdrop" onclick="closeVentas()"></div>
@@ -2091,34 +2170,6 @@
             document.getElementById('switcher-toggle-btn').style.display = 'flex';
         })();
 
-        // ===== MOBILE MORE SHEET =====
-        function toggleMobileMore() {
-            const sheet    = document.getElementById('mob-more-sheet');
-            const backdrop = document.getElementById('mob-more-backdrop');
-            const btn      = document.getElementById('mob-more-btn');
-            const isOpen   = sheet.classList.contains('open');
-            if (isOpen) {
-                sheet.classList.remove('open');
-                backdrop.classList.remove('open');
-                btn.classList.remove('active');
-            } else {
-                sheet.classList.add('open');
-                backdrop.classList.add('open');
-                btn.classList.add('active');
-            }
-        }
-        function closeMobileMore() {
-            document.getElementById('mob-more-sheet').classList.remove('open');
-            document.getElementById('mob-more-backdrop').classList.remove('open');
-            document.getElementById('mob-more-btn').classList.remove('active');
-        }
-        // Cerrar sheet cuando se abre el switcher o ventas
-        const _origToggleSwitcher = window.toggleSwitcher;
-        window.toggleSwitcher = function() {
-            closeMobileMore();
-            if (_origToggleSwitcher) _origToggleSwitcher();
-        };
-
         // Búsqueda dentro del drawer
         function filterDrawerClients(query) {
             const q = query.toLowerCase().trim();
@@ -2139,40 +2190,6 @@
 <!-- Toast Notifications -->
 <div id="toast-container" class="toast-container"></div>
 
-<!-- ===== MOBILE BOTTOM NAV ===== -->
-<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-    <button class="mob-nav-item active" id="mob-home-btn">
-        <ion-icon name="grid-outline"></ion-icon>
-        <span>Dashboard</span>
-    </button>
-    <button class="mob-nav-item" onclick="toggleVentas()" id="mob-ventas-btn">
-        <ion-icon name="cash-outline"></ion-icon>
-        <span>Ventas</span>
-    </button>
-    <button class="mob-nav-item" onclick="toggleSwitcher()" id="mob-clients-btn">
-        <ion-icon name="swap-horizontal-outline"></ion-icon>
-        <span>Clientes</span>
-    </button>
-    <button class="mob-nav-item" onclick="toggleMobileMore()" id="mob-more-btn">
-        <ion-icon name="ellipsis-horizontal"></ion-icon>
-        <span>Más</span>
-    </button>
-</nav>
-
-<!-- More sheet (sube sobre el nav) -->
-<div class="mob-more-backdrop" id="mob-more-backdrop" onclick="closeMobileMore()"></div>
-<div class="mob-more-sheet" id="mob-more-sheet">
-    <div class="mob-more-label">Cuenta</div>
-    <button class="mob-more-item" onclick="openChangePasswordModal(); closeMobileMore()">
-        <ion-icon name="key-outline"></ion-icon>
-        Cambiar contraseña
-    </button>
-    <div class="mob-more-divider"></div>
-    <button class="mob-more-item danger" onclick="logout()">
-        <ion-icon name="log-out-outline"></ion-icon>
-        Cerrar sesión
-    </button>
-</div>
 </body>
 
 </html>
