@@ -24,251 +24,1124 @@
 <body>
     <!-- Theme init — antes de cualquier render para evitar flash -->
     <script>
-    (function(){
-        var t = localStorage.getItem('intra-theme');
-        if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', t);
-    })();
-    function toggleTheme() {
-        var cur = document.documentElement.getAttribute('data-theme') || 'dark';
-        var next = cur === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('intra-theme', next);
-        var icon = document.getElementById('theme-icon');
-        if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
-        // Re-render charts with new theme colors
-        if (typeof renderDashboard === 'function') {
-            try { renderDashboard(); } catch(e) {}
+        (function () {
+            var t = localStorage.getItem('intra-theme');
+            if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+        function toggleTheme() {
+            var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+            var next = cur === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('intra-theme', next);
+            var icon = document.getElementById('theme-icon');
+            if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
+            // Re-render charts with new theme colors
+            if (typeof renderDashboard === 'function') {
+                try { renderDashboard(); } catch (e) { }
+            }
         }
-    }
-    // Actualizar icono cuando DOM cargue
-    document.addEventListener('DOMContentLoaded', function() {
-        var t = document.documentElement.getAttribute('data-theme');
-        var icon = document.getElementById('theme-icon');
-        if (icon) icon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
-    });
+        // Actualizar icono cuando DOM cargue
+        document.addEventListener('DOMContentLoaded', function () {
+            var t = document.documentElement.getAttribute('data-theme');
+            var icon = document.getElementById('theme-icon');
+            if (icon) icon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
+        });
     </script>
 
     <!-- ===== LOADING SCREEN ===== -->
     <style>
         /* ===== ECLIPSE LOADING SCREEN ===== */
         #dashboard-loader {
-            position: fixed; inset: 0; z-index: 9999;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
             background: #00010a;
             display: flex;
             transition: opacity 1.2s ease;
             overflow: hidden;
         }
-        #dashboard-loader.fade-out { opacity: 0; pointer-events: none; }
-        #eclipse-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+        #dashboard-loader.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #eclipse-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
         .ecl-bottom {
-            position: absolute; top: 40%; left: 50%;
+            position: absolute;
+            top: 40%;
+            left: 50%;
             transform: translate(-50%, -50%);
-            display: flex; flex-direction: column; align-items: center; gap: 12px;
-            z-index: 10; pointer-events: none;
-            width: 100%; text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 10;
+            pointer-events: none;
+            width: 100%;
+            text-align: center;
         }
+
         @media (max-width: 600px) {
-            .ecl-bottom { top: 36%; }
+            .ecl-bottom {
+                top: 36%;
+            }
         }
-        .ld-logo { width: 28px; height: auto; opacity: 0.55; }
+
+        .ld-logo {
+            width: 28px;
+            height: auto;
+            opacity: 0.55;
+        }
+
         .ld-label {
-            font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 400;
-            color: rgba(255,255,255,0.32); letter-spacing: 0.2em; text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.32);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
         }
+
         .ld-bar-track {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 2px; background: rgba(255,255,255,0.04); z-index: 10;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.04);
+            z-index: 10;
         }
+
         .ld-bar-fill {
-            height: 100%; width: 0%;
-            background: linear-gradient(90deg, rgba(200,80,20,0.6) 0%, rgba(255,180,60,1) 80%);
-            box-shadow: 0 0 18px rgba(255,140,40,0.5), 0 0 5px rgba(255,180,60,0.85);
-            transition: width 0.75s cubic-bezier(0.4,0,0.2,1);
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, rgba(200, 80, 20, 0.6) 0%, rgba(255, 180, 60, 1) 80%);
+            box-shadow: 0 0 18px rgba(255, 140, 40, 0.5), 0 0 5px rgba(255, 180, 60, 0.85);
+            transition: width 0.75s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         /* ===== PANEL DE RESERVAS RESTAURANTE ===== */
         /* Stats */
-        .rest-stat-card { display:flex; align-items:center; gap:12px; padding:16px 20px; background:linear-gradient(145deg,#121318,#08090C); border:1px solid rgba(255,255,255,0.03); border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
-        .rest-stat-icon { font-size:1.4rem; opacity:0.9; }
-        .rest-stat-info { display:flex; flex-direction:column; }
-        .rest-stat-value { font-size:1.5rem; font-weight:700; color:#fff; line-height:1; }
-        .rest-stat-label { font-size:0.7rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
-        /* Toolbar: filters + search */
-        .rest-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
-        .rest-filters-row { display:flex; gap:8px; flex-wrap:wrap; }
-        .rest-filter-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:10px; color:rgba(255,255,255,0.5); font-size:0.85rem; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s ease; }
-        .rest-filter-btn:hover { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.8); }
-        .rest-filter-btn.active { background:var(--accent-primary,#7551FF); color:#fff; border-color:var(--accent-primary,#7551FF); box-shadow:0 2px 12px rgba(117,81,255,0.3); }
-        .rest-count-badge { background:rgba(255,255,255,0.15); padding:1px 7px; border-radius:6px; font-size:0.75rem; font-weight:700; }
-        .rest-filter-btn.active .rest-count-badge { background:rgba(255,255,255,0.25); }
-        /* Search */
-        .rest-search-wrapper { position:relative; min-width:200px; max-width:280px; }
-        .rest-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.3); font-size:1rem; pointer-events:none; }
-        .rest-search-input { width:100%; padding:9px 12px 9px 36px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#fff; font-size:0.85rem; font-family:'Inter',sans-serif; outline:none; transition:all 0.2s ease; }
-        .rest-search-input::placeholder { color:rgba(255,255,255,0.3); }
-        .rest-search-input:focus { border-color:var(--accent-primary,#7551FF); background:rgba(255,255,255,0.06); box-shadow:0 0 0 3px rgba(117,81,255,0.15); }
-        /* View toggle */
-        .rest-view-toggle { display:inline-flex; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:3px; gap:2px; }
-        .rest-view-btn { border:none; background:transparent; color:rgba(255,255,255,0.4); font-size:1.1rem; padding:7px 10px; border-radius:7px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
-        .rest-view-btn:hover { color:rgba(255,255,255,0.7); }
-        .rest-view-btn.active { background:var(--accent-primary,#7551FF); color:#fff; box-shadow:0 2px 8px rgba(117,81,255,0.3); }
-        /* HOY badge */
-        .rest-today-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:6px; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; background:rgba(245,158,11,0.15); color:#F59E0B; border:1px solid rgba(245,158,11,0.2); }
-        /* Cards grid */
-        .rest-cards-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:14px; }
-        /* Card */
-        .rest-card { background:linear-gradient(145deg,#121318,#08090C); border:1px solid rgba(255,255,255,0.03); border-radius:16px; overflow:hidden; position:relative; transition:all 0.3s ease; box-shadow:0 4px 20px rgba(0,0,0,0.25); cursor:pointer; }
-        .rest-card:hover { border-color:rgba(255,255,255,0.08); box-shadow:0 8px 30px rgba(0,0,0,0.4); }
-        .rest-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:4px 0 0 4px; }
-        .rest-card.status-nuevo::before { background:#F59E0B; }
-        .rest-card.status-confirmado::before { background:#10B981; }
-        .rest-card.status-rechazado::before { background:#FF4444; }
-        .rest-card.is-today { border-color:rgba(245,158,11,0.12); }
-        .rest-card-main { padding:16px 16px 12px 20px; }
-        .rest-card-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:8px; }
-        .rest-card-name { font-size:0.95rem; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .rest-card-status-pill { padding:3px 9px; border-radius:8px; font-size:0.72rem; font-weight:600; flex-shrink:0; white-space:nowrap; }
-        .rest-card-meta { font-size:0.8rem; color:rgba(255,255,255,0.45); }
-        .rest-card-meta strong { color:rgba(255,255,255,0.7); font-weight:600; }
-        /* Card expanded */
-        .rest-card-details { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1); }
-        .rest-card-details.expanded { max-height:500px; border-top:1px solid rgba(255,255,255,0.06); }
-        .rest-card-details-inner { padding:14px 16px 14px 20px; }
-        .rest-card-detail-row { display:flex; justify-content:space-between; padding:5px 0; font-size:0.82rem; }
-        .rest-card-detail-label { color:rgba(255,255,255,0.4); }
-        .rest-card-detail-value { color:rgba(255,255,255,0.8); font-weight:500; }
-        .rest-card-convo { margin-top:10px; padding:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:10px; font-size:0.8rem; color:rgba(255,255,255,0.55); line-height:1.5; max-height:120px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
-        .rest-card-actions { display:flex; gap:8px; padding:12px 16px 14px 20px; flex-wrap:wrap; }
-        .rest-card-action-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.6); font-size:0.8rem; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; text-decoration:none; }
-        .rest-card-action-btn:hover { background:rgba(255,255,255,0.08); color:#fff; }
-        .rest-card-action-btn.whatsapp:hover { background:rgba(37,211,102,0.12); border-color:rgba(37,211,102,0.3); color:#25D366; }
-        .rest-card-action-btn.call:hover { background:rgba(58,134,255,0.12); border-color:rgba(58,134,255,0.3); color:#3A86FF; }
-        .rest-card-action-btn.confirm { background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.2); color:#10B981; }
-        .rest-card-action-btn.confirm:hover { background:rgba(16,185,129,0.18); border-color:rgba(16,185,129,0.4); }
-        .rest-card-action-btn.reject { background:rgba(255,68,68,0.08); border-color:rgba(255,68,68,0.2); color:#FF4444; }
-        .rest-card-action-btn.reject:hover { background:rgba(255,68,68,0.18); border-color:rgba(255,68,68,0.4); }
-        /* Table */
-        .rest-table-wrapper { background:linear-gradient(145deg,#121318,#08090C); border:1px solid rgba(255,255,255,0.03); border-radius:20px; overflow:hidden; }
-        .rest-table { width:100%; border-collapse:collapse; }
-        .rest-table thead th { text-align:left; color:rgba(255,255,255,0.4); font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.06); user-select:none; }
-        .rest-th-sortable { cursor:pointer; transition:color 0.2s; }
-        .rest-th-sortable:hover { color:rgba(255,255,255,0.7); }
-        .rest-th-sortable.active { color:var(--accent-primary,#7551FF); }
-        .rest-table tbody tr.rest-row { border-bottom:1px solid rgba(255,255,255,0.03); transition:background 0.2s; cursor:pointer; }
-        .rest-table tbody tr.rest-row:hover { background:rgba(255,255,255,0.02); }
-        .rest-table tbody td { padding:12px 16px; font-size:0.85rem; color:rgba(255,255,255,0.75); vertical-align:middle; }
-        .rest-table-detail-row { background:rgba(255,255,255,0.015); }
-        .rest-table-detail-row td { padding:16px 20px; }
-        .rest-table-action-icon { width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.4); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s; font-size:0.95rem; text-decoration:none; }
-        .rest-table-action-icon.whatsapp:hover { background:rgba(37,211,102,0.12); border-color:rgba(37,211,102,0.3); color:#25D366; }
-        .rest-table-action-icon.call:hover { background:rgba(58,134,255,0.12); border-color:rgba(58,134,255,0.3); color:#3A86FF; }
-        /* Shared */
-        .rest-empty-state { text-align:center; padding:60px 20px; color:rgba(255,255,255,0.35); }
-        .rest-empty-state ion-icon { font-size:3rem; margin-bottom:12px; opacity:0.3; }
-        @media (max-width:768px) {
-            .rest-cards-grid { grid-template-columns:1fr; }
-            #rest-stats-bar { grid-template-columns:1fr !important; }
-            .rest-view-toggle { display:none; }
-            #rest-table-container { display:none !important; }
-            #rest-cards-container { display:grid !important; }
+        .rest-stat-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: linear-gradient(145deg, #121318, #08090C);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
-        @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-        .spin { animation:spin 1s linear infinite; }
+
+        .rest-stat-icon {
+            font-size: 1.4rem;
+            opacity: 0.9;
+        }
+
+        .rest-stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .rest-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .rest-stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* Toolbar: filters + search */
+        .rest-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .rest-filters-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .rest-filter-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .rest-filter-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .rest-filter-btn.active {
+            background: var(--accent-primary, #7551FF);
+            color: #fff;
+            border-color: var(--accent-primary, #7551FF);
+            box-shadow: 0 2px 12px rgba(117, 81, 255, 0.3);
+        }
+
+        .rest-count-badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 1px 7px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .rest-filter-btn.active .rest-count-badge {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Search */
+        .rest-search-wrapper {
+            position: relative;
+            min-width: 200px;
+            max-width: 280px;
+        }
+
+        .rest-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+
+        .rest-search-input {
+            width: 100%;
+            padding: 9px 12px 9px 36px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .rest-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .rest-search-input:focus {
+            border-color: var(--accent-primary, #7551FF);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 0 3px rgba(117, 81, 255, 0.15);
+        }
+
+        /* View toggle */
+        .rest-view-toggle {
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .rest-view-btn {
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.1rem;
+            padding: 7px 10px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rest-view-btn:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .rest-view-btn.active {
+            background: var(--accent-primary, #7551FF);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(117, 81, 255, 0.3);
+        }
+
+        /* HOY badge */
+        .rest-today-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(245, 158, 11, 0.15);
+            color: #F59E0B;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        /* Cards grid */
+        .rest-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 14px;
+        }
+
+        /* Card */
+        .rest-card {
+            background: linear-gradient(145deg, #121318, #08090C);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            cursor: pointer;
+        }
+
+        .rest-card:hover {
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .rest-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .rest-card.status-nuevo::before {
+            background: #F59E0B;
+        }
+
+        .rest-card.status-confirmado::before {
+            background: #10B981;
+        }
+
+        .rest-card.status-rechazado::before {
+            background: #FF4444;
+        }
+
+        .rest-card.is-today {
+            border-color: rgba(245, 158, 11, 0.12);
+        }
+
+        .rest-card-main {
+            padding: 16px 16px 12px 20px;
+        }
+
+        .rest-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 8px;
+        }
+
+        .rest-card-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .rest-card-status-pill {
+            padding: 3px 9px;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .rest-card-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .rest-card-meta strong {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+        }
+
+        /* Card expanded */
+        .rest-card-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .rest-card-details.expanded {
+            max-height: 500px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .rest-card-details-inner {
+            padding: 14px 16px 14px 20px;
+        }
+
+        .rest-card-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 0.82rem;
+        }
+
+        .rest-card-detail-label {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .rest-card-detail-value {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .rest-card-convo {
+            margin-top: 10px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.55);
+            line-height: 1.5;
+            max-height: 120px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .rest-card-actions {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px 14px 20px;
+            flex-wrap: wrap;
+        }
+
+        .rest-card-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .rest-card-action-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .rest-card-action-btn.whatsapp:hover {
+            background: rgba(37, 211, 102, 0.12);
+            border-color: rgba(37, 211, 102, 0.3);
+            color: #25D366;
+        }
+
+        .rest-card-action-btn.call:hover {
+            background: rgba(58, 134, 255, 0.12);
+            border-color: rgba(58, 134, 255, 0.3);
+            color: #3A86FF;
+        }
+
+        .rest-card-action-btn.confirm {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+        }
+
+        .rest-card-action-btn.confirm:hover {
+            background: rgba(16, 185, 129, 0.18);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .rest-card-action-btn.reject {
+            background: rgba(255, 68, 68, 0.08);
+            border-color: rgba(255, 68, 68, 0.2);
+            color: #FF4444;
+        }
+
+        .rest-card-action-btn.reject:hover {
+            background: rgba(255, 68, 68, 0.18);
+            border-color: rgba(255, 68, 68, 0.4);
+        }
+
+        /* Table */
+        .rest-table-wrapper {
+            background: linear-gradient(145deg, #121318, #08090C);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .rest-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .rest-table thead th {
+            text-align: left;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            user-select: none;
+        }
+
+        .rest-th-sortable {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .rest-th-sortable:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .rest-th-sortable.active {
+            color: var(--accent-primary, #7551FF);
+        }
+
+        .rest-table tbody tr.rest-row {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .rest-table tbody tr.rest-row:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .rest-table tbody td {
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.75);
+            vertical-align: middle;
+        }
+
+        .rest-table-detail-row {
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        .rest-table-detail-row td {
+            padding: 16px 20px;
+        }
+
+        .rest-table-action-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.4);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            text-decoration: none;
+        }
+
+        .rest-table-action-icon.whatsapp:hover {
+            background: rgba(37, 211, 102, 0.12);
+            border-color: rgba(37, 211, 102, 0.3);
+            color: #25D366;
+        }
+
+        .rest-table-action-icon.call:hover {
+            background: rgba(58, 134, 255, 0.12);
+            border-color: rgba(58, 134, 255, 0.3);
+            color: #3A86FF;
+        }
+
+        /* Shared */
+        .rest-empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .rest-empty-state ion-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        @media (max-width:768px) {
+            .rest-cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            #rest-stats-bar {
+                grid-template-columns: 1fr !important;
+            }
+
+            .rest-view-toggle {
+                display: none;
+            }
+
+            #rest-table-container {
+                display: none !important;
+            }
+
+            #rest-cards-container {
+                display: grid !important;
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
         /* Toast notifications */
-        .toast-container { position:fixed; bottom:24px; right:24px; z-index:3000; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
-        .toast { pointer-events:auto; display:flex; align-items:center; gap:10px; padding:14px 20px; border-radius:14px; font-size:0.85rem; font-family:'Inter',sans-serif; color:#fff; box-shadow:0 8px 30px rgba(0,0,0,0.4); backdrop-filter:blur(12px); animation:toast-in 0.3s ease forwards; max-width:380px; }
-        .toast.success { background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); }
-        .toast.error { background:rgba(255,68,68,0.15); border:1px solid rgba(255,68,68,0.3); }
-        .toast.warning { background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); }
-        .toast.fade-out { animation:toast-out 0.3s ease forwards; }
-        @keyframes toast-in { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes toast-out { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(20px); } }
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+            animation: toast-in 0.3s ease forwards;
+            max-width: 380px;
+        }
+
+        .toast.success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .toast.error {
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .toast.warning {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .toast.fade-out {
+            animation: toast-out 0.3s ease forwards;
+        }
+
+        @keyframes toast-in {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes toast-out {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
         /* Confirm modal message textarea */
-        .rest-confirm-message { width:100%; min-height:70px; padding:10px 12px; margin-top:16px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.85rem; font-family:'Inter',sans-serif; resize:vertical; outline:none; }
-        .rest-confirm-message:focus { border-color:var(--accent-primary,#7551FF); }
-        .rest-confirm-message::placeholder { color:rgba(255,255,255,0.3); }
+        .rest-confirm-message {
+            width: 100%;
+            min-height: 70px;
+            padding: 10px 12px;
+            margin-top: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            outline: none;
+        }
+
+        .rest-confirm-message:focus {
+            border-color: var(--accent-primary, #7551FF);
+        }
+
+        .rest-confirm-message::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
         /* Notes */
-        .rest-notes-area { width:100%; min-height:60px; max-height:120px; margin-top:10px; padding:10px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:rgba(255,255,255,0.7); font-size:0.8rem; font-family:'Inter',sans-serif; resize:vertical; outline:none; transition:border-color 0.2s; }
-        .rest-notes-area:focus { border-color:var(--accent-primary,#7551FF); background:rgba(255,255,255,0.05); }
-        .rest-notes-area::placeholder { color:rgba(255,255,255,0.25); }
-        .rest-has-notes-dot { width:7px; height:7px; border-radius:50%; background:#F59E0B; display:inline-block; flex-shrink:0; margin-left:4px; vertical-align:middle; }
+        .rest-notes-area {
+            width: 100%;
+            min-height: 60px;
+            max-height: 120px;
+            margin-top: 10px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .rest-notes-area:focus {
+            border-color: var(--accent-primary, #7551FF);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .rest-notes-area::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        .rest-has-notes-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #F59E0B;
+            display: inline-block;
+            flex-shrink: 0;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+
         /* Edit modal */
-        .rest-card-action-btn.edit { background:rgba(117,81,255,0.08); border-color:rgba(117,81,255,0.2); color:#7551FF; }
-        .rest-card-action-btn.edit:hover { background:rgba(117,81,255,0.18); border-color:rgba(117,81,255,0.4); }
-        .rest-edit-field { display:flex; flex-direction:column; gap:4px; }
-        .rest-edit-label { font-size:0.75rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.5px; }
-        .rest-edit-input { padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#fff; font-size:0.85rem; font-family:'Inter',sans-serif; outline:none; }
-        .rest-edit-input:focus { border-color:var(--accent-primary,#7551FF); background:rgba(255,255,255,0.06); }
-        .rest-warning-inline { display:flex; align-items:center; gap:8px; padding:10px 14px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.15); border-radius:10px; font-size:0.8rem; color:#F59E0B; margin-top:12px; }
+        .rest-card-action-btn.edit {
+            background: rgba(117, 81, 255, 0.08);
+            border-color: rgba(117, 81, 255, 0.2);
+            color: #7551FF;
+        }
+
+        .rest-card-action-btn.edit:hover {
+            background: rgba(117, 81, 255, 0.18);
+            border-color: rgba(117, 81, 255, 0.4);
+        }
+
+        .rest-edit-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .rest-edit-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .rest-edit-input {
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+
+        .rest-edit-input:focus {
+            border-color: var(--accent-primary, #7551FF);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .rest-warning-inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #F59E0B;
+            margin-top: 12px;
+        }
+
         /* New badge on tab */
-        .rest-new-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#FF4444; color:#fff; font-size:0.65rem; font-weight:700; margin-left:6px; line-height:1; animation:badge-pulse 2s ease-in-out infinite; }
-        @keyframes badge-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(255,68,68,0.4); } 50% { box-shadow:0 0 0 6px rgba(255,68,68,0); } }
-        .rest-new-badge:empty { display:none; }
+        .rest-new-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            background: #FF4444;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-left: 6px;
+            line-height: 1;
+            animation: badge-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes badge-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(255, 68, 68, 0);
+            }
+        }
+
+        .rest-new-badge:empty {
+            display: none;
+        }
 
         /* ===== LIGHT THEME — Restaurant & Inline ===== */
-        [data-theme="light"] .rest-stat-card { background:#FFFFFF; border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); }
-        [data-theme="light"] .rest-stat-value { color:var(--text-primary); }
-        [data-theme="light"] .rest-stat-label { color:var(--text-muted); }
-        [data-theme="light"] .rest-search-icon { color:var(--text-muted); }
-        [data-theme="light"] .rest-search-input { background:var(--surface-100); border:1px solid transparent; color:var(--text-primary); }
-        [data-theme="light"] .rest-search-input::placeholder { color:var(--text-muted); }
-        [data-theme="light"] .rest-search-input:focus { background:#FFFFFF; border:1px solid var(--surface-300); box-shadow:0 0 0 3px rgba(0,0,0,0.04); }
-        [data-theme="light"] .rest-view-toggle { background:var(--surface-100); border:none; }
-        [data-theme="light"] .rest-view-btn { color:var(--text-muted); }
-        [data-theme="light"] .rest-view-btn:hover { color:var(--text-primary); }
-        [data-theme="light"] .rest-filter-btn { background:var(--surface-100); border:1px solid var(--border-subtle); color:var(--text-secondary); }
-        [data-theme="light"] .rest-filter-btn:hover { background:var(--surface-200); color:var(--text-primary); }
-        [data-theme="light"] .rest-count-badge { background:var(--surface-200); }
-        [data-theme="light"] .rest-card { background:#FFFFFF; border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); }
-        [data-theme="light"] .rest-card:hover { border-color:var(--surface-300); box-shadow:var(--shadow-md); }
-        [data-theme="light"] .rest-card-name { color:var(--text-primary); }
-        [data-theme="light"] .rest-card-meta { color:var(--text-secondary); }
-        [data-theme="light"] .rest-card-meta strong { color:var(--text-primary); }
-        [data-theme="light"] .rest-card-details.expanded { border-top-color:var(--border-subtle); }
-        [data-theme="light"] .rest-card-detail-label { color:var(--text-muted); }
-        [data-theme="light"] .rest-card-detail-value { color:var(--text-primary); }
-        [data-theme="light"] .rest-card-convo { background:var(--surface-100); border:none; color:var(--text-secondary); }
-        [data-theme="light"] .rest-card-action-btn { border:1px solid var(--border-subtle); background:#FFFFFF; color:var(--text-secondary); }
-        [data-theme="light"] .rest-card-action-btn:hover { background:var(--surface-100); color:var(--text-primary); }
-        [data-theme="light"] .rest-table-wrapper { background:#FFFFFF; border:1px solid var(--border-subtle); box-shadow:var(--shadow-sm); }
-        [data-theme="light"] .rest-table thead th { color:var(--text-muted); border-bottom-color:var(--border-subtle); }
-        [data-theme="light"] .rest-table tbody tr.rest-row { border-bottom-color:var(--surface-100); }
-        [data-theme="light"] .rest-table tbody tr.rest-row:hover { background:var(--surface-50); }
-        [data-theme="light"] .rest-table tbody td { color:var(--text-primary); }
-        [data-theme="light"] .rest-table-detail-row { background:var(--surface-50); }
-        [data-theme="light"] .rest-table-action-icon { border:1px solid var(--border-subtle); background:#FFFFFF; color:var(--text-secondary); }
-        [data-theme="light"] .rest-empty-state { color:var(--text-muted); }
-        [data-theme="light"] .rest-confirm-message { background:var(--surface-100); border:1px solid var(--border-subtle); color:var(--text-primary); }
-        [data-theme="light"] .rest-confirm-message::placeholder { color:var(--text-muted); }
-        [data-theme="light"] .rest-notes-area { background:var(--surface-100); border:1px solid transparent; color:var(--text-primary); }
-        [data-theme="light"] .rest-notes-area:focus { background:#FFFFFF; border:1px solid var(--surface-300); }
-        [data-theme="light"] .rest-notes-area::placeholder { color:var(--text-muted); }
-        [data-theme="light"] .rest-edit-label { color:var(--text-muted); }
-        [data-theme="light"] .rest-edit-input { background:var(--surface-100); border:1px solid transparent; color:var(--text-primary); }
-        [data-theme="light"] .rest-edit-input:focus { background:#FFFFFF; border:1px solid var(--surface-300); }
+        [data-theme="light"] .rest-stat-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-sm);
+        }
+
+        [data-theme="light"] .rest-stat-value {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-stat-label {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-search-icon {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-search-input {
+            background: var(--surface-100);
+            border: 1px solid transparent;
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-search-input:focus {
+            background: #FFFFFF;
+            border: 1px solid var(--surface-300);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+        }
+
+        [data-theme="light"] .rest-view-toggle {
+            background: var(--surface-100);
+            border: none;
+        }
+
+        [data-theme="light"] .rest-view-btn {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-view-btn:hover {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-filter-btn {
+            background: var(--surface-100);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .rest-filter-btn:hover {
+            background: var(--surface-200);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-count-badge {
+            background: var(--surface-200);
+        }
+
+        [data-theme="light"] .rest-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-sm);
+        }
+
+        [data-theme="light"] .rest-card:hover {
+            border-color: var(--surface-300);
+            box-shadow: var(--shadow-md);
+        }
+
+        [data-theme="light"] .rest-card-name {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-card-meta {
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .rest-card-meta strong {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-card-details.expanded {
+            border-top-color: var(--border-subtle);
+        }
+
+        [data-theme="light"] .rest-card-detail-label {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-card-detail-value {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-card-convo {
+            background: var(--surface-100);
+            border: none;
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .rest-card-action-btn {
+            border: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .rest-card-action-btn:hover {
+            background: var(--surface-100);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-table-wrapper {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-sm);
+        }
+
+        [data-theme="light"] .rest-table thead th {
+            color: var(--text-muted);
+            border-bottom-color: var(--border-subtle);
+        }
+
+        [data-theme="light"] .rest-table tbody tr.rest-row {
+            border-bottom-color: var(--surface-100);
+        }
+
+        [data-theme="light"] .rest-table tbody tr.rest-row:hover {
+            background: var(--surface-50);
+        }
+
+        [data-theme="light"] .rest-table tbody td {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-table-detail-row {
+            background: var(--surface-50);
+        }
+
+        [data-theme="light"] .rest-table-action-icon {
+            border: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .rest-empty-state {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-confirm-message {
+            background: var(--surface-100);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-confirm-message::placeholder {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-notes-area {
+            background: var(--surface-100);
+            border: 1px solid transparent;
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-notes-area:focus {
+            background: #FFFFFF;
+            border: 1px solid var(--surface-300);
+        }
+
+        [data-theme="light"] .rest-notes-area::placeholder {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-edit-label {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-edit-input {
+            background: var(--surface-100);
+            border: 1px solid transparent;
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-edit-input:focus {
+            background: #FFFFFF;
+            border: 1px solid var(--surface-300);
+        }
 
         /* Modal overrides */
-        [data-theme="light"] #restaurant-confirm-modal > div,
-        [data-theme="light"] #conversation-modal > div,
-        [data-theme="light"] #restaurant-edit-modal > div { background:#FFFFFF !important; border:1px solid var(--border-subtle) !important; box-shadow:var(--shadow-lg) !important; }
-        [data-theme="light"] #restaurant-confirm-modal > div > div:first-child,
-        [data-theme="light"] #conversation-modal > div > div:first-child,
-        [data-theme="light"] #restaurant-edit-modal > div > div:first-child { border-bottom-color:var(--border-subtle) !important; }
+        [data-theme="light"] #restaurant-confirm-modal>div,
+        [data-theme="light"] #conversation-modal>div,
+        [data-theme="light"] #restaurant-edit-modal>div {
+            background: #FFFFFF !important;
+            border: 1px solid var(--border-subtle) !important;
+            box-shadow: var(--shadow-lg) !important;
+        }
+
+        [data-theme="light"] #restaurant-confirm-modal>div>div:first-child,
+        [data-theme="light"] #conversation-modal>div>div:first-child,
+        [data-theme="light"] #restaurant-edit-modal>div>div:first-child {
+            border-bottom-color: var(--border-subtle) !important;
+        }
+
         /* Toast — vibrant in light mode */
-        [data-theme="light"] .toast { color:var(--text-primary); background:#FFFFFF; border:1px solid var(--border-subtle); box-shadow:0 8px 30px rgba(0,0,0,0.1); }
-        [data-theme="light"] .toast.success { background:#ECFDF5; border:1px solid rgba(16,185,129,0.3); color:#065F46; }
-        [data-theme="light"] .toast.error { background:#FEF2F2; border:1px solid rgba(239,68,68,0.3); color:#991B1B; }
-        [data-theme="light"] .toast.warning { background:#FFFBEB; border:1px solid rgba(245,158,11,0.3); color:#92400E; }
+        [data-theme="light"] .toast {
+            color: var(--text-primary);
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .toast.success {
+            background: #ECFDF5;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #065F46;
+        }
+
+        [data-theme="light"] .toast.error {
+            background: #FEF2F2;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #991B1B;
+        }
+
+        [data-theme="light"] .toast.warning {
+            background: #FFFBEB;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #92400E;
+        }
+
         /* Password modal */
-        [data-theme="light"] #change-pass-modal { background:rgba(0,0,0,0.4) !important; backdrop-filter:blur(4px); }
-        [data-theme="light"] #change-pass-modal .modal-content { background:#FFFFFF !important; border:1px solid var(--border-subtle) !important; box-shadow:var(--shadow-lg) !important; }
-        [data-theme="light"] #change-pass-modal h2 { color:var(--text-primary) !important; }
-        [data-theme="light"] #change-pass-modal p { color:var(--text-secondary) !important; }
-        [data-theme="light"] #change-pass-modal label { color:var(--text-muted) !important; }
-        [data-theme="light"] #change-pass-modal input[type="password"] { background:var(--surface-100) !important; border:1px solid var(--border-subtle) !important; color:var(--text-primary) !important; }
-        [data-theme="light"] #change-pass-modal input[type="password"]:focus { background:#FFFFFF !important; border-color:var(--surface-300) !important; }
-        [data-theme="light"] #change-pass-modal button[onclick] { color:var(--text-secondary) !important; }
+        [data-theme="light"] #change-pass-modal {
+            background: rgba(0, 0, 0, 0.4) !important;
+            backdrop-filter: blur(4px);
+        }
+
+        [data-theme="light"] #change-pass-modal .modal-content {
+            background: #FFFFFF !important;
+            border: 1px solid var(--border-subtle) !important;
+            box-shadow: var(--shadow-lg) !important;
+        }
+
+        [data-theme="light"] #change-pass-modal h2 {
+            color: var(--text-primary) !important;
+        }
+
+        [data-theme="light"] #change-pass-modal p {
+            color: var(--text-secondary) !important;
+        }
+
+        [data-theme="light"] #change-pass-modal label {
+            color: var(--text-muted) !important;
+        }
+
+        [data-theme="light"] #change-pass-modal input[type="password"] {
+            background: var(--surface-100) !important;
+            border: 1px solid var(--border-subtle) !important;
+            color: var(--text-primary) !important;
+        }
+
+        [data-theme="light"] #change-pass-modal input[type="password"]:focus {
+            background: #FFFFFF !important;
+            border-color: var(--surface-300) !important;
+        }
+
+        [data-theme="light"] #change-pass-modal button[onclick] {
+            color: var(--text-secondary) !important;
+        }
     </style>
 
     <div id="dashboard-loader">
@@ -282,140 +1155,140 @@
         </div>
     </div>
     <script>
-    (function () {
-        const canvas = document.getElementById('eclipse-canvas');
-        const ctx = canvas.getContext('2d');
-        let W, H, raf, active = true;
+        (function () {
+            const canvas = document.getElementById('eclipse-canvas');
+            const ctx = canvas.getContext('2d');
+            let W, H, raf, active = true;
 
-        function resize() {
-            W = canvas.width  = window.innerWidth;
-            H = canvas.height = window.innerHeight;
-        }
-        resize();
-        window.addEventListener('resize', resize);
+            function resize() {
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
 
-        // Stars — only upper 65% of screen, very subtle
-        const stars = Array.from({length: 110}, () => ({
-            x:  Math.random(),
-            y:  Math.random() * 0.65,
-            r:  Math.random() * 0.9 + 0.15,
-            op: Math.random() * 0.32 + 0.1,
-            ph: Math.random() * Math.PI * 2,
-            sp: Math.random() * 0.007 + 0.002
-        }));
+            // Stars — only upper 65% of screen, very subtle
+            const stars = Array.from({ length: 110 }, () => ({
+                x: Math.random(),
+                y: Math.random() * 0.65,
+                r: Math.random() * 0.9 + 0.15,
+                op: Math.random() * 0.32 + 0.1,
+                ph: Math.random() * Math.PI * 2,
+                sp: Math.random() * 0.007 + 0.002
+            }));
 
-        let t = 0;
-        function frame() {
-            if (!active) return;
+            let t = 0;
+            function frame() {
+                if (!active) return;
 
-            // ── Background ──────────────────────────────────────────────
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, W, H);
+                // ── Background ──────────────────────────────────────────────
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, W, H);
 
-            // ── Stars ────────────────────────────────────────────────────
-            stars.forEach(s => {
-                const o = s.op * (0.5 + 0.5 * Math.sin(t * s.sp + s.ph));
+                // ── Stars ────────────────────────────────────────────────────
+                stars.forEach(s => {
+                    const o = s.op * (0.5 + 0.5 * Math.sin(t * s.sp + s.ph));
+                    ctx.beginPath();
+                    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255,255,255,${o})`;
+                    ctx.fill();
+                });
+
+                // ── Planet arc parameters ────────────────────────────────────
+                // Very large circle — only the top arc is visible (planet horizon)
+                const bigR = Math.max(W, H) * 3.4;
+                const arcCX = W / 2;
+                // On portrait (mobile) push arc lower so sphere has room above it
+                const arcOffset = W < H ? 0.62 : 0.52;
+                const arcCY = H * arcOffset + bigR;
+
+                // Arc gradient: cyan → blue → purple → red (center/sphere) → orange → gold → back
+                const arcG = ctx.createLinearGradient(0, 0, W, 0);
+                arcG.addColorStop(0, '#00D4FF');
+                arcG.addColorStop(0.16, '#1E44FF');
+                arcG.addColorStop(0.32, '#9528E0');
+                arcG.addColorStop(0.46, '#E52860');
+                arcG.addColorStop(0.53, '#F55A10');
+                arcG.addColorStop(0.64, '#F5A800');
+                arcG.addColorStop(0.73, '#F56010');
+                arcG.addColorStop(0.83, '#C028A8');
+                arcG.addColorStop(0.93, '#1E44FF');
+                arcG.addColorStop(1, '#00D4FF');
+
+                // Breathing brightness
+                const breath = 0.88 + 0.12 * Math.sin(t * 0.007);
+                ctx.globalAlpha = breath;
+
+                // Glow layers — scaled to screen size so they look right on mobile too
+                const gS = Math.min(W, H) / 900;
+                const glows = [
+                    { w: Math.max(3, 80 * gS), a: 0.018 },
+                    { w: Math.max(2, 35 * gS), a: 0.04 },
+                    { w: Math.max(1, 14 * gS), a: 0.10 },
+                    { w: Math.max(0.8, 4 * gS), a: 0.55 },
+                    { w: Math.max(0.4, 1.4 * gS), a: 1.0 },
+                ];
+                glows.forEach(g => {
+                    ctx.beginPath();
+                    ctx.arc(arcCX, arcCY, bigR, -Math.PI, 0);
+                    ctx.strokeStyle = arcG;
+                    ctx.lineWidth = g.w;
+                    ctx.globalAlpha = g.a * breath;
+                    ctx.stroke();
+                });
+                ctx.globalAlpha = 1;
+
+                // ── Sphere (orbits slowly along the arc) ─────────────────────
+                const sAngle = -Math.PI / 2 + Math.sin(t * 0.004) * 0.13;
+                const hover = H * 0.042 + Math.sin(t * 0.009) * H * 0.007;
+                const sX = arcCX + (bigR + hover) * Math.cos(sAngle);
+                const sY = arcCY + (bigR + hover) * Math.sin(sAngle);
+                const sR = Math.min(W, H) * 0.026;
+                const pulse = 0.78 + 0.22 * Math.sin(t * 0.012);
+
+                // Outer aura / glow
+                const aura = ctx.createRadialGradient(sX, sY, 0, sX, sY, sR * 5.5);
+                aura.addColorStop(0, `rgba(230,70,130,${0.28 * pulse})`);
+                aura.addColorStop(0.4, `rgba(120,30,210,${0.10 * pulse})`);
+                aura.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = aura;
                 ctx.beginPath();
-                ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255,255,255,${o})`;
+                ctx.arc(sX, sY, sR * 5.5, 0, Math.PI * 2);
                 ctx.fill();
-            });
 
-            // ── Planet arc parameters ────────────────────────────────────
-            // Very large circle — only the top arc is visible (planet horizon)
-            const bigR  = Math.max(W, H) * 3.4;
-            const arcCX = W / 2;
-            // On portrait (mobile) push arc lower so sphere has room above it
-            const arcOffset = W < H ? 0.62 : 0.52;
-            const arcCY = H * arcOffset + bigR;
-
-            // Arc gradient: cyan → blue → purple → red (center/sphere) → orange → gold → back
-            const arcG = ctx.createLinearGradient(0, 0, W, 0);
-            arcG.addColorStop(0,    '#00D4FF');
-            arcG.addColorStop(0.16, '#1E44FF');
-            arcG.addColorStop(0.32, '#9528E0');
-            arcG.addColorStop(0.46, '#E52860');
-            arcG.addColorStop(0.53, '#F55A10');
-            arcG.addColorStop(0.64, '#F5A800');
-            arcG.addColorStop(0.73, '#F56010');
-            arcG.addColorStop(0.83, '#C028A8');
-            arcG.addColorStop(0.93, '#1E44FF');
-            arcG.addColorStop(1,    '#00D4FF');
-
-            // Breathing brightness
-            const breath = 0.88 + 0.12 * Math.sin(t * 0.007);
-            ctx.globalAlpha = breath;
-
-            // Glow layers — scaled to screen size so they look right on mobile too
-            const gS = Math.min(W, H) / 900;
-            const glows = [
-                { w: Math.max(3,   80  * gS), a: 0.018 },
-                { w: Math.max(2,   35  * gS), a: 0.04  },
-                { w: Math.max(1,   14  * gS), a: 0.10  },
-                { w: Math.max(0.8,  4  * gS), a: 0.55  },
-                { w: Math.max(0.4, 1.4 * gS), a: 1.0   },
-            ];
-            glows.forEach(g => {
+                // Sphere body — pink → purple → deep blue, lit from top-left
+                const sg = ctx.createRadialGradient(
+                    sX - sR * 0.38, sY - sR * 0.38, 0,
+                    sX, sY, sR
+                );
+                sg.addColorStop(0, '#FF96B8');
+                sg.addColorStop(0.4, '#C438AA');
+                sg.addColorStop(0.72, '#6522CC');
+                sg.addColorStop(1, '#1C0890');
+                ctx.fillStyle = sg;
                 ctx.beginPath();
-                ctx.arc(arcCX, arcCY, bigR, -Math.PI, 0);
-                ctx.strokeStyle = arcG;
-                ctx.lineWidth   = g.w;
-                ctx.globalAlpha = g.a * breath;
-                ctx.stroke();
-            });
-            ctx.globalAlpha = 1;
+                ctx.arc(sX, sY, sR, 0, Math.PI * 2);
+                ctx.fill();
 
-            // ── Sphere (orbits slowly along the arc) ─────────────────────
-            const sAngle  = -Math.PI / 2 + Math.sin(t * 0.004) * 0.13;
-            const hover   = H * 0.042 + Math.sin(t * 0.009) * H * 0.007;
-            const sX      = arcCX + (bigR + hover) * Math.cos(sAngle);
-            const sY      = arcCY + (bigR + hover) * Math.sin(sAngle);
-            const sR      = Math.min(W, H) * 0.026;
-            const pulse   = 0.78 + 0.22 * Math.sin(t * 0.012);
+                // Subtle specular highlight
+                const spec = ctx.createRadialGradient(
+                    sX - sR * 0.3, sY - sR * 0.35, 0,
+                    sX - sR * 0.3, sY - sR * 0.35, sR * 0.55
+                );
+                spec.addColorStop(0, `rgba(255,255,255,${0.45 * pulse})`);
+                spec.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = spec;
+                ctx.beginPath();
+                ctx.arc(sX, sY, sR, 0, Math.PI * 2);
+                ctx.fill();
 
-            // Outer aura / glow
-            const aura = ctx.createRadialGradient(sX, sY, 0, sX, sY, sR * 5.5);
-            aura.addColorStop(0,   `rgba(230,70,130,${0.28 * pulse})`);
-            aura.addColorStop(0.4, `rgba(120,30,210,${0.10 * pulse})`);
-            aura.addColorStop(1,   'rgba(0,0,0,0)');
-            ctx.fillStyle = aura;
-            ctx.beginPath();
-            ctx.arc(sX, sY, sR * 5.5, 0, Math.PI * 2);
-            ctx.fill();
+                t++;
+                raf = requestAnimationFrame(frame);
+            }
 
-            // Sphere body — pink → purple → deep blue, lit from top-left
-            const sg = ctx.createRadialGradient(
-                sX - sR * 0.38, sY - sR * 0.38, 0,
-                sX, sY, sR
-            );
-            sg.addColorStop(0,   '#FF96B8');
-            sg.addColorStop(0.4, '#C438AA');
-            sg.addColorStop(0.72,'#6522CC');
-            sg.addColorStop(1,   '#1C0890');
-            ctx.fillStyle = sg;
-            ctx.beginPath();
-            ctx.arc(sX, sY, sR, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Subtle specular highlight
-            const spec = ctx.createRadialGradient(
-                sX - sR * 0.3, sY - sR * 0.35, 0,
-                sX - sR * 0.3, sY - sR * 0.35, sR * 0.55
-            );
-            spec.addColorStop(0,   `rgba(255,255,255,${0.45 * pulse})`);
-            spec.addColorStop(1,   'rgba(255,255,255,0)');
-            ctx.fillStyle = spec;
-            ctx.beginPath();
-            ctx.arc(sX, sY, sR, 0, Math.PI * 2);
-            ctx.fill();
-
-            t++;
-            raf = requestAnimationFrame(frame);
-        }
-
-        frame();
-        window._stopEclipse = () => { active = false; cancelAnimationFrame(raf); };
-    })();
+            frame();
+            window._stopEclipse = () => { active = false; cancelAnimationFrame(raf); };
+        })();
     </script>
     <!-- ===== FIN LOADING SCREEN ===== -->
 
@@ -507,7 +1380,8 @@
                         <ion-icon name="sunny-outline"></ion-icon> Day Pass
                     </button>
                     <button class="dash-tab" data-tab="restaurante">
-                        <ion-icon name="restaurant-outline"></ion-icon> Restaurante <span id="rest-new-badge" class="rest-new-badge"></span>
+                        <ion-icon name="restaurant-outline"></ion-icon> Restaurante <span id="rest-new-badge"
+                            class="rest-new-badge"></span>
                     </button>
                 </div>
             </div>
@@ -655,8 +1529,9 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 40px;">#</th>
-                                        <th>Nombre</th>
+                                        <th>Canal / Origen</th>
                                         <th>Fecha</th>
+                                        <th>Campaña</th>
                                         <th>Estado</th>
                                     </tr>
                                 </thead>
@@ -764,23 +1639,28 @@
                 <!-- Header -->
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <div>
-                        <span class="label-sub" style="font-size:0.7rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">GESTIÓN DE RESERVAS</span>
-                        <h3 style="font-size:1.4rem; font-weight:700; margin:4px 0 0; display:flex; align-items:center; gap:8px;">
+                        <span class="label-sub"
+                            style="font-size:0.7rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">GESTIÓN
+                            DE RESERVAS</span>
+                        <h3
+                            style="font-size:1.4rem; font-weight:700; margin:4px 0 0; display:flex; align-items:center; gap:8px;">
                             <ion-icon name="restaurant-outline" style="color:var(--accent-primary);"></ion-icon>
                             Restaurante
                         </h3>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div class="rest-view-toggle">
-                            <button class="rest-view-btn active" data-view="cards" onclick="toggleRestaurantView('cards')" title="Vista tarjetas">
+                            <button class="rest-view-btn active" data-view="cards"
+                                onclick="toggleRestaurantView('cards')" title="Vista tarjetas">
                                 <ion-icon name="grid-outline"></ion-icon>
                             </button>
-                            <button class="rest-view-btn" data-view="table" onclick="toggleRestaurantView('table')" title="Vista tabla">
+                            <button class="rest-view-btn" data-view="table" onclick="toggleRestaurantView('table')"
+                                title="Vista tabla">
                                 <ion-icon name="list-outline"></ion-icon>
                             </button>
                         </div>
                         <button onclick="fetchRestaurantReservations()" title="Actualizar reservas"
-                                style="padding:8px 16px; display:flex; align-items:center; gap:6px; border-radius:12px;
+                            style="padding:8px 16px; display:flex; align-items:center; gap:6px; border-radius:12px;
                                        background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
                                        color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.85rem; font-family:'Inter',sans-serif;">
                             <ion-icon name="refresh-outline"></ion-icon> Actualizar
@@ -789,23 +1669,27 @@
                 </div>
 
                 <!-- Stats Bar -->
-                <div id="rest-stats-bar" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:20px;">
+                <div id="rest-stats-bar"
+                    style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:20px;">
                     <div class="rest-stat-card">
-                        <div class="rest-stat-icon" style="color:#F59E0B;"><ion-icon name="today-outline"></ion-icon></div>
+                        <div class="rest-stat-icon" style="color:#F59E0B;"><ion-icon name="today-outline"></ion-icon>
+                        </div>
                         <div class="rest-stat-info">
                             <span class="rest-stat-value" id="rest-stat-hoy">0</span>
                             <span class="rest-stat-label">Hoy</span>
                         </div>
                     </div>
                     <div class="rest-stat-card">
-                        <div class="rest-stat-icon" style="color:#7551FF;"><ion-icon name="calendar-outline"></ion-icon></div>
+                        <div class="rest-stat-icon" style="color:#7551FF;"><ion-icon name="calendar-outline"></ion-icon>
+                        </div>
                         <div class="rest-stat-info">
                             <span class="rest-stat-value" id="rest-stat-semana">0</span>
                             <span class="rest-stat-label">Esta semana</span>
                         </div>
                     </div>
                     <div class="rest-stat-card">
-                        <div class="rest-stat-icon" style="color:#01F1E3;"><ion-icon name="hourglass-outline"></ion-icon></div>
+                        <div class="rest-stat-icon" style="color:#01F1E3;"><ion-icon
+                                name="hourglass-outline"></ion-icon></div>
                         <div class="rest-stat-info">
                             <span class="rest-stat-value" id="rest-stat-pendientes">0</span>
                             <span class="rest-stat-label">Pendientes</span>
@@ -816,22 +1700,28 @@
                 <!-- Filtros por Estado + Búsqueda -->
                 <div class="rest-toolbar">
                     <div class="rest-filters-row">
-                        <button class="rest-filter-btn active" data-status="all" onclick="filterRestaurantByStatus('all')">
+                        <button class="rest-filter-btn active" data-status="all"
+                            onclick="filterRestaurantByStatus('all')">
                             Todos <span id="rest-count-all" class="rest-count-badge">0</span>
                         </button>
-                        <button class="rest-filter-btn" data-status="Nuevo Lead" onclick="filterRestaurantByStatus('Nuevo Lead')">
+                        <button class="rest-filter-btn" data-status="Nuevo Lead"
+                            onclick="filterRestaurantByStatus('Nuevo Lead')">
                             Nuevos <span id="rest-count-nuevo" class="rest-count-badge">0</span>
                         </button>
-                        <button class="rest-filter-btn" data-status="Confirmado" onclick="filterRestaurantByStatus('Confirmado')">
+                        <button class="rest-filter-btn" data-status="Confirmado"
+                            onclick="filterRestaurantByStatus('Confirmado')">
                             Confirmados <span id="rest-count-confirmado" class="rest-count-badge">0</span>
                         </button>
-                        <button class="rest-filter-btn" data-status="Rechazado" onclick="filterRestaurantByStatus('Rechazado')">
+                        <button class="rest-filter-btn" data-status="Rechazado"
+                            onclick="filterRestaurantByStatus('Rechazado')">
                             Rechazados <span id="rest-count-rechazado" class="rest-count-badge">0</span>
                         </button>
                     </div>
                     <div class="rest-search-wrapper">
                         <ion-icon name="search-outline" class="rest-search-icon"></ion-icon>
-                        <input type="text" id="rest-search-input" class="rest-search-input" placeholder="Buscar nombre, tel, email..." oninput="searchRestaurantReservations(this.value)">
+                        <input type="text" id="rest-search-input" class="rest-search-input"
+                            placeholder="Buscar nombre, tel, email..."
+                            oninput="searchRestaurantReservations(this.value)">
                     </div>
                 </div>
 
@@ -844,11 +1734,16 @@
                         <table class="rest-table">
                             <thead>
                                 <tr>
-                                    <th class="rest-th-sortable" data-sort="estado" onclick="sortRestaurantTable('estado')">Estado</th>
-                                    <th class="rest-th-sortable" data-sort="nombre" onclick="sortRestaurantTable('nombre')">Nombre</th>
-                                    <th class="rest-th-sortable active" data-sort="fechaEvento" onclick="sortRestaurantTable('fechaEvento')">Fecha</th>
-                                    <th class="rest-th-sortable" data-sort="pax" onclick="sortRestaurantTable('pax')">PAX</th>
-                                    <th class="rest-th-sortable" data-sort="tipoEvento" onclick="sortRestaurantTable('tipoEvento')">Tipo</th>
+                                    <th class="rest-th-sortable" data-sort="estado"
+                                        onclick="sortRestaurantTable('estado')">Estado</th>
+                                    <th class="rest-th-sortable" data-sort="nombre"
+                                        onclick="sortRestaurantTable('nombre')">Nombre</th>
+                                    <th class="rest-th-sortable active" data-sort="fechaEvento"
+                                        onclick="sortRestaurantTable('fechaEvento')">Fecha</th>
+                                    <th class="rest-th-sortable" data-sort="pax" onclick="sortRestaurantTable('pax')">
+                                        PAX</th>
+                                    <th class="rest-th-sortable" data-sort="tipoEvento"
+                                        onclick="sortRestaurantTable('tipoEvento')">Tipo</th>
                                     <th>Contacto</th>
                                 </tr>
                             </thead>
@@ -858,120 +1753,135 @@
                 </div>
             </div>
 
-                <!-- Modal de Confirmación de Reserva -->
-                <div id="restaurant-confirm-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
-                    <div style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:440px; width:90%; overflow:hidden;">
-                        <div style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
-                            <h3 id="confirm-modal-title" style="font-size:1.1rem; font-weight:700;">Confirmar Reserva</h3>
-                            <button onclick="closeConfirmModal()" style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
-                        </div>
-                        <div style="padding:24px;">
-                            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:20px; margin-bottom:20px;">
-                                <div style="display:grid; gap:12px;">
-                                    <div style="display:flex; justify-content:space-between;">
-                                        <span style="color:var(--text-dim);">Cliente</span>
-                                        <span id="confirm-modal-name" style="color:white; font-weight:600;">-</span>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between;">
-                                        <span style="color:var(--text-dim);">Personas</span>
-                                        <span id="confirm-modal-pax" style="color:white;">-</span>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between;">
-                                        <span style="color:var(--text-dim);">Fecha</span>
-                                        <span id="confirm-modal-date" style="color:white;">-</span>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between;">
-                                        <span style="color:var(--text-dim);">Tipo</span>
-                                        <span id="confirm-modal-type" style="color:white;">-</span>
-                                    </div>
+            <!-- Modal de Confirmación de Reserva -->
+            <div id="restaurant-confirm-modal" class="hidden"
+                style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
+                <div
+                    style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:440px; width:90%; overflow:hidden;">
+                    <div
+                        style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
+                        <h3 id="confirm-modal-title" style="font-size:1.1rem; font-weight:700;">Confirmar Reserva</h3>
+                        <button onclick="closeConfirmModal()"
+                            style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div style="padding:24px;">
+                        <div
+                            style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:20px; margin-bottom:20px;">
+                            <div style="display:grid; gap:12px;">
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span style="color:var(--text-dim);">Cliente</span>
+                                    <span id="confirm-modal-name" style="color:white; font-weight:600;">-</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span style="color:var(--text-dim);">Personas</span>
+                                    <span id="confirm-modal-pax" style="color:white;">-</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span style="color:var(--text-dim);">Fecha</span>
+                                    <span id="confirm-modal-date" style="color:white;">-</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span style="color:var(--text-dim);">Tipo</span>
+                                    <span id="confirm-modal-type" style="color:white;">-</span>
                                 </div>
                             </div>
-                            <div style="margin-top:16px;">
-                                <label style="font-size:0.8rem; color:rgba(255,255,255,0.5); display:block; margin-bottom:6px;">Mensaje para el cliente (opcional)</label>
-                                <textarea id="confirm-modal-message" class="rest-confirm-message" placeholder="Ej: Tu reserva está confirmada para el viernes a las 8pm. ¡Te esperamos!"></textarea>
-                            </div>
-                            <div style="display:flex; gap:12px; margin-top:16px;">
-                                <button onclick="closeConfirmModal()"
-                                        style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1);
+                        </div>
+                        <div style="margin-top:16px;">
+                            <label
+                                style="font-size:0.8rem; color:rgba(255,255,255,0.5); display:block; margin-bottom:6px;">Mensaje
+                                para el cliente (opcional)</label>
+                            <textarea id="confirm-modal-message" class="rest-confirm-message"
+                                placeholder="Ej: Tu reserva está confirmada para el viernes a las 8pm. ¡Te esperamos!"></textarea>
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:16px;">
+                            <button onclick="closeConfirmModal()"
+                                style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1);
                                                background:transparent; border-radius:12px; color:white; cursor:pointer; font-family:'Inter',sans-serif;">
-                                    Cancelar
-                                </button>
-                                <button id="confirm-modal-action-btn"
-                                        style="flex:1; padding:12px; border:none; background:#10B981;
+                                Cancelar
+                            </button>
+                            <button id="confirm-modal-action-btn"
+                                style="flex:1; padding:12px; border:none; background:#10B981;
                                                border-radius:12px; color:white; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">
-                                    Confirmar Reserva
-                                </button>
-                            </div>
+                                Confirmar Reserva
+                            </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Modal de Conversación -->
-                <div id="conversation-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
-                    <div style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:520px; width:90%; overflow:hidden;">
-                        <div style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
-                            <h3 style="font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px;">
-                                <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
-                                <span id="convo-modal-name"></span>
-                            </h3>
-                            <button onclick="closeConversationModal()" style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
-                        </div>
-                        <div style="padding:24px;">
-                            <pre id="convo-modal-content"
-                                 style="white-space:pre-wrap; word-break:break-word; color:rgba(255,255,255,0.7);
+            <!-- Modal de Conversación -->
+            <div id="conversation-modal" class="hidden"
+                style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
+                <div
+                    style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:520px; width:90%; overflow:hidden;">
+                    <div
+                        style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px;">
+                            <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+                            <span id="convo-modal-name"></span>
+                        </h3>
+                        <button onclick="closeConversationModal()"
+                            style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div style="padding:24px;">
+                        <pre id="convo-modal-content" style="white-space:pre-wrap; word-break:break-word; color:rgba(255,255,255,0.7);
                                         font-family:'Inter',sans-serif; font-size:0.9rem; line-height:1.6;
                                         background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
                                         border-radius:12px; padding:20px; max-height:400px; overflow-y:auto;"></pre>
-                        </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Modal Editar Reservación -->
-                <div id="restaurant-edit-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
-                    <div style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:480px; width:90%; overflow:hidden;">
-                        <div style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
-                            <h3 style="font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px;">
-                                <ion-icon name="create-outline"></ion-icon> Editar Reservación
-                            </h3>
-                            <button onclick="closeEditModal()" style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+            <!-- Modal Editar Reservación -->
+            <div id="restaurant-edit-modal" class="hidden"
+                style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
+                <div
+                    style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:480px; width:90%; overflow:hidden;">
+                    <div
+                        style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px;">
+                            <ion-icon name="create-outline"></ion-icon> Editar Reservación
+                        </h3>
+                        <button onclick="closeEditModal()"
+                            style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div style="padding:24px; display:grid; gap:16px;">
+                        <input type="hidden" id="edit-modal-index">
+                        <div class="rest-edit-field">
+                            <span class="rest-edit-label">Personas (PAX)</span>
+                            <input type="number" id="edit-modal-pax" class="rest-edit-input" min="1">
                         </div>
-                        <div style="padding:24px; display:grid; gap:16px;">
-                            <input type="hidden" id="edit-modal-index">
-                            <div class="rest-edit-field">
-                                <span class="rest-edit-label">Personas (PAX)</span>
-                                <input type="number" id="edit-modal-pax" class="rest-edit-input" min="1">
-                            </div>
-                            <div class="rest-edit-field">
-                                <span class="rest-edit-label">Tipo de evento</span>
-                                <input type="text" id="edit-modal-tipo" class="rest-edit-input">
-                            </div>
-                            <div class="rest-edit-field">
-                                <span class="rest-edit-label">Teléfono</span>
-                                <input type="tel" id="edit-modal-telefono" class="rest-edit-input">
-                            </div>
-                            <div class="rest-edit-field">
-                                <span class="rest-edit-label">Email</span>
-                                <input type="email" id="edit-modal-email" class="rest-edit-input">
-                            </div>
-                            <div id="edit-modal-warning" class="rest-warning-inline hidden">
-                                <ion-icon name="alert-circle-outline"></ion-icon>
-                                <span>No hay webhook configurado. Los cambios se guardarán solo localmente.</span>
-                            </div>
-                            <div style="display:flex; gap:12px; margin-top:4px;">
-                                <button onclick="closeEditModal()"
-                                        style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1);
+                        <div class="rest-edit-field">
+                            <span class="rest-edit-label">Tipo de evento</span>
+                            <input type="text" id="edit-modal-tipo" class="rest-edit-input">
+                        </div>
+                        <div class="rest-edit-field">
+                            <span class="rest-edit-label">Teléfono</span>
+                            <input type="tel" id="edit-modal-telefono" class="rest-edit-input">
+                        </div>
+                        <div class="rest-edit-field">
+                            <span class="rest-edit-label">Email</span>
+                            <input type="email" id="edit-modal-email" class="rest-edit-input">
+                        </div>
+                        <div id="edit-modal-warning" class="rest-warning-inline hidden">
+                            <ion-icon name="alert-circle-outline"></ion-icon>
+                            <span>No hay webhook configurado. Los cambios se guardarán solo localmente.</span>
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <button onclick="closeEditModal()"
+                                style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1);
                                                background:transparent; border-radius:12px; color:white; cursor:pointer; font-family:'Inter',sans-serif;">
-                                    Cancelar
-                                </button>
-                                <button id="edit-modal-save-btn" onclick="saveEditedReservation()"
-                                        style="flex:1; padding:12px; border:none; background:#7551FF;
+                                Cancelar
+                            </button>
+                            <button id="edit-modal-save-btn" onclick="saveEditedReservation()"
+                                style="flex:1; padding:12px; border:none; background:#7551FF;
                                                border-radius:12px; color:white; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">
-                                    Guardar Cambios
-                                </button>
-                            </div>
+                                Guardar Cambios
+                            </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
         </main>
 
@@ -1336,8 +2246,9 @@
         /* Drag handle pill — solo visible en mobile */
         .drawer-handle {
             display: none;
-            width: 38px; height: 4px;
-            background: rgba(255,255,255,0.15);
+            width: 38px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 2px;
             margin: 10px auto 0;
             flex-shrink: 0;
@@ -1349,18 +2260,22 @@
             padding: 4px 12px 10px;
             flex-shrink: 0;
         }
+
         .drawer-search-wrap ion-icon {
             position: absolute;
-            left: 24px; top: 50%;
+            left: 24px;
+            top: 50%;
             transform: translateY(-60%);
-            color: rgba(255,255,255,0.28);
+            color: rgba(255, 255, 255, 0.28);
             font-size: 0.95rem;
             pointer-events: none;
         }
+
         .drawer-search-input {
-            width: 100%; height: 38px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.07);
+            width: 100%;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 11px;
             padding: 0 12px 0 36px;
             color: #fff;
@@ -1369,13 +2284,22 @@
             outline: none;
             transition: border-color 0.2s;
         }
-        .drawer-search-input::placeholder { color: rgba(255,255,255,0.22); }
-        .drawer-search-input:focus { border-color: rgba(117,81,255,0.45); }
+
+        .drawer-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.22);
+        }
+
+        .drawer-search-input:focus {
+            border-color: rgba(117, 81, 255, 0.45);
+        }
 
         /* clients list needs min-height: 0 to scroll inside flex parent */
-        .drawer-clients-list { min-height: 0; }
+        .drawer-clients-list {
+            min-height: 0;
+        }
 
         @media (max-width: 768px) {
+
             /* ── Drawer → Bottom Sheet ─────────────────────── */
             #client-switcher-drawer {
                 /* Cancelar posicionamiento lateral */
@@ -1388,15 +2312,17 @@
                 max-height: 92dvh !important;
                 /* Forma de sheet */
                 border-right: none !important;
-                border-top: 1px solid rgba(117,81,255,0.18) !important;
+                border-top: 1px solid rgba(117, 81, 255, 0.18) !important;
                 border-radius: 26px 26px 0 0 !important;
                 /* Animación vertical */
                 transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                box-shadow: 0 -28px 70px rgba(0,0,0,0.9) !important;
+                box-shadow: 0 -28px 70px rgba(0, 0, 0, 0.9) !important;
             }
+
             #client-switcher-drawer.open {
                 bottom: 0 !important;
             }
+
             /* Línea accent → arriba del sheet */
             #client-switcher-drawer::after {
                 top: -1px !important;
@@ -1406,10 +2332,16 @@
                 width: 80% !important;
                 height: 2px !important;
             }
+
             /* Mostrar handle y busqueda */
-            .drawer-handle { display: block; }
+            .drawer-handle {
+                display: block;
+            }
+
             /* Ajustar padding de la lista para que quepa bien */
-            .drawer-clients-list { padding: 8px 10px 12px !important; }
+            .drawer-clients-list {
+                padding: 8px 10px 12px !important;
+            }
         }
 
         /* ===== DRAWER LIGHT THEME ===== */
@@ -1417,33 +2349,40 @@
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(4px);
         }
+
         [data-theme="light"] #client-switcher-drawer {
             background: #FFFFFF;
             border-right: 1px solid var(--border-subtle);
             box-shadow: var(--shadow-lg);
         }
+
         [data-theme="light"] .drawer-header {
             border-bottom-color: var(--border-subtle);
         }
+
         [data-theme="light"] .drawer-close-btn {
             background: var(--surface-100);
             border: none;
             color: var(--text-secondary);
         }
+
         [data-theme="light"] .drawer-close-btn:hover {
             background: var(--surface-200);
             color: var(--text-primary);
         }
+
         [data-theme="light"] .drawer-client-item {
             color: var(--text-secondary);
             background: transparent;
             border: none;
         }
+
         [data-theme="light"] .drawer-client-item:hover {
             background: var(--surface-100);
             color: var(--text-primary);
             border: none;
         }
+
         [data-theme="light"] .drawer-client-item.active {
             background: var(--surface-100);
             border: none;
@@ -1451,40 +2390,56 @@
             box-shadow: none;
             font-weight: 600;
         }
+
         [data-theme="light"] .drawer-client-logo {
             background: var(--surface-100);
             border: 1px solid var(--border-subtle);
             box-shadow: none;
         }
+
         [data-theme="light"] .drawer-footer {
             border-top-color: var(--border-subtle);
         }
+
         [data-theme="light"] .drawer-hub-link {
             color: var(--text-muted);
         }
+
         [data-theme="light"] .drawer-hub-link:hover {
             background: var(--surface-100);
             color: var(--text-primary);
         }
+
         [data-theme="light"] .drawer-handle {
             background: var(--surface-300);
         }
+
         [data-theme="light"] .drawer-search-wrap ion-icon {
             color: var(--text-muted);
         }
+
         [data-theme="light"] .drawer-search-input {
             background: var(--surface-100);
             border: 1px solid transparent;
             color: var(--text-primary);
         }
-        [data-theme="light"] .drawer-search-input::placeholder { color: var(--text-muted); }
-        [data-theme="light"] .drawer-search-input:focus { background: #FFFFFF; border-color: var(--surface-300); }
+
+        [data-theme="light"] .drawer-search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .drawer-search-input:focus {
+            background: #FFFFFF;
+            border-color: var(--surface-300);
+        }
+
         [data-theme="light"] #switcher-toggle-btn {
             background: var(--accent-purple) !important;
             border: none !important;
             color: #FFFFFF !important;
             box-shadow: var(--shadow-md) !important;
         }
+
         [data-theme="light"] #switcher-toggle-btn:hover {
             box-shadow: var(--shadow-lg) !important;
         }
@@ -1503,7 +2458,7 @@
         <div class="drawer-search-wrap">
             <ion-icon name="search-outline"></ion-icon>
             <input type="text" class="drawer-search-input" placeholder="Buscar cliente..."
-                   oninput="filterDrawerClients(this.value)" autocomplete="off" id="drawer-search-input">
+                oninput="filterDrawerClients(this.value)" autocomplete="off" id="drawer-search-input">
         </div>
         <div id="drawer-clients-list" class="drawer-clients-list">
             <!-- JS Generated -->
@@ -1852,29 +2807,117 @@
         }
 
         /* ===== VENTAS PANEL LIGHT ===== */
-        [data-theme="light"] #ventas-backdrop { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); }
-        [data-theme="light"] #ventas-panel { background: #FFFFFF; border-left: 1px solid var(--border-subtle); box-shadow: var(--shadow-lg); }
-        [data-theme="light"] .vp-header { border-bottom-color: var(--border-subtle); }
-        [data-theme="light"] .vp-title { color: var(--text-primary); }
-        [data-theme="light"] .vp-close { background: var(--surface-100); border: none; color: var(--text-secondary); }
-        [data-theme="light"] .vp-close:hover { background: var(--surface-200); color: var(--text-primary); }
-        [data-theme="light"] .vp-form { border-bottom-color: var(--border-subtle); background: var(--surface-50); }
-        [data-theme="light"] .vp-form-title { color: var(--text-muted); }
-        [data-theme="light"] .vp-label { color: var(--text-muted); }
-        [data-theme="light"] .vp-input { background: #FFFFFF; border: 1px solid var(--border-subtle); color: var(--text-primary); }
-        [data-theme="light"] .vp-input:focus { border-color: var(--surface-300); box-shadow: 0 0 0 3px rgba(0,0,0,0.04); }
-        [data-theme="light"] .vp-input::placeholder { color: var(--text-muted); }
-        [data-theme="light"] .vp-btn-cancel { border: 1px solid var(--border-subtle); color: var(--text-secondary); background: #FFFFFF; }
-        [data-theme="light"] .vp-list-title { color: var(--text-muted); }
-        [data-theme="light"] .vp-empty { color: var(--text-muted); }
-        [data-theme="light"] .vp-item { background: #FFFFFF; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-xs); }
-        [data-theme="light"] .vp-item:hover { border-color: var(--surface-300); box-shadow: var(--shadow-sm); }
-        [data-theme="light"] .vp-item-monto { color: var(--text-primary); }
-        [data-theme="light"] .vp-item-meta { color: var(--text-muted); }
-        [data-theme="light"] .vp-icon-btn { background: var(--surface-100); border: 1px solid var(--border-subtle); color: var(--text-secondary); }
-        [data-theme="light"] .vp-icon-btn:hover { background: var(--surface-200); color: var(--text-primary); }
-        [data-theme="light"] .vp-loading { color: var(--text-muted); }
-        [data-theme="light"] .vp-list::-webkit-scrollbar-thumb { background: var(--surface-200); border-radius: 999px; }
+        [data-theme="light"] #ventas-backdrop {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+        }
+
+        [data-theme="light"] #ventas-panel {
+            background: #FFFFFF;
+            border-left: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-lg);
+        }
+
+        [data-theme="light"] .vp-header {
+            border-bottom-color: var(--border-subtle);
+        }
+
+        [data-theme="light"] .vp-title {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .vp-close {
+            background: var(--surface-100);
+            border: none;
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .vp-close:hover {
+            background: var(--surface-200);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .vp-form {
+            border-bottom-color: var(--border-subtle);
+            background: var(--surface-50);
+        }
+
+        [data-theme="light"] .vp-form-title {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .vp-label {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .vp-input {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .vp-input:focus {
+            border-color: var(--surface-300);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+        }
+
+        [data-theme="light"] .vp-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .vp-btn-cancel {
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            background: #FFFFFF;
+        }
+
+        [data-theme="light"] .vp-list-title {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .vp-empty {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .vp-item {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-xs);
+        }
+
+        [data-theme="light"] .vp-item:hover {
+            border-color: var(--surface-300);
+            box-shadow: var(--shadow-sm);
+        }
+
+        [data-theme="light"] .vp-item-monto {
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .vp-item-meta {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .vp-icon-btn {
+            background: var(--surface-100);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .vp-icon-btn:hover {
+            background: var(--surface-200);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .vp-loading {
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .vp-list::-webkit-scrollbar-thumb {
+            background: var(--surface-200);
+            border-radius: 999px;
+        }
+
         /* Guardar Venta button */
         [data-theme="light"] .vp-btn-save {
             background: #2563EB !important;
@@ -1884,14 +2927,17 @@
             font-weight: 600;
             box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
         }
+
         [data-theme="light"] .vp-btn-save:hover {
             background: #1D4ED8 !important;
         }
+
         /* Input focus */
         [data-theme="light"] .vp-input:focus {
             border-color: #2563EB !important;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
         }
+
         /* Date input styling */
         [data-theme="light"] .vp-input[type="date"] {
             color-scheme: light;
@@ -2181,14 +3227,14 @@
 
         // Limpiar búsqueda al cerrar el drawer
         const _origCloseSwitcher = window.closeSwitcher;
-        window.closeSwitcher = function() {
+        window.closeSwitcher = function () {
             if (_origCloseSwitcher) _origCloseSwitcher();
             const inp = document.getElementById('drawer-search-input');
             if (inp) { inp.value = ''; filterDrawerClients(''); }
         };
     </script>
-<!-- Toast Notifications -->
-<div id="toast-container" class="toast-container"></div>
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
 
 </body>
 
