@@ -878,42 +878,23 @@ function renderTable() {
 
 function renderLogRow(lead, index) {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-
-    // Icono de fuente
-    let sourceIcon = 'globe-outline';
-    const source = (lead.utm_source || '').toLowerCase();
-    if (source.includes('facebook')) sourceIcon = 'logo-facebook';
-    else if (source.includes('instagram')) sourceIcon = 'logo-instagram';
-    else if (source.includes('google')) sourceIcon = 'logo-google';
-    else if (source.includes('tiktok')) sourceIcon = 'logo-tiktok';
-    else if (source.includes('whatsapp')) sourceIcon = 'logo-whatsapp';
-
     const qualified = isQualified(lead.estatus);
 
-    // Status Badge Styling for Light/Dark
     let badgeStyle = '';
     if (isLight) {
-        // Light mode: Darker text, solid subtle background
-        const textColor = qualified ? '#065f46' : '#991b1b'; // Dark green or Dark red
-        const bgColor = qualified ? '#d1fae5' : '#fee2e2'; // Light green or Light red
+        const textColor = qualified ? '#065f46' : '#991b1b';
+        const bgColor = qualified ? '#d1fae5' : '#fee2e2';
         badgeStyle = `color: ${textColor}; background: ${bgColor}; border: 1px solid ${qualified ? '#a7f3d0' : '#fecaca'};`;
     } else {
-        // Dark mode: keep existing logic or improve
         badgeStyle = `color: ${qualified ? state.config.themeSecondary : '#ef4444'}; background: rgba(255,255,255,0.05);`;
     }
 
     return `
         <tr style="border-bottom: 1px solid var(--border-subtle);">
-            <td style="color: var(--text-muted); padding: 12px 0;">${index + 1}</td>
-            <td style="color: var(--text-primary); font-weight: 600;">
-                 <div style="display:flex; align-items:center; gap:10px;">
-                    <ion-icon name="${sourceIcon}" style="font-size: 1.2rem; color: var(--accent-primary);"></ion-icon>
-                    <span>${lead.utm_source || 'Directo / Web'}</span>
-                </div>
-            </td>
-            <td style="color: var(--text-secondary);">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td> 
-            <td style="color: var(--text-muted); font-size: 0.85rem;">${lead.utm_campaign || 'N/A'}</td>
-            <td>
+            <td style="color: var(--text-secondary); padding: 12px 20px;">
+                ${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}
+            </td> 
+            <td style="padding: 12px 20px;">
                 <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">
                     ${lead.estatus}
                 </span>

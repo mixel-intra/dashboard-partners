@@ -1612,25 +1612,21 @@ tr:hover td {
         0 12px 24px -8px rgba(15, 23, 42, 0.05);
 }
 
-/* Base Body Update for Light Theme */
+/* Base Body Update for Light Theme — Performance Optimized */
 [data-theme="light"] body {
     background-color: #FAFCFF;
-    /* Blancos ultra luminosos */
     background-image:
-        radial-gradient(ellipse at 0% 0%, rgba(99, 102, 241, 0.04) 0%, transparent 60%),
-        radial-gradient(ellipse at 100% 30%, rgba(15, 23, 42, 0.03) 0%, transparent 60%),
-        radial-gradient(ellipse at 50% 100%, rgba(59, 130, 246, 0.04) 0%, transparent 60%),
-        radial-gradient(ellipse at 0% 100%, rgba(15, 23, 42, 0.02) 0%, transparent 60%);
+        radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.02) 0%, transparent 50%);
     background-attachment: fixed;
     color: var(--text-primary);
 }
 
 /* --- Sidebar --- */
 [data-theme="light"] .sidebar {
-    background: rgba(255, 255, 255, 0.85);
-    /* Glassmorphismo sutil */
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-right: 1px solid rgba(15, 23, 42, 0.05);
     box-shadow: 4px 0 24px rgba(15, 23, 42, 0.02);
     z-index: 10;
@@ -1713,9 +1709,8 @@ tr:hover td {
 /* --- Header — glassy separation but DARK for logo contrast --- */
 [data-theme="light"] .main-header {
     background: #0f172a;
-    /* Slate 900 */
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 24px -6px rgba(15, 23, 42, 0.1);
 }
@@ -1847,20 +1842,15 @@ tr:hover td {
 
 /* --- Cards --- */
 [data-theme="light"] .card-quantix {
-    background: rgba(255, 255, 255, 0.65);
-    /* Increased transparency for glassy effect */
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(255, 255, 255, 1);
-    border-radius: 28px;
-    box-shadow:
-        0 4px 6px -2px rgba(15, 23, 42, 0.02),
-        0 12px 32px -8px rgba(15, 23, 42, 0.08),
-        inset 0 1px 1px rgba(255, 255, 255, 1);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #FFFFFF;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 24px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
     padding: 24px;
+    will-change: transform, box-shadow;
 }
 
 [data-theme="light"] .card-quantix:hover {
