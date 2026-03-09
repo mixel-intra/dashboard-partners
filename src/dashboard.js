@@ -59,6 +59,16 @@ const DEFAULT_CARD_LABELS = {
     "7": { title: "Costo por oportunidad calificada", description: "" }
 };
 
+const HOTEL_CARD_LABELS = {
+    "1": { title: "Cotizaciones de eventos canalizados a ventas", description: "calidad del tráfico" },
+    "2": { title: "Tasa de Conversión", description: "cotizaciones de eventos / registros" },
+    "3": { title: "Ventas", description: "ingresos" },
+    "4": { title: "ROI", description: "Ventas / Inversión en pauta" },
+    "5": { title: "Registros", description: "Personas que iniciaron una conversación" },
+    "6": { title: "Inversión en Pauta", description: "Inversión en meta / google ads" },
+    "7": { title: "Costo por cotización de evento canalizado a ventas", description: "inversión en pauta / total de cotizaciones" }
+};
+
 // --- Loading Screen ---
 function setLoaderProgress(pct) {
     const bar = document.getElementById('loader-bar');
@@ -172,9 +182,13 @@ async function loadConfig() {
 }
 
 function applyCardLabels(customLabels) {
+    // Use hotel template as fallback when client is hotel and has no custom labels
+    const hasCustom = Object.keys(customLabels).length > 0;
+    const fallback = (!hasCustom && state.clientType === 'hotel') ? HOTEL_CARD_LABELS : DEFAULT_CARD_LABELS;
+
     for (let i = 1; i <= 7; i++) {
         const custom = customLabels[i] || customLabels[String(i)] || {};
-        const defaults = DEFAULT_CARD_LABELS[String(i)];
+        const defaults = fallback[String(i)];
         const titleEl = document.getElementById(`label-main-${i}`);
         const descEl = document.getElementById(`label-sub-${i}`);
         if (titleEl) titleEl.textContent = custom.title || defaults.title;
