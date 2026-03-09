@@ -493,16 +493,26 @@
 
         /* ===== MOBILE — rediseño completo ===== */
         @media (max-width: 768px) {
+
+            html,
+            body {
+                overflow-y: auto !important;
+                height: auto !important;
+                position: relative !important;
+            }
+
             body {
                 flex-direction: column !important;
-                height: auto !important;
-                min-height: 100vh !important;
-                overflow-y: auto !important;
+                display: block !important;
+                /* Force block to let content stack */
             }
 
             /* Panel de branding oculto — no hay espacio en mobile */
             .left-panel {
                 display: none !important;
+                height: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
 
             /* Panel derecho = pantalla completa scrollable */
@@ -510,114 +520,99 @@
                 flex: none !important;
                 width: 100% !important;
                 padding: 0 !important;
-                display: flex !important;
-                flex-direction: column !important;
+                display: block !important;
                 overflow-y: visible !important;
+                min-height: 100vh !important;
             }
 
             /* Header sticky con logo + saludo + acciones */
             .user-greeting {
                 position: sticky;
                 top: 0;
-                z-index: 50;
-                flex-shrink: 0;
-                background: rgba(5, 5, 5, 0.97);
+                z-index: 100;
+                background: rgba(5, 5, 5, 0.98);
                 backdrop-filter: blur(24px);
                 -webkit-backdrop-filter: blur(24px);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-                padding: 13px 18px;
-                margin-bottom: 0;
-                gap: 10px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                padding: 15px 18px;
+                margin-bottom: 10px;
+                display: flex !important;
+                align-items: center;
+                gap: 12px;
             }
 
-            /* Logo intra mini en header */
-            .user-greeting::before {
-                content: '';
-                display: block;
-                width: 44px;
-                height: 18px;
-                background: url('src/assets/intra-logo.png') no-repeat center/contain;
-                flex-shrink: 0;
-                opacity: 0.7;
-                order: -1;
-            }
-
-            .avatar {
-                width: 30px;
-                height: 30px;
-                font-size: 0.78rem;
-            }
-
-            .greeting-text h2 {
-                font-size: 1rem;
-                letter-spacing: -0.2px;
-            }
-
-            .greeting-text p {
-                font-size: 0.72rem;
-            }
-
-            .sess-btn {
-                width: 34px;
-                height: 34px;
-                font-size: 0.95rem;
-                border-radius: 9px;
-            }
-
-            /* Área de contenido scrollable */
+            /* Area de contenido */
             #admin-badge-area {
-                padding: 14px 18px 0;
-                flex-shrink: 0;
+                padding: 0 18px;
             }
 
             .env-badge {
-                font-size: 0.72rem;
-                padding: 5px 12px;
-                margin-bottom: 0;
+                margin-bottom: 15px;
+                width: 100%;
+                display: flex;
+                justify-content: center;
             }
 
             .hub-search-wrap {
-                flex-shrink: 0;
-                margin: 12px 18px 10px;
-                width: auto;
+                margin: 0 18px 20px;
+                width: calc(100% - 36px);
             }
 
-            /* Grid 2 columnas en mobile */
+            /* Grid 1 columna en mobile para mejor legibilidad */
             #clients-container.grid-container {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-                padding: 0 18px 32px;
-                flex: 1;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 12px !important;
+                padding: 0 18px 40px !important;
             }
 
-            /* Cards más compactas */
+            /* Cards más compactas pero full width */
             .client-card {
-                height: 148px;
+                height: auto !important;
+                min-height: 120px !important;
+                transform: none !important;
+                opacity: 1 !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                padding-right: 40px !important;
             }
 
             .card-logo-stage {
-                padding: 16px 14px 6px;
-            }
-
-            .card-logo-stage img {
-                max-width: 90px;
-                max-height: 44px;
-            }
-
-            .card-letter {
-                font-size: 2rem;
+                flex: 0 0 100px !important;
+                padding: 15px !important;
             }
 
             .card-info {
-                padding: 0 10px 10px;
+                padding: 15px 0 !important;
             }
 
             .card-name {
-                font-size: 0.78rem;
+                font-size: 0.95rem !important;
             }
 
-            .card-slug {
-                font-size: 0.62rem;
+            .card-arrow {
+                top: 50% !important;
+                transform: translateY(-50%) scale(1) !important;
+                opacity: 0.3 !important;
+            }
+        }
+
+        /* --- Mejora de tabla en movil (Dashboard) --- */
+        @media (max-width: 600px) {
+            .table-card {
+                padding: 15px !important;
+            }
+
+            th,
+            td {
+                padding: 12px 10px !important;
+                font-size: 0.8rem !important;
+            }
+
+            .status-badge {
+                padding: 3px 6px !important;
+                font-size: 0.7rem !important;
+                letter-spacing: 0 !important;
             }
         }
 
