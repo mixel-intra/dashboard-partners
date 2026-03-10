@@ -13,9 +13,8 @@
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <link rel="stylesheet" href="./src/theme-intra.css">
     <link rel="stylesheet" href="./src/style.css">
-    <!-- Flatpickr -->
+    <!-- Flatpickr (solo base CSS, dark theme custom en style.css) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -36,6 +35,8 @@
             localStorage.setItem('intra-theme', next);
             var icon = document.getElementById('theme-icon');
             if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
+            var mIcon = document.getElementById('mobile-theme-icon');
+            if (mIcon) mIcon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
             // Re-render charts with new theme colors
             if (typeof renderDashboard === 'function') {
                 try { renderDashboard(); } catch (e) { }
@@ -46,7 +47,29 @@
             var t = document.documentElement.getAttribute('data-theme');
             var icon = document.getElementById('theme-icon');
             if (icon) icon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
+            var mIcon = document.getElementById('mobile-theme-icon');
+            if (mIcon) mIcon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
         });
+
+        // Mobile menu bottom sheet
+        function toggleMobileMenu() {
+            var backdrop = document.getElementById('mobile-menu-backdrop');
+            var sheet = document.getElementById('mobile-menu-sheet');
+            if (!backdrop || !sheet) return;
+            var isOpen = sheet.classList.contains('open');
+            if (isOpen) {
+                closeMobileMenu();
+            } else {
+                backdrop.classList.add('open');
+                sheet.classList.add('open');
+            }
+        }
+        function closeMobileMenu() {
+            var backdrop = document.getElementById('mobile-menu-backdrop');
+            var sheet = document.getElementById('mobile-menu-sheet');
+            if (backdrop) backdrop.classList.remove('open');
+            if (sheet) sheet.classList.remove('open');
+        }
     </script>
 
     <!-- ===== LOADING SCREEN ===== -->
@@ -1307,22 +1330,27 @@
             </div>
 
             <div class="header-right">
-                <div class="intra-branding">
-                    <img src="src/assets/intra-logo.png" alt="Intra" class="intra-logo-img">
-                    <span class="partner-tag">Partner Portal</span>
+                <div class="desktop-actions">
+                    <div class="intra-branding">
+                        <img src="src/assets/intra-logo.png" alt="Intra" class="intra-logo-img">
+                        <span class="partner-tag">Partner Portal</span>
+                    </div>
+                    <button onclick="toggleTheme()" class="logout-btn" id="theme-toggle-btn" title="Cambiar tema">
+                        <ion-icon name="moon-outline" id="theme-icon"></ion-icon>
+                    </button>
+                    <button id="ventas-toggle-btn" onclick="toggleVentas()" class="logout-btn" title="Registrar ventas"
+                        style="background: rgba(1,241,227,0.08); border-color: rgba(1,241,227,0.18); color: rgba(1,241,227,0.8);">
+                        <ion-icon name="cash-outline"></ion-icon>
+                    </button>
+                    <button onclick="openChangePasswordModal()" class="logout-btn" title="Cambiar contraseña">
+                        <ion-icon name="key-outline"></ion-icon>
+                    </button>
+                    <button onclick="logout()" class="logout-btn" title="Cerrar sesión">
+                        <ion-icon name="log-out-outline"></ion-icon>
+                    </button>
                 </div>
-                <button onclick="toggleTheme()" class="logout-btn" id="theme-toggle-btn" title="Cambiar tema">
-                    <ion-icon name="moon-outline" id="theme-icon"></ion-icon>
-                </button>
-                <button id="ventas-toggle-btn" onclick="toggleVentas()" class="logout-btn" title="Registrar ventas"
-                    style="background: rgba(1,241,227,0.08); border-color: rgba(1,241,227,0.18); color: rgba(1,241,227,0.8);">
-                    <ion-icon name="cash-outline"></ion-icon>
-                </button>
-                <button onclick="openChangePasswordModal()" class="logout-btn" title="Cambiar contraseña">
-                    <ion-icon name="key-outline"></ion-icon>
-                </button>
-                <button onclick="logout()" class="logout-btn" title="Cerrar sesión">
-                    <ion-icon name="log-out-outline"></ion-icon>
+                <button id="mobile-menu-btn" class="logout-btn" onclick="toggleMobileMenu()" title="Menú">
+                    <ion-icon name="ellipsis-vertical-outline"></ion-icon>
                 </button>
             </div>
         </header>
@@ -3425,6 +3453,35 @@
     </script>
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- Mobile Menu Bottom Sheet -->
+    <div id="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
+    <div id="mobile-menu-sheet">
+        <div class="mm-handle"></div>
+        <div class="mm-items">
+            <button class="mm-item" onclick="toggleTheme(); closeMobileMenu();">
+                <div class="mm-icon"><ion-icon name="moon-outline" id="mobile-theme-icon"></ion-icon></div>
+                <span>Cambiar tema</span>
+            </button>
+            <button class="mm-item" onclick="toggleVentas(); closeMobileMenu();">
+                <div class="mm-icon" style="background:rgba(1,241,227,0.1);"><ion-icon name="cash-outline" style="color:rgba(1,241,227,0.8);"></ion-icon></div>
+                <span>Registrar ventas</span>
+            </button>
+            <button class="mm-item" onclick="openChangePasswordModal(); closeMobileMenu();">
+                <div class="mm-icon"><ion-icon name="key-outline"></ion-icon></div>
+                <span>Cambiar contraseña</span>
+            </button>
+            <button class="mm-item" onclick="toggleSwitcher(); closeMobileMenu();">
+                <div class="mm-icon" style="background:rgba(117,81,255,0.1);"><ion-icon name="apps-outline" style="color:rgba(117,81,255,0.8);"></ion-icon></div>
+                <span>Cambiar dashboard</span>
+            </button>
+            <div class="mm-divider"></div>
+            <button class="mm-item mm-danger" onclick="logout();">
+                <div class="mm-icon" style="background:rgba(239,68,68,0.1);"><ion-icon name="log-out-outline" style="color:#ef4444;"></ion-icon></div>
+                <span>Cerrar sesión</span>
+            </button>
+        </div>
+    </div>
 
 </body>
 

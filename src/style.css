@@ -343,37 +343,329 @@ body {
     opacity: 0.4;
 }
 
-/* Custom Flatpickr Overrides */
+/* ===== Flatpickr — Full Premium Override ===== */
+
+/* Reset ALL flatpickr defaults aggressively */
 .flatpickr-calendar {
-    background: #121318 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
-    border-radius: 16px !important;
+    background: #0d0d12 !important;
+    border: none !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+    border-radius: 24px !important;
+    padding: 20px 16px 16px !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    width: 340px !important;
+    overflow: hidden;
+}
+
+.flatpickr-calendar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(117, 81, 255, 0.3), transparent);
+}
+
+/* ── Month Navigation ── */
+.flatpickr-months {
+    padding: 0 4px 12px !important;
+    align-items: center !important;
+}
+
+.flatpickr-months .flatpickr-month {
+    height: 36px !important;
+    overflow: visible !important;
+}
+
+.flatpickr-current-month {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    padding-top: 4px !important;
+    letter-spacing: -0.2px !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    background: transparent !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+}
+
+.flatpickr-current-month input.cur-year {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+}
+
+.numInputWrapper {
+    background: transparent !important;
+}
+
+.numInputWrapper:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-radius: 8px !important;
+}
+
+.numInputWrapper span {
+    border: none !important;
+    background: transparent !important;
+}
+
+.numInputWrapper span:after {
+    border-color: rgba(255, 255, 255, 0.4) transparent transparent !important;
+}
+
+.numInputWrapper span.arrowUp:after {
+    border-color: transparent transparent rgba(255, 255, 255, 0.4) !important;
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    padding: 6px 10px !important;
+    border-radius: 10px !important;
+    transition: background 0.15s !important;
+    position: static !important;
+    height: 32px !important;
+    width: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-months .flatpickr-next-month:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.flatpickr-months .flatpickr-prev-month svg,
+.flatpickr-months .flatpickr-next-month svg {
+    fill: rgba(255, 255, 255, 0.5) !important;
+    width: 12px !important;
+    height: 12px !important;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg {
+    fill: #fff !important;
+}
+
+/* ── Weekday Headers ── */
+.flatpickr-weekdays {
+    padding: 0 !important;
+    margin-bottom: 4px !important;
+}
+
+span.flatpickr-weekday {
+    color: rgba(255, 255, 255, 0.25) !important;
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+}
+
+/* ── Day Cells ── */
+.flatpickr-days {
+    width: 100% !important;
+}
+
+.dayContainer {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    padding: 0 2px !important;
+}
+
+.flatpickr-day {
+    color: rgba(255, 255, 255, 0.75) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    max-width: 40px !important;
+    margin: 1px !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease !important;
+}
+
+.flatpickr-day:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: none !important;
+    color: #fff !important;
+}
+
+.flatpickr-day.today {
+    background: rgba(117, 81, 255, 0.12) !important;
+    border: none !important;
+    color: #a78bfa !important;
+    font-weight: 700 !important;
+    position: relative;
 }
 
 .flatpickr-day.selected,
 .flatpickr-day.startRange,
 .flatpickr-day.endRange {
-    background: var(--accent-purple) !important;
-    border-color: var(--accent-purple) !important;
+    background: #7551FF !important;
+    border: none !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 16px rgba(117, 81, 255, 0.4), 0 0 0 2px rgba(117, 81, 255, 0.15) !important;
+}
+
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover {
+    background: #8b6aff !important;
 }
 
 .flatpickr-day.inRange {
-    background: rgba(117, 81, 255, 0.2) !important;
-    box-shadow: -5px 0 0 rgba(117, 81, 255, 0.2), 5px 0 0 rgba(117, 81, 255, 0.2) !important;
+    background: rgba(117, 81, 255, 0.12) !important;
+    box-shadow: -5px 0 0 rgba(117, 81, 255, 0.12), 5px 0 0 rgba(117, 81, 255, 0.12) !important;
+    border: none !important;
+    color: #c4b5fd !important;
 }
 
-.flatpickr-day:hover {
-    background: rgba(255, 255, 255, 0.05) !important;
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.flatpickr-current-month .flatpickr-monthDropdown-months {
+.flatpickr-day.prevMonthDay:hover,
+.flatpickr-day.nextMonthDay:hover {
     background: transparent !important;
+    color: rgba(255, 255, 255, 0.1) !important;
 }
 
+/* Hide arrows */
 .flatpickr-calendar.arrowTop:before,
-.flatpickr-calendar.arrowTop:after {
-    border-bottom-color: #121318 !important;
+.flatpickr-calendar.arrowTop:after,
+.flatpickr-calendar.arrowBottom:before,
+.flatpickr-calendar.arrowBottom:after {
+    display: none !important;
+}
+
+/* ── Mobile: Full-width bottom sheet ── */
+@media (max-width: 768px) {
+    .flatpickr-calendar {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        border-radius: 24px 24px 0 0 !important;
+        padding: 12px 20px 20px !important;
+        padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+        box-shadow: 0 -12px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+        z-index: 10002 !important;
+    }
+
+    /* Handle bar */
+    .flatpickr-calendar::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 2px;
+    }
+
+    .flatpickr-months {
+        padding: 8px 0 12px !important;
+    }
+
+    .flatpickr-day {
+        height: 44px !important;
+        line-height: 44px !important;
+        max-width: 44px !important;
+        font-size: 0.92rem !important;
+        border-radius: 14px !important;
+    }
+
+    .dayContainer {
+        gap: 2px !important;
+        padding: 0 !important;
+    }
+
+    .flatpickr-innerContainer {
+        padding: 0 !important;
+    }
+}
+
+/* ── Light Mode ── */
+[data-theme="light"] .flatpickr-calendar {
+    background: #ffffff !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .flatpickr-calendar::before {
+    background: linear-gradient(90deg, transparent, rgba(117, 81, 255, 0.15), transparent);
+}
+
+[data-theme="light"] .flatpickr-current-month,
+[data-theme="light"] .flatpickr-current-month .flatpickr-monthDropdown-months,
+[data-theme="light"] .flatpickr-current-month input.cur-year {
+    color: #1a1a1a !important;
+}
+
+[data-theme="light"] .flatpickr-months .flatpickr-prev-month svg,
+[data-theme="light"] .flatpickr-months .flatpickr-next-month svg {
+    fill: rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="light"] .flatpickr-months .flatpickr-prev-month:hover,
+[data-theme="light"] .flatpickr-months .flatpickr-next-month:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] span.flatpickr-weekday {
+    color: rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="light"] .flatpickr-day {
+    color: rgba(0, 0, 0, 0.7) !important;
+}
+
+[data-theme="light"] .flatpickr-day:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+    color: #000 !important;
+}
+
+[data-theme="light"] .flatpickr-day.today {
+    background: rgba(117, 81, 255, 0.08) !important;
+    color: #6d28d9 !important;
+}
+
+[data-theme="light"] .flatpickr-day.flatpickr-disabled,
+[data-theme="light"] .flatpickr-day.prevMonthDay,
+[data-theme="light"] .flatpickr-day.nextMonthDay {
+    color: rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .flatpickr-day.inRange {
+    background: rgba(117, 81, 255, 0.08) !important;
+    box-shadow: -5px 0 0 rgba(117, 81, 255, 0.08), 5px 0 0 rgba(117, 81, 255, 0.08) !important;
+    color: #6d28d9 !important;
+}
+
+@media (max-width: 768px) {
+    [data-theme="light"] .flatpickr-calendar {
+        box-shadow: 0 -12px 60px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+    }
+
+    [data-theme="light"] .flatpickr-calendar::after {
+        background: rgba(0, 0, 0, 0.12);
+    }
 }
 
 .client-branding {
@@ -462,6 +754,18 @@ body {
     color: #FF4444;
     border-color: rgba(255, 77, 77, 0.2);
 }
+
+/* Desktop actions wrapper */
+.desktop-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Mobile menu — hidden on desktop */
+#mobile-menu-btn { display: none !important; }
+#mobile-menu-backdrop { display: none !important; }
+#mobile-menu-sheet { display: none !important; }
 
 /* Top Header */
 .top-header {
@@ -1147,66 +1451,25 @@ tr:hover td {
 
 /* Mobile Devices (iPhone 16, etc.) */
 @media (max-width: 768px) {
+
+    /* ── Header compacto ── */
     .main-header {
         height: auto;
-        padding: 0.8rem 1.2rem;
+        padding: 14px 16px;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        gap: 8px;
-        min-height: 70px;
-    }
-
-    .content-header-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .header-title-area {
-        width: 100%;
-    }
-
-    .global-range-selector {
-        width: 100%;
-    }
-
-    .range-display {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .range-dropdown {
-        width: 100%;
-        left: 0;
-        right: 0;
+        gap: 12px;
+        min-height: 56px;
     }
 
     .header-left {
         flex: 1;
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .welcome-area {
-        display: flex !important;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0;
-    }
-
-    .welcome-label {
-        display: none;
-        /* Hide "Bienvenido," on mobile to save space */
+        min-width: 0;
     }
 
     .client-branding {
-        justify-content: flex-start;
-        width: auto;
-        gap: 12px;
+        gap: 10px;
     }
 
     .client-logo-img {
@@ -1214,53 +1477,261 @@ tr:hover td {
         margin: 0;
     }
 
-    .header-right {
-        position: relative;
-        right: 0;
-        gap: 8px;
+    .welcome-area {
+        display: flex !important;
+        flex-direction: column;
+        min-width: 0;
     }
 
-    .intra-branding {
+    .welcome-label {
         display: none;
-    }
-
-    .intra-logo-img {
-        height: 20px;
-    }
-
-    .logout-btn {
-        width: 38px;
-        height: 38px;
-        font-size: 1.2rem;
     }
 
     .welcome-name {
         font-size: 0.95rem !important;
-        font-weight: 700;
+        font-weight: 600;
         line-height: 1.2;
     }
 
     .client-name-header {
-        font-size: 0.75rem !important;
+        font-size: 0.72rem !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 160px;
-        /* Reduced to avoid pushing buttons */
-        opacity: 0.9;
-        margin-top: 0;
+        max-width: 180px;
+        opacity: 0.7;
+        margin-top: 1px;
+    }
+
+    /* Ocultar botones desktop, mostrar solo menú móvil */
+    .desktop-actions {
+        display: none !important;
+    }
+
+    #mobile-menu-btn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        border: none;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 1.2rem;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    /* ── Mobile Menu Bottom Sheet ── */
+    #mobile-menu-backdrop {
+        display: block !important;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+    }
+
+    #mobile-menu-backdrop.open {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    #mobile-menu-sheet {
+        display: block !important;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+        background: #141416;
+        border-radius: 20px 20px 0 0;
+        padding: 8px 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    #mobile-menu-sheet.open {
+        transform: translateY(0);
+    }
+
+    .mm-handle {
+        width: 36px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 2px;
+        margin: 0 auto 12px;
+    }
+
+    .mm-items {
+        padding: 0 12px 16px;
+    }
+
+    .mm-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        padding: 14px 16px;
+        border: none;
+        border-radius: 14px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.85);
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-align: left;
+    }
+
+    .mm-item:active {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .mm-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.6);
+        flex-shrink: 0;
+    }
+
+    .mm-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.06);
+        margin: 4px 16px;
+    }
+
+    .mm-danger span {
+        color: #ef4444;
+    }
+
+    /* ── Compactar zona header-content ── */
+    .main-content {
+        padding-top: 0.5rem !important;
+    }
+
+    .content-header-row {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .header-title-area {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .live-label {
+        display: none;
+    }
+
+    .section-headline {
+        font-size: 1.3rem !important;
+        margin-bottom: 0 !important;
+        white-space: nowrap;
+    }
+
+    .globe-icon {
+        display: none !important;
+    }
+
+    .global-range-selector {
+        flex-shrink: 0;
+    }
+
+    .range-display {
+        padding: 8px 12px;
+        border-radius: 10px;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 0.8rem;
+    }
+
+    .range-display #current-range-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .range-display .chevron {
+        font-size: 0.65rem;
+    }
+
+    /* Dropdown como bottom sheet en mobile */
+    .range-dropdown {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 16px 12px !important;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+        background: #141416 !important;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5) !important;
+        z-index: 10001 !important;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .range-dropdown::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 2px;
+        margin: 0 auto 12px;
+    }
+
+    .range-opt {
+        padding: 14px 16px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+    }
+
+    .custom-range-inputs {
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
     }
 
     .main-content {
-        padding: 1rem;
+        padding: 0.5rem 1rem;
         width: 100%;
         max-width: 100vw;
         overflow-x: hidden;
     }
 
-    .section-headline {
-        font-size: 1.6rem;
-        margin-bottom: 1rem;
+    /* Dashboard tabs compactos */
+    .dashboard-tabs {
+        margin-bottom: 10px;
+    }
+
+    /* Ocultar FAB switcher en móvil */
+    #switcher-toggle-btn {
+        display: none !important;
     }
 
     .cards-grid {
@@ -2034,4 +2505,40 @@ tr:hover td {
     background: var(--accent-primary) !important;
     color: #FFFFFF !important;
     border-color: var(--accent-primary) !important;
+}
+
+/* ── Light mode: Mobile menu bottom sheet ── */
+[data-theme="light"] #mobile-menu-sheet {
+    background: #ffffff;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .mm-handle {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .mm-item {
+    color: #1a1a1a;
+}
+
+[data-theme="light"] .mm-item:active {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .mm-icon {
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .mm-divider {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] #mobile-menu-btn {
+    background: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] #mobile-menu-backdrop {
+    background: rgba(0, 0, 0, 0.3);
 }
