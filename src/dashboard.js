@@ -564,32 +564,58 @@ function exportLeadsToExcel() {
         return;
     }
 
-    // BOM for UTF-8 Excel compatibility
-    const BOM = '\uFEFF';
-    const headers = ['Nombre', 'Teléfono', 'Fecha', 'Estatus'];
-
-    const escapeCSV = (val) => {
-        if (val == null) return '';
-        const str = String(val);
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-            return '"' + str.replace(/"/g, '""') + '"';
-        }
-        return str;
+    const esc = (v) => {
+        if (v == null) return '';
+        return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     };
 
-    const rows = leads.map(l => [
-        escapeCSV(l.nombre),
-        escapeCSV(l.telefono),
-        l.fecha_parsed ? l.fecha_parsed.toLocaleDateString('es-MX') : '',
-        escapeCSV(l.estatus)
-    ].join(','));
+    const clientName = state.config.clientName || 'Dashboard';
+    const dateLabel = document.getElementById('current-range-label')?.textContent || '';
+    const totalLeads = leads.length;
+    const today = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    const csv = BOM + headers.join(',') + '\n' + rows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const rows = leads.map((l, i) => {
+        const phone = l.telefono ? String(l.telefono) : '';
+        const fecha = l.fecha_parsed ? l.fecha_parsed.toLocaleDateString('es-MX') : '';
+        const isEven = i % 2 === 0;
+        const rowBg = isEven ? '#ffffff' : '#f8f9fb';
+        return `<tr>
+            <td style="background:${rowBg}; padding:8px 12px; border:1px solid #e2e5ea; font-size:11pt;">${esc(l.nombre)}</td>
+            <td style="background:${rowBg}; padding:8px 12px; border:1px solid #e2e5ea; font-size:11pt; mso-number-format:'\\@';">${esc(phone)}</td>
+            <td style="background:${rowBg}; padding:8px 12px; border:1px solid #e2e5ea; font-size:11pt; text-align:center;">${fecha}</td>
+            <td style="background:${rowBg}; padding:8px 12px; border:1px solid #e2e5ea; font-size:11pt;">
+                <span style="background:#e8f5e9; color:#2e7d32; padding:3px 10px; border-radius:12px; font-size:9pt; font-weight:bold;">${esc(l.estatus)}</span>
+            </td>
+        </tr>`;
+    }).join('');
+
+    const html = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<style>
+    td, th { font-family: Calibri, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<table>
+    <tr><td colspan="4" style="font-size:16pt; font-weight:bold; padding:12px; color:#1a1a2e;">${esc(clientName)}</td></tr>
+    <tr><td colspan="4" style="font-size:10pt; color:#666; padding:4px 12px;">Leads calificados \u2022 ${esc(dateLabel)} \u2022 Generado: ${today}</td></tr>
+    <tr><td colspan="4" style="font-size:10pt; color:#666; padding:4px 12px 12px;">Total: ${totalLeads} leads</td></tr>
+    <tr>
+        <th style="background:#7551FF; color:#fff; padding:10px 14px; border:1px solid #6341e0; font-size:10pt; font-weight:bold; text-align:left;">Nombre</th>
+        <th style="background:#7551FF; color:#fff; padding:10px 14px; border:1px solid #6341e0; font-size:10pt; font-weight:bold; text-align:left;">Tel\u00e9fono</th>
+        <th style="background:#7551FF; color:#fff; padding:10px 14px; border:1px solid #6341e0; font-size:10pt; font-weight:bold; text-align:center;">Fecha</th>
+        <th style="background:#7551FF; color:#fff; padding:10px 14px; border:1px solid #6341e0; font-size:10pt; font-weight:bold; text-align:left;">Estatus</th>
+    </tr>
+    ${rows}
+</table>
+</body></html>`;
+
+    const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Leads_${state.config.clientName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `Leads_${state.config.clientName || 'export'}_${new Date().toISOString().split('T')[0]}.xls`;
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -914,8 +940,8 @@ function renderTable() {
     // Ordenar del más reciente al más antiguo
     leadsToShow = [...leadsToShow].sort((a, b) => (b.fecha_parsed || 0) - (a.fecha_parsed || 0));
 
-    // Main Dashboard Table (Clean fixed view - 8 leads)
-    const mainTableHTML = leadsToShow.slice(0, 8).map((lead, index) => renderLogRow(lead, index)).join('');
+    // Main Dashboard Table (Clean fixed view - 14 leads)
+    const mainTableHTML = leadsToShow.slice(0, 14).map((lead, index) => renderLogRow(lead, index)).join('');
     tableBody.innerHTML = mainTableHTML;
 
     // Modal Table (Full view - All leads)
@@ -943,18 +969,12 @@ function renderLogRow(lead, index) {
     const phone = lead.telefono || '—';
 
     return `
-        <tr style="border-bottom: 1px solid var(--border-subtle);">
-            <td style="padding: 12px 20px; font-weight: 500;">
-                ${lead.nombre || 'Sin nombre'}
-            </td>
-            <td style="padding: 12px 20px; color: var(--text-secondary); font-size: 0.82rem;">
-                ${phone}
-            </td>
-            <td style="color: var(--text-secondary); padding: 12px 20px;">
-                ${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}
-            </td>
-            <td style="padding: 12px 20px;">
-                <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">
+        <tr>
+            <td>${lead.nombre || 'Sin nombre'}</td>
+            <td style="color: var(--text-secondary); font-size: 0.8rem;">${phone}</td>
+            <td style="color: var(--text-secondary);">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td>
+            <td>
+                <span class="status-badge" style="${badgeStyle} padding: 3px 8px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
                     ${lead.estatus}
                 </span>
             </td>
