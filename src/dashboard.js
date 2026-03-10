@@ -557,6 +557,43 @@ async function exportToPDF() {
     }
 }
 
+function exportLeadsToExcel() {
+    const leads = state.filteredLeads;
+    if (!leads || leads.length === 0) {
+        alert('No hay leads para exportar.');
+        return;
+    }
+
+    // BOM for UTF-8 Excel compatibility
+    const BOM = '\uFEFF';
+    const headers = ['Nombre', 'Estatus', 'Fecha', 'Tipo Servicio'];
+
+    const escapeCSV = (val) => {
+        if (val == null) return '';
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+    };
+
+    const rows = leads.map(l => [
+        escapeCSV(l.nombre),
+        escapeCSV(l.estatus),
+        l.fecha_parsed ? l.fecha_parsed.toLocaleDateString('es-MX') : '',
+        escapeCSV(l.tipo_servicio)
+    ].join(','));
+
+    const csv = BOM + headers.join(',') + '\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Leads_${state.config.clientName || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 function applyDynamicTheme(primary, secondary) {
     if (!primary || !secondary) return;
 

@@ -1520,9 +1520,14 @@
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <h3 id="table-title" style="margin: 0; font-size: 1.1rem; color: var(--text-secondary);">
                                 Últimos leads calificados</h3>
-                            <button id="view-all-btn" class="header-icon-btn" title="Ver info completa">
-                                <ion-icon name="open-outline"></ion-icon>
-                            </button>
+                            <div style="display:flex; gap:6px;">
+                                <button id="export-excel-btn" class="header-icon-btn" title="Exportar a Excel" onclick="exportLeadsToExcel()">
+                                    <ion-icon name="download-outline"></ion-icon>
+                                </button>
+                                <button id="view-all-btn" class="header-icon-btn" title="Ver info completa">
+                                    <ion-icon name="open-outline"></ion-icon>
+                                </button>
+                            </div>
                         </div>
                         <div class="table-wrapper" style="border:none; padding:0; background:none;">
                             <table>
@@ -2297,47 +2302,235 @@
 
         @media (max-width: 768px) {
 
-            /* ── Drawer → Bottom Sheet ─────────────────────── */
+            /* ── Drawer → Bottom Sheet (iOS-style) ── */
             #client-switcher-drawer {
-                /* Cancelar posicionamiento lateral */
                 left: 0 !important;
                 right: 0 !important;
                 top: auto !important;
                 width: 100% !important;
-                /* Oculto debajo de la pantalla */
-                bottom: -92dvh !important;
-                max-height: 92dvh !important;
-                /* Forma de sheet */
+                bottom: -100% !important;
+                max-height: 85dvh !important;
                 border-right: none !important;
-                border-top: 1px solid rgba(117, 81, 255, 0.18) !important;
-                border-radius: 26px 26px 0 0 !important;
-                /* Animación vertical */
-                transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                box-shadow: 0 -28px 70px rgba(0, 0, 0, 0.9) !important;
+                border-top: none !important;
+                border-radius: 20px 20px 0 0 !important;
+                transition: bottom 0.45s cubic-bezier(0.32, 0.72, 0, 1) !important;
+                box-shadow: 0 -10px 60px rgba(0, 0, 0, 0.5) !important;
+                background: #111118 !important;
+                backdrop-filter: none !important;
             }
 
             #client-switcher-drawer.open {
                 bottom: 0 !important;
             }
 
-            /* Línea accent → arriba del sheet */
+            /* Quitar línea accent en mobile */
             #client-switcher-drawer::after {
-                top: -1px !important;
-                bottom: auto !important;
-                right: auto !important;
-                left: 10% !important;
-                width: 80% !important;
-                height: 2px !important;
+                display: none !important;
             }
 
-            /* Mostrar handle y busqueda */
+            /* Handle pill */
             .drawer-handle {
                 display: block;
+                width: 36px;
+                height: 5px;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 3px;
+                margin: 8px auto 4px;
             }
 
-            /* Ajustar padding de la lista para que quepa bien */
+            /* Header mobile */
+            .drawer-header {
+                padding: 12px 20px 12px !important;
+                border-bottom: none !important;
+            }
+
+            .drawer-header::before {
+                display: none !important;
+            }
+
+            .drawer-header span {
+                font-size: 1rem !important;
+                letter-spacing: 0 !important;
+                text-transform: none !important;
+                background: none !important;
+                -webkit-background-clip: unset !important;
+                -webkit-text-fill-color: #fff !important;
+                background-clip: unset !important;
+                font-weight: 600 !important;
+            }
+
+            .drawer-close-btn {
+                width: 32px !important;
+                height: 32px !important;
+                border-radius: 50% !important;
+                background: rgba(255, 255, 255, 0.08) !important;
+                border: none !important;
+                font-size: 1.1rem !important;
+            }
+
+            /* Search mobile */
+            .drawer-search-wrap {
+                padding: 0 16px 12px !important;
+            }
+
+            .drawer-search-input {
+                height: 40px !important;
+                border-radius: 12px !important;
+                background: rgba(255, 255, 255, 0.07) !important;
+                border: none !important;
+                font-size: 0.9rem !important;
+            }
+
+            .drawer-search-input:focus {
+                background: rgba(255, 255, 255, 0.1) !important;
+                border: none !important;
+                box-shadow: 0 0 0 2px rgba(117, 81, 255, 0.3) !important;
+            }
+
+            /* Client list mobile */
             .drawer-clients-list {
-                padding: 8px 10px 12px !important;
+                padding: 4px 12px 16px !important;
+                gap: 2px !important;
+            }
+
+            .drawer-client-item {
+                padding: 12px 14px !important;
+                border-radius: 12px !important;
+                border: none !important;
+                background: transparent !important;
+                gap: 14px !important;
+                min-height: 52px;
+            }
+
+            .drawer-client-item::before {
+                display: none !important;
+            }
+
+            .drawer-client-item:active {
+                background: rgba(255, 255, 255, 0.06) !important;
+                transform: scale(0.98) !important;
+            }
+
+            .drawer-client-item:hover {
+                transform: none !important;
+                background: transparent !important;
+            }
+
+            .drawer-client-item.active {
+                background: rgba(117, 81, 255, 0.1) !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            .drawer-client-item.active::before {
+                display: none !important;
+            }
+
+            /* Logo mobile */
+            .drawer-client-logo {
+                width: 40px !important;
+                height: 40px !important;
+                border-radius: 10px !important;
+                background: rgba(255, 255, 255, 0.06) !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            .drawer-client-item.active .drawer-client-logo {
+                border: none !important;
+                box-shadow: none !important;
+                background: rgba(117, 81, 255, 0.15) !important;
+            }
+
+            .drawer-client-logo img {
+                width: 28px !important;
+                height: 28px !important;
+            }
+
+            /* Client name mobile */
+            .drawer-client-name {
+                font-size: 0.9rem !important;
+                font-weight: 500 !important;
+            }
+
+            /* Footer mobile */
+            .drawer-footer {
+                padding: 8px 12px 20px !important;
+                padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+            }
+
+            .drawer-hub-link {
+                padding: 14px !important;
+                border-radius: 12px !important;
+                font-size: 0.85rem !important;
+                color: rgba(255, 255, 255, 0.5) !important;
+            }
+
+            /* FAB toggle - bigger touch target */
+            #switcher-toggle-btn {
+                width: 50px !important;
+                height: 50px !important;
+                border-radius: 16px !important;
+                bottom: 20px !important;
+                left: 16px !important;
+            }
+
+            /* ── Light theme mobile overrides ── */
+            [data-theme="light"] #client-switcher-drawer {
+                background: #FFFFFF !important;
+                box-shadow: 0 -10px 60px rgba(0, 0, 0, 0.15) !important;
+            }
+
+            [data-theme="light"] .drawer-handle {
+                background: rgba(0, 0, 0, 0.12) !important;
+            }
+
+            [data-theme="light"] .drawer-header span {
+                -webkit-text-fill-color: var(--text-primary) !important;
+            }
+
+            [data-theme="light"] .drawer-close-btn {
+                background: var(--surface-100) !important;
+                color: var(--text-secondary) !important;
+            }
+
+            [data-theme="light"] .drawer-search-input {
+                background: var(--surface-100) !important;
+            }
+
+            [data-theme="light"] .drawer-search-input:focus {
+                background: var(--surface-50) !important;
+                box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2) !important;
+            }
+
+            [data-theme="light"] .drawer-client-item {
+                color: var(--text-secondary) !important;
+            }
+
+            [data-theme="light"] .drawer-client-item:active {
+                background: var(--surface-100) !important;
+            }
+
+            [data-theme="light"] .drawer-client-item.active {
+                background: var(--accent-primary-light) !important;
+                color: var(--text-primary) !important;
+            }
+
+            [data-theme="light"] .drawer-client-logo {
+                background: var(--surface-100) !important;
+            }
+
+            [data-theme="light"] .drawer-client-item.active .drawer-client-logo {
+                background: rgba(79, 70, 229, 0.08) !important;
+            }
+
+            [data-theme="light"] .drawer-footer {
+                border-top-color: var(--border-subtle) !important;
+            }
+
+            [data-theme="light"] .drawer-hub-link {
+                color: var(--text-muted) !important;
             }
         }
 

@@ -590,7 +590,7 @@
            RESPONSIVE
            =========================== */
 
-        @media (max-width: 900px) {
+        @media (max-width: 900px) and (min-width: 769px) {
             html, body { overflow: auto; }
 
             body { flex-direction: column; }
@@ -630,10 +630,233 @@
             }
         }
 
-        @media (max-width: 500px) {
-            .panel-left { flex: 0 0 200px; }
-            .brand-tagline h1 { font-size: 2rem; }
-            .clients-grid { grid-template-columns: 1fr; }
+        /* ===== MOBILE — rediseño premium ===== */
+        @media (max-width: 768px) {
+            html, body {
+                height: auto;
+                overflow: auto;
+                background: #0A0A0C;
+            }
+
+            body {
+                flex-direction: column;
+            }
+
+            /* Login: mostrar panel-left compacto */
+            .panel-left {
+                flex: 0 0 180px;
+            }
+
+            .panel-left-content {
+                padding: 1.5rem;
+            }
+
+            .brand-tagline h1 {
+                font-size: 1.8rem;
+            }
+
+            .panel-overlay {
+                background: linear-gradient(
+                    to bottom,
+                    rgba(0, 0, 0, 0.2) 0%,
+                    rgba(5, 5, 5, 0.95) 100%
+                );
+            }
+
+            /* JS añade .hide-on-mobile cuando se muestra el dash panel */
+            .panel-left.hide-on-mobile {
+                display: none;
+            }
+
+            .panel-right {
+                flex: 1;
+                min-height: 100dvh;
+            }
+
+            .right-section {
+                position: relative;
+                padding: 2rem 1.5rem;
+            }
+
+            /* ── Dash panel mobile ── */
+            #dash-panel {
+                padding: 0 !important;
+                overflow-y: auto !important;
+                align-items: stretch !important;
+            }
+
+            /* Header compacto */
+            #dash-panel .user-greeting {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: rgba(10, 10, 12, 0.92);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                padding: 16px 20px;
+                margin-bottom: 0;
+                gap: 12px;
+            }
+
+            #dash-panel .user-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 0.85rem;
+                box-shadow: none;
+            }
+
+            #dash-panel .greeting-text h2 {
+                font-size: 1.15rem;
+                font-weight: 600;
+                letter-spacing: -0.3px;
+            }
+
+            #dash-panel .greeting-text p {
+                display: none;
+            }
+
+            #dash-panel .session-actions {
+                gap: 6px;
+            }
+
+            #dash-panel .sess-btn {
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.06);
+                border: none;
+                font-size: 1rem;
+            }
+
+            /* Search */
+            #dash-panel .hub-search-wrap {
+                margin: 16px 20px 8px;
+                width: calc(100% - 40px);
+            }
+
+            #dash-panel #hub-search {
+                height: 42px;
+                background: rgba(255, 255, 255, 0.06);
+                border: none;
+                border-radius: 12px;
+                font-size: 0.88rem;
+            }
+
+            #dash-panel #hub-search:focus {
+                background: rgba(255, 255, 255, 0.09);
+                box-shadow: 0 0 0 2px rgba(117, 81, 255, 0.25);
+                border: none;
+            }
+
+            #dash-panel #hub-search::placeholder {
+                color: rgba(255, 255, 255, 0.2);
+            }
+
+            /* Cards list */
+            #dash-panel .clients-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 2px;
+                padding: 12px 12px 40px;
+                padding-bottom: calc(40px + env(safe-area-inset-bottom));
+            }
+
+            #dash-panel .client-card {
+                height: auto;
+                min-height: auto;
+                transform: none;
+                opacity: 1;
+                flex-direction: row;
+                align-items: center;
+                padding: 14px 16px;
+                border-radius: 14px;
+                background: transparent;
+                border: none;
+                gap: 14px;
+                transition: background 0.15s;
+            }
+
+            #dash-panel .client-card::after {
+                display: none;
+            }
+
+            #dash-panel .client-card:active {
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            #dash-panel .client-card:hover {
+                border-color: transparent;
+                box-shadow: none;
+            }
+
+            #dash-panel .client-card.card-visible {
+                opacity: 1;
+                transform: none;
+            }
+
+            /* Logo */
+            #dash-panel .card-logo-stage {
+                flex: 0 0 auto;
+                width: 48px;
+                height: 48px;
+                padding: 0;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #dash-panel .card-logo-stage img {
+                max-width: 36px;
+                max-height: 36px;
+            }
+
+            #dash-panel .card-letter {
+                font-size: 1.2rem;
+                color: rgba(255, 255, 255, 0.4);
+            }
+
+            /* Info */
+            #dash-panel .card-info {
+                flex: 1;
+                padding: 0;
+                min-width: 0;
+            }
+
+            #dash-panel .card-name {
+                font-size: 0.9rem;
+                font-weight: 500;
+                color: rgba(255, 255, 255, 0.9);
+            }
+
+            #dash-panel .card-slug {
+                font-size: 0.72rem;
+                color: rgba(255, 255, 255, 0.22);
+                margin-top: 2px;
+            }
+
+            /* Arrow */
+            #dash-panel .card-arrow {
+                position: static;
+                flex-shrink: 0;
+                width: 28px;
+                height: 28px;
+                opacity: 1;
+                transform: none;
+                background: transparent;
+                border: none;
+                color: rgba(255, 255, 255, 0.15);
+                font-size: 0.9rem;
+                box-shadow: none;
+            }
+
+            #dash-panel .client-card:hover .card-arrow {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                color: rgba(255, 255, 255, 0.15);
+            }
         }
     </style>
 </head>
@@ -793,6 +1016,14 @@
         // ============================================================
         const existingSession = getSession();
         if (existingSession && (Date.now() - existingSession.timestamp < 86400000)) {
+            // Sesión válida: ocultar panel-left inmediatamente en mobile
+            if (window.innerWidth <= 768) {
+                document.documentElement.style.cssText = '';
+                document.addEventListener('DOMContentLoaded', () => {
+                    const pl = document.querySelector('.panel-left');
+                    if (pl) pl.classList.add('hide-on-mobile');
+                });
+            }
             document.addEventListener('DOMContentLoaded', async () => {
                 await showDashboards(existingSession, null);
             });
@@ -996,10 +1227,14 @@
         function filterHubClients(query) {
             const q = query.toLowerCase().trim();
             document.querySelectorAll('.client-card').forEach(card => {
-                const match = !q || card.dataset.name.includes(q) || card.dataset.slug.includes(q);
-                card.style.opacity = match ? '' : '0.12';
-                card.style.pointerEvents = match ? '' : 'none';
-                card.style.transform = match ? '' : 'scale(0.95)';
+                if (!q) {
+                    card.style.display = '';
+                    return;
+                }
+                const name = card.dataset.name || '';
+                const slug = card.dataset.slug || '';
+                const match = name.includes(q) || slug.includes(q);
+                card.style.display = match ? '' : 'none';
             });
         }
 
@@ -1047,12 +1282,18 @@
         function transition(onComplete) {
             const formPanel = document.getElementById('form-panel');
             const dashPanel = document.getElementById('dash-panel');
+            const panelLeft = document.querySelector('.panel-left');
 
             formPanel.classList.add('panel-exit');
 
             setTimeout(() => {
                 formPanel.style.display = 'none';
                 dashPanel.style.display = 'flex';
+
+                // En mobile, ocultar panel izquierdo para dar espacio completo al dash
+                if (window.innerWidth <= 768 && panelLeft) {
+                    panelLeft.classList.add('hide-on-mobile');
+                }
 
                 requestAnimationFrame(() => {
                     dashPanel.classList.add('panel-enter');
