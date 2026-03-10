@@ -566,7 +566,7 @@ function exportLeadsToExcel() {
 
     // BOM for UTF-8 Excel compatibility
     const BOM = '\uFEFF';
-    const headers = ['Nombre', 'Estatus', 'Fecha', 'Tipo Servicio'];
+    const headers = ['Nombre', 'Teléfono', 'Fecha', 'Estatus'];
 
     const escapeCSV = (val) => {
         if (val == null) return '';
@@ -579,9 +579,9 @@ function exportLeadsToExcel() {
 
     const rows = leads.map(l => [
         escapeCSV(l.nombre),
-        escapeCSV(l.estatus),
+        escapeCSV(l.telefono),
         l.fecha_parsed ? l.fecha_parsed.toLocaleDateString('es-MX') : '',
-        escapeCSV(l.tipo_servicio)
+        escapeCSV(l.estatus)
     ].join(','));
 
     const csv = BOM + headers.join(',') + '\n' + rows.join('\n');
@@ -940,11 +940,19 @@ function renderLogRow(lead, index) {
         badgeStyle = `color: ${qualified ? state.config.themeSecondary : '#ef4444'}; background: rgba(255,255,255,0.05);`;
     }
 
+    const phone = lead.telefono || '—';
+
     return `
         <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: 12px 20px; font-weight: 500;">
+                ${lead.nombre || 'Sin nombre'}
+            </td>
+            <td style="padding: 12px 20px; color: var(--text-secondary); font-size: 0.82rem;">
+                ${phone}
+            </td>
             <td style="color: var(--text-secondary); padding: 12px 20px;">
                 ${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}
-            </td> 
+            </td>
             <td style="padding: 12px 20px;">
                 <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">
                     ${lead.estatus}
