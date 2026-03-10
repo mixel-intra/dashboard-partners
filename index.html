@@ -120,18 +120,36 @@
         }
 
         .ld-logo {
-            width: 28px;
+            width: 64px;
             height: auto;
-            opacity: 0.55;
+            opacity: 0;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.15)) drop-shadow(0 0 60px rgba(117, 81, 255, 0.1));
+            animation: logoFadeIn 1.5s ease 0.3s forwards, logoPulse 4s ease-in-out 1.8s infinite;
+        }
+
+        @keyframes logoFadeIn {
+            0% { opacity: 0; transform: scale(0.8); filter: drop-shadow(0 0 0px transparent); }
+            100% { opacity: 0.85; transform: scale(1); filter: drop-shadow(0 0 24px rgba(255, 255, 255, 0.12)) drop-shadow(0 0 60px rgba(117, 81, 255, 0.08)); }
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.1)) drop-shadow(0 0 50px rgba(117, 81, 255, 0.06)); }
+            50% { filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.18)) drop-shadow(0 0 80px rgba(117, 81, 255, 0.12)); }
         }
 
         .ld-label {
             font-family: 'Inter', sans-serif;
-            font-size: 0.72rem;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.32);
-            letter-spacing: 0.2em;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0);
+            letter-spacing: 0.25em;
             text-transform: uppercase;
+            animation: labelFadeIn 1.2s ease 0.8s forwards;
+        }
+
+        @keyframes labelFadeIn {
+            0% { color: rgba(255, 255, 255, 0); letter-spacing: 0.5em; }
+            100% { color: rgba(255, 255, 255, 0.3); letter-spacing: 0.25em; }
         }
 
         .ld-bar-track {
@@ -1260,50 +1278,6 @@
                     ctx.stroke();
                 });
                 ctx.globalAlpha = 1;
-
-                // ── Sphere (orbits slowly along the arc) ─────────────────────
-                const sAngle = -Math.PI / 2 + Math.sin(t * 0.004) * 0.13;
-                const hover = H * 0.042 + Math.sin(t * 0.009) * H * 0.007;
-                const sX = arcCX + (bigR + hover) * Math.cos(sAngle);
-                const sY = arcCY + (bigR + hover) * Math.sin(sAngle);
-                const sR = Math.min(W, H) * 0.026;
-                const pulse = 0.78 + 0.22 * Math.sin(t * 0.012);
-
-                // Outer aura / glow
-                const aura = ctx.createRadialGradient(sX, sY, 0, sX, sY, sR * 5.5);
-                aura.addColorStop(0, `rgba(230,70,130,${0.28 * pulse})`);
-                aura.addColorStop(0.4, `rgba(120,30,210,${0.10 * pulse})`);
-                aura.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = aura;
-                ctx.beginPath();
-                ctx.arc(sX, sY, sR * 5.5, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Sphere body — pink → purple → deep blue, lit from top-left
-                const sg = ctx.createRadialGradient(
-                    sX - sR * 0.38, sY - sR * 0.38, 0,
-                    sX, sY, sR
-                );
-                sg.addColorStop(0, '#FF96B8');
-                sg.addColorStop(0.4, '#C438AA');
-                sg.addColorStop(0.72, '#6522CC');
-                sg.addColorStop(1, '#1C0890');
-                ctx.fillStyle = sg;
-                ctx.beginPath();
-                ctx.arc(sX, sY, sR, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Subtle specular highlight
-                const spec = ctx.createRadialGradient(
-                    sX - sR * 0.3, sY - sR * 0.35, 0,
-                    sX - sR * 0.3, sY - sR * 0.35, sR * 0.55
-                );
-                spec.addColorStop(0, `rgba(255,255,255,${0.45 * pulse})`);
-                spec.addColorStop(1, 'rgba(255,255,255,0)');
-                ctx.fillStyle = spec;
-                ctx.beginPath();
-                ctx.arc(sX, sY, sR, 0, Math.PI * 2);
-                ctx.fill();
 
                 t++;
                 raf = requestAnimationFrame(frame);
