@@ -558,9 +558,9 @@ async function exportToPDF() {
 }
 
 function exportLeadsToExcel() {
-    const leads = state.filteredLeads;
+    const leads = state.filteredLeads.filter(l => isQualified(l.estatus));
     if (!leads || leads.length === 0) {
-        alert('No hay leads para exportar.');
+        alert('No hay leads calificados para exportar.');
         return;
     }
 
