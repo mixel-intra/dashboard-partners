@@ -1519,15 +1519,20 @@
                     <!-- Table Card -->
                     <div class="table-card" style="display: flex; flex-direction: column;">
                         <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                            <h3 id="table-title" style="margin: 0; font-size: 0.95rem; color: var(--text-secondary);">
-                                Últimos leads calificados</h3>
-                            <div style="display:flex; gap:6px;">
-                                <button id="export-excel-btn" class="header-icon-btn" title="Exportar a Excel" onclick="exportLeadsToExcel()">
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <span class="label-sub">REGISTRO DE LEADS</span>
+                                <h3 id="table-title" class="section-headline" style="font-size: 1.5rem; margin: 0;">
+                                    Últimas cotizaciones a ventas</h3>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button id="export-excel-btn" class="table-action-btn" title="Exportar a Excel" onclick="exportLeadsToExcel()">
                                     <ion-icon name="download-outline"></ion-icon>
+                                    <span>Exportar</span>
                                 </button>
-                                <button id="view-all-btn" class="header-icon-btn" title="Ver info completa">
+                                <button id="view-all-btn" class="table-action-btn" title="Ver info completa">
                                     <ion-icon name="open-outline"></ion-icon>
+                                    <span>Ver todo</span>
                                 </button>
                             </div>
                         </div>

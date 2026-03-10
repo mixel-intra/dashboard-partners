@@ -575,7 +575,7 @@ function exportLeadsToExcel() {
     const today = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
 
     const rows = leads.map((l, i) => {
-        const phone = l.telefono ? String(l.telefono) : '';
+        const phone = l.telefono ? formatPhone(l.telefono) : '';
         const fecha = l.fecha_parsed ? l.fecha_parsed.toLocaleDateString('es-MX') : '';
         const isEven = i % 2 === 0;
         const rowBg = isEven ? '#ffffff' : '#f8f9fb';
@@ -925,6 +925,25 @@ function updateUI(m) {
     setTxt('cpl-txt', `$${m.cpl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 }
 
+function formatPhone(phone) {
+    if (!phone) return '—';
+    const raw = String(phone).trim();
+    if (!raw.startsWith('+')) return raw;
+    // Separar código de país (+XX) del número local
+    const digits = raw.replace(/\D/g, '');
+    const code = '+' + digits.slice(0, 2);
+    let local = digits.slice(2);
+    // México: quitar prefijo "1" de marcación móvil
+    if (code === '+52' && local.length === 11 && local.startsWith('1')) {
+        local = local.slice(1);
+    }
+    // Formato: XXX XXX XXXX
+    if (local.length === 10) {
+        return `[${code}] ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+    }
+    return `[${code}] ${local}`;
+}
+
 function renderTable() {
     console.log('--- renderTable START ---');
     const tableBody = document.getElementById('leads-table-body');
@@ -940,8 +959,8 @@ function renderTable() {
     // Ordenar del más reciente al más antiguo
     leadsToShow = [...leadsToShow].sort((a, b) => (b.fecha_parsed || 0) - (a.fecha_parsed || 0));
 
-    // Main Dashboard Table (Clean fixed view - 14 leads)
-    const mainTableHTML = leadsToShow.slice(0, 14).map((lead, index) => renderLogRow(lead, index)).join('');
+    // Main Dashboard Table (Clean fixed view - 8 leads)
+    const mainTableHTML = leadsToShow.slice(0, 8).map((lead, index) => renderLogRow(lead, index)).join('');
     tableBody.innerHTML = mainTableHTML;
 
     // Modal Table (Full view - All leads)
@@ -966,15 +985,15 @@ function renderLogRow(lead, index) {
         badgeStyle = `color: ${qualified ? state.config.themeSecondary : '#ef4444'}; background: rgba(255,255,255,0.05);`;
     }
 
-    const phone = lead.telefono || '—';
+    const phone = formatPhone(lead.telefono);
 
     return `
         <tr>
-            <td>${lead.nombre || 'Sin nombre'}</td>
-            <td style="color: var(--text-secondary); font-size: 0.8rem;">${phone}</td>
+            <td style="font-weight: 600;">${lead.nombre || 'Sin nombre'}</td>
+            <td style="color: var(--text-secondary); font-size: 0.82rem; font-variant-numeric: tabular-nums;">${phone}</td>
             <td style="color: var(--text-secondary);">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td>
             <td>
-                <span class="status-badge" style="${badgeStyle} padding: 3px 8px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
+                <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
                     ${lead.estatus}
                 </span>
             </td>
