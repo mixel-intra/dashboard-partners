@@ -2539,6 +2539,60 @@ tr:hover td {
     background: var(--surface-50);
 }
 
+/* --- Modal Light Mode --- */
+[data-theme="light"] .modal-overlay {
+    background: rgba(15, 23, 42, 0.5);
+}
+
+[data-theme="light"] .modal-content {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2);
+}
+
+[data-theme="light"] .modal-header {
+    border-bottom: 1px solid var(--surface-100);
+}
+
+[data-theme="light"] .modal-header h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .close-modal {
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .close-modal:hover {
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .modal-table th {
+    color: var(--text-muted);
+    font-weight: 700;
+    border-bottom: 2px solid var(--surface-100);
+    background: rgba(248, 250, 252, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-size: 0.72rem;
+}
+
+[data-theme="light"] .modal-table td {
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--surface-50);
+}
+
+[data-theme="light"] .modal-table tr:hover td {
+    background: var(--surface-50);
+}
+
+[data-theme="light"] .modal-body::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.15);
+}
+
+[data-theme="light"] .modal-body::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.03);
+}
+
 /* --- Switcher FAB --- */
 [data-theme="light"] #switcher-toggle-btn {
     background: #FFFFFF !important;
