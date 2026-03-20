@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
     <!-- Ionicons -->
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
@@ -37,10 +38,12 @@
             if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
             var mIcon = document.getElementById('mobile-theme-icon');
             if (mIcon) mIcon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
-            // Re-render charts with new theme colors
-            if (typeof renderDashboard === 'function') {
-                try { renderDashboard(); } catch (e) { }
-            }
+            // Defer heavy re-render so CSS transition starts immediately
+            setTimeout(function() {
+                if (typeof renderDashboard === 'function') {
+                    try { renderDashboard(); } catch (e) { }
+                }
+            }, 350);
         }
         // Actualizar icono cuando DOM cargue
         document.addEventListener('DOMContentLoaded', function () {
@@ -49,6 +52,18 @@
             if (icon) icon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
             var mIcon = document.getElementById('mobile-theme-icon');
             if (mIcon) mIcon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
+        });
+
+        // Sidebar hamburger toggle
+        function toggleSidebar() {
+            var sidebar = document.getElementById('main-sidebar');
+            if (sidebar) sidebar.classList.toggle('sidebar-open');
+        }
+        // Close sidebar when clicking outside
+        document.addEventListener('click', function(e) {
+            var sidebar = document.getElementById('main-sidebar');
+            if (!sidebar || !sidebar.classList.contains('sidebar-open')) return;
+            if (!sidebar.contains(e.target)) sidebar.classList.remove('sidebar-open');
         });
 
         // Mobile menu bottom sheet
@@ -74,15 +89,17 @@
 
     <!-- ===== LOADING SCREEN ===== -->
     <style>
-        /* ===== ECLIPSE LOADING SCREEN ===== */
+        /* ===== WEB3 HERO LOADING SCREEN ===== */
         #dashboard-loader {
             position: fixed;
             inset: 0;
             z-index: 9999;
-            background: #00010a;
+            background: #000;
             display: flex;
+            flex-direction: column;
             transition: opacity 1.2s ease;
             overflow: hidden;
+            font-family: 'General Sans', 'Inter', -apple-system, sans-serif;
         }
 
         #dashboard-loader.fade-out {
@@ -90,84 +107,88 @@
             pointer-events: none;
         }
 
-        #eclipse-canvas {
+        /* ── Video background ── */
+        .ld-video-bg {
             position: absolute;
             inset: 0;
             width: 100%;
             height: 100%;
-            display: block;
+            object-fit: cover;
+            pointer-events: none;
+        }
+        .ld-video-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.52);
+            pointer-events: none;
         }
 
-        .ecl-bottom {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        /* ── Hero content ── */
+        .ld-hero {
+            position: relative;
+            z-index: 10;
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
-            z-index: 10;
-            pointer-events: none;
-            width: 100%;
+            justify-content: center;
             text-align: center;
+            padding: 24px;
+            gap: 32px;
         }
 
-        @media (max-width: 600px) {
-            .ecl-bottom {
-                top: 36%;
-            }
-        }
-
-        .ld-logo {
-            width: 64px;
-            height: auto;
-            opacity: 0;
-            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.15)) drop-shadow(0 0 60px rgba(117, 81, 255, 0.1));
-            animation: logoFadeIn 1.5s ease 0.3s forwards, logoPulse 4s ease-in-out 1.8s infinite;
-        }
-
-        @keyframes logoFadeIn {
-            0% { opacity: 0; transform: scale(0.8); filter: drop-shadow(0 0 0px transparent); }
-            100% { opacity: 0.85; transform: scale(1); filter: drop-shadow(0 0 24px rgba(255, 255, 255, 0.12)) drop-shadow(0 0 60px rgba(117, 81, 255, 0.08)); }
-        }
-
-        @keyframes logoPulse {
-            0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.1)) drop-shadow(0 0 50px rgba(117, 81, 255, 0.06)); }
-            50% { filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.18)) drop-shadow(0 0 80px rgba(117, 81, 255, 0.12)); }
-        }
-
-        .ld-label {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.7rem;
+        /* Heading */
+        .ld-heading {
+            font-size: clamp(52px, 8vw, 96px);
             font-weight: 500;
-            color: rgba(255, 255, 255, 0);
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            animation: labelFadeIn 1.2s ease 0.8s forwards;
+            line-height: 1.15;
+            max-width: 800px;
+            margin: 0;
+            color: #fff;
+            opacity: 0;
+            animation: ldSlideUp 0.8s ease 0.35s forwards;
         }
 
-        @keyframes labelFadeIn {
-            0% { color: rgba(255, 255, 255, 0); letter-spacing: 0.5em; }
-            100% { color: rgba(255, 255, 255, 0.3); letter-spacing: 0.25em; }
+        /* Subtitle */
+        .ld-subtitle {
+            font-size: clamp(16px, 2vw, 22px);
+            font-weight: 400;
+            color: rgba(255,255,255,0.70);
+            max-width: 680px;
+            line-height: 1.6;
+            margin: -8px 0 0;
+            opacity: 0;
+            animation: ldSlideUp 0.8s ease 0.65s forwards;
         }
 
+        /* Centered Intra logo */
+        .ld-logo-intra {
+            width: 130px;
+            height: auto;
+            filter: brightness(0) invert(1);
+            opacity: 0;
+            animation: ldSlideUp 0.9s ease 0.75s forwards;
+        }
+
+        /* Progress bar */
         .ld-bar-track {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            bottom: 0; left: 0; right: 0;
             height: 2px;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255,255,255,0.04);
             z-index: 10;
         }
-
         .ld-bar-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, rgba(200, 80, 20, 0.6) 0%, rgba(255, 180, 60, 1) 80%);
-            box-shadow: 0 0 18px rgba(255, 140, 40, 0.5), 0 0 5px rgba(255, 180, 60, 0.85);
-            transition: width 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(90deg, rgba(200,80,20,0.6) 0%, rgba(255,180,60,1) 80%);
+            box-shadow: 0 0 18px rgba(255,140,40,0.5), 0 0 5px rgba(255,180,60,0.85);
+            transition: width 0.75s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        @keyframes ldSlideUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ===== PANEL DE RESERVAS RESTAURANTE ===== */
@@ -177,10 +198,12 @@
             align-items: center;
             gap: 12px;
             padding: 16px 20px;
-            background: linear-gradient(145deg, #121318, #08090C);
-            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.042);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
 
         .rest-stat-icon {
@@ -361,19 +384,22 @@
 
         /* Card */
         .rest-card {
-            background: linear-gradient(145deg, #121318, #08090C);
-            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.042);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 16px;
             overflow: hidden;
             position: relative;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.04);
             cursor: pointer;
         }
 
         .rest-card:hover {
-            border-color: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.065);
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
 
         .rest-card::before {
@@ -400,6 +426,67 @@
 
         .rest-card.is-today {
             border-color: rgba(245, 158, 11, 0.12);
+        }
+
+        /* Quick action buttons — visible without expanding */
+        .rest-card-quick-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .rest-quick-btn {
+            width: 28px; height: 28px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.18s;
+            flex-shrink: 0;
+        }
+        .rest-quick-btn.confirm {
+            background: rgba(16,185,129,0.10);
+            border-color: rgba(16,185,129,0.22);
+            color: #10B981;
+        }
+        .rest-quick-btn.confirm:hover {
+            background: rgba(16,185,129,0.22);
+            border-color: rgba(16,185,129,0.45);
+            transform: scale(1.08);
+        }
+        .rest-quick-btn.reject {
+            background: rgba(255,68,68,0.10);
+            border-color: rgba(255,68,68,0.22);
+            color: #FF4444;
+        }
+        .rest-quick-btn.reject:hover {
+            background: rgba(255,68,68,0.22);
+            border-color: rgba(255,68,68,0.45);
+            transform: scale(1.08);
+        }
+
+        /* Reject reason chips */
+        .reject-reasons-row {
+            display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px;
+        }
+        .reject-reason-chip {
+            padding: 6px 12px; border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.10);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.78rem; font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: all 0.18s;
+        }
+        .reject-reason-chip:hover {
+            background: rgba(255,68,68,0.10);
+            border-color: rgba(255,68,68,0.28);
+            color: #FF6B6B;
+        }
+        .reject-reason-chip.selected {
+            background: rgba(255,68,68,0.14);
+            border-color: rgba(255,68,68,0.40);
+            color: #FF6B6B;
         }
 
         .rest-card-main {
@@ -553,10 +640,13 @@
 
         /* Table */
         .rest-table-wrapper {
-            background: linear-gradient(145deg, #121318, #08090C);
-            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.038);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 20px;
             overflow: hidden;
+            box-shadow: 0 2px 18px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
 
         .rest-table {
@@ -596,7 +686,7 @@
         }
 
         .rest-table tbody tr.rest-row:hover {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.045);
         }
 
         .rest-table tbody td {
@@ -607,7 +697,8 @@
         }
 
         .rest-table-detail-row {
-            background: rgba(255, 255, 255, 0.015);
+            background: rgba(255, 255, 255, 0.025);
+            border-top: 1px solid rgba(255, 255, 255, 0.055);
         }
 
         .rest-table-detail-row td {
@@ -912,6 +1003,242 @@
             display: none;
         }
 
+        /* ── Past reservation ── */
+        .rest-card.is-past {
+            opacity: 0.45;
+            filter: saturate(0.5);
+        }
+        .rest-card.is-past:hover {
+            opacity: 0.7;
+            filter: saturate(0.75);
+        }
+
+        /* ── Time badge ── */
+        .rest-card-time {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 2px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            letter-spacing: 0.02em;
+        }
+        .rest-card.is-today .rest-card-time {
+            background: rgba(245,158,11,0.12);
+            border-color: rgba(245,158,11,0.25);
+            color: #F59E0B;
+        }
+
+        /* ── Availability Panel ── */
+        .avail-panel {
+            background: rgba(255, 255, 255, 0.048);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 20px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.05);
+            animation: panel-in 0.22s cubic-bezier(0.16,1,0.3,1);
+        }
+        .avail-panel.open { display: flex; }
+        @keyframes panel-in {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .avail-panel-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .avail-panel-label {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.88);
+        }
+        .avail-panel-sub {
+            font-size: 0.74rem;
+            color: rgba(255,255,255,0.38);
+            margin-top: 2px;
+        }
+        .avail-toggle {
+            position: relative;
+            width: 46px; height: 26px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 99px;
+            cursor: pointer;
+            transition: background 0.22s;
+            border: none; padding: 0; flex-shrink: 0;
+        }
+        .avail-toggle::after {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.45);
+            transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .avail-toggle.on { background: #10B981; }
+        .avail-toggle.on::after { left: 24px; background: #fff; }
+        .avail-toggle-label {
+            font-size: 0.84rem;
+            font-weight: 600;
+        }
+        .avail-status-on { color: #10B981; }
+        .avail-status-off { color: #FF4444; }
+        .avail-sep { height: 1px; background: rgba(255,255,255,0.06); }
+        .avail-capacity-input {
+            width: 88px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.10);
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            outline: none;
+        }
+        .avail-capacity-input:focus { border-color: rgba(117,81,255,0.5); }
+        .avail-date-add-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .avail-date-input {
+            padding: 7px 12px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.10);
+            color: #fff;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            color-scheme: dark;
+        }
+        .avail-date-input:focus { border-color: rgba(117,81,255,0.5); }
+        .avail-add-btn {
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(117,81,255,0.3);
+            background: rgba(117,81,255,0.10);
+            color: #7551FF;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .avail-add-btn:hover { background: rgba(117,81,255,0.22); border-color: rgba(117,81,255,0.55); }
+        .avail-dates-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+        .avail-date-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: rgba(255,68,68,0.08);
+            border: 1px solid rgba(255,68,68,0.18);
+            color: rgba(255,255,255,0.7);
+            font-size: 0.78rem;
+        }
+        .avail-date-chip button {
+            background: none;
+            border: none;
+            color: rgba(255,68,68,0.55);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+        .avail-date-chip button:hover { color: #FF4444; }
+        .avail-save-row { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+        .avail-save-btn {
+            padding: 9px 22px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #7551FF, #5232C8);
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .avail-save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(117,81,255,0.40); }
+        .avail-save-status {
+            font-size: 0.78rem;
+            color: #10B981;
+            display: none;
+        }
+        #avail-toggle-btn {
+            padding: 8px 16px;
+            display: flex; align-items: center; gap: 6px;
+            border-radius: 12px;
+            background: rgba(16,185,129,0.07);
+            border: 1px solid rgba(16,185,129,0.2);
+            color: #10B981;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        #avail-toggle-btn:hover {
+            background: rgba(16,185,129,0.14);
+            border-color: rgba(16,185,129,0.4);
+        }
+        #avail-toggle-btn.unavailable {
+            background: rgba(255,68,68,0.07);
+            border-color: rgba(255,68,68,0.2);
+            color: #FF6B6B;
+        }
+
+        /* ── Agenda View ── */
+        .rest-agenda-container { display: flex; flex-direction: column; gap: 22px; }
+        .agenda-day-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .agenda-day-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            white-space: nowrap;
+        }
+        .agenda-day-date {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.82);
+            white-space: nowrap;
+        }
+        .agenda-day-today .agenda-day-date { color: #F59E0B; }
+        .agenda-day-past   .agenda-day-date { color: rgba(255,255,255,0.32); }
+        .agenda-day-count {
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.32);
+            background: rgba(255,255,255,0.05);
+            border-radius: 99px;
+            padding: 2px 8px;
+        }
+        .agenda-day-line { flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
+        .agenda-day-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+        }
+
         /* ===== LIGHT THEME — Restaurant & Inline ===== */
         [data-theme="light"] .rest-stat-card {
             background: #FFFFFF;
@@ -1186,111 +1513,73 @@
     </style>
 
     <div id="dashboard-loader">
-        <canvas id="eclipse-canvas"></canvas>
-        <div class="ecl-bottom">
-            <img src="src/assets/intra-logo.png" class="ld-logo" alt="Intra">
-            <span class="ld-label">Casi listo</span>
+        <!-- Video background -->
+        <video class="ld-video-bg" autoplay muted loop playsinline>
+            <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4" type="video/mp4">
+        </video>
+        <div class="ld-video-overlay"></div>
+
+        <!-- Hero -->
+        <div class="ld-hero">
+            <h1 class="ld-heading">Hola, <span id="ld-user-name"></span></h1>
+            <p class="ld-subtitle" style="animation-delay:0.55s">Estamos preparando la información<br>para que la puedas consultar.</p>
+            <img src="src/assets/TechonologyByIntra_Claro.png" class="ld-logo-intra" alt="Intra">
         </div>
+        <script>
+            (function () {
+                try {
+                    var s = JSON.parse(localStorage.getItem('intra_session_v2'));
+                    var first = s && s.name ? s.name.trim().split(' ')[0] : '';
+                    if (first) document.getElementById('ld-user-name').textContent = first;
+                } catch (e) {}
+            })();
+        </script>
+
+        <!-- Progress bar -->
         <div class="ld-bar-track">
             <div class="ld-bar-fill" id="loader-bar"></div>
         </div>
     </div>
-    <script>
-        (function () {
-            const canvas = document.getElementById('eclipse-canvas');
-            const ctx = canvas.getContext('2d');
-            let W, H, raf, active = true;
-
-            function resize() {
-                W = canvas.width = window.innerWidth;
-                H = canvas.height = window.innerHeight;
-            }
-            resize();
-            window.addEventListener('resize', resize);
-
-            // Stars — only upper 65% of screen, very subtle
-            const stars = Array.from({ length: 110 }, () => ({
-                x: Math.random(),
-                y: Math.random() * 0.65,
-                r: Math.random() * 0.9 + 0.15,
-                op: Math.random() * 0.32 + 0.1,
-                ph: Math.random() * Math.PI * 2,
-                sp: Math.random() * 0.007 + 0.002
-            }));
-
-            let t = 0;
-            function frame() {
-                if (!active) return;
-
-                // ── Background ──────────────────────────────────────────────
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0, 0, W, H);
-
-                // ── Stars ────────────────────────────────────────────────────
-                stars.forEach(s => {
-                    const o = s.op * (0.5 + 0.5 * Math.sin(t * s.sp + s.ph));
-                    ctx.beginPath();
-                    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255,255,255,${o})`;
-                    ctx.fill();
-                });
-
-                // ── Planet arc parameters ────────────────────────────────────
-                // Very large circle — only the top arc is visible (planet horizon)
-                const bigR = Math.max(W, H) * 3.4;
-                const arcCX = W / 2;
-                // On portrait (mobile) push arc lower so sphere has room above it
-                const arcOffset = W < H ? 0.62 : 0.52;
-                const arcCY = H * arcOffset + bigR;
-
-                // Arc gradient: cyan → blue → purple → red (center/sphere) → orange → gold → back
-                const arcG = ctx.createLinearGradient(0, 0, W, 0);
-                arcG.addColorStop(0, '#00D4FF');
-                arcG.addColorStop(0.16, '#1E44FF');
-                arcG.addColorStop(0.32, '#9528E0');
-                arcG.addColorStop(0.46, '#E52860');
-                arcG.addColorStop(0.53, '#F55A10');
-                arcG.addColorStop(0.64, '#F5A800');
-                arcG.addColorStop(0.73, '#F56010');
-                arcG.addColorStop(0.83, '#C028A8');
-                arcG.addColorStop(0.93, '#1E44FF');
-                arcG.addColorStop(1, '#00D4FF');
-
-                // Breathing brightness
-                const breath = 0.88 + 0.12 * Math.sin(t * 0.007);
-                ctx.globalAlpha = breath;
-
-                // Glow layers — scaled to screen size so they look right on mobile too
-                const gS = Math.min(W, H) / 900;
-                const glows = [
-                    { w: Math.max(3, 80 * gS), a: 0.018 },
-                    { w: Math.max(2, 35 * gS), a: 0.04 },
-                    { w: Math.max(1, 14 * gS), a: 0.10 },
-                    { w: Math.max(0.8, 4 * gS), a: 0.55 },
-                    { w: Math.max(0.4, 1.4 * gS), a: 1.0 },
-                ];
-                glows.forEach(g => {
-                    ctx.beginPath();
-                    ctx.arc(arcCX, arcCY, bigR, -Math.PI, 0);
-                    ctx.strokeStyle = arcG;
-                    ctx.lineWidth = g.w;
-                    ctx.globalAlpha = g.a * breath;
-                    ctx.stroke();
-                });
-                ctx.globalAlpha = 1;
-
-                t++;
-                raf = requestAnimationFrame(frame);
-            }
-
-            frame();
-            window._stopEclipse = () => { active = false; cancelAnimationFrame(raf); };
-        })();
-    </script>
     <!-- ===== FIN LOADING SCREEN ===== -->
 
     <div class="app-container full-width-layout" id="app-wrapper">
-        <!-- Main Header -->
+
+        <!-- Collapsed Sidebar -->
+        <aside class="sidebar sidebar-collapsed" id="main-sidebar">
+            <!-- Hamburger -->
+            <button class="sidebar-hamburger" id="sidebar-hamburger-btn" onclick="toggleSidebar()" title="Menú">
+                <span class="sidebar-ham-lines"><span></span><span></span><span></span></span>
+                <span class="sidebar-ham-label">Menú</span>
+            </button>
+            <!-- Nav items -->
+            <div class="sidebar-nav-icons">
+                <button id="ventas-toggle-btn" onclick="toggleVentas()" class="sidebar-icon-btn">
+                    <ion-icon name="cash-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Registrar ventas</span>
+                </button>
+                <button onclick="toggleTheme()" class="sidebar-icon-btn">
+                    <ion-icon name="moon-outline" id="theme-icon"></ion-icon>
+                    <span class="sidebar-btn-label">Cambiar tema</span>
+                </button>
+                <button onclick="openChangePasswordModal()" class="sidebar-icon-btn">
+                    <ion-icon name="key-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Cambiar contraseña</span>
+                </button>
+                <button id="sidebar-switcher-btn" onclick="window.location.href='hub.html'" class="sidebar-icon-btn" style="display:none;">
+                    <ion-icon name="apps-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Ver otro Dashboard</span>
+                </button>
+                <button onclick="logout()" class="sidebar-icon-btn">
+                    <ion-icon name="log-out-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Cerrar sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Column -->
+        <div class="main-column">
+
+        <!-- Main Header / Topbar -->
         <header class="main-header">
             <div class="header-left">
                 <div class="client-branding">
@@ -1305,23 +1594,34 @@
 
             <div class="header-right">
                 <div class="desktop-actions">
+                    <button onclick="toggleTheme()" class="theme-pill-btn" title="Cambiar tema">
+                        <div class="tpb-track">
+                            <!-- Stars (dark mode) -->
+                            <span class="tpb-star" style="--d:0s;   top:7px; left:9px;  font-size:9px;">✦</span>
+                            <span class="tpb-star" style="--d:.6s;  top:25px;left:16px; font-size:6px;">✦</span>
+                            <span class="tpb-star" style="--d:.3s;  top:9px; left:28px; font-size:4px;">·</span>
+                            <span class="tpb-star" style="--d:1.1s; top:26px;left:38px; font-size:7px;">✦</span>
+                            <span class="tpb-star" style="--d:.8s;  top:15px;left:22px; font-size:3px;">·</span>
+                            <span class="tpb-star" style="--d:.4s;  top:7px; left:46px; font-size:5px;">✦</span>
+                            <span class="tpb-star" style="--d:.9s;  top:24px;left:54px; font-size:4px;">·</span>
+                            <span class="tpb-star" style="--d:.2s;  top:10px;left:60px; font-size:8px;">✦</span>
+                            <span class="tpb-star" style="--d:1.3s; top:27px;left:68px; font-size:5px;">✦</span>
+                            <!-- Clouds (light mode) -->
+                            <div class="tpb-cloud c1"></div>
+                            <div class="tpb-cloud c2"></div>
+                            <!-- Knob -->
+                            <div class="tpb-thumb">
+                                <div class="tpb-crater" style="width:7px;height:7px;top:7px;left:17px;"></div>
+                                <div class="tpb-crater" style="width:4px;height:4px;top:18px;left:10px;"></div>
+                                <div class="tpb-crater" style="width:3px;height:3px;top:9px;left:10px;"></div>
+                            </div>
+                        </div>
+                        <ion-icon name="moon-outline" id="theme-icon" style="display:none;"></ion-icon>
+                    </button>
                     <div class="intra-branding">
-                        <img src="src/assets/intra-logo.png" alt="Intra" class="intra-logo-img">
-                        <span class="partner-tag">Partner Portal</span>
+                        <img src="src/assets/TechonologyByIntra_Claro.png" alt="Intra" class="intra-logo-img theme-logo-dark">
+                        <img src="src/assets/TechonologyByIntra_Oscuro.png" alt="Intra" class="intra-logo-img theme-logo-light">
                     </div>
-                    <button onclick="toggleTheme()" class="logout-btn" id="theme-toggle-btn" title="Cambiar tema">
-                        <ion-icon name="moon-outline" id="theme-icon"></ion-icon>
-                    </button>
-                    <button id="ventas-toggle-btn" onclick="toggleVentas()" class="logout-btn" title="Registrar ventas"
-                        style="background: rgba(1,241,227,0.08); border-color: rgba(1,241,227,0.18); color: rgba(1,241,227,0.8);">
-                        <ion-icon name="cash-outline"></ion-icon>
-                    </button>
-                    <button onclick="openChangePasswordModal()" class="logout-btn" title="Cambiar contraseña">
-                        <ion-icon name="key-outline"></ion-icon>
-                    </button>
-                    <button onclick="logout()" class="logout-btn" title="Cerrar sesión">
-                        <ion-icon name="log-out-outline"></ion-icon>
-                    </button>
                 </div>
                 <button id="mobile-menu-btn" class="logout-btn" onclick="toggleMobileMenu()" title="Menú">
                     <ion-icon name="ellipsis-vertical-outline"></ion-icon>
@@ -1395,107 +1695,78 @@
                 <div class="cards-grid" id="top-cards-row">
                     <!-- Card 1: Leads Calificados -->
                     <div class="card-quantix card-orange" id="card-1-wrapper">
-                        <div class="card-accent-line orange"></div>
-                        <div class="card-header">
-                            <div class="card-title-wrapper">
-                                <div class="icon-box"
-                                    style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #F59E0B;">
-                                    <ion-icon name="ribbon"></ion-icon>
-                                </div>
-                                <div class="label-group">
-                                    <span class="label-main" id="label-main-1">Oportunidades calificadas</span>
-                                    <span class="label-sub" id="label-sub-1">CALIDAD</span>
-                                </div>
+                        <div class="kpi-card-top">
+                            <div class="label-group">
+                                <span class="label-main" id="label-main-1">Oportunidades calificadas</span>
+                                <span class="label-sub" id="label-sub-1">CALIDAD</span>
+                            </div>
+                            <div class="icon-box" style="background: rgba(252,211,77,0.15); border-color: rgba(252,211,77,0.25); color: #FCD34D; box-shadow: 0 0 20px rgba(252,211,77,0.2);">
+                                <ion-icon name="ribbon"></ion-icon>
                             </div>
                         </div>
-
                         <div class="value-big" id="card-1-value">0</div>
-                        <div class="pill-change pill-green">
-                            <ion-icon name="arrow-up"></ion-icon> High Quality
+                        <div class="pill-change pill-green" id="pill-1">
+                            <ion-icon name="trending-up"></ion-icon> <span id="pill-1-text">Calificados</span>
                         </div>
-
-                        <div class="card-chart-container">
-                            <canvas id="chart-1"></canvas>
-                        </div>
+                        <div class="card-chart-container" style="display:none;"><canvas id="chart-1"></canvas></div>
                     </div>
 
                     <!-- Card 2: Tasa de Conversión -->
                     <div class="card-quantix card-purple" id="card-2-wrapper">
-                        <div class="card-accent-line purple"></div>
-                        <div class="card-header">
-                            <div class="card-title-wrapper">
-                                <div class="icon-box"
-                                    style="background: rgba(117, 81, 255, 0.1); border-color: rgba(117, 81, 255, 0.3); color: #7551FF;">
-                                    <ion-icon name="swap-vertical"></ion-icon>
-                                </div>
-                                <div class="label-group">
-                                    <span class="label-main" id="label-main-2">Tasa de Conversión</span>
-                                    <span class="label-sub" id="label-sub-2">Oportunidades calificadas / Leads</span>
-                                </div>
+                        <div class="kpi-card-top">
+                            <div class="label-group">
+                                <span class="label-main" id="label-main-2">Tasa de Conversión</span>
+                                <span class="label-sub" id="label-sub-2">Oportunidades / Leads</span>
+                            </div>
+                            <div class="icon-box" style="background: rgba(196,168,255,0.15); border-color: rgba(196,168,255,0.25); color: #C4A8FF; box-shadow: 0 0 20px rgba(196,168,255,0.2);">
+                                <ion-icon name="swap-vertical"></ion-icon>
                             </div>
                         </div>
-
-                        <div class="value-big" id="card-2-value">0.0</div>
-                        <div class="pill-change pill-green"
-                            style="background: rgba(117, 81, 255, 0.15); color: #7551FF;">
-                            Ratio Actual
+                        <div class="value-big" id="card-2-value">0.0%</div>
+                        <div class="pill-change pill-green" id="pill-2">
+                            <ion-icon name="trending-up"></ion-icon> <span id="pill-2-text">Ratio Actual</span>
                         </div>
-
-                        <div class="card-chart-container">
-                            <canvas id="chart-2"></canvas>
-                        </div>
+                        <div class="card-chart-container" style="display:none;"><canvas id="chart-2"></canvas></div>
                     </div>
 
                     <!-- Card 3: Ventas -->
                     <div class="card-quantix card-cyan" id="card-3-wrapper">
-                        <div class="card-accent-line cyan"></div>
-                        <div class="card-header">
-                            <div class="card-title-wrapper">
-                                <div class="icon-box"
-                                    style="background: rgba(1, 241, 227, 0.1); border-color: rgba(1, 241, 227, 0.3); color: #01F1E3;">
-                                    <ion-icon name="cash"></ion-icon>
-                                </div>
-                                <div class="label-group">
-                                    <span class="label-main" id="label-main-3">Ventas</span>
-                                    <span class="label-sub" id="label-sub-3">INGRESOS TOTALES</span>
-                                </div>
+                        <div class="kpi-card-top">
+                            <div class="label-group">
+                                <span class="label-main" id="label-main-3">Ventas</span>
+                                <span class="label-sub" id="label-sub-3">INGRESOS TOTALES</span>
+                            </div>
+                            <div class="icon-box" style="background: rgba(147,197,253,0.15); border-color: rgba(147,197,253,0.25); color: #93C5FD; box-shadow: 0 0 20px rgba(147,197,253,0.2);">
+                                <ion-icon name="cash"></ion-icon>
                             </div>
                         </div>
-
                         <div class="value-big" id="card-3-value">$0</div>
-                        <div class="pill-change" style="visibility: hidden;">Spacer</div>
-
-                        <div class="card-chart-container">
-                            <canvas id="chart-3"></canvas>
+                        <div class="pill-change pill-green" id="pill-3">
+                            <ion-icon name="trending-up"></ion-icon> <span id="pill-3-text">Ingresos</span>
                         </div>
+                        <div class="card-chart-container" style="display:none;"><canvas id="chart-3"></canvas></div>
                     </div>
 
                     <!-- Card 4: ROI -->
                     <div class="card-quantix card-pink" id="card-4-wrapper">
-                        <div class="card-accent-line pink"></div>
-                        <div class="card-header">
-                            <div class="card-title-wrapper">
-                                <div class="icon-box"
-                                    style="background: rgba(255, 0, 229, 0.1); border-color: rgba(255, 0, 229, 0.3); color: #FF00E5;">
-                                    <ion-icon name="rocket"></ion-icon>
-                                </div>
-                                <div class="label-group">
-                                    <span class="label-main" id="label-main-4">ROI</span>
-                                    <span class="label-sub" id="label-sub-4">VENTAS / INVERSIÓN</span>
-                                </div>
+                        <div class="kpi-card-top">
+                            <div class="label-group">
+                                <span class="label-main" id="label-main-4">ROI</span>
+                                <span class="label-sub" id="label-sub-4">VENTAS / INVERSIÓN</span>
+                            </div>
+                            <div class="icon-box" style="background: rgba(248,180,200,0.15); border-color: rgba(248,180,200,0.25); color: #F8B4C8; box-shadow: 0 0 20px rgba(248,180,200,0.2);">
+                                <ion-icon name="rocket"></ion-icon>
                             </div>
                         </div>
-
-                        <div class="value-big" id="card-4-value">0.0x</div>
-                        <div class="pill-change" style="visibility: hidden;">Spacer</div>
-
-                        <div class="card-chart-container">
-                            <canvas id="chart-4"></canvas>
+                        <div class="value-big" id="card-4-value">0.00x</div>
+                        <div class="pill-change pill-green" id="pill-4">
+                            <ion-icon name="trending-up"></ion-icon> <span id="pill-4-text">Retorno</span>
                         </div>
+                        <div class="card-chart-container" style="display:none;"><canvas id="chart-4"></canvas></div>
                     </div>
                 </div>
 
-                <!-- Middle Row: Chart & Table (50/50) -->
+                <!-- Middle Row: Chart & Table -->
                 <div class="split-row-grid">
                     <!-- Main Big Chart -->
                     <div class="card-quantix big-chart-card">
@@ -1554,70 +1825,6 @@
                     </div>
                 </div>
 
-                <!-- Bottom Row: Remaining Cards -->
-                <div class="bottom-cards-row" id="bottom-cards-row">
-                    <!-- Card 5: Total Leads -->
-                    <div class="card-quantix card-orange" id="card-5-wrapper">
-                        <div class="card-accent-line orange"></div>
-                        <div class="card-header">
-                            <div class="card-title-wrapper">
-                                <div class="icon-box"
-                                    style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #F59E0B;">
-                                    <ion-icon name="people"></ion-icon>
-                                </div>
-                                <div class="label-group">
-                                    <span class="label-main" id="label-main-5">Total de Registros</span>
-                                    <span class="label-sub" id="label-sub-5">Personas que mandaron mensaje</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="value-big" id="card-5-value">0</div>
-                        <div class="pill-change pill-green">Generados</div>
-                        <div class="card-chart-container"><canvas id="chart-5"></canvas></div>
-                    </div>
-
-                    <!-- Card 6: Inversión -->
-                    <div class="card-quantix card-pink" id="card-6-wrapper">
-                        <div class="card-accent-line pink"></div>
-                        <div class="card-header">
-                            <div class="card-title-wrapper">
-                                <div class="icon-box"
-                                    style="background: rgba(255, 0, 229, 0.1); border-color: rgba(255, 0, 229, 0.3); color: #FF00E5;">
-                                    <ion-icon name="wallet"></ion-icon>
-                                </div>
-                                <div class="label-group">
-                                    <span class="label-main" id="label-main-6">Inversión</span>
-                                    <span class="label-sub" id="label-sub-6">Presupuesto</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="value-big" id="card-6-value">$0</div>
-                        <div class="pill-change pill-red" id="card-6-date">Presupuesto</div>
-                        <div class="card-chart-container"><canvas id="chart-6"></canvas></div>
-                    </div>
-
-                    <!-- Card 7: CPL -->
-                    <div class="card-quantix card-cyan" id="card-7-wrapper">
-                        <div class="card-accent-line cyan"></div>
-                        <div class="card-header">
-                            <div class="card-title-wrapper">
-                                <div class="icon-box"
-                                    style="background: rgba(1, 241, 227, 0.1); border-color: rgba(1, 241, 227, 0.3); color: #01F1E3;">
-                                    <ion-icon name="pricetag"></ion-icon>
-                                </div>
-                                <div class="label-group">
-                                    <span class="label-main" id="label-main-7">Costo por oportunidad calificada</span>
-                                    <span class="label-sub" id="label-sub-7">Eficiencia</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="value-big" id="card-7-value">$0.00</div>
-                        <div class="pill-change pill-green">Eficiencia</div>
-                        <div class="card-chart-container"><canvas id="chart-7"></canvas></div>
-                    </div>
-                </div>
-
-
                 <!-- Modal Structure -->
                 <div id="leads-modal" class="modal-overlay hidden">
                     <div class="modal-content">
@@ -1643,6 +1850,57 @@
                     </div>
                 </div>
 
+                <!-- Bottom Row: Remaining Cards (inside carousel) -->
+                <div class="bottom-cards-row" id="bottom-cards-row">
+                    <!-- Card 5: Total Leads -->
+                    <div class="card-quantix card-orange" id="card-5-wrapper">
+                        <div class="kpi-card-top">
+                            <div class="label-group">
+                                <span class="label-main" id="label-main-5">Total de Registros</span>
+                                <span class="label-sub" id="label-sub-5">Personas que iniciaron una conversación</span>
+                            </div>
+                            <div class="icon-box" style="background: rgba(252,211,77,0.15); border-color: rgba(252,211,77,0.25); color: #FCD34D; box-shadow: 0 0 20px rgba(252,211,77,0.2);">
+                                <ion-icon name="people"></ion-icon>
+                            </div>
+                        </div>
+                        <div class="value-big" id="card-5-value">0</div>
+                        <div class="pill-change pill-green">Generados</div>
+                        <div class="card-chart-container" style="display:none;"><canvas id="chart-5"></canvas></div>
+                    </div>
+
+                    <!-- Card 6: Inversión -->
+                    <div class="card-quantix card-pink" id="card-6-wrapper">
+                        <div class="kpi-card-top">
+                            <div class="label-group">
+                                <span class="label-main" id="label-main-6">Inversión en Pauta</span>
+                                <span class="label-sub" id="label-sub-6">Inversión en Meta / Google Ads</span>
+                            </div>
+                            <div class="icon-box" style="background: rgba(248,180,200,0.15); border-color: rgba(248,180,200,0.25); color: #F8B4C8; box-shadow: 0 0 20px rgba(248,180,200,0.2);">
+                                <ion-icon name="wallet"></ion-icon>
+                            </div>
+                        </div>
+                        <div class="value-big" id="card-6-value">$0</div>
+                        <div class="pill-change pill-green" id="card-6-date">Actualizada al --</div>
+                        <div class="card-chart-container" style="display:none;"><canvas id="chart-6"></canvas></div>
+                    </div>
+
+                    <!-- Card 7: CPL -->
+                    <div class="card-quantix card-cyan" id="card-7-wrapper">
+                        <div class="kpi-card-top">
+                            <div class="label-group">
+                                <span class="label-main" id="label-main-7">Tasa de Conversión</span>
+                                <span class="label-sub" id="label-sub-7">Cotizaciones de eventos / Registros</span>
+                            </div>
+                            <div class="icon-box" style="background: rgba(147,197,253,0.15); border-color: rgba(147,197,253,0.25); color: #93C5FD; box-shadow: 0 0 20px rgba(147,197,253,0.2);">
+                                <ion-icon name="pricetag"></ion-icon>
+                            </div>
+                        </div>
+                        <div class="value-big" id="card-7-value">0.0%</div>
+                        <div class="pill-change pill-green">Ratio Actual</div>
+                        <div class="card-chart-container" style="display:none;"><canvas id="chart-7"></canvas></div>
+                    </div>
+                </div>
+
             </div><!-- end .dashboard-grid -->
 
             <!-- ===== PANEL DE RESERVAS RESTAURANTE ===== -->
@@ -1659,11 +1917,19 @@
                             Restaurante
                         </h3>
                     </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <button id="avail-toggle-btn" onclick="toggleAvailabilityPanel()" title="Panel de disponibilidad">
+                            <ion-icon name="shield-checkmark-outline"></ion-icon>
+                            <span id="avail-btn-label">Disponibilidad</span>
+                        </button>
                         <div class="rest-view-toggle">
                             <button class="rest-view-btn active" data-view="cards"
                                 onclick="toggleRestaurantView('cards')" title="Vista tarjetas">
                                 <ion-icon name="grid-outline"></ion-icon>
+                            </button>
+                            <button class="rest-view-btn" data-view="agenda"
+                                onclick="toggleRestaurantView('agenda')" title="Vista agenda">
+                                <ion-icon name="calendar-clear-outline"></ion-icon>
                             </button>
                             <button class="rest-view-btn" data-view="table" onclick="toggleRestaurantView('table')"
                                 title="Vista tabla">
@@ -1675,6 +1941,53 @@
                                        background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
                                        color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.85rem; font-family:'Inter',sans-serif;">
                             <ion-icon name="refresh-outline"></ion-icon> Actualizar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Availability Panel -->
+                <div id="avail-panel" class="avail-panel">
+                    <!-- Row 1: Accepting reservations toggle -->
+                    <div class="avail-panel-row">
+                        <div>
+                            <div class="avail-panel-label">Aceptando reservas</div>
+                            <div class="avail-panel-sub">Cuando está apagado, el agente no ofrecerá ni confirmará reservas.</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span id="avail-status-text" class="avail-toggle-label avail-status-on">Activo</span>
+                            <button id="avail-accept-toggle" class="avail-toggle on" onclick="toggleAcceptingReservations()"></button>
+                        </div>
+                    </div>
+                    <div class="avail-sep"></div>
+                    <!-- Row 2: Daily capacity -->
+                    <div class="avail-panel-row">
+                        <div>
+                            <div class="avail-panel-label">Capacidad máxima por día</div>
+                            <div class="avail-panel-sub">El agente dejará de ofrecer reservas cuando se alcance este límite. Déjalo vacío para sin límite.</div>
+                        </div>
+                        <input type="number" id="avail-capacity" class="avail-capacity-input"
+                            min="1" max="999" placeholder="∞"
+                            title="Reservas máximas por día">
+                    </div>
+                    <div class="avail-sep"></div>
+                    <!-- Row 3: Closed dates -->
+                    <div>
+                        <div class="avail-panel-label" style="margin-bottom:10px;">Fechas inhabilitadas</div>
+                        <div class="avail-date-add-row">
+                            <input type="date" id="avail-new-date" class="avail-date-input">
+                            <button class="avail-add-btn" onclick="addClosedDate()">
+                                <ion-icon name="add-outline"></ion-icon> Agregar fecha
+                            </button>
+                        </div>
+                        <div id="avail-dates-list" class="avail-dates-list" style="margin-top:10px;">
+                            <span style="font-size:0.78rem; color:rgba(255,255,255,0.25);">Sin fechas inhabilitadas</span>
+                        </div>
+                    </div>
+                    <!-- Save -->
+                    <div class="avail-save-row">
+                        <span id="avail-save-status" class="avail-save-status">✓ Guardado</span>
+                        <button class="avail-save-btn" onclick="saveRestaurantAvailability()">
+                            <ion-icon name="cloud-upload-outline"></ion-icon> Guardar configuración
                         </button>
                     </div>
                 </div>
@@ -1739,6 +2052,9 @@
                 <!-- Cards View -->
                 <div id="rest-cards-container" class="rest-cards-grid"></div>
 
+                <!-- Agenda View -->
+                <div id="rest-agenda-container" class="rest-agenda-container hidden"></div>
+
                 <!-- Table View -->
                 <div id="rest-table-container" class="hidden">
                     <div class="rest-table-wrapper">
@@ -1751,6 +2067,7 @@
                                         onclick="sortRestaurantTable('nombre')">Nombre</th>
                                     <th class="rest-th-sortable active" data-sort="fechaEvento"
                                         onclick="sortRestaurantTable('fechaEvento')">Fecha</th>
+                                    <th>Hora</th>
                                     <th class="rest-th-sortable" data-sort="pax" onclick="sortRestaurantTable('pax')">
                                         PAX</th>
                                     <th class="rest-th-sortable" data-sort="tipoEvento"
@@ -1768,7 +2085,7 @@
             <div id="restaurant-confirm-modal" class="hidden"
                 style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
                 <div
-                    style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:440px; width:90%; overflow:hidden;">
+                    style="background:rgba(15,13,30,0.92); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px); border:1px solid rgba(255,255,255,0.10); border-radius:24px; max-width:440px; width:90%; overflow:hidden;">
                     <div
                         style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
                         <h3 id="confirm-modal-title" style="font-size:1.1rem; font-weight:700;">Confirmar Reserva</h3>
@@ -1777,7 +2094,7 @@
                     </div>
                     <div style="padding:24px;">
                         <div
-                            style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:20px; margin-bottom:20px;">
+                            style="background:rgba(255,255,255,0.045); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; margin-bottom:20px;">
                             <div style="display:grid; gap:12px;">
                                 <div style="display:flex; justify-content:space-between;">
                                     <span style="color:var(--text-dim);">Cliente</span>
@@ -1797,12 +2114,21 @@
                                 </div>
                             </div>
                         </div>
-                        <div style="margin-top:16px;">
-                            <label
-                                style="font-size:0.8rem; color:rgba(255,255,255,0.5); display:block; margin-bottom:6px;">Mensaje
-                                para el cliente (opcional)</label>
+                        <!-- Motivos de rechazo (solo visible al rechazar) -->
+                        <div id="confirm-modal-reject-reasons" style="display:none; margin-bottom:16px;">
+                            <label style="font-size:0.78rem; color:rgba(255,255,255,0.45); display:block; text-transform:uppercase; letter-spacing:0.05em;">Motivo del rechazo</label>
+                            <div class="reject-reasons-row">
+                                <button class="reject-reason-chip" onclick="selectRejectReason(this, 'sin-disponibilidad')">Sin disponibilidad</button>
+                                <button class="reject-reason-chip" onclick="selectRejectReason(this, 'fecha-cerrada')">Fecha cerrada</button>
+                                <button class="reject-reason-chip" onclick="selectRejectReason(this, 'grupo-grande')">Grupo muy grande</button>
+                                <button class="reject-reason-chip" onclick="selectRejectReason(this, 'otra')">Otra razón</button>
+                            </div>
+                        </div>
+                        <div style="margin-top:4px;">
+                            <label id="confirm-modal-msg-label"
+                                style="font-size:0.78rem; color:rgba(255,255,255,0.45); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Mensaje para el cliente</label>
                             <textarea id="confirm-modal-message" class="rest-confirm-message"
-                                placeholder="Ej: Tu reserva está confirmada para el viernes a las 8pm. ¡Te esperamos!"></textarea>
+                                placeholder="Mensaje para el cliente..."></textarea>
                         </div>
                         <div style="display:flex; gap:12px; margin-top:16px;">
                             <button onclick="closeConfirmModal()"
@@ -1820,11 +2146,90 @@
                 </div>
             </div>
 
+            <!-- Modal Detalle de Reserva -->
+            <div id="rest-detail-modal" class="hidden"
+                style="position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(10px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px;">
+                <div style="background:rgba(15,13,30,0.96); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
+                            border:1px solid rgba(255,255,255,0.10); border-radius:24px;
+                            width:100%; max-width:520px; max-height:90vh; overflow:hidden;
+                            display:flex; flex-direction:column;
+                            box-shadow:0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);">
+
+                    <!-- Header -->
+                    <div style="padding:20px 24px 16px; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+                            <div style="min-width:0;">
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+                                    <h3 id="rdm-name" style="font-size:1.15rem; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></h3>
+                                    <span id="rdm-status-pill" style="padding:3px 10px; border-radius:8px; font-size:0.72rem; font-weight:600; flex-shrink:0;"></span>
+                                    <span id="rdm-today-badge" class="rest-today-badge" style="display:none;">HOY</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <span id="rdm-date" style="font-size:0.88rem; font-weight:600; color:rgba(255,255,255,0.8);"></span>
+                                    <span id="rdm-time" class="rest-card-time" style="display:none;"></span>
+                                </div>
+                            </div>
+                            <button onclick="closeDetailModal()"
+                                style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.09); border-radius:10px; color:rgba(255,255,255,0.5); width:32px; height:32px; font-size:1.2rem; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; line-height:1; transition:all 0.18s;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.12)'; this.style.color='#fff';"
+                                onmouseout="this.style.background='rgba(255,255,255,0.06)'; this.style.color='rgba(255,255,255,0.5)';">&times;</button>
+                        </div>
+                    </div>
+
+                    <!-- Body -->
+                    <div style="flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:16px;">
+
+                        <!-- Info grid -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px;">
+                                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:4px;">Personas</div>
+                                <div id="rdm-pax" style="font-size:1.3rem; font-weight:700; color:#fff;"></div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px;">
+                                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:4px;">Tipo</div>
+                                <div id="rdm-tipo" style="font-size:0.88rem; font-weight:600; color:#fff;"></div>
+                            </div>
+                            <div id="rdm-phone-block" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px; display:none;">
+                                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:4px;">Teléfono</div>
+                                <div id="rdm-phone" style="font-size:0.88rem; font-weight:600; color:#fff;"></div>
+                            </div>
+                            <div id="rdm-email-block" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px; display:none;">
+                                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:4px;">Email</div>
+                                <div id="rdm-email" style="font-size:0.85rem; font-weight:500; color:#fff; word-break:break-all;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Conversación -->
+                        <div id="rdm-convo-block" style="display:none;">
+                            <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:8px;">Conversación / Detalles</div>
+                            <pre id="rdm-convo" style="white-space:pre-wrap; word-break:break-word; font-family:'Inter',sans-serif;
+                                font-size:0.83rem; line-height:1.6; color:rgba(255,255,255,0.65);
+                                background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+                                border-radius:12px; padding:14px; max-height:150px; overflow-y:auto; margin:0;"></pre>
+                        </div>
+
+                        <!-- Notas internas -->
+                        <div>
+                            <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:8px;">Notas internas</div>
+                            <textarea id="rdm-notes" class="rest-notes-area" style="margin-top:0;" placeholder="Agregar notas del staff..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Footer actions -->
+                    <div style="padding:16px 24px; border-top:1px solid rgba(255,255,255,0.07); flex-shrink:0; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <!-- Contact -->
+                        <div id="rdm-contact-actions" style="display:flex; gap:8px; flex:1; flex-wrap:wrap;"></div>
+                        <!-- Status actions -->
+                        <div id="rdm-status-actions" style="display:flex; gap:8px; flex-shrink:0;"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Modal de Conversación -->
             <div id="conversation-modal" class="hidden"
                 style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
                 <div
-                    style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:520px; width:90%; overflow:hidden;">
+                    style="background:rgba(15,13,30,0.92); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px); border:1px solid rgba(255,255,255,0.10); border-radius:24px; max-width:520px; width:90%; overflow:hidden;">
                     <div
                         style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
                         <h3 style="font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px;">
@@ -1847,7 +2252,7 @@
             <div id="restaurant-edit-modal" class="hidden"
                 style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
                 <div
-                    style="background:#1a1a1f; border:1px solid rgba(255,255,255,0.1); border-radius:24px; max-width:480px; width:90%; overflow:hidden;">
+                    style="background:rgba(15,13,30,0.92); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px); border:1px solid rgba(255,255,255,0.10); border-radius:24px; max-width:480px; width:90%; overflow:hidden;">
                     <div
                         style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
                         <h3 style="font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px;">
@@ -1895,10 +2300,7 @@
             </div>
 
         </main>
-
-        <footer style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.8rem; opacity: 0.5;">
-            &copy; 2026 Intra. Todos los derechos reservados.
-        </footer>
+        </div><!-- /.main-column -->
     </div><!-- /#app-wrapper -->
 
     <!-- ===== MODAL CAMBIAR CONTRASEÑA ===== -->
@@ -2672,9 +3074,6 @@
         </div>
     </div>
 
-    <button id="switcher-toggle-btn" onclick="toggleSwitcher()" title="Cambiar dashboard">
-        <ion-icon name="apps-outline"></ion-icon>
-    </button>
 
     <!-- ===== PANEL DE VENTAS ===== -->
     <style>
@@ -3411,8 +3810,9 @@
                 `;
             }).join('');
 
-            // Mostrar el botón toggle (solo en desktop; en mobile lo oculta el CSS)
-            document.getElementById('switcher-toggle-btn').style.display = 'flex';
+            // Mostrar botón en sidebar
+            var sidebarBtn = document.getElementById('sidebar-switcher-btn');
+            if (sidebarBtn) sidebarBtn.style.display = 'flex';
         })();
 
         // Búsqueda dentro del drawer
@@ -3432,6 +3832,53 @@
             if (inp) { inp.value = ''; filterDrawerClients(''); }
         };
     </script>
+    <!-- KPI Carousel: peek + fade animation -->
+    <script>
+        function initKpiCarousel() {
+            if (window.innerWidth > 480) return;
+            var wrapper = document.querySelector('.kpi-carousel-wrapper');
+            if (!wrapper) return;
+            var cards = Array.from(wrapper.querySelectorAll('.card-quantix'));
+
+            function updateActive() {
+                var wRect = wrapper.getBoundingClientRect();
+                cards.forEach(function(card) {
+                    var cRect = card.getBoundingClientRect();
+                    var overlap = Math.min(cRect.right, wRect.right) - Math.max(cRect.left, wRect.left);
+                    var ratio = overlap / cRect.width;
+                    if (ratio > 0.5) {
+                        card.classList.add('carousel-active');
+                    } else {
+                        card.classList.remove('carousel-active');
+                    }
+                });
+            }
+
+            wrapper.addEventListener('scroll', updateActive, { passive: true });
+            updateActive(); // set first card active on load
+        }
+        document.addEventListener('DOMContentLoaded', initKpiCarousel);
+
+        // Header scroll effect
+        (function() {
+            var header = document.querySelector('.main-header');
+            var content = document.querySelector('.main-content');
+            if (!header || !content) return;
+            content.addEventListener('scroll', function() {
+                header.classList.toggle('scrolled', content.scrollTop > 10);
+            }, { passive: true });
+        })();
+        window.addEventListener('resize', function() {
+            // Re-init if switching viewport sizes
+            var cards = document.querySelectorAll('.kpi-carousel-wrapper .card-quantix');
+            if (window.innerWidth > 480) {
+                cards.forEach(function(c) { c.classList.remove('carousel-active'); });
+            } else {
+                initKpiCarousel();
+            }
+        });
+    </script>
+
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -3463,6 +3910,294 @@
             </button>
         </div>
     </div>
+
+<!-- ===== MOBILE DASHBOARD (Figma MD3 Dark Glass) ===== -->
+<div class="mobile-dash" id="mobile-dash">
+
+    <!-- Cosmic background -->
+    <div class="mob-bg">
+        <div class="mob-orb mob-orb-purple"></div>
+        <div class="mob-orb mob-orb-indigo"></div>
+        <div class="mob-orb mob-orb-cyan"></div>
+        <div class="mob-orb mob-orb-rose"></div>
+        <div class="mob-grid"></div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="mob-scroll" id="mob-scroll">
+
+        <!-- Header -->
+        <div class="mob-header">
+            <div>
+                <p class="mob-date" id="mob-date">--</p>
+                <h1 class="mob-greeting">¡Hola, <span id="mob-name">Admin</span>! 👋</h1>
+            </div>
+            <div class="mob-header-right">
+                <button class="mob-icon-btn" onclick="toggleTheme()" title="Tema">
+                    <ion-icon name="moon-outline" id="mob-theme-icon"></ion-icon>
+                </button>
+                <div class="mob-avatar" id="mob-avatar">A</div>
+            </div>
+        </div>
+
+        <!-- Status chip -->
+        <div class="mob-status-chip">
+            <div class="mob-status-dot"></div>
+            <span id="mob-client-chip">Sistema activo</span>
+        </div>
+
+        <!-- KPI section -->
+        <div class="mob-section-row">
+            <span class="mob-section-title">Métricas clave</span>
+            <span class="mob-section-sub" id="mob-range-label">Todo el tiempo</span>
+        </div>
+        <div class="mob-kpi-scroll" id="mob-kpi-scroll">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Chart -->
+        <div class="mob-glass-card" id="mob-chart-section">
+            <div class="mob-chart-top">
+                <div>
+                    <p class="mob-card-title" id="mob-chart-title">Histórico</p>
+                    <p class="mob-card-sub">Tendencia de leads calificados</p>
+                </div>
+                <div class="mob-badge-green">
+                    <ion-icon name="trending-up-outline"></ion-icon>
+                    <span>Esta semana</span>
+                </div>
+            </div>
+            <div style="height:130px; position:relative;">
+                <canvas id="mob-main-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Leads recientes -->
+        <div class="mob-glass-card" id="mob-leads-section">
+            <div class="mob-section-row" style="margin-bottom:12px;">
+                <span class="mob-section-title">Leads recientes</span>
+                <button class="mob-see-all" onclick="document.getElementById('view-all-btn') && document.getElementById('view-all-btn').click()">
+                    Ver todo <ion-icon name="chevron-forward-outline"></ion-icon>
+                </button>
+            </div>
+            <div id="mob-leads-list">
+                <p style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:12px 0;">Cargando...</p>
+            </div>
+        </div>
+
+    </div><!-- /mob-scroll -->
+
+</div><!-- /#mobile-dash -->
+
+<!-- ===== PREMIUM ANIMATIONS — Desktop only (min-width: 481px) ===== -->
+<script>
+(function () {
+    'use strict';
+
+    var IS_DESKTOP = window.innerWidth > 480;
+
+    /* ------------------------------------------------------------------ */
+    /* 1. STAGGERED ENTRANCE                                                */
+    /* ------------------------------------------------------------------ */
+    function applyStaggeredEntrance() {
+        if (!IS_DESKTOP) return;
+        var els = document.querySelectorAll('.card-quantix, .big-chart-card, .table-card');
+        var delay = 0;
+        var seen = new Set();
+        els.forEach(function (el) {
+            // big-chart-card is also .card-quantix — avoid double-counting
+            if (seen.has(el)) return;
+            seen.add(el);
+            el.style.animationDelay = delay.toFixed(2) + 's';
+            delay += 0.05;
+        });
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 2. 3D CARD TILT                                                      */
+    /* ------------------------------------------------------------------ */
+    function initCardTilt() {
+        if (!IS_DESKTOP) return;
+        var cards = document.querySelectorAll('.card-quantix');
+        cards.forEach(function (card) {
+            card.addEventListener('mousemove', function (e) {
+                var rect = card.getBoundingClientRect();
+                var cx = rect.left + rect.width / 2;
+                var cy = rect.top + rect.height / 2;
+                var dx = (e.clientX - cx) / (rect.width / 2);
+                var dy = (e.clientY - cy) / (rect.height / 2);
+                var maxTilt = 8;
+                var tiltX = dx * maxTilt;
+                var tiltY = dy * maxTilt;
+                card.style.transition = 'transform 0.15s ease';
+                card.style.transform =
+                    'perspective(800px) rotateX(' + (-tiltY) + 'deg) rotateY(' + tiltX + 'deg) scale(1.02)';
+            });
+            card.addEventListener('mouseleave', function () {
+                card.style.transition = 'transform 0.5s cubic-bezier(0.22,1,0.36,1)';
+                card.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale(1)';
+            });
+        });
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 3. SPRING COUNTERS                                                   */
+    /* ------------------------------------------------------------------ */
+    function easeOutSpring(t) {
+        return 1 - Math.pow(1 - t, 3) * Math.cos(t * Math.PI * 6) * Math.exp(-t * 8);
+    }
+
+    function animateCounters() {
+        if (!IS_DESKTOP) return;
+        var valueBigs = document.querySelectorAll('.value-big');
+        valueBigs.forEach(function (el) {
+            var raw = el.textContent.trim();
+            // Extract prefix, number, suffix
+            var match = raw.match(/^([^0-9]*)([0-9,\.]+)([^0-9]*)$/);
+            if (!match) return;
+            var prefix = match[1];
+            var numStr = match[2].replace(/,/g, '');
+            var suffix = match[3];
+            var target = parseFloat(numStr);
+            if (isNaN(target)) return;
+
+            var isInt = Number.isInteger(target) && !numStr.includes('.');
+            var decimals = 0;
+            if (!isInt) {
+                var dotIdx = numStr.indexOf('.');
+                decimals = dotIdx >= 0 ? numStr.length - dotIdx - 1 : 0;
+            }
+
+            var start = null;
+            var duration = 1200;
+
+            function step(ts) {
+                if (!start) start = ts;
+                var elapsed = ts - start;
+                var t = Math.min(elapsed / duration, 1);
+                var eased = easeOutSpring(t);
+                var current = target * eased;
+                var formatted;
+                if (isInt) {
+                    formatted = Math.round(current).toLocaleString('en-US');
+                } else {
+                    formatted = current.toFixed(decimals);
+                }
+                el.textContent = prefix + formatted + suffix;
+                if (t < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    // Ensure final value matches exactly
+                    if (isInt) {
+                        el.textContent = prefix + Math.round(target).toLocaleString('en-US') + suffix;
+                    } else {
+                        el.textContent = prefix + target.toFixed(decimals) + suffix;
+                    }
+                }
+            }
+            requestAnimationFrame(step);
+        });
+    }
+
+    // Expose globally so it can be called after render
+    window.animateCounters = animateCounters;
+
+    // Wrap renderDashboard to hook animateCounters + staggered entrance
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof window.renderDashboard === 'function') {
+            var _orig = window.renderDashboard;
+            window.renderDashboard = function () {
+                _orig.apply(this, arguments);
+                setTimeout(function() {
+                    applyStaggeredEntrance();
+                    animateCounters();
+                }, 60);
+            };
+        }
+    });
+
+    /* ------------------------------------------------------------------ */
+    /* 5. SHIMMER SCAN — every 8 seconds                                    */
+    /* ------------------------------------------------------------------ */
+    function initShimmer() {
+        if (!IS_DESKTOP) return;
+        function triggerShimmer() {
+            var cards = document.querySelectorAll('.card-quantix');
+            cards.forEach(function (card) {
+                card.classList.remove('shimmer-active');
+                // Force reflow so animation restarts cleanly
+                void card.offsetWidth;
+                card.classList.add('shimmer-active');
+            });
+            // Remove class after animation ends (1.2s) so it can re-trigger
+            setTimeout(function () {
+                document.querySelectorAll('.card-quantix.shimmer-active').forEach(function (c) {
+                    c.classList.remove('shimmer-active');
+                });
+            }, 1300);
+        }
+        // First shimmer after 8s, then every 8s
+        setTimeout(function () {
+            triggerShimmer();
+            setInterval(triggerShimmer, 8000);
+        }, 8000);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 6. INK REVEAL — on .dash-tab / .range-opt click                     */
+    /* ------------------------------------------------------------------ */
+    function initInkReveal() {
+        if (!IS_DESKTOP) return;
+        var grid = document.querySelector('.dashboard-grid');
+        if (!grid) return;
+
+        function doReveal() {
+            grid.classList.remove('ink-reveal-active');
+            void grid.offsetWidth; // reflow
+            grid.classList.add('ink-reveal-active');
+        }
+
+        document.addEventListener('click', function (e) {
+            var target = e.target;
+            // Walk up to handle clicks on child elements (e.g. ion-icon inside tab)
+            while (target && target !== document) {
+                if (
+                    target.classList && (
+                        target.classList.contains('dash-tab') ||
+                        target.classList.contains('range-opt')
+                    )
+                ) {
+                    // Small delay to let the render start
+                    setTimeout(doReveal, 30);
+                    break;
+                }
+                target = target.parentElement;
+            }
+        });
+
+        // Clean up class after animation
+        grid.addEventListener('animationend', function () {
+            grid.classList.remove('ink-reveal-active');
+        });
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 7. MAGNETIC SIDEBAR BUTTONS                                          */
+    /* ------------------------------------------------------------------ */
+    function initMagneticSidebar() { /* removed */ }
+
+    /* ------------------------------------------------------------------ */
+    /* INIT                                                                 */
+    /* ------------------------------------------------------------------ */
+    document.addEventListener('DOMContentLoaded', function () {
+        initCardTilt();
+        initInkReveal();
+        initMagneticSidebar();
+        setTimeout(animateCounters, 300);
+    });
+
+})();
+</script>
 
 </body>
 

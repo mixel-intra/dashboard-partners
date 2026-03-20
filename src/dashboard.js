@@ -2,6 +2,13 @@
 // Revised for maximum robustness and to fix empty chart/table issues
 console.log('%c DASHBOARD v2027-02-27B ', 'background:#0f0;color:#000;font-size:16px;font-weight:bold');
 
+function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // Global State
 const state = {
     leads: [],
@@ -31,7 +38,8 @@ const state = {
     restaurantSortField: 'fechaEvento',
     restaurantSortDir: 'desc',
     restaurantNewIds: [],
-    restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '' }
+    restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '' },
+    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: null }
 };
 
 // Theme-aware chart colors (Linear/Vercel style)
@@ -159,8 +167,8 @@ async function loadConfig() {
             investmentUpdatedAt: config.investment_updated_at || null,
             sales: config.sales_goal,
             clientLogo: config.logo_url,
-            themePrimary: config.theme_primary,
-            themeSecondary: config.theme_secondary
+            themePrimary: '#7551FF',
+            themeSecondary: '#01F1E3'
         };
 
         state.clientType = config.client_type || 'otro';
@@ -175,7 +183,6 @@ async function loadConfig() {
 
         initHotelTabs();
 
-        applyDynamicTheme(state.config.themePrimary, state.config.themeSecondary);
         applyCardLabels(config.card_labels || {});
         setupEventListeners();
     }
@@ -450,6 +457,7 @@ function switchDashTab(tab) {
         if (restaurantPanel) {
             restaurantPanel.classList.remove('hidden');
             fetchRestaurantReservations();
+            loadRestaurantAvailability();
             markRestaurantAsSeen();
         }
     } else {
@@ -620,77 +628,6 @@ function exportLeadsToExcel() {
     URL.revokeObjectURL(url);
 }
 
-function applyDynamicTheme(primary, secondary) {
-    if (!primary || !secondary) return;
-
-    console.log('--- APPLYING DYNAMIC THEME ---', primary, secondary);
-
-    // Create a dynamic style element
-    let styleEl = document.getElementById('dynamic-theme-styles');
-    if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = 'dynamic-theme-styles';
-        document.head.appendChild(styleEl);
-    }
-
-    // Convert hex to rgba for the glow effect
-    const hexToRgba = (hex, alpha) => {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
-
-    const primaryGlow = hexToRgba(primary, 0.3);
-    const primaryBorder = hexToRgba(primary, 0.5);
-
-    // Make utility globally available for charts
-    window.hexToRgba = hexToRgba;
-
-    styleEl.innerHTML = `
-        /* === Dark mode variables === */
-        :root {
-            --accent-purple: ${primary};
-            --accent-purple-glow: ${primaryGlow};
-            --accent-green: ${secondary};
-            --border-highlight: ${primaryBorder};
-        }
-
-        /* Dark mode body glow */
-        :root:not([data-theme="light"]) body {
-            background-image:
-                radial-gradient(circle at 0% 0%, ${hexToRgba(primary, 0.08)} 0%, transparent 50%),
-                radial-gradient(circle at 100% 100%, ${hexToRgba(secondary, 0.05)} 0%, transparent 40%);
-        }
-
-        /* Dark mode — card accents */
-        :root:not([data-theme="light"]) .card-accent-line { background: ${primary} !important; opacity: 0.8; }
-        :root:not([data-theme="light"]) .card-accent-line.orange, 
-        :root:not([data-theme="light"]) .card-accent-line.purple, 
-        :root:not([data-theme="light"]) .card-accent-line.cyan, 
-        :root:not([data-theme="light"]) .card-accent-line.pink { background: ${primary} !important; }
-
-        /* Dark mode — icon boxes */
-        :root:not([data-theme="light"]) .icon-box {
-            background: ${hexToRgba(primary, 0.1)} !important;
-            border-color: ${hexToRgba(primary, 0.3)} !important;
-            color: ${primary} !important;
-        }
-        :root:not([data-theme="light"]) .card-quantix:nth-child(odd) .icon-box { 
-            color: ${secondary} !important; 
-            background: ${hexToRgba(secondary, 0.1)} !important; 
-            border-color: ${hexToRgba(secondary, 0.3)} !important; 
-        }
-        :root:not([data-theme="light"]) .card-quantix:nth-child(odd) .card-accent-line { background: ${secondary} !important; }
-
-        /* Dark mode — pills */
-        :root:not([data-theme="light"]) .pill-change { background: ${hexToRgba(primary, 0.15)} !important; color: ${primary} !important; }
-        :root:not([data-theme="light"]) .pill-change.pill-green { background: ${hexToRgba(secondary, 0.15)} !important; color: ${secondary} !important; }
-        :root:not([data-theme="light"]) .view-btn:hover { border-color: ${primary} !important; color: ${primary} !important; }
-
-        /* Light mode is handled entirely by CSS (no client-specific colors) */
-    `;
-}
 
 async function loadVentasForDashboard() {
     if (!state.clientId) return;
@@ -846,6 +783,7 @@ function renderDashboard() {
     updateUI(metrics);
     renderAllCharts(metrics);
     renderTable();
+    renderMobileDashboard();
 }
 
 function calculateMetrics() {
@@ -900,7 +838,13 @@ function updateUI(m) {
 
     // Dynamic Welcome & Logo
     const _session = typeof getSession === 'function' ? getSession() : null;
-    setTxt('welcome-name', (_session && _session.name) ? _session.name : (state.config.clientName || 'Administrador'));
+    const displayName = (_session && _session.name) ? _session.name : (state.config.clientName || 'Administrador');
+    setTxt('welcome-name', displayName);
+    // Sync topbar avatar
+    const avatarName = document.getElementById('topbar-avatar-name');
+    const avatarInitials = document.getElementById('topbar-avatar-initials');
+    if (avatarName) avatarName.textContent = displayName;
+    if (avatarInitials) avatarInitials.textContent = displayName.charAt(0).toUpperCase();
 
     const logoImg = document.getElementById('client-logo');
     if (logoImg) {
@@ -1565,6 +1509,7 @@ async function fetchRestaurantReservations() {
             tipoEvento: r['TipoEvento'] || r.tipo_evento || r.tipoEvento || '',
             pax: r.PAX || r.pax || 0,
             fechaEvento: r['FechaEvento'] || r.fecha_evento || r.fechaEvento || '',
+            horaEvento: r['HoraEvento'] || r.hora_evento || r.horaEvento || '',
             estado: r.Estado || r.estado || 'Nuevo Lead',
             detalles: r.Detalles || r.detalles || '',
             conversacion: r.Conversacion || r.conversacion || ''
@@ -1631,26 +1576,38 @@ function renderRestaurantReservations() {
         });
     }
 
-    // Sort: today first, then by fecha_parsed
+    // Smart sort: today first, future ASC, past reservations at bottom DESC
     reservations.sort((a, b) => {
-        const aToday = isReservationToday(a) ? 0 : 1;
-        const bToday = isReservationToday(b) ? 0 : 1;
-        if (aToday !== bToday) return aToday - bToday;
-        const aDate = a.fecha_parsed ? a.fecha_parsed.getTime() : 0;
-        const bDate = b.fecha_parsed ? b.fecha_parsed.getTime() : 0;
-        return bDate - aDate;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const aDate = a.fecha_parsed ? new Date(a.fecha_parsed.setHours ? a.fecha_parsed : new Date(a.fecha_parsed)) : new Date(0);
+        const bDate = b.fecha_parsed ? new Date(b.fecha_parsed.setHours ? b.fecha_parsed : new Date(b.fecha_parsed)) : new Date(0);
+        const aDay = new Date(aDate); aDay.setHours(0, 0, 0, 0);
+        const bDay = new Date(bDate); bDay.setHours(0, 0, 0, 0);
+        const aPast = aDay < today;
+        const bPast = bDay < today;
+        // Future/today before past
+        if (!aPast && bPast) return -1;
+        if (aPast && !bPast) return 1;
+        // Both past: most recent first
+        if (aPast && bPast) return bDay - aDay;
+        // Both future/today: soonest first
+        return aDay - bDay;
     });
 
     // Dispatch to current view mode
-    const cardsEl = document.getElementById('rest-cards-container');
-    const tableEl = document.getElementById('rest-table-container');
+    const cardsEl  = document.getElementById('rest-cards-container');
+    const tableEl  = document.getElementById('rest-table-container');
+    const agendaEl = document.getElementById('rest-agenda-container');
+
+    [cardsEl, tableEl, agendaEl].forEach(el => el && el.classList.add('hidden'));
 
     if (state.restaurantViewMode === 'table') {
-        if (cardsEl) cardsEl.classList.add('hidden');
         if (tableEl) tableEl.classList.remove('hidden');
         renderRestaurantTable(reservations);
+    } else if (state.restaurantViewMode === 'agenda') {
+        if (agendaEl) agendaEl.classList.remove('hidden');
+        renderRestaurantAgenda(agendaEl, reservations);
     } else {
-        if (tableEl) tableEl.classList.add('hidden');
         if (cardsEl) cardsEl.classList.remove('hidden');
         renderRestaurantCards(reservations);
     }
@@ -1676,54 +1633,36 @@ function buildReservationCard(r) {
     const statusColor = r.estado === 'Confirmado' ? '#10B981' : r.estado === 'Rechazado' ? '#FF4444' : '#F59E0B';
     const statusBg = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)' : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)' : 'rgba(245,158,11,0.12)';
     const isToday = isReservationToday(r);
+    const isPast  = isReservationPast(r);
     const cleanPhone = (r.telefono || '').replace(/[\s\-\+\(\)]/g, '');
     const showActions = r.estado === 'Nuevo Lead';
     const notesDot = hasReservationNotes(r.id) ? '<span class="rest-has-notes-dot" title="Tiene notas"></span>' : '';
+    const timeStr  = r.horaEvento ? formatTime(r.horaEvento) : '';
 
-    return `<div class="rest-card ${statusClass}${isToday ? ' is-today' : ''}" onclick="toggleCardDetails(${idx})">
+    return `<div class="rest-card ${statusClass}${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" onclick="openReservationDetail(${idx})">
         <div class="rest-card-main">
             <div class="rest-card-top">
                 <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
                     <span class="rest-card-name">${r.nombre || 'Sin nombre'}${notesDot}</span>
                     ${isToday ? '<span class="rest-today-badge">HOY</span>' : ''}
                 </div>
-                <span class="rest-card-status-pill" style="color:${statusColor}; background:${statusBg};">${r.estado}</span>
-            </div>
-            <div class="rest-card-meta">
-                <strong>${formatReservationDate(r)}</strong> &middot; <strong>${r.pax}</strong> personas &middot; ${r.tipoEvento || 'N/A'}
-            </div>
-        </div>
-        <div class="rest-card-details" id="details-${idx}">
-            <div class="rest-card-details-inner">
-                ${r.telefono ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Teléfono</span><span class="rest-card-detail-value">${r.telefono}</span></div>` : ''}
-                ${r.email ? `<div class="rest-card-detail-row"><span class="rest-card-detail-label">Email</span><span class="rest-card-detail-value">${r.email}</span></div>` : ''}
-                ${(r.detalles || r.conversacion) ? `<div class="rest-card-convo">${r.detalles || r.conversacion}</div>` : ''}
-                <div style="margin-top:10px;" onclick="event.stopPropagation();">
-                    <label style="font-size:0.72rem; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.5px;">Notas internas</label>
-                    <textarea class="rest-notes-area" placeholder="Agregar notas del staff..."
-                              onblur="saveReservationNotes('${r.id}', this.value)">${getReservationNotes(r.id)}</textarea>
+                <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                    ${showActions ? `
+                    <div class="rest-card-quick-actions" onclick="event.stopPropagation();">
+                        <button onclick="confirmReservation(${idx})" class="rest-quick-btn confirm" title="Confirmar reserva">
+                            <ion-icon name="checkmark-outline"></ion-icon>
+                        </button>
+                        <button onclick="rejectReservation(${idx})" class="rest-quick-btn reject" title="Rechazar reserva">
+                            <ion-icon name="close-outline"></ion-icon>
+                        </button>
+                    </div>` : ''}
+                    ${r.estado !== 'Nuevo Lead' ? `<span class="rest-card-status-pill" style="color:${statusColor}; background:${statusBg};">${r.estado}</span>` : ''}
                 </div>
             </div>
-            <div class="rest-card-actions">
-                ${cleanPhone ? `
-                    <a href="https://wa.me/${cleanPhone}" target="_blank" class="rest-card-action-btn whatsapp" onclick="event.stopPropagation();">
-                        <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
-                    </a>
-                    <a href="tel:${r.telefono}" class="rest-card-action-btn call" onclick="event.stopPropagation();">
-                        <ion-icon name="call-outline"></ion-icon> Llamar
-                    </a>
-                ` : ''}
-                ${showActions ? `
-                    <button onclick="event.stopPropagation(); confirmReservation(${idx})" class="rest-card-action-btn confirm">
-                        <ion-icon name="checkmark-circle-outline"></ion-icon> Confirmar
-                    </button>
-                    <button onclick="event.stopPropagation(); rejectReservation(${idx})" class="rest-card-action-btn reject">
-                        <ion-icon name="close-circle-outline"></ion-icon> Rechazar
-                    </button>
-                ` : ''}
-                <button onclick="event.stopPropagation(); openEditModal(${idx})" class="rest-card-action-btn edit">
-                    <ion-icon name="create-outline"></ion-icon> Editar
-                </button>
+            <div class="rest-card-meta" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <strong>${formatReservationDate(r)}</strong>
+                ${timeStr ? `<span class="rest-card-time">${timeStr}</span>` : ''}
+                <span>&middot; <strong>${r.pax}</strong> personas &middot; ${r.tipoEvento || 'N/A'}</span>
             </div>
         </div>
     </div>`;
@@ -1767,10 +1706,12 @@ function renderRestaurantTable(reservations) {
         const showActions = r.estado === 'Nuevo Lead';
         const notesDot = hasReservationNotes(r.id) ? '<span class="rest-has-notes-dot" title="Tiene notas"></span>' : '';
 
-        return `<tr class="rest-row" onclick="toggleTableRowDetails(${idx})">
-            <td><span style="color:${statusColor}; background:${statusBg}; padding:3px 9px; border-radius:8px; font-size:0.78rem; font-weight:600; white-space:nowrap;">${r.estado}</span></td>
+        const timeStr = r.horaEvento ? formatTime(r.horaEvento) : '';
+        return `<tr class="rest-row${isReservationPast(r) ? ' is-past' : ''}" style="${isReservationPast(r) ? 'opacity:0.5;' : ''}" onclick="toggleTableRowDetails(${idx})">
+            <td>${r.estado !== 'Nuevo Lead' ? `<span style="color:${statusColor}; background:${statusBg}; padding:3px 9px; border-radius:8px; font-size:0.78rem; font-weight:600; white-space:nowrap;">${r.estado}</span>` : '<span style="color:rgba(255,255,255,0.25); font-size:0.78rem;">—</span>'}</td>
             <td style="color:#fff; font-weight:500;">${r.nombre || 'Sin nombre'}${notesDot}</td>
             <td>${formatReservationDate(r)} ${isToday ? '<span class="rest-today-badge">HOY</span>' : ''}</td>
+            <td style="white-space:nowrap; font-weight:600; color:rgba(255,255,255,0.7);">${timeStr || '—'}</td>
             <td style="text-align:center; font-weight:600; color:#fff;">${r.pax}</td>
             <td>${r.tipoEvento || 'N/A'}</td>
             <td onclick="event.stopPropagation();">
@@ -1803,6 +1744,50 @@ function renderRestaurantTable(reservations) {
                 </div>
             </td>
         </tr>`;
+    }).join('');
+}
+
+function renderRestaurantAgenda(container, reservations) {
+    if (!container) return;
+    if (reservations.length === 0) {
+        container.innerHTML = `<div class="rest-empty-state"><ion-icon name="calendar-outline"></ion-icon><div>No hay reservas con este filtro</div></div>`;
+        return;
+    }
+
+    // Group by date key YYYY-MM-DD
+    const groups = {};
+    reservations.forEach(r => {
+        const d = r.fecha_parsed;
+        const key = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : 'sin-fecha';
+        if (!groups[key]) groups[key] = { date: d, reservations: [] };
+        groups[key].reservations.push(r);
+    });
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+    container.innerHTML = Object.entries(groups).map(([key, group]) => {
+        const d = group.date;
+        let dayClass = '';
+        let dateLabel = key === 'sin-fecha' ? 'Sin fecha' : '';
+        if (d) {
+            const dDay = new Date(d); dDay.setHours(0,0,0,0);
+            const isToday = dDay.getTime() === today.getTime();
+            const isPast  = dDay < today;
+            dayClass = isToday ? 'agenda-day-today' : isPast ? 'agenda-day-past' : '';
+            dateLabel = `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+        }
+        const cards = group.reservations.map(r => buildReservationCard(r)).join('');
+        return `<div class="agenda-day-block ${dayClass}">
+            <div class="agenda-day-header">
+                <span class="agenda-day-label">Reservas</span>
+                <span class="agenda-day-date">${dateLabel}</span>
+                <span class="agenda-day-count">${group.reservations.length}</span>
+                <span class="agenda-day-line"></span>
+            </div>
+            <div class="agenda-day-cards">${cards}</div>
+        </div>`;
     }).join('');
 }
 
@@ -1847,12 +1832,125 @@ function isReservationInWeek(r, start, end) {
     return d >= start && d <= end;
 }
 
+function isReservationPast(r) {
+    const d = typeof r === 'object' ? r.fecha_parsed : parseFechaEvento(r);
+    if (!d) return false;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const resDay = new Date(d); resDay.setHours(0, 0, 0, 0);
+    return resDay < today;
+}
+
+function formatTime(hora) {
+    if (!hora) return '';
+    const parts = hora.split(':');
+    let h = parseInt(parts[0]);
+    const m = parseInt(parts[1] || '0');
+    if (isNaN(h)) return hora;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function openReservationDetail(index) {
+    const r = state.restaurantReservations[index];
+    if (!r) return;
+
+    const modal = document.getElementById('rest-detail-modal');
+    if (!modal) return;
+
+    const isToday   = isReservationToday(r);
+    const showActions = r.estado === 'Nuevo Lead';
+    const cleanPhone  = (r.telefono || '').replace(/[\s\-\+\(\)]/g, '');
+    const statusColor = r.estado === 'Confirmado' ? '#10B981' : r.estado === 'Rechazado' ? '#FF4444' : '#F59E0B';
+    const statusBg    = r.estado === 'Confirmado' ? 'rgba(16,185,129,0.12)' : r.estado === 'Rechazado' ? 'rgba(255,68,68,0.12)' : 'rgba(245,158,11,0.12)';
+    const timeStr     = r.horaEvento ? formatTime(r.horaEvento) : '';
+
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const show = (id, visible) => { const el = document.getElementById(id); if (el) el.style.display = visible ? '' : 'none'; };
+
+    set('rdm-name', r.nombre || 'Sin nombre');
+    set('rdm-pax', r.pax + ' personas');
+    set('rdm-tipo', r.tipoEvento || 'N/A');
+    set('rdm-date', formatReservationDate(r));
+
+    // Status pill — hide for Nuevo Lead
+    const pill = document.getElementById('rdm-status-pill');
+    if (pill) {
+        if (r.estado !== 'Nuevo Lead') {
+            pill.textContent = r.estado; pill.style.color = statusColor; pill.style.background = statusBg; pill.style.display = '';
+        } else {
+            pill.style.display = 'none';
+        }
+    }
+
+    // Today badge
+    show('rdm-today-badge', isToday);
+
+    // Time badge
+    const timeBadge = document.getElementById('rdm-time');
+    if (timeBadge) { timeBadge.textContent = timeStr; timeBadge.style.display = timeStr ? '' : 'none'; }
+
+    // Phone
+    show('rdm-phone-block', !!r.telefono);
+    set('rdm-phone', r.telefono || '');
+
+    // Email
+    show('rdm-email-block', !!r.email);
+    set('rdm-email', r.email || '');
+
+    // Conversation
+    const convoText = r.detalles || r.conversacion || '';
+    show('rdm-convo-block', !!convoText);
+    set('rdm-convo', convoText);
+
+    // Notes
+    const notesEl = document.getElementById('rdm-notes');
+    if (notesEl) {
+        notesEl.value = getReservationNotes(r.id);
+        notesEl.onblur = () => saveReservationNotes(r.id, notesEl.value);
+    }
+
+    // Contact actions
+    const contactEl = document.getElementById('rdm-contact-actions');
+    if (contactEl) {
+        contactEl.innerHTML = cleanPhone ? `
+            <a href="https://wa.me/${cleanPhone}" target="_blank" class="rest-card-action-btn whatsapp">
+                <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+            </a>
+            <a href="tel:${r.telefono}" class="rest-card-action-btn call">
+                <ion-icon name="call-outline"></ion-icon> Llamar
+            </a>` : '';
+    }
+
+    // Status actions
+    const statusEl = document.getElementById('rdm-status-actions');
+    if (statusEl) {
+        statusEl.innerHTML = `
+            ${showActions ? `
+            <button onclick="closeDetailModal(); confirmReservation(${index})" class="rest-card-action-btn confirm">
+                <ion-icon name="checkmark-circle-outline"></ion-icon> Confirmar
+            </button>
+            <button onclick="closeDetailModal(); rejectReservation(${index})" class="rest-card-action-btn reject">
+                <ion-icon name="close-circle-outline"></ion-icon> Rechazar
+            </button>` : ''}
+            <button onclick="closeDetailModal(); openEditModal(${index})" class="rest-card-action-btn edit">
+                <ion-icon name="create-outline"></ion-icon> Editar
+            </button>`;
+    }
+
+    modal.classList.remove('hidden');
+
+    // Close on backdrop click
+    modal.onclick = (e) => { if (e.target === modal) closeDetailModal(); };
+}
+
+function closeDetailModal() {
+    const modal = document.getElementById('rest-detail-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
 function toggleCardDetails(index) {
-    const details = document.getElementById(`details-${index}`);
-    if (!details) return;
-    const isExpanded = details.classList.contains('expanded');
-    document.querySelectorAll('.rest-card-details.expanded').forEach(el => el.classList.remove('expanded'));
-    if (!isExpanded) details.classList.add('expanded');
+    openReservationDetail(index);
 }
 
 function renderRestaurantEmpty(message) {
@@ -1918,11 +2016,51 @@ function showConfirmModal(reservation, action) {
     confirmBtn.style.background = isConfirm ? '#10B981' : '#FF4444';
     confirmBtn.onclick = () => executeReservationAction(reservation, action);
 
-    // Limpiar textarea de mensaje
+    // Show/hide reject reasons
+    const reasonsEl = document.getElementById('confirm-modal-reject-reasons');
+    if (reasonsEl) {
+        reasonsEl.style.display = isConfirm ? 'none' : 'block';
+        // Clear previous selection
+        reasonsEl.querySelectorAll('.reject-reason-chip').forEach(c => c.classList.remove('selected'));
+    }
+
+    // Pre-fill message
     const msgField = document.getElementById('confirm-modal-message');
-    if (msgField) msgField.value = '';
+    if (msgField) {
+        if (isConfirm) {
+            const dateStr = formatReservationDate(reservation);
+            const timeStr = reservation.horaEvento ? ` a las ${formatTime(reservation.horaEvento)}` : '';
+            msgField.value = `¡Hola ${reservation.nombre}! Tu reserva para el ${dateStr}${timeStr} está confirmada. ¡Te esperamos en 107 Rooftop! 🍽️`;
+        } else {
+            msgField.value = '';
+            msgField.placeholder = 'Selecciona un motivo arriba o escribe un mensaje...';
+        }
+    }
 
     modal.classList.remove('hidden');
+}
+
+function selectRejectReason(btn, key) {
+    // Toggle selection
+    const row = btn.closest('.reject-reasons-row');
+    if (row) row.querySelectorAll('.reject-reason-chip').forEach(c => c.classList.remove('selected'));
+    btn.classList.add('selected');
+
+    const msgField = document.getElementById('confirm-modal-message');
+    if (!msgField) return;
+
+    // Get reservation name from modal
+    const nombre = document.getElementById('confirm-modal-name')?.textContent || '';
+
+    const messages = {
+        'sin-disponibilidad': `Hola ${nombre}, lamentablemente no tenemos disponibilidad para esa fecha. Te invitamos a elegir otra fecha y con gusto te atendemos.`,
+        'fecha-cerrada':      `Hola ${nombre}, el restaurante estará cerrado en esa fecha. Puedes consultarnos para otras fechas disponibles.`,
+        'grupo-grande':       `Hola ${nombre}, el tamaño del grupo supera nuestra capacidad disponible en esa fecha. Contáctanos para explorar opciones.`,
+        'otra':               ''
+    };
+
+    msgField.value = messages[key] || '';
+    if (key === 'otra') msgField.focus();
 }
 
 function closeConfirmModal() {
@@ -1998,6 +2136,139 @@ function closeConversationModal() {
     if (modal) modal.classList.add('hidden');
 }
 
+// ================================================================
+//  AVAILABILITY PANEL
+// ================================================================
+async function loadRestaurantAvailability() {
+    const slug = state.clientId;
+    if (!slug || !window.supabase) return;
+    try {
+        const { data } = await window.supabase
+            .from('restaurant_availability')
+            .select('*')
+            .eq('client_slug', slug)
+            .maybeSingle();
+        if (data) {
+            state.restaurantAvailability = {
+                accepting: data.accepting_reservations !== false,
+                closedDates: data.closed_dates || [],
+                dailyCapacity: data.daily_capacity || null
+            };
+        }
+    } catch (e) {
+        console.warn('Could not load restaurant availability:', e);
+    }
+    renderAvailabilityPanel();
+}
+
+async function saveRestaurantAvailability() {
+    const slug = state.clientId;
+    if (!slug || !window.supabase) {
+        showToast('No se pudo guardar: Supabase no configurado', 'error');
+        return;
+    }
+    // Read current UI values before saving
+    const capInput = document.getElementById('avail-capacity');
+    if (capInput) {
+        const capVal = parseInt(capInput.value);
+        state.restaurantAvailability.dailyCapacity = isNaN(capVal) || capVal < 1 ? null : capVal;
+    }
+    try {
+        const payload = {
+            client_slug: slug,
+            accepting_reservations: state.restaurantAvailability.accepting,
+            closed_dates: state.restaurantAvailability.closedDates,
+            daily_capacity: state.restaurantAvailability.dailyCapacity,
+            updated_at: new Date().toISOString()
+        };
+        const { error } = await window.supabase
+            .from('restaurant_availability')
+            .upsert(payload, { onConflict: 'client_slug' });
+        if (error) throw error;
+        const statusEl = document.getElementById('avail-save-status');
+        if (statusEl) { statusEl.style.display = 'inline'; setTimeout(() => { statusEl.style.display = 'none'; }, 3000); }
+        showToast('Disponibilidad guardada correctamente', 'success');
+        updateAvailabilityButton();
+    } catch (e) {
+        console.error('Error saving availability:', e);
+        showToast('Error al guardar: ' + e.message, 'error');
+    }
+}
+
+function toggleAvailabilityPanel() {
+    const panel = document.getElementById('avail-panel');
+    if (!panel) return;
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) renderAvailabilityPanel();
+}
+
+function toggleAcceptingReservations() {
+    state.restaurantAvailability.accepting = !state.restaurantAvailability.accepting;
+    renderAvailabilityPanel();
+}
+
+function addClosedDate() {
+    const input = document.getElementById('avail-new-date');
+    if (!input || !input.value) return;
+    const dateStr = input.value; // YYYY-MM-DD
+    if (!state.restaurantAvailability.closedDates.includes(dateStr)) {
+        state.restaurantAvailability.closedDates.push(dateStr);
+        state.restaurantAvailability.closedDates.sort();
+    }
+    input.value = '';
+    renderClosedDatesList();
+}
+
+function removeClosedDate(dateStr) {
+    state.restaurantAvailability.closedDates = state.restaurantAvailability.closedDates.filter(d => d !== dateStr);
+    renderClosedDatesList();
+}
+
+function renderClosedDatesList() {
+    const list = document.getElementById('avail-dates-list');
+    if (!list) return;
+    const dates = state.restaurantAvailability.closedDates;
+    if (!dates.length) {
+        list.innerHTML = '<span style="font-size:0.78rem; color:rgba(255,255,255,0.25);">Sin fechas inhabilitadas</span>';
+        return;
+    }
+    list.innerHTML = dates.map(d => {
+        const label = new Date(d + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+        return `<span class="avail-date-chip">${label}<button onclick="removeClosedDate('${d}')" title="Quitar">×</button></span>`;
+    }).join('');
+}
+
+function renderAvailabilityPanel() {
+    const av = state.restaurantAvailability;
+    const toggle = document.getElementById('avail-accept-toggle');
+    const statusText = document.getElementById('avail-status-text');
+    const capInput = document.getElementById('avail-capacity');
+
+    if (toggle) {
+        toggle.classList.toggle('on', av.accepting);
+    }
+    if (statusText) {
+        statusText.textContent = av.accepting ? 'Activo' : 'Inactivo';
+        statusText.className = 'avail-toggle-label ' + (av.accepting ? 'avail-status-on' : 'avail-status-off');
+    }
+    if (capInput && av.dailyCapacity) capInput.value = av.dailyCapacity;
+    renderClosedDatesList();
+    updateAvailabilityButton();
+}
+
+function updateAvailabilityButton() {
+    const btn = document.getElementById('avail-toggle-btn');
+    const lbl = document.getElementById('avail-btn-label');
+    if (!btn) return;
+    const accepting = state.restaurantAvailability.accepting;
+    btn.classList.toggle('unavailable', !accepting);
+    if (lbl) lbl.textContent = accepting ? 'Disponibilidad' : 'Sin disponibilidad';
+}
+
+// ================================================================
+//  END AVAILABILITY PANEL
+// ================================================================
+
 // Expose restaurant functions globally
 window.confirmReservation = confirmReservation;
 window.rejectReservation = rejectReservation;
@@ -2017,3 +2288,184 @@ window.closeEditModal = closeEditModal;
 window.saveEditedReservation = saveEditedReservation;
 window.saveReservationNotes = saveReservationNotes;
 window.markRestaurantAsSeen = markRestaurantAsSeen;
+window.selectRejectReason = selectRejectReason;
+window.openReservationDetail = openReservationDetail;
+window.closeDetailModal = closeDetailModal;
+window.toggleAvailabilityPanel = toggleAvailabilityPanel;
+window.toggleAcceptingReservations = toggleAcceptingReservations;
+window.addClosedDate = addClosedDate;
+window.removeClosedDate = removeClosedDate;
+window.saveRestaurantAvailability = saveRestaurantAvailability;
+window.loadRestaurantAvailability = loadRestaurantAvailability;
+
+/* ============================================================
+   MOBILE DASHBOARD — MD3 Dark Glass
+   ============================================================ */
+let _mobChartInstance = null;
+
+function renderMobileDashboard() {
+    if (window.innerWidth > 480) return;
+
+    // Date
+    const dateEl = document.getElementById('mob-date');
+    if (dateEl) {
+        const now = new Date();
+        dateEl.textContent = now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    // Name + avatar
+    const _sess = typeof getSession === 'function' ? getSession() : null;
+    const fullName = (_sess && _sess.name) ? _sess.name : (state.config.clientName || 'Admin');
+    const firstName = fullName.split(' ')[0];
+    const nameEl = document.getElementById('mob-name');
+    const avatarEl = document.getElementById('mob-avatar');
+    if (nameEl) nameEl.textContent = firstName;
+    if (avatarEl) avatarEl.textContent = firstName.charAt(0).toUpperCase();
+
+    // Client chip
+    const chipEl = document.getElementById('mob-client-chip');
+    if (chipEl) chipEl.textContent = state.config.clientName || 'Sistema activo';
+
+    // Theme icon sync
+    const themeIcon = document.getElementById('mob-theme-icon');
+    if (themeIcon) {
+        const t = document.documentElement.getAttribute('data-theme') || 'dark';
+        themeIcon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
+    }
+
+    // Range label
+    const rangeEl = document.getElementById('mob-range-label');
+    if (rangeEl) {
+        const desktopRange = document.getElementById('current-range-label');
+        rangeEl.textContent = desktopRange ? desktopRange.textContent : 'Todo el tiempo';
+    }
+
+    // KPI cards
+    const kpiDefs = [
+        { valueId: 'card-1-value', labelId: 'label-main-1', accent: '#FCD34D', icon: 'ribbon-outline' },
+        { valueId: 'card-2-value', labelId: 'label-main-2', accent: '#C4A8FF', icon: 'swap-vertical-outline' },
+        { valueId: 'card-3-value', labelId: 'label-main-3', accent: '#93C5FD', icon: 'cash-outline' },
+        { valueId: 'card-4-value', labelId: 'label-main-4', accent: '#F8B4C8', icon: 'rocket-outline' },
+        { valueId: 'card-5-value', labelId: 'label-main-5', accent: '#FCD34D', icon: 'people-outline' },
+        { valueId: 'card-6-value', labelId: 'label-main-6', accent: '#F8B4C8', icon: 'wallet-outline' },
+        { valueId: 'card-7-value', labelId: 'label-main-7', accent: '#93C5FD', icon: 'pricetag-outline' },
+    ];
+
+    const kpiScroll = document.getElementById('mob-kpi-scroll');
+    if (kpiScroll) {
+        kpiScroll.innerHTML = kpiDefs.map(k => {
+            const value = document.getElementById(k.valueId)?.textContent || '--';
+            const label = document.getElementById(k.labelId)?.textContent || '';
+            const [r, g, b] = [k.accent.slice(1,3), k.accent.slice(3,5), k.accent.slice(5,7)].map(h => parseInt(h, 16));
+            return `<div class="mob-kpi-card" style="background:rgba(${r},${g},${b},0.08);border:1px solid rgba(${r},${g},${b},0.18);box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+                <div class="mob-kpi-icon" style="background:rgba(${r},${g},${b},0.15);border-color:rgba(${r},${g},${b},0.25);box-shadow:0 0 16px rgba(${r},${g},${b},0.3);">
+                    <ion-icon name="${k.icon}" style="color:${k.accent};font-size:1.1rem;"></ion-icon>
+                </div>
+                <div class="mob-kpi-label">${label}</div>
+                <div class="mob-kpi-value">${value}</div>
+                <div class="mob-kpi-badge" style="background:rgba(${r},${g},${b},0.12);border-color:rgba(${r},${g},${b},0.22);color:${k.accent};">
+                    <ion-icon name="trending-up-outline" style="font-size:10px;"></ion-icon> Actual
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Leads list (show last 6 qualified)
+    const leadsList = document.getElementById('mob-leads-list');
+    if (leadsList) {
+        const qualified = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l.estatus) : true);
+        const recent = qualified.slice(-6).reverse();
+        if (recent.length === 0) {
+            leadsList.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:12px 0;">Sin leads recientes</p>';
+        } else {
+            leadsList.innerHTML = recent.map(l => {
+                const name = l.nombre || l.name || `Lead #${l.id || ''}`;
+                const fecha = l.fecha_parsed instanceof Date && !isNaN(l.fecha_parsed)
+                    ? l.fecha_parsed.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+                    : (l.fecha ? l.fecha.slice(0, 10) : '--');
+                return `<div class="mob-lead-item">
+                    <div class="mob-lead-icon"><ion-icon name="person-outline"></ion-icon></div>
+                    <span class="mob-lead-name">${name}</span>
+                    <span class="mob-lead-date">${fecha}</span>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    // Mobile chart
+    _renderMobileChart();
+}
+
+function _renderMobileChart() {
+    const canvas = document.getElementById('mob-main-chart');
+    if (!canvas) return;
+    if (_mobChartInstance) { _mobChartInstance.destroy(); _mobChartInstance = null; }
+
+    // Build daily data same way as main chart
+    const sourceLeads = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l.estatus) : true);
+    const dailyData = {};
+    sourceLeads.forEach(l => {
+        if (!l.fecha_parsed || isNaN(l.fecha_parsed.getTime())) return;
+        const key = l.fecha_parsed.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+        dailyData[key] = (dailyData[key] || 0) + 1;
+    });
+
+    let labels = Object.keys(dailyData);
+    let values = Object.values(dailyData);
+    if (labels.length === 0) { labels = ['--']; values = [0]; }
+
+    const ctx = canvas.getContext('2d');
+    _mobChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                data: values,
+                borderColor: '#C4A8FF',
+                borderWidth: 2.5,
+                fill: true,
+                backgroundColor: (context) => {
+                    const chart = context.chart;
+                    const { ctx: c, chartArea } = chart;
+                    if (!chartArea) return 'rgba(196,168,255,0.1)';
+                    const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                    grad.addColorStop(0, 'rgba(196,168,255,0.38)');
+                    grad.addColorStop(1, 'rgba(196,168,255,0)');
+                    return grad;
+                },
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHoverBackgroundColor: '#C4A8FF',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(13,11,30,0.92)',
+                    borderColor: 'rgba(196,168,255,0.2)',
+                    borderWidth: 1,
+                    titleColor: '#C4A8FF',
+                    bodyColor: 'rgba(255,255,255,0.9)',
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.35)', font: { size: 9 } }, border: { display: false } },
+                y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(255,255,255,0.35)', font: { size: 9 } }, border: { display: false } }
+            }
+        }
+    });
+}
+
+// Tab bar active state
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.mob-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.mob-tab').forEach(function(t) { t.classList.remove('mob-tab-active'); });
+            btn.classList.add('mob-tab-active');
+        });
+    });
+});
