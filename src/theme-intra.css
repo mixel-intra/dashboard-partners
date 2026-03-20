@@ -1,94 +1,89 @@
-/* ============================================================
-   DESIGN TOKENS — MD3 Dark Glass (Figma Make)
-   ============================================================ */
 :root {
-    --bg-app: #060410;
-    --bg-sidebar: rgba(10, 6, 24, 0.6);
-    --bg-card: rgba(255, 255, 255, 0.055);
+    /* Quantix Palette - Deep Space Black */
+    --bg-app: #020202;
+    --bg-sidebar: rgba(5, 5, 5, 0.95);
+    --bg-card: #0A0A0A;
+    --bg-panel: #0A0A0A;
 
-    --text-primary: rgba(255, 255, 255, 0.92);
-    --text-secondary: rgba(255, 255, 255, 0.6);
-    --text-muted: rgba(255, 255, 255, 0.38);
+    --text-primary: #FFFFFF;
+    --text-secondary: #8E92A3;
+    --text-muted: #565969;
 
-    --accent-purple: #C4A8FF;
-    --accent-purple-glow: rgba(196, 168, 255, 0.2);
-    --accent-green: #82E0AA;
-    --accent-blue: #93C5FD;
-    --accent-amber: #FCD34D;
-    --accent-rose: #F8B4C8;
-    --accent-red: #F2B8B5;
+    --accent-purple: #7551FF;
+    --accent-purple-glow: rgba(117, 81, 255, 0.3);
+    --accent-blue: #3A86FF;
+    --accent-green: #01F1E3;
+    --accent-red: #FF4444;
 
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --font-main: 'Inter', -apple-system, sans-serif;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-highlight: rgba(117, 81, 255, 0.5);
+
+    /* Typography */
+    --font-main: 'Inter', sans-serif;
 }
 
-/* ── Body Background ── */
-body {
-    background: linear-gradient(145deg, #0A0618 0%, #0E0B2A 30%, #090F22 60%, #0D0820 100%);
-    background-attachment: fixed;
-    transition: background 0.5s ease;
-}
-
-/* Cosmic orbs */
-body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background:
-        radial-gradient(circle 700px at -80px -120px, rgba(138, 43, 226, 0.38) 0%, rgba(88, 28, 135, 0.14) 45%, transparent 70%),
-        radial-gradient(circle 750px at calc(100% + 80px) calc(100% + 80px), rgba(79, 70, 229, 0.30) 0%, rgba(49, 46, 129, 0.10) 45%, transparent 70%),
-        radial-gradient(circle 400px at 75% 35%, rgba(6, 182, 212, 0.13) 0%, transparent 65%);
-    opacity: 1;
-    transition: opacity 0.5s ease;
-}
-
-/* Dot grid */
-body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
-    background-size: 32px 32px;
-    opacity: 1;
-    transition: opacity 0.5s ease;
-}
-
-/* ── Light Theme ── */
+/* ===== LIGHT THEME — Pro, Aesthetic & Visual ===== */
 [data-theme="light"] {
-    --bg-app: #EEEEF8;
+    /* Background */
+    --bg-app: #F4F7FB;
+    /* Cool gray-blue tint for depth */
     --bg-sidebar: #FFFFFF;
     --bg-card: #FFFFFF;
-    --text-primary: #0F172A;
-    --text-secondary: #475569;
-    --text-muted: #94A3B8;
-    --accent-purple: #6366F1;
-    --accent-purple-glow: rgba(99, 102, 241, 0.2);
-    --border-subtle: rgba(15, 23, 42, 0.08);
+    --bg-panel: #FFFFFF;
 
     /* Surface scale */
-    --surface-50:  #F8FAFC;
+    --surface-50: #FAFAFA;
     --surface-100: #F1F5F9;
     --surface-200: #E2E8F0;
-    --surface-300: rgba(15, 23, 42, 0.14);
+    --surface-300: #CBD5E1;
 
-    /* Shadow scale */
-    --shadow-xs: 0 1px 2px rgba(15,23,42,0.04);
-    --shadow-sm: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
-    --shadow-md: 0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
-    --shadow-lg: 0 8px 28px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.06);
+    /* Text — premium slates with high contrast */
+    --text-primary: #0F172A;
+    /* Slate 900 */
+    --text-secondary: #475569;
+    /* Slate 600 */
+    --text-muted: #94A3B8;
+    /* Slate 400 */
+
+    /* Universal modern accent — Indigo 600 */
+    --accent-primary: #4F46E5;
+    --accent-primary-light: #EEF2FF;
+    --accent-primary-glow: rgba(79, 70, 229, 0.25);
+    --accent-purple: #6366F1;
+    /* Indigo 500 */
+    --accent-purple-glow: rgba(99, 102, 241, 0.20);
+    --accent-blue: #3B82F6;
+    --accent-green: #10B981;
+    --accent-red: #EF4444;
+
+    /* Borders */
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --border-highlight: rgba(79, 70, 229, 0.4);
+
+    /* Shadows — Premium soft, expanded shadows (Stripe/Linear style) */
+    --shadow-xs: 0 2px 4px rgba(15, 23, 42, 0.02);
+    --shadow-sm: 0 4px 12px -2px rgba(15, 23, 42, 0.04),
+        0 2px 4px -2px rgba(15, 23, 42, 0.02);
+    --shadow-md: 0 12px 24px -4px rgba(15, 23, 42, 0.06),
+        0 8px 12px -6px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 24px 48px -12px rgba(15, 23, 42, 0.1),
+        0 12px 24px -8px rgba(15, 23, 42, 0.06);
 }
 
+/* Theme-specific body background */
+body {
+    background-color: var(--bg-app);
+    background-image:
+        radial-gradient(circle at 0% 0%, rgba(117, 81, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(58, 134, 255, 0.05) 0%, transparent 40%);
+}
+
+/* High-end mesh gradient for light mode */
 [data-theme="light"] body {
-    background: #EEEEF8 !important;
-    transition: background 0.5s ease;
-}
-
-[data-theme="light"] body::before,
-[data-theme="light"] body::after {
-    opacity: 0;
-    transition: opacity 0.5s ease;
+    background-color: var(--bg-app);
+    background-image:
+        radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.07) 0%, transparent 50%),
+        radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.04) 0%, transparent 40%);
+    background-attachment: fixed;
 }
