@@ -21,6 +21,8 @@ const elements = {
     salesInput: document.getElementById('sales'),
     clientLogoInput: document.getElementById('client-logo-url'),
     clientLogoFile: document.getElementById('client-logo-file'),
+    clientLogoLightInput: document.getElementById('client-logo-light-url'),
+    clientLogoLightFile: document.getElementById('client-logo-light-file'),
     clientTypeInput: document.getElementById('client-type'),
     saveStatus: document.getElementById('save-status'),
     previewLink: document.getElementById('preview-link'),
@@ -265,6 +267,7 @@ async function selectClient(clientId) {
     elements.investmentInput.value = currentConfig.investment || 0;
     elements.salesInput.value = currentConfig.sales_goal || 0;
     elements.clientLogoInput.value = currentConfig.logo_url || '';
+    if (elements.clientLogoLightInput) elements.clientLogoLightInput.value = currentConfig.logo_url_light || '';
     elements.clientTypeInput.value = currentConfig.client_type || 'otro';
     elements.themePrimaryInput.value = currentConfig.theme_primary || '#7551FF';
     elements.themeSecondaryInput.value = currentConfig.theme_secondary || '#01F1E3';
@@ -455,10 +458,13 @@ function setupEventListeners() {
 
         try {
             let logoUrl = elements.clientLogoInput.value;
-
-            // Handle file upload if present
             if (elements.clientLogoFile.files && elements.clientLogoFile.files[0]) {
                 logoUrl = await uploadLogo(clientId, elements.clientLogoFile.files[0]);
+            }
+
+            let logoUrlLight = elements.clientLogoLightInput ? elements.clientLogoLightInput.value : '';
+            if (elements.clientLogoLightFile && elements.clientLogoLightFile.files && elements.clientLogoLightFile.files[0]) {
+                logoUrlLight = await uploadLogo(clientId + '-light', elements.clientLogoLightFile.files[0]);
             }
 
             // Build card labels JSON
@@ -484,6 +490,7 @@ function setupEventListeners() {
                 investment_updated_at: new Date().toISOString().split('T')[0],
                 sales_goal: parseFloat(elements.salesInput.value) || 0,
                 logo_url: logoUrl,
+                logo_url_light: logoUrlLight || null,
                 theme_primary: elements.themePrimaryInput.value,
                 theme_secondary: elements.themeSecondaryInput.value,
                 card_labels: Object.keys(cardLabels).length > 0 ? cardLabels : {},
@@ -509,9 +516,11 @@ function setupEventListeners() {
                 return;
             }
 
-            // Reset file input and update hidden input
+            // Reset file inputs and update hidden inputs
             elements.clientLogoFile.value = '';
             elements.clientLogoInput.value = logoUrl;
+            if (elements.clientLogoLightFile) elements.clientLogoLightFile.value = '';
+            if (elements.clientLogoLightInput) elements.clientLogoLightInput.value = logoUrlLight || '';
 
             // Feedback
             elements.saveStatus.style.display = 'block';
