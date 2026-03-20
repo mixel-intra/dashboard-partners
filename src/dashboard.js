@@ -167,6 +167,8 @@ async function loadConfig() {
             investmentUpdatedAt: config.investment_updated_at || null,
             sales: config.sales_goal,
             clientLogo: config.logo_url,
+            clientLogoDark: config.logo_url || null,
+            clientLogoLight: config.logo_url_light || config.logo_url || null,
             themePrimary: '#7551FF',
             themeSecondary: '#01F1E3'
         };
@@ -848,8 +850,10 @@ function updateUI(m) {
 
     const logoImg = document.getElementById('client-logo');
     if (logoImg) {
-        if (state.config.clientLogo) {
-            logoImg.src = state.config.clientLogo;
+        const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+        const logoUrl = isDark ? state.config.clientLogoDark : state.config.clientLogoLight;
+        if (logoUrl) {
+            logoImg.src = logoUrl;
             logoImg.classList.remove('hidden');
         } else {
             logoImg.classList.add('hidden');
