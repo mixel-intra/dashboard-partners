@@ -672,8 +672,7 @@ span.flatpickr-weekday { color: rgba(255,255,255,0.25) !important; font-size: 0.
 
 /* === CLIENT BRANDING === */
 .client-branding { display: flex; align-items: center; gap: 16px; }
-.client-logo-img { max-height: 42px; width: auto; object-fit: contain; border-radius: 8px; padding: 4px; }
-[data-theme="light"] .client-logo-img { background: #1A1B2E; padding: 5px 10px; border-radius: 8px; }
+.client-logo-img { max-height: 42px; width: auto; object-fit: contain; }
 .welcome-area { display: flex; flex-direction: column; justify-content: center; }
 .welcome-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
 .welcome-name { font-size: 1.4rem; font-weight: 700; margin: 0; line-height: 1.2; color: var(--text-primary); }
