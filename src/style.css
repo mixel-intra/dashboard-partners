@@ -55,6 +55,7 @@ body {
     font-family: var(--font-main);
     color: var(--text-primary);
     height: 100vh;
+    height: 100dvh;
     overflow-x: hidden;
     overflow-y: auto;
     width: 100%;
@@ -63,6 +64,7 @@ body {
 /* === LAYOUT === */
 .app-container {
     height: 100vh;
+    height: 100dvh;
     width: 100vw;
     max-width: 100%;
     overflow: hidden;
@@ -150,6 +152,7 @@ body {
     flex-direction: column;
     align-items: center;
     height: 100vh;
+    height: 100dvh;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(10, 6, 24, 0.65);
     backdrop-filter: blur(24px);
@@ -1359,6 +1362,8 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
+    height: 100vh;
+    height: 100dvh;
     flex-direction: column;
     overflow: hidden;
     font-family: var(--font-main);
