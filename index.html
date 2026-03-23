@@ -13,8 +13,10 @@
             var t = localStorage.getItem('intra-theme');
             if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', t);
+            var bg = t === 'dark' ? '#0E0B2A' : '#EEEEF8';
+            document.documentElement.style.background = bg;
             var mc = document.getElementById('meta-theme-color');
-            if (mc) mc.setAttribute('content', t === 'dark' ? '#0E0B2A' : '#EEEEF8');
+            if (mc) mc.setAttribute('content', bg);
         })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,8 +43,10 @@
             var next = cur === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('intra-theme', next);
+            var bg = next === 'dark' ? '#0E0B2A' : '#EEEEF8';
+            document.documentElement.style.background = bg;
             var mc = document.querySelector('meta[name="theme-color"]');
-            if (mc) mc.setAttribute('content', next === 'dark' ? '#0E0B2A' : '#EEEEF8');
+            if (mc) mc.setAttribute('content', bg);
             var icon = document.getElementById('theme-icon');
             if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
             var mIcon = document.getElementById('mobile-theme-icon');
