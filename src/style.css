@@ -1376,16 +1376,18 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 @media (max-width: 480px) {
     #app-wrapper { display: none !important; }
     .mobile-dash { display: flex !important; }
-    html, body {
-        background: #0A0618 !important;
+    html {
+        background: linear-gradient(145deg, #0A0618 0%, #0E0B2A 30%, #090F22 60%, #0D0820 100%) !important;
         overflow: hidden !important;
-        position: fixed !important;
-        width: 100% !important;
         height: 100% !important;
-        height: 100dvh !important;
-        min-height: -webkit-fill-available !important;
     }
-    [data-theme="light"] body, html[data-theme="light"] { background: #EEEEF8 !important; }
+    body {
+        background: transparent !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        height: 100% !important;
+    }
+    [data-theme="light"] html { background: #EEEEF8 !important; }
 }
 
 /* Background */
