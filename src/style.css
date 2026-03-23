@@ -1362,15 +1362,11 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    height: 100vh;
-    height: 100dvh;
     flex-direction: column;
     overflow: hidden;
     font-family: var(--font-main);
     z-index: 500;
     color: rgba(255,255,255,0.92);
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     background: linear-gradient(145deg, #0A0618 0%, #0E0B2A 30%, #090F22 60%, #0D0820 100%);
 }
 
@@ -1400,6 +1396,7 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
     z-index: 1;
     padding: 0 16px;
     padding-top: max(16px, env(safe-area-inset-top, 16px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
     -webkit-overflow-scrolling: touch;
 }
 .mob-scroll::-webkit-scrollbar { display: none; }
