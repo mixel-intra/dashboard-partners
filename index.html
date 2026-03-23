@@ -13,10 +13,10 @@
             var t = localStorage.getItem('intra-theme');
             if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', t);
-            var bg = t === 'dark' ? '#0E0B2A' : '#EEEEF8';
-            document.documentElement.style.background = bg;
+            // Use loader color (#060410) during splash to avoid mismatched stripes on iOS
+            document.documentElement.style.background = '#060410';
             var mc = document.getElementById('meta-theme-color');
-            if (mc) mc.setAttribute('content', bg);
+            if (mc) mc.setAttribute('content', '#060410');
         })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
