@@ -2317,7 +2317,7 @@ function renderMobileDashboard() {
         dateEl.textContent = now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
     }
 
-    // Name + avatar
+    // Name + avatar + greeting
     const _sess = typeof getSession === 'function' ? getSession() : null;
     const fullName = (_sess && _sess.name) ? _sess.name : (state.config.clientName || 'Admin');
     const firstName = fullName.split(' ')[0];
@@ -2325,6 +2325,13 @@ function renderMobileDashboard() {
     const avatarEl = document.getElementById('mob-avatar');
     if (nameEl) nameEl.textContent = firstName;
     if (avatarEl) avatarEl.textContent = firstName.charAt(0).toUpperCase();
+
+    const greetEl = document.getElementById('mob-greeting');
+    if (greetEl) {
+        const h = new Date().getHours();
+        const saludo = h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches';
+        greetEl.textContent = `${saludo}, ${firstName}`;
+    }
 
     // Client chip
     const chipEl = document.getElementById('mob-client-chip');

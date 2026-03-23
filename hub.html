@@ -753,7 +753,7 @@
         <div class="user-greeting">
             <div class="avatar" id="user-avatar">?</div>
             <div class="greeting-text">
-                <h2><span id="hub-greeting">Hola</span>, <span id="hub-user-name">...</span> <span id="hub-clock" style="font-weight:400;font-size:.6em;opacity:.7;"></span></h2>
+                <h2>Hola, <span id="hub-user-name">...</span></h2>
                 <p>Selecciona tu entorno de trabajo</p>
             </div>
             <div class="session-actions">
@@ -806,17 +806,6 @@
             const userName = session.name || session.email;
             document.getElementById('hub-user-name').textContent = userName;
             document.getElementById('user-avatar').textContent = userName.charAt(0).toUpperCase();
-
-            // Saludo dinámico + reloj
-            function updateGreetingClock() {
-                const now = new Date();
-                const h = now.getHours();
-                const saludo = h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches';
-                document.getElementById('hub-greeting').textContent = saludo;
-                document.getElementById('hub-clock').textContent = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-            }
-            updateGreetingClock();
-            setInterval(updateGreetingClock, 30000);
 
             if (session.role === 'admin') {
                 document.getElementById('admin-panel-btn').style.display = 'inline-flex';
