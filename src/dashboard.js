@@ -85,6 +85,12 @@ function setLoaderProgress(pct) {
 
 function hideLoader() {
     setLoaderProgress(100);
+    // Switch from loader bg (#060410) to theme bg so overscroll matches dashboard
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const themeBg = isDark ? '#0E0B2A' : '#EEEEF8';
+    document.documentElement.style.background = themeBg;
+    const mc = document.querySelector('meta[name="theme-color"]');
+    if (mc) mc.setAttribute('content', themeBg);
     setTimeout(() => {
         const loader = document.getElementById('dashboard-loader');
         if (!loader) return;
