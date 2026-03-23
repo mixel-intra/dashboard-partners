@@ -1358,12 +1358,15 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 .mobile-dash {
     display: none;
     position: fixed;
-    inset: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     flex-direction: column;
     overflow: hidden;
     font-family: var(--font-main);
     z-index: 500;
     color: rgba(255,255,255,0.92);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: linear-gradient(145deg, #0A0618 0%, #0E0B2A 30%, #090F22 60%, #0D0820 100%);
 }
 
 /* Hide desktop, show mobile */
@@ -1453,6 +1456,56 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 .mob-tab-active .mob-tab-pill { background: rgba(196,168,255,0.15); box-shadow: 0 0 16px rgba(196,168,255,0.2); }
 .mob-tab-active .mob-tab-pill ion-icon { color: #C4A8FF; }
 .mob-tab-active span { color: #C4A8FF; font-weight: 600; }
+
+/* ============================================================
+   MOBILE DASHBOARD — Light Theme
+   ============================================================ */
+[data-theme="light"] .mobile-dash {
+    color: #0F172A;
+    background: #EEEEF8;
+}
+[data-theme="light"] .mob-bg {
+    background: linear-gradient(145deg, #EEEEF8 0%, #E2E0F4 30%, #EAE8F6 60%, #EEEEF8 100%);
+}
+[data-theme="light"] .mob-orb-purple { background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.04) 45%, transparent 70%); }
+[data-theme="light"] .mob-orb-indigo { background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, rgba(99,102,241,0.03) 45%, transparent 70%); }
+[data-theme="light"] .mob-orb-cyan { background: radial-gradient(circle, rgba(6,182,212,0.06) 0%, transparent 65%); }
+[data-theme="light"] .mob-orb-rose { background: radial-gradient(circle, rgba(168,85,247,0.06) 0%, transparent 65%); }
+[data-theme="light"] .mob-grid { background-image: linear-gradient(rgba(15,23,42,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.03) 1px, transparent 1px); }
+
+[data-theme="light"] .mob-date { color: #94A3B8; }
+[data-theme="light"] .mob-greeting { color: #0F172A; }
+[data-theme="light"] .mob-icon-btn { background: rgba(15,23,42,0.05); border-color: rgba(15,23,42,0.08); color: #475569; }
+[data-theme="light"] .mob-avatar { background: linear-gradient(135deg, #818CF8, #6366F1); border-color: #818CF8; box-shadow: 0 0 16px rgba(99,102,241,0.2); }
+
+[data-theme="light"] .mob-status-chip { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.15); backdrop-filter: blur(12px); }
+[data-theme="light"] .mob-status-chip span { color: #6366F1; }
+
+[data-theme="light"] .mob-section-title { color: #0F172A; }
+[data-theme="light"] .mob-section-sub { color: #6366F1; }
+[data-theme="light"] .mob-see-all { color: #6366F1; }
+
+[data-theme="light"] .mob-kpi-label { color: #94A3B8; }
+[data-theme="light"] .mob-kpi-value { color: #0F172A; }
+
+[data-theme="light"] .mob-glass-card { background: rgba(255,255,255,0.75); border-color: rgba(15,23,42,0.08); box-shadow: 0 4px 16px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.9); }
+[data-theme="light"] .mob-card-title { color: #0F172A; }
+[data-theme="light"] .mob-card-sub { color: #94A3B8; }
+[data-theme="light"] .mob-badge-green { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2); color: #059669; }
+
+[data-theme="light"] .mob-lead-item { border-bottom-color: rgba(15,23,42,0.06); }
+[data-theme="light"] .mob-lead-icon { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.15); color: #6366F1; }
+[data-theme="light"] .mob-lead-name { color: #0F172A; }
+[data-theme="light"] .mob-lead-date { color: #94A3B8; }
+
+[data-theme="light"] .mob-quick-btn span { color: #94A3B8; }
+
+[data-theme="light"] .mob-tab-bar { background: rgba(255,255,255,0.88); border-top-color: rgba(15,23,42,0.06); }
+[data-theme="light"] .mob-tab-pill ion-icon { color: #94A3B8; }
+[data-theme="light"] .mob-tab span { color: #94A3B8; }
+[data-theme="light"] .mob-tab-active .mob-tab-pill { background: rgba(99,102,241,0.1); box-shadow: 0 0 12px rgba(99,102,241,0.15); }
+[data-theme="light"] .mob-tab-active .mob-tab-pill ion-icon { color: #6366F1; }
+[data-theme="light"] .mob-tab-active span { color: #6366F1; }
 
 /* ============================================================
    === PREMIUM ANIMATIONS ===

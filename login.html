@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Acceso | Dashboard Partners</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -685,24 +685,9 @@
                 align-items: stretch !important;
             }
 
-            /* Header compacto */
+            /* Header compacto — ocultar saludo y avatar en mobile */
             #dash-panel .user-greeting {
-                position: sticky;
-                top: 0;
-                z-index: 100;
-                background: rgba(10, 10, 12, 0.92);
-                backdrop-filter: blur(20px);
-                -webkit-backdrop-filter: blur(20px);
-                padding: 16px 20px;
-                margin-bottom: 0;
-                gap: 12px;
-            }
-
-            #dash-panel .user-avatar {
-                width: 36px;
-                height: 36px;
-                font-size: 0.85rem;
-                box-shadow: none;
+                display: none !important;
             }
 
             #dash-panel .greeting-text h2 {
@@ -732,6 +717,10 @@
             #dash-panel .hub-search-wrap {
                 margin: 16px 20px 8px;
                 width: calc(100% - 40px);
+                position: sticky;
+                top: 0;
+                z-index: 99;
+                padding-top: max(12px, env(safe-area-inset-top, 12px));
             }
 
             #dash-panel #hub-search {
@@ -831,9 +820,7 @@
             }
 
             #dash-panel .card-slug {
-                font-size: 0.72rem;
-                color: rgba(255, 255, 255, 0.22);
-                margin-top: 2px;
+                display: none;
             }
 
             /* Arrow */

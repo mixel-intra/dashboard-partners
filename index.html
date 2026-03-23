@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Dashboard partners | Client Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,9 +92,9 @@
         /* ===== WEB3 HERO LOADING SCREEN ===== */
         #dashboard-loader {
             position: fixed;
-            inset: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             z-index: 9999;
-            background: #000;
+            background: #060410;
             display: flex;
             flex-direction: column;
             transition: opacity 1.2s ease;
@@ -3930,13 +3930,11 @@
         <div class="mob-header">
             <div>
                 <p class="mob-date" id="mob-date">--</p>
-                <h1 class="mob-greeting">¡Hola, <span id="mob-name">Admin</span>! 👋</h1>
             </div>
             <div class="mob-header-right">
                 <button class="mob-icon-btn" onclick="toggleTheme()" title="Tema">
                     <ion-icon name="moon-outline" id="mob-theme-icon"></ion-icon>
                 </button>
-                <div class="mob-avatar" id="mob-avatar">A</div>
             </div>
         </div>
 
