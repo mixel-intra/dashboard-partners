@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0A0618" id="meta-theme-color">
+    <meta name="theme-color" content="#0E0B2A" id="meta-theme-color">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Dashboard partners | Client Dashboard</title>
     <script>
@@ -14,7 +14,7 @@
             if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', t);
             var mc = document.getElementById('meta-theme-color');
-            if (mc) mc.setAttribute('content', t === 'dark' ? '#0A0618' : '#EEEEF8');
+            if (mc) mc.setAttribute('content', t === 'dark' ? '#0E0B2A' : '#EEEEF8');
         })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,7 +42,7 @@
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('intra-theme', next);
             var mc = document.querySelector('meta[name="theme-color"]');
-            if (mc) mc.setAttribute('content', next === 'dark' ? '#0A0618' : '#EEEEF8');
+            if (mc) mc.setAttribute('content', next === 'dark' ? '#0E0B2A' : '#EEEEF8');
             var icon = document.getElementById('theme-icon');
             if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
             var mIcon = document.getElementById('mobile-theme-icon');
