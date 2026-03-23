@@ -1374,7 +1374,13 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 @media (max-width: 480px) {
     #app-wrapper { display: none !important; }
     .mobile-dash { display: flex !important; }
-    html, body { background: #0A0618 !important; }
+    html, body {
+        background: #0A0618 !important;
+        overflow: hidden !important;
+        position: fixed !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
     [data-theme="light"] body, html[data-theme="light"] { background: #EEEEF8 !important; }
 }
 
