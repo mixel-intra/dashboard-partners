@@ -4,9 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0A0618">
+    <meta name="theme-color" content="#0A0618" id="meta-theme-color">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Dashboard partners | Client Dashboard</title>
+    <script>
+        // Theme init en <head> para que Safari use el theme-color correcto desde el primer paint
+        (function () {
+            var t = localStorage.getItem('intra-theme');
+            if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+            var mc = document.getElementById('meta-theme-color');
+            if (mc) mc.setAttribute('content', t === 'dark' ? '#0A0618' : '#EEEEF8');
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -24,15 +34,8 @@
 </head>
 
 <body>
-    <!-- Theme init — antes de cualquier render para evitar flash -->
+    <!-- Theme init ya se ejecutó en <head> -->
     <script>
-        (function () {
-            var t = localStorage.getItem('intra-theme');
-            if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', t);
-            var mc = document.querySelector('meta[name="theme-color"]');
-            if (mc) mc.setAttribute('content', t === 'dark' ? '#0A0618' : '#EEEEF8');
-        })();
         function toggleTheme() {
             var cur = document.documentElement.getAttribute('data-theme') || 'dark';
             var next = cur === 'dark' ? 'light' : 'dark';
@@ -44,6 +47,8 @@
             if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
             var mIcon = document.getElementById('mobile-theme-icon');
             if (mIcon) mIcon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
+            var mobIcon = document.getElementById('mob-theme-icon');
+            if (mobIcon) mobIcon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
             // Defer heavy re-render so CSS transition starts immediately
             setTimeout(function() {
                 if (typeof renderDashboard === 'function') {
@@ -58,6 +63,8 @@
             if (icon) icon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
             var mIcon = document.getElementById('mobile-theme-icon');
             if (mIcon) mIcon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
+            var mobIcon = document.getElementById('mob-theme-icon');
+            if (mobIcon) mobIcon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
         });
 
         // Sidebar hamburger toggle
