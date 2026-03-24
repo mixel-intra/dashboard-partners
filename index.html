@@ -102,6 +102,41 @@
             if (backdrop) backdrop.classList.remove('open');
             if (sheet) sheet.classList.remove('open');
         }
+
+        // Mobile date range bottom sheet
+        function openMobileDateSheet() {
+            var backdrop = document.getElementById('mob-date-backdrop');
+            var sheet = document.getElementById('mob-date-sheet');
+            if (backdrop) backdrop.classList.add('open');
+            if (sheet) sheet.classList.add('open');
+        }
+        function closeMobileDateSheet() {
+            var backdrop = document.getElementById('mob-date-backdrop');
+            var sheet = document.getElementById('mob-date-sheet');
+            if (backdrop) backdrop.classList.remove('open');
+            if (sheet) sheet.classList.remove('open');
+        }
+        function mobSetRange(range) {
+            closeMobileDateSheet();
+            // Reuse desktop setPredefinedRange (defined in dashboard.js)
+            if (typeof setPredefinedRange === 'function') {
+                setPredefinedRange(range);
+            }
+            // Update desktop label too
+            var labels = { today: 'Hoy', '7d': 'Últimos 7 días', '30d': 'Últimos 30 días', 'this-month': 'Este mes', 'last-month': 'Mes pasado', all: 'Todo el tiempo' };
+            var desktopLabel = document.getElementById('current-range-label');
+            if (desktopLabel) desktopLabel.textContent = labels[range] || 'Todo el tiempo';
+            // Update mobile label
+            var mobLabel = document.getElementById('mob-range-label');
+            if (mobLabel) {
+                var span = mobLabel.querySelector('span');
+                if (span) span.textContent = labels[range] || 'Todo el tiempo';
+            }
+            // Apply filters
+            if (typeof applyGlobalFilters === 'function') {
+                applyGlobalFilters();
+            }
+        }
     </script>
 
     <!-- ===== LOADING SCREEN ===== -->
@@ -3928,6 +3963,22 @@
         </div>
     </div>
 
+    <!-- Mobile Date Range Bottom Sheet -->
+    <div id="mob-date-backdrop" onclick="closeMobileDateSheet()"></div>
+    <div id="mob-date-sheet">
+        <div class="mm-handle"></div>
+        <div class="mm-items">
+            <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);margin:0 0 8px 4px;">Filtrar por fecha</p>
+            <button class="mm-item" onclick="mobSetRange('today')"><div class="mm-icon" style="background:rgba(196,168,255,0.1);"><ion-icon name="today-outline" style="color:#C4A8FF;"></ion-icon></div><span>Hoy</span></button>
+            <button class="mm-item" onclick="mobSetRange('7d')"><div class="mm-icon" style="background:rgba(99,102,241,0.1);"><ion-icon name="calendar-outline" style="color:rgba(99,102,241,0.8);"></ion-icon></div><span>Últimos 7 días</span></button>
+            <button class="mm-item" onclick="mobSetRange('30d')"><div class="mm-icon" style="background:rgba(6,182,212,0.1);"><ion-icon name="calendar-outline" style="color:rgba(6,182,212,0.8);"></ion-icon></div><span>Últimos 30 días</span></button>
+            <button class="mm-item" onclick="mobSetRange('this-month')"><div class="mm-icon" style="background:rgba(109,213,140,0.1);"><ion-icon name="calendar-outline" style="color:rgba(109,213,140,0.8);"></ion-icon></div><span>Este mes</span></button>
+            <button class="mm-item" onclick="mobSetRange('last-month')"><div class="mm-icon" style="background:rgba(251,191,36,0.1);"><ion-icon name="calendar-outline" style="color:rgba(251,191,36,0.8);"></ion-icon></div><span>Mes pasado</span></button>
+            <div class="mm-divider"></div>
+            <button class="mm-item" onclick="mobSetRange('all')"><div class="mm-icon"><ion-icon name="infinite-outline"></ion-icon></div><span>Todo el tiempo</span></button>
+        </div>
+    </div>
+
 <!-- ===== MOBILE DASHBOARD (Figma MD3 Dark Glass) ===== -->
 <div class="mobile-dash" id="mobile-dash">
 
@@ -3953,6 +4004,9 @@
                 <button class="mob-icon-btn" onclick="toggleTheme()" title="Tema">
                     <ion-icon name="moon-outline" id="mob-theme-icon"></ion-icon>
                 </button>
+                <button class="mob-icon-btn" onclick="toggleMobileMenu()" title="Menú">
+                    <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+                </button>
             </div>
         </div>
 
@@ -3965,7 +4019,11 @@
         <!-- KPI section -->
         <div class="mob-section-row">
             <span class="mob-section-title">Métricas clave</span>
-            <span class="mob-section-sub" id="mob-range-label">Todo el tiempo</span>
+            <button class="mob-range-btn" id="mob-range-label" onclick="openMobileDateSheet()">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <span>Todo el tiempo</span>
+                <ion-icon name="chevron-down-outline" style="font-size:10px;"></ion-icon>
+            </button>
         </div>
         <div class="mob-kpi-scroll" id="mob-kpi-scroll">
             <!-- Populated by JS -->
