@@ -2354,7 +2354,10 @@ function renderMobileDashboard() {
     const rangeEl = document.getElementById('mob-range-label');
     if (rangeEl) {
         const desktopRange = document.getElementById('current-range-label');
-        rangeEl.textContent = desktopRange ? desktopRange.textContent : 'Todo el tiempo';
+        const txt = desktopRange ? desktopRange.textContent : 'Todo el tiempo';
+        const span = rangeEl.querySelector('span');
+        if (span) span.textContent = txt;
+        else rangeEl.textContent = txt;
     }
 
     // KPI cards
