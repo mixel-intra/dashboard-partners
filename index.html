@@ -787,7 +787,7 @@
             position: fixed;
             bottom: 24px;
             right: 24px;
-            z-index: 3000;
+            z-index: 99999;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -1787,8 +1787,8 @@
                         </div>
                     </div>
 
-                    <!-- Table Card -->
-                    <div class="table-card" style="display: flex; flex-direction: column;">
+                    <!-- Table Card (hidden when hospedaje panel is active) -->
+                    <div class="table-card" id="leads-table-card" style="display: flex; flex-direction: column;">
                         <div
                             style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
                             <div>
@@ -1822,6 +1822,11 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <!-- Hospedaje Panel (replaces table card when active) -->
+                    <div id="hospedaje-panel" class="hsp-panel hsp-panel-inline hidden">
+                        <!-- Content injected by renderHospedajePanel() -->
                     </div>
                 </div>
 
@@ -1902,6 +1907,13 @@
                 </div>
 
             </div><!-- end .dashboard-grid -->
+
+            <!-- Hospedaje Detail Modal -->
+            <div id="hospedaje-detail-modal" class="hsp-modal-overlay hidden">
+                <div class="hsp-modal-content">
+                    <div id="hospedaje-detail-content"></div>
+                </div>
+            </div>
 
             <!-- ===== PANEL DE RESERVAS RESTAURANTE ===== -->
             <div id="restaurant-panel" class="hidden" style="padding: 0 24px 24px;">
@@ -3403,6 +3415,382 @@
             color: rgba(255, 255, 255, 0.25);
             font-size: 0.82rem;
         }
+
+        /* ===== HOSPEDAJE PANEL ===== */
+        .hsp-panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+        }
+        .hsp-panel-inline {
+            margin-top: 0;
+            background: rgba(255,255,255,0.04);
+        }
+        .hsp-loading {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; padding: 40px; color: #8E92A3; font-size: 0.85rem;
+        }
+        .hsp-spinner {
+            width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: #818CF8; border-radius: 50%;
+            animation: hsp-spin 0.6s linear infinite;
+        }
+        @keyframes hsp-spin { to { transform: rotate(360deg); } }
+        .hsp-tabs {
+            display: flex; gap: 8px; margin-bottom: 16px;
+        }
+        .hsp-tab {
+            flex: 1; padding: 12px 16px; border-radius: 10px; cursor: pointer;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            color: #8E92A3; font-size: 0.82rem; font-weight: 600;
+            display: flex; flex-direction: column; gap: 2px;
+            transition: all 0.2s;
+        }
+        .hsp-tab:hover { border-color: rgba(255,255,255,0.12); }
+        .hsp-tab.active { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.3); color: #fff; }
+        .hsp-tab-amount { font-size: 1.1rem; font-weight: 700; color: #fff; }
+        .hsp-tab:not(.active) .hsp-tab-amount { color: #ccc; }
+        .hsp-tab-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; }
+        .hsp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .hsp-section-label {
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            color: #8E92A3;
+            text-transform: uppercase;
+        }
+        .hsp-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #fff;
+            margin: 4px 0 0 0;
+        }
+        .hsp-revenue-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #10B981;
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .hsp-search-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .hsp-search-wrap ion-icon {
+            position: absolute;
+            left: 10px;
+            color: #8E92A3;
+            font-size: 16px;
+        }
+        .hsp-search {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 8px 12px 8px 32px;
+            color: #fff;
+            font-size: 0.85rem;
+            width: 220px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .hsp-search:focus { border-color: rgba(255,255,255,0.2); }
+        .hsp-filters {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .hsp-filter-pill {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .hsp-filter-pill:hover { opacity: 0.8; }
+        .hsp-table-wrap {
+            overflow: auto;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            max-height: 480px;
+        }
+        .hsp-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .hsp-table thead th {
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8E92A3;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+            user-select: none;
+        }
+        .hsp-table thead th:hover { color: #fff; }
+        .hsp-row {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .hsp-row:hover { background: rgba(255,255,255,0.04); }
+        .hsp-row td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: #ccc;
+        }
+        .hsp-td-name { font-weight: 500; color: #fff; }
+        .hsp-status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        /* Hospedaje Detail Modal */
+        .hsp-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        .hsp-modal-content {
+            background: #1A1B22;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            max-width: 960px;
+            width: 100%;
+            padding: 28px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+            margin: auto 0;
+        }
+        .hsp-modal-layout { display: flex; gap: 24px; }
+        .hsp-modal-layout:not(.hsp-two-col) { flex-direction: column; }
+        .hsp-modal-layout:not(.hsp-two-col) .hsp-modal-left { max-width: 100%; }
+        .hsp-two-col .hsp-modal-left { flex: 1; min-width: 0; }
+        .hsp-two-col .hsp-modal-right {
+            width: 320px;
+            flex-shrink: 0;
+            border-left: 1px solid rgba(255,255,255,0.06);
+            padding-left: 24px;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+        .hsp-timeline-scroll { }
+        @media (max-width: 768px) {
+            .hsp-modal-layout.hsp-two-col { flex-direction: column; }
+            .hsp-two-col .hsp-modal-right {
+                width: 100%; border-left: none; padding-left: 0;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                padding-top: 16px; max-height: none;
+            }
+        }
+        .hsp-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .hsp-detail-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+        .hsp-detail-sub { margin-top: 8px; display: block; }
+        .hsp-close-btn {
+            background: none; border: none; color: #8E92A3;
+            font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 0;
+        }
+        .hsp-close-btn:hover { color: #fff; }
+        .hsp-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .hsp-detail-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .hsp-detail-card-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: rgba(99,102,241,0.12);
+            display: flex; align-items: center; justify-content: center;
+            color: #818CF8; font-size: 18px;
+        }
+        .hsp-detail-label { font-size: 0.72rem; color: #8E92A3; }
+        .hsp-detail-value { font-size: 1rem; font-weight: 600; color: #fff; }
+        .hsp-detail-info {
+            display: flex; flex-wrap: wrap; gap: 16px;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+        .hsp-info-item {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.85rem; color: #ccc;
+        }
+        .hsp-info-item ion-icon { font-size: 16px; color: #8E92A3; }
+        .hsp-detail-notes {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.85rem; color: #aaa; line-height: 1.5;
+        }
+        .hsp-detail-notes ion-icon { flex-shrink: 0; margin-top: 2px; color: #8E92A3; }
+        .hsp-detail-actions {
+            display: flex; gap: 10px; flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .hsp-action-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 16px; border-radius: 8px;
+            font-size: 0.85rem; font-weight: 600; text-decoration: none;
+            transition: opacity 0.2s; cursor: pointer; border: none;
+        }
+        .hsp-action-btn:hover { opacity: 0.85; }
+        .hsp-btn-whatsapp { background: #25D366; color: #fff; }
+        .hsp-btn-call { background: #3B82F6; color: #fff; }
+        .hsp-btn-email { background: #8B5CF6; color: #fff; }
+
+        /* Hospedaje Status & CRM */
+        .hsp-status-section {
+            display: flex; align-items: center; gap: 12px;
+            margin: 18px 0;
+        }
+        .hsp-status-section label {
+            font-size: 0.85rem; color: #8E92A3; white-space: nowrap;
+        }
+        .hsp-status-select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 8px 12px;
+            font-size: 0.85rem; font-weight: 600; outline: none; cursor: pointer;
+        }
+        .hsp-status-select option { background: #1A1B22; color: #ccc; }
+        .hsp-section-title {
+            font-size: 0.85rem; font-weight: 600; color: #8E92A3;
+            text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;
+        }
+        .hsp-timeline-section { margin-bottom: 20px; }
+        .hsp-timeline-item {
+            display: flex; gap: 12px; padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .hsp-timeline-icon {
+            flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .hsp-timeline-icon ion-icon { font-size: 18px; }
+        .hsp-timeline-content { flex: 1; min-width: 0; }
+        .hsp-timeline-meta { font-size: 0.78rem; color: #8E92A3; margin-bottom: 4px; }
+        .hsp-timeline-text { font-size: 0.85rem; color: #ccc; line-height: 1.5; }
+        .hsp-interaction-form {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; padding: 16px;
+        }
+        .hsp-form-row { margin-bottom: 10px; }
+        .hsp-form-select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 8px 12px; color: #ccc;
+            font-size: 0.85rem; width: 100%; outline: none;
+        }
+        .hsp-form-select option { background: #1A1B22; }
+        .hsp-form-textarea {
+            width: 100%; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+            padding: 10px 12px; color: #ccc; font-size: 0.85rem;
+            resize: vertical; outline: none; margin-bottom: 10px; font-family: inherit;
+        }
+        .hsp-form-textarea:focus, .hsp-form-select:focus { border-color: rgba(255,255,255,0.2); }
+        .hsp-form-save-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #10B981; color: #fff; border: none; border-radius: 8px;
+            padding: 9px 18px; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: opacity 0.2s;
+        }
+        .hsp-form-save-btn:hover:not(:disabled) { opacity: 0.85; }
+        .hsp-form-save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .hsp-form-label {
+            display: block; font-size: 0.72rem; color: #8E92A3;
+            margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        /* Hospedaje Light Theme */
+        [data-theme="light"] .hsp-panel { background: #fff; border-color: #E5E7EB; }
+        [data-theme="light"] .hsp-tab { background: #F9FAFB; border-color: #E5E7EB; }
+        [data-theme="light"] .hsp-tab.active { background: rgba(99,102,241,0.06); border-color: rgba(99,102,241,0.25); }
+        [data-theme="light"] .hsp-tab-amount { color: #111827; }
+        [data-theme="light"] .hsp-loading { color: #6B7280; }
+        [data-theme="light"] .hsp-spinner { border-color: #E5E7EB; border-top-color: #6366F1; }
+        [data-theme="light"] .hsp-title { color: #111827; }
+        [data-theme="light"] .hsp-search { background: #F9FAFB; border-color: #E5E7EB; color: #111827; }
+        [data-theme="light"] .hsp-table thead th { background: #F9FAFB; border-color: #E5E7EB; color: #6B7280; }
+        [data-theme="light"] .hsp-row:hover { background: #F3F4F6; }
+        [data-theme="light"] .hsp-row td { color: #374151; border-color: #F3F4F6; }
+        [data-theme="light"] .hsp-td-name { color: #111827; }
+        [data-theme="light"] .hsp-table-wrap { border-color: #E5E7EB; }
+        [data-theme="light"] .hsp-modal-overlay { background: rgba(0,0,0,0.3); }
+        [data-theme="light"] .hsp-modal-content { background: #fff; border-color: #E5E7EB; box-shadow: 0 24px 60px rgba(0,0,0,0.15); }
+        [data-theme="light"] .hsp-detail-name { color: #111827; }
+        [data-theme="light"] .hsp-detail-card { background: #F9FAFB; border-color: #E5E7EB; }
+        [data-theme="light"] .hsp-detail-value { color: #111827; }
+        [data-theme="light"] .hsp-detail-info { background: #F9FAFB; }
+        [data-theme="light"] .hsp-info-item { color: #374151; }
+        [data-theme="light"] .hsp-detail-notes { background: #F9FAFB; color: #4B5563; }
+        [data-theme="light"] .hsp-close-btn { color: #9CA3AF; }
+        [data-theme="light"] .hsp-close-btn:hover { color: #111827; }
+        [data-theme="light"] .hsp-two-col .hsp-modal-right { border-color: #E5E7EB; }
+        @media (max-width: 768px) {
+            [data-theme="light"] .hsp-two-col .hsp-modal-right { border-color: #E5E7EB; }
+        }
+        [data-theme="light"] .hsp-status-select { background: #F9FAFB; border-color: #E5E7EB; }
+        [data-theme="light"] .hsp-status-select option { background: #fff; color: #374151; }
+        [data-theme="light"] .hsp-timeline-item { border-color: #F3F4F6; }
+        [data-theme="light"] .hsp-timeline-text { color: #374151; }
+        [data-theme="light"] .hsp-interaction-form { background: #F9FAFB; border-color: #E5E7EB; }
+        [data-theme="light"] .hsp-form-select, [data-theme="light"] .hsp-form-textarea {
+            background: #fff; border-color: #E5E7EB; color: #374151;
+        }
+        [data-theme="light"] .hsp-form-select option { background: #fff; }
 
         /* ===== VENTAS PANEL LIGHT ===== */
         [data-theme="light"] #ventas-backdrop {

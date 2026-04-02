@@ -42,7 +42,11 @@ const elements = {
     hotelServiceRestaurante: document.getElementById('hotel-service-restaurante'),
     restAirtableWebhook: document.getElementById('rest-airtable-webhook'),
     restConfirmWebhook: document.getElementById('rest-confirm-webhook'),
-    restaurantWebhooksSection: document.getElementById('restaurant-webhooks-section')
+    restaurantWebhooksSection: document.getElementById('restaurant-webhooks-section'),
+    hspApiKey: document.getElementById('hsp-api-key'),
+    hspBaseId: document.getElementById('hsp-base-id'),
+    hspTableName: document.getElementById('hsp-table-name'),
+    hospedajeConfigSection: document.getElementById('hospedaje-config-section')
 };
 
 // State
@@ -297,6 +301,13 @@ async function selectClient(clientId) {
     if (elements.restConfirmWebhook) elements.restConfirmWebhook.value = restConfig.confirm_webhook_url || '';
     toggleRestaurantWebhooks();
 
+    // Populate hospedaje config
+    const hspConfig = currentConfig.hospedaje_config || {};
+    if (elements.hspApiKey) elements.hspApiKey.value = hspConfig.api_key || '';
+    if (elements.hspBaseId) elements.hspBaseId.value = hspConfig.base_id || '';
+    if (elements.hspTableName) elements.hspTableName.value = hspConfig.table_name || '';
+    toggleHospedajeSection();
+
     // Sync UI Swatches and Hex
     elements.hexPrimary.value = elements.themePrimaryInput.value;
     elements.hexSecondary.value = elements.themeSecondaryInput.value;
@@ -413,6 +424,7 @@ function setupEventListeners() {
             elements.hotelServicesSection.classList.add('hidden');
         }
         toggleRestaurantWebhooks();
+        toggleHospedajeSection();
     });
 
     // Toggle restaurant webhooks when restaurante service changes
@@ -503,6 +515,11 @@ function setupEventListeners() {
                 restaurant_config: {
                     airtable_webhook_url: elements.restAirtableWebhook ? elements.restAirtableWebhook.value.trim() : '',
                     confirm_webhook_url: elements.restConfirmWebhook ? elements.restConfirmWebhook.value.trim() : ''
+                },
+                hospedaje_config: {
+                    api_key: elements.hspApiKey ? elements.hspApiKey.value.trim() : '',
+                    base_id: elements.hspBaseId ? elements.hspBaseId.value.trim() : '',
+                    table_name: elements.hspTableName ? elements.hspTableName.value.trim() : ''
                 }
             };
 
@@ -576,6 +593,17 @@ function toggleRestaurantWebhooks() {
             elements.restaurantWebhooksSection.classList.remove('hidden');
         } else {
             elements.restaurantWebhooksSection.classList.add('hidden');
+        }
+    }
+}
+
+function toggleHospedajeSection() {
+    const isHotel = elements.clientTypeInput.value === 'hotel';
+    if (elements.hospedajeConfigSection) {
+        if (isHotel) {
+            elements.hospedajeConfigSection.classList.remove('hidden');
+        } else {
+            elements.hospedajeConfigSection.classList.add('hidden');
         }
     }
 }

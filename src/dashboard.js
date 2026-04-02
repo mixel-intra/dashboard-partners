@@ -39,7 +39,13 @@ const state = {
     restaurantSortDir: 'desc',
     restaurantNewIds: [],
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '' },
-    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: null }
+    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: null },
+    // Hospedaje reservations (Airtable)
+    hospedajeReservas: [],
+    hospedajeFilters: { status: 'all', search: '' },
+    hospedajeSortField: 'fecha_entrada',
+    hospedajeSortDir: 'desc',
+    hospedajeConfig: { apiKey: '', baseId: '', tableName: '' }
 };
 
 // Theme-aware chart colors (Linear/Vercel style)
@@ -181,6 +187,14 @@ async function loadConfig() {
         state.restaurantConfig = {
             airtableWebhookUrl: restConfig.airtable_webhook_url || '',
             confirmWebhookUrl: restConfig.confirm_webhook_url || ''
+        };
+
+        // Load hospedaje config (Airtable)
+        const hspConfig = config.hospedaje_config || {};
+        state.hospedajeConfig = {
+            apiKey: hspConfig.api_key || '',
+            baseId: hspConfig.base_id || '',
+            tableName: hspConfig.table_name || ''
         };
 
         initHotelTabs();
@@ -466,6 +480,21 @@ function switchDashTab(tab) {
         if (dashboardGrid) dashboardGrid.classList.remove('hidden');
         if (restaurantPanel) restaurantPanel.classList.add('hidden');
         applyGlobalFilters();
+
+        // Show/hide hospedaje panel (replaces leads table card)
+        const hospedajePanel = document.getElementById('hospedaje-panel');
+        const leadsTableCard = document.getElementById('leads-table-card');
+        if (hospedajePanel) {
+            if (tab === 'reservas' && state.hospedajeConfig.apiKey) {
+                hospedajePanel.classList.remove('hidden');
+                if (leadsTableCard) leadsTableCard.classList.add('hidden');
+                if (state.hospedajeReservas.length === 0) fetchHospedajeReservas();
+                else renderHospedajePanel();
+            } else {
+                hospedajePanel.classList.add('hidden');
+                if (leadsTableCard) leadsTableCard.classList.remove('hidden');
+            }
+        }
     }
 }
 
@@ -2301,6 +2330,521 @@ window.addClosedDate = addClosedDate;
 window.removeClosedDate = removeClosedDate;
 window.saveRestaurantAvailability = saveRestaurantAvailability;
 window.loadRestaurantAvailability = loadRestaurantAvailability;
+
+// =============================================
+// MÓDULO: Panel de Reservas de Hospedaje (Airtable)
+// =============================================
+
+const HSP_STATUS_COLORS = {
+    'Nuevo Lead': '#F59E0B',
+    'Contactado': '#3B82F6',
+    'Cotizado': '#8B5CF6',
+    'Confirmado': '#10B981',
+    'Check-in': '#06B6D4',
+    'Check-out': '#6B7280',
+    'Cancelado': '#EF4444',
+    'No Show': '#EF4444'
+};
+
+function parseAirtableDate(val) {
+    if (!val) return null;
+    // Airtable sends "2026-05-15" (date-only) which JS parses as UTC midnight.
+    // Append T12:00:00 to avoid timezone offset shifting the day.
+    const str = String(val);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + 'T12:00:00');
+    return new Date(str);
+}
+
+async function fetchHospedajeReservas() {
+    const { apiKey, baseId, tableName } = state.hospedajeConfig;
+    if (!apiKey || !baseId || !tableName) {
+        console.log('Hospedaje: No Airtable config, skipping');
+        state.hospedajeReservas = [];
+        renderHospedajePanel();
+        return;
+    }
+
+    // Show loading
+    const panel = document.getElementById('hospedaje-panel');
+    if (panel) panel.innerHTML = '<div class="hsp-loading"><div class="hsp-spinner"></div><span>Cargando reservas...</span></div>';
+
+    try {
+        const encodedTable = encodeURIComponent(tableName);
+        const airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodedTable}`;
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(airtableUrl)}`;
+
+        const response = await fetch(proxyUrl, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+
+        if (!response.ok) throw new Error(`Airtable HTTP ${response.status}`);
+        const data = await response.json();
+
+        const records = data.records || [];
+        state.hospedajeReservas = records.map(r => {
+            const f = r.fields || {};
+            return {
+                airtable_id: r.id,
+                sesion_id: f['SesionID'] || f['sesionid'] || '',
+                nombre: f['Nombre Cliente'] || f['nombre_cliente'] || 'Sin nombre',
+                email: f['email'] || f['Email'] || '',
+                fecha_entrada: parseAirtableDate(f['Fecha entrada'] || f['fecha_entrada']),
+                fecha_salida: parseAirtableDate(f['Fecha salida'] || f['fecha_salida']),
+                adultos: parseInt(f['Cantidad Adultos'] || f['cantidad_adultos'] || 0),
+                ninos: parseInt(f['Cantidad Niños'] || f['cantidad_ninos'] || f['Cantidad Ninos'] || 0),
+                telefono: f['Teléfono'] || f['Telefono'] || f['telefono'] || '',
+                tipo_habitacion: f['Tipo Habitación'] || f['Tipo Habitacion'] || f['tipo_habitacion'] || '',
+                cantidad_habitaciones: parseInt(f['Cantidad Habitaciones'] || f['cantidad_habitaciones'] || f['Cantidad...'] || 0),
+                noches: parseInt(f['Noches'] || f['noches'] || 0),
+                total_estimado: parseFloat(f['Total Estimado'] || f['total_estimado'] || 0),
+                estado: f['Estado'] || f['estado'] || 'Nuevo Lead',
+                notas: f['Notas'] || f['notas'] || ''
+            };
+        });
+
+        console.log(`Hospedaje: Loaded ${state.hospedajeReservas.length} reservas from Airtable`);
+    } catch (err) {
+        console.error('Hospedaje: fetchHospedajeReservas failed:', err);
+        state.hospedajeReservas = [];
+    }
+
+    renderHospedajePanel();
+}
+
+const HSP_CONFIRMED_STATUSES = ['Confirmado', 'Check-in', 'Check-out'];
+const HSP_PROCESS_STATUSES = ['Nuevo Lead', 'Contactado', 'Cotizado'];
+
+function renderHospedajePanel() {
+    const panel = document.getElementById('hospedaje-panel');
+    if (!panel) return;
+
+    const { apiKey, baseId, tableName } = state.hospedajeConfig;
+    if (!apiKey || !baseId || !tableName) {
+        panel.innerHTML = '';
+        panel.classList.add('hidden');
+        return;
+    }
+
+    const all = state.hospedajeReservas;
+    const enProceso = all.filter(r => HSP_PROCESS_STATUSES.includes(r.estado) || r.estado === 'Cancelado' || r.estado === 'No Show');
+    const confirmados = all.filter(r => HSP_CONFIRMED_STATUSES.includes(r.estado));
+
+    const totalEstimado = enProceso.filter(r => !['Cancelado', 'No Show'].includes(r.estado))
+        .reduce((s, r) => s + (r.total_estimado || 0), 0);
+    const totalConfirmado = confirmados.reduce((s, r) => s + (r.total_estimado || 0), 0);
+
+    // Apply search filter
+    const q = (state.hospedajeFilters.search || '').toLowerCase();
+    const filterFn = r => !q || (r.nombre || '').toLowerCase().includes(q) || (r.telefono || '').includes(q) || (r.email || '').toLowerCase().includes(q);
+
+    const filteredProceso = enProceso.filter(filterFn);
+    const filteredConfirmados = confirmados.filter(filterFn);
+
+    panel.innerHTML = `
+        <div class="hsp-header">
+            <div>
+                <span class="hsp-section-label">RESERVAS DE HOSPEDAJE</span>
+                <h3 class="hsp-title">Solicitudes de Reservación</h3>
+            </div>
+            <div class="hsp-search-wrap">
+                <ion-icon name="search-outline"></ion-icon>
+                <input type="text" class="hsp-search" placeholder="Buscar..."
+                    value="${state.hospedajeFilters.search}" oninput="searchHospedaje(this.value)">
+            </div>
+        </div>
+
+        <div class="hsp-tabs">
+            <button class="hsp-tab ${state.hospedajeFilters.status !== 'confirmados' ? 'active' : ''}" onclick="filterHospedaje('proceso')">
+                En Proceso (${enProceso.length})
+                <span class="hsp-tab-amount">$${totalEstimado.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                <span class="hsp-tab-label">estimado</span>
+            </button>
+            <button class="hsp-tab ${state.hospedajeFilters.status === 'confirmados' ? 'active' : ''}" onclick="filterHospedaje('confirmados')">
+                Confirmados (${confirmados.length})
+                <span class="hsp-tab-amount">$${totalConfirmado.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                <span class="hsp-tab-label">confirmado</span>
+            </button>
+        </div>
+
+        <div class="hsp-table-wrap">
+            <table class="hsp-table">
+                <thead>
+                    <tr>
+                        <th>Huésped</th>
+                        <th>Entrada</th>
+                        <th>Salida</th>
+                        <th style="text-align:center">Noches</th>
+                        <th>Hab.</th>
+                        <th style="text-align:right">Total</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>${renderHspRows(state.hospedajeFilters.status === 'confirmados' ? filteredConfirmados : filteredProceso)}</tbody>
+            </table>
+        </div>`;
+}
+
+function renderHspRows(reservas) {
+    if (reservas.length === 0) return '<tr><td colspan="7" style="text-align:center;padding:20px;opacity:0.5;">Sin reservas</td></tr>';
+
+    return reservas.map((r, i) => {
+        const color = HSP_STATUS_COLORS[r.estado] || '#9CA3AF';
+        const fechaIn = r.fecha_entrada instanceof Date && !isNaN(r.fecha_entrada)
+            ? r.fecha_entrada.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—';
+        const fechaOut = r.fecha_salida instanceof Date && !isNaN(r.fecha_salida)
+            ? r.fecha_salida.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—';
+        const total = r.total_estimado ? `$${r.total_estimado.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—';
+        const globalIdx = state.hospedajeReservas.indexOf(r);
+
+        return `<tr class="hsp-row" onclick="openHospedajeDetail(${globalIdx}, true)" title="Ver detalle">
+            <td class="hsp-td-name">${r.nombre}</td>
+            <td>${fechaIn}</td>
+            <td>${fechaOut}</td>
+            <td style="text-align:center">${r.noches || '—'}</td>
+            <td>${r.tipo_habitacion || '—'}</td>
+            <td style="text-align:right">${total}</td>
+            <td><span class="hsp-status-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${r.estado}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+const HSP_PIPELINE = ['Nuevo Lead', 'Contactado', 'Cotizado', 'Confirmado', 'Check-in', 'Check-out', 'Cancelado', 'No Show'];
+
+const HSP_INTERACTION_ICONS = {
+    llamada: 'call-outline',
+    whatsapp: 'logo-whatsapp',
+    email: 'mail-outline',
+    nota: 'document-text-outline'
+};
+
+async function openHospedajeDetail(index, isGlobal) {
+    const r = isGlobal ? state.hospedajeReservas[index] : state.hospedajeReservas[index];
+    if (!r) return;
+
+    state._hspDetailRecord = r;
+
+    const modal = document.getElementById('hospedaje-detail-modal');
+    const content = document.getElementById('hospedaje-detail-content');
+    if (!modal || !content) return;
+
+    // Load interactions from Supabase
+    let interactions = [];
+    try {
+        const { data, error } = await supabase
+            .from('hospedaje_interacciones')
+            .select('*')
+            .eq('client_slug', state.clientId)
+            .eq('airtable_record_id', r.airtable_id)
+            .order('created_at', { ascending: false });
+        if (!error) interactions = data || [];
+    } catch (err) {
+        console.error('Hospedaje: loadInteractions failed:', err);
+    }
+
+    const color = HSP_STATUS_COLORS[r.estado] || '#9CA3AF';
+    const fechaIn = r.fecha_entrada instanceof Date && !isNaN(r.fecha_entrada)
+        ? r.fecha_entrada.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    const fechaOut = r.fecha_salida instanceof Date && !isNaN(r.fecha_salida)
+        ? r.fecha_salida.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    const total = r.total_estimado ? `$${r.total_estimado.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—';
+
+    // Status dropdown
+    const statusOptions = HSP_PIPELINE.map(s => {
+        const sel = s === r.estado ? 'selected' : '';
+        return `<option value="${s}" ${sel}>${s}</option>`;
+    }).join('');
+
+    // Timeline
+    const timelineHtml = interactions.length === 0
+        ? '<p style="opacity:0.4;text-align:center;padding:16px;">Sin interacciones registradas</p>'
+        : interactions.map(ix => {
+            const icon = HSP_INTERACTION_ICONS[ix.tipo] || 'chatbubble-outline';
+            const tipoLabel = ix.tipo.charAt(0).toUpperCase() + ix.tipo.slice(1);
+            const fecha = new Date(ix.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            return `<div class="hsp-timeline-item">
+                <div class="hsp-timeline-icon" style="background:${color}22">
+                    <ion-icon name="${icon}" style="color:${color}"></ion-icon>
+                </div>
+                <div class="hsp-timeline-content">
+                    <div class="hsp-timeline-meta">${tipoLabel} &middot; ${fecha} &middot; <strong>${ix.vendedor_nombre}</strong></div>
+                    <div class="hsp-timeline-text">${ix.resultado || ''}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+    const hasHistory = interactions.length > 0;
+
+    content.innerHTML = `
+        <div class="hsp-detail-header">
+            <div>
+                <h2 class="hsp-detail-name">${r.nombre}</h2>
+                <span class="hsp-detail-sub">
+                    <span class="hsp-status-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${r.estado}</span>
+                </span>
+            </div>
+            <button class="hsp-close-btn" onclick="closeHospedajeDetail()">&times;</button>
+        </div>
+
+        <div class="hsp-modal-layout ${hasHistory ? 'hsp-two-col' : ''}">
+            <!-- LEFT: Client info -->
+            <div class="hsp-modal-left">
+                <div class="hsp-detail-grid">
+                    <div class="hsp-detail-card">
+                        <div class="hsp-detail-card-icon"><ion-icon name="calendar-outline"></ion-icon></div>
+                        <div>
+                            <div class="hsp-detail-label">Check-in</div>
+                            <div class="hsp-detail-value">${fechaIn}</div>
+                        </div>
+                    </div>
+                    <div class="hsp-detail-card">
+                        <div class="hsp-detail-card-icon"><ion-icon name="log-out-outline"></ion-icon></div>
+                        <div>
+                            <div class="hsp-detail-label">Check-out</div>
+                            <div class="hsp-detail-value">${fechaOut}</div>
+                        </div>
+                    </div>
+                    <div class="hsp-detail-card">
+                        <div class="hsp-detail-card-icon"><ion-icon name="moon-outline"></ion-icon></div>
+                        <div>
+                            <div class="hsp-detail-label">Noches</div>
+                            <div class="hsp-detail-value">${r.noches || '—'}</div>
+                        </div>
+                    </div>
+                    <div class="hsp-detail-card">
+                        <div class="hsp-detail-card-icon"><ion-icon name="cash-outline"></ion-icon></div>
+                        <div>
+                            <div class="hsp-detail-label">Total Estimado</div>
+                            <div class="hsp-detail-value">${total}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hsp-detail-info">
+                    <div class="hsp-info-item"><ion-icon name="bed-outline"></ion-icon> ${r.tipo_habitacion || '—'} ${r.cantidad_habitaciones > 1 ? '(' + r.cantidad_habitaciones + ' hab.)' : ''}</div>
+                    <div class="hsp-info-item"><ion-icon name="people-outline"></ion-icon> ${r.adultos || 0} adulto(s)${r.ninos ? ', ' + r.ninos + ' niño(s)' : ''}</div>
+                    <div class="hsp-info-item"><ion-icon name="call-outline"></ion-icon> ${formatPhone(r.telefono) || '—'}</div>
+                    <div class="hsp-info-item"><ion-icon name="mail-outline"></ion-icon> ${r.email || '—'}</div>
+                </div>
+
+                ${r.notas ? `<div class="hsp-detail-notes"><ion-icon name="document-text-outline"></ion-icon> ${r.notas}</div>` : ''}
+
+                <div class="hsp-detail-actions">
+                    ${r.telefono ? `<a href="https://wa.me/${r.telefono.replace(/\D/g, '')}" target="_blank" class="hsp-action-btn hsp-btn-whatsapp">
+                        <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+                    </a>` : ''}
+                    ${r.telefono ? `<a href="tel:${r.telefono}" class="hsp-action-btn hsp-btn-call">
+                        <ion-icon name="call-outline"></ion-icon> Llamar
+                    </a>` : ''}
+                    ${r.email ? `<a href="mailto:${r.email}" class="hsp-action-btn hsp-btn-email">
+                        <ion-icon name="mail-outline"></ion-icon> Email
+                    </a>` : ''}
+                </div>
+
+                <div class="hsp-interaction-form">
+                    <h4 class="hsp-section-title">Actualizar Seguimiento</h4>
+                    <div class="hsp-form-row" style="display:flex;gap:10px;">
+                        <div style="flex:1;">
+                            <label class="hsp-form-label">Estatus</label>
+                            <select id="hsp-status-dropdown" class="hsp-form-select" data-original="${r.estado}"
+                                onchange="hspCheckSaveEnabled()" style="border-color:${color};color:${color}">
+                                ${statusOptions}
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label class="hsp-form-label">Tipo de contacto</label>
+                            <select id="hsp-interaction-type" class="hsp-form-select">
+                                <option value="llamada">Llamada</option>
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="email">Email</option>
+                                <option value="nota">Nota</option>
+                            </select>
+                        </div>
+                    </div>
+                    <textarea id="hsp-interaction-result" class="hsp-form-textarea" rows="3"
+                        placeholder="Resultado de la interacción, acuerdos, siguiente paso..."
+                        oninput="hspCheckSaveEnabled()"></textarea>
+                    <button id="hsp-save-all-btn" class="hsp-form-save-btn" disabled
+                        onclick="saveHospedajeAll('${r.airtable_id}')">
+                        <ion-icon name="save-outline"></ion-icon> Guardar
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT: Timeline (only if has history) -->
+            ${hasHistory ? `
+            <div class="hsp-modal-right">
+                <h4 class="hsp-section-title">Historial de Seguimiento</h4>
+                <div class="hsp-timeline-scroll">
+                    ${timelineHtml}
+                </div>
+            </div>` : ''}
+        </div>`;
+
+    modal.classList.remove('hidden');
+}
+
+function closeHospedajeDetail() {
+    const modal = document.getElementById('hospedaje-detail-modal');
+    if (modal) modal.classList.add('hidden');
+    state._hspDetailRecord = null;
+}
+
+function hspCheckSaveEnabled() {
+    const btn = document.getElementById('hsp-save-all-btn');
+    if (!btn) return;
+    const statusDropdown = document.getElementById('hsp-status-dropdown');
+    const resultado = document.getElementById('hsp-interaction-result');
+    const statusChanged = statusDropdown && statusDropdown.value !== statusDropdown.dataset.original;
+    const hasText = resultado && resultado.value.trim().length > 0;
+    btn.disabled = !(statusChanged || hasText);
+}
+
+async function saveHospedajeAll(airtableRecordId) {
+    const btn = document.getElementById('hsp-save-all-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Guardando...'; }
+
+    const statusDropdown = document.getElementById('hsp-status-dropdown');
+    const tipoEl = document.getElementById('hsp-interaction-type');
+    const resultadoEl = document.getElementById('hsp-interaction-result');
+
+    const newStatus = statusDropdown ? statusDropdown.value : null;
+    const originalStatus = statusDropdown ? statusDropdown.dataset.original : null;
+    const statusChanged = newStatus && newStatus !== originalStatus;
+    const tipo = tipoEl ? tipoEl.value : 'nota';
+    const resultado = resultadoEl ? resultadoEl.value.trim() : '';
+
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userName = session ? session.name : 'Desconocido';
+    const userId = session ? session.id : null;
+
+    try {
+        // 1. Update status in Airtable if changed
+        if (statusChanged) {
+            const { apiKey, baseId, tableName } = state.hospedajeConfig;
+            const encodedTable = encodeURIComponent(tableName);
+            const airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodedTable}/${airtableRecordId}`;
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(airtableUrl)}`;
+
+            const response = await fetch(proxyUrl, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fields: { 'Estado': newStatus } })
+            });
+            if (!response.ok) throw new Error(`Airtable PATCH ${response.status}`);
+
+            const lead = state.hospedajeReservas.find(r => r.airtable_id === airtableRecordId);
+            if (lead) lead.estado = newStatus;
+
+            // 1b. Auto-register venta when confirmed
+            if (newStatus === 'Confirmado' && originalStatus !== 'Confirmado' && lead) {
+                await supabase.from('ventas').insert([{
+                    client_slug: state.clientId,
+                    monto: lead.total_estimado || 0,
+                    fecha: lead.fecha_entrada instanceof Date ? lead.fecha_entrada.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                    descripcion: `Reserva confirmada: ${lead.nombre} - ${lead.tipo_habitacion || ''} ${lead.noches || ''} noches`,
+                    registrado_por: userName
+                }]);
+                // Refresh ventas in dashboard
+                if (typeof refreshVentasDashboard === 'function') await refreshVentasDashboard();
+            }
+        }
+
+        // 2. Save interaction in Supabase
+        const logText = resultado
+            ? (statusChanged ? `[${originalStatus} → ${newStatus}] ${resultado}` : resultado)
+            : (statusChanged ? `Estatus cambiado: ${originalStatus} → ${newStatus}` : '');
+
+        if (logText) {
+            await supabase.from('hospedaje_interacciones').insert([{
+                client_slug: state.clientId,
+                airtable_record_id: airtableRecordId,
+                tipo: resultado ? tipo : 'nota',
+                resultado: logText,
+                vendedor_nombre: userName,
+                vendedor_id: userId
+            }]);
+        }
+
+        renderHospedajePanel();
+        showToast('Cambios guardados', 'success');
+
+        // Refresh modal
+        const lead = state.hospedajeReservas.find(r => r.airtable_id === airtableRecordId);
+        if (lead) {
+            const idx = getFilteredHospedaje().indexOf(lead);
+            if (idx >= 0) openHospedajeDetail(idx);
+        }
+    } catch (err) {
+        console.error('Hospedaje: saveAll failed:', err);
+        showToast('Error al guardar', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<ion-icon name="save-outline"></ion-icon> Guardar'; }
+    }
+}
+
+function getFilteredHospedaje() {
+    let reservas = [...state.hospedajeReservas];
+    if (state.hospedajeFilters.status !== 'all') {
+        reservas = reservas.filter(r => r.estado === state.hospedajeFilters.status);
+    }
+    if (state.hospedajeFilters.search) {
+        const q = state.hospedajeFilters.search.toLowerCase();
+        reservas = reservas.filter(r =>
+            (r.nombre || '').toLowerCase().includes(q) ||
+            (r.telefono || '').includes(q) ||
+            (r.email || '').toLowerCase().includes(q) ||
+            (r.tipo_habitacion || '').toLowerCase().includes(q)
+        );
+    }
+    return reservas;
+}
+
+function filterHospedaje(tab) {
+    state.hospedajeFilters.status = tab;
+    renderHospedajePanel();
+}
+
+function searchHospedaje(query) {
+    state.hospedajeFilters.search = query;
+    // Only update the table body, not the full panel (to keep input focus)
+    const tbody = document.querySelector('#hospedaje-panel .hsp-table tbody');
+    if (!tbody) return;
+    const all = state.hospedajeReservas;
+    const isConfirmados = state.hospedajeFilters.status === 'confirmados';
+    const base = isConfirmados
+        ? all.filter(r => HSP_CONFIRMED_STATUSES.includes(r.estado))
+        : all.filter(r => HSP_PROCESS_STATUSES.includes(r.estado) || r.estado === 'Cancelado' || r.estado === 'No Show');
+    const q = query.toLowerCase();
+    const filtered = q ? base.filter(r =>
+        (r.nombre || '').toLowerCase().includes(q) ||
+        (r.telefono || '').includes(q) ||
+        (r.email || '').toLowerCase().includes(q)
+    ) : base;
+    tbody.innerHTML = renderHspRows(filtered);
+}
+
+function sortHospedaje(field) {
+    if (state.hospedajeSortField === field) {
+        state.hospedajeSortDir = state.hospedajeSortDir === 'desc' ? 'asc' : 'desc';
+    } else {
+        state.hospedajeSortField = field;
+        state.hospedajeSortDir = 'desc';
+    }
+    renderHospedajePanel();
+}
+
+// Expose hospedaje functions globally
+window.fetchHospedajeReservas = fetchHospedajeReservas;
+window.openHospedajeDetail = openHospedajeDetail;
+window.closeHospedajeDetail = closeHospedajeDetail;
+window.filterHospedaje = filterHospedaje;
+window.searchHospedaje = searchHospedaje;
+window.sortHospedaje = sortHospedaje;
+window.hspCheckSaveEnabled = hspCheckSaveEnabled;
+window.saveHospedajeAll = saveHospedajeAll;
+
+// =============================================
+// END: Panel de Reservas de Hospedaje
+// =============================================
 
 /* ============================================================
    MOBILE DASHBOARD — MD3 Dark Glass
