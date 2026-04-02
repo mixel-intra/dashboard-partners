@@ -5,8 +5,8 @@ module.exports = async function handler(req, res) {
     // Preflight OPTIONS
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         return res.status(200).end();
     }
 
@@ -28,10 +28,18 @@ module.exports = async function handler(req, res) {
             }
         };
 
-        // Para POST, enviar el body como JSON
-        if (req.method === 'POST') {
+        // Forward Authorization header (needed for Airtable API)
+        const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+        if (authHeader) {
+            fetchOptions.headers['Authorization'] = authHeader;
+        }
+
+        // Para POST/PATCH/PUT, enviar el body como JSON
+        if (['POST', 'PATCH', 'PUT'].includes(req.method)) {
             fetchOptions.headers['Content-Type'] = 'application/json';
-            fetchOptions.body = JSON.stringify(req.body);
+            if (req.body) {
+                fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+            }
         }
 
         const response = await fetch(targetUrl, fetchOptions);
@@ -58,8 +66,8 @@ module.exports = async function handler(req, res) {
         }
 
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
         return res.status(200).json(data);
     } catch (error) {

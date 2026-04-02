@@ -885,7 +885,7 @@ tr:last-child td { border-bottom: none; }
 tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 
 /* === LAYOUT V2 === */
-.split-row-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+.split-row-grid  { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
 .bottom-cards-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
 .big-chart-card { min-height: 380px; }
 
