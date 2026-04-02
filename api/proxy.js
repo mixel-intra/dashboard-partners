@@ -28,6 +28,12 @@ module.exports = async function handler(req, res) {
             }
         };
 
+        // Forward Authorization header (needed for Airtable API)
+        const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+        if (authHeader) {
+            fetchOptions.headers['Authorization'] = authHeader;
+        }
+
         // Para POST, enviar el body como JSON
         if (req.method === 'POST') {
             fetchOptions.headers['Content-Type'] = 'application/json';

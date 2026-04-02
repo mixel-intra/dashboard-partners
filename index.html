@@ -1850,6 +1850,22 @@
                     </div>
                 </div>
 
+                <!-- ================================================ -->
+                <!-- EVENT CRM PANEL (Seguimiento de Eventos)       -->
+                <!-- ================================================ -->
+                <div id="event-crm-panel" class="evt-panel hidden">
+                    <!-- Content injected by renderEventPanel() -->
+                </div>
+
+                <!-- Event Detail Modal -->
+                <div id="event-detail-modal" class="evt-modal-overlay hidden">
+                    <div class="evt-modal-content">
+                        <div id="event-detail-content">
+                            <!-- Content injected by openEventDetail() -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Bottom Row: Remaining Cards (inside carousel) -->
                 <div class="bottom-cards-row" id="bottom-cards-row">
                     <!-- Card 5: Total Leads -->
@@ -3404,6 +3420,357 @@
             font-size: 0.82rem;
         }
 
+        /* ===== EVENT CRM PANEL ===== */
+        .evt-panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+            backdrop-filter: blur(20px);
+        }
+        .evt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .evt-section-label {
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            color: #8E92A3;
+            text-transform: uppercase;
+        }
+        .evt-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #fff;
+            margin: 4px 0 0 0;
+        }
+        .evt-search-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .evt-search-wrap ion-icon {
+            position: absolute;
+            left: 10px;
+            color: #8E92A3;
+            font-size: 16px;
+        }
+        .evt-search {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 8px 12px 8px 32px;
+            color: #fff;
+            font-size: 0.85rem;
+            width: 260px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .evt-search:focus { border-color: rgba(255,255,255,0.2); }
+        .evt-filters {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .evt-filter-pill {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .evt-filter-pill:hover { opacity: 0.8; }
+        .evt-table-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .evt-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .evt-table thead th {
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8E92A3;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+            user-select: none;
+        }
+        .evt-table thead th:hover { color: #fff; }
+        .evt-row {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .evt-row:hover { background: rgba(255,255,255,0.04); }
+        .evt-row td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: #ccc;
+        }
+        .evt-td-name { font-weight: 500; color: #fff; }
+        .evt-status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Event Detail Modal */
+        .evt-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+            overflow-y: auto;
+        }
+        .evt-modal-content {
+            background: #1A1B22;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            max-width: 640px;
+            width: 100%;
+            padding: 28px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+        }
+        .evt-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .evt-detail-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+        .evt-detail-sub {
+            font-size: 0.85rem;
+            color: #8E92A3;
+            margin-top: 4px;
+            display: block;
+        }
+        .evt-close-btn {
+            background: none;
+            border: none;
+            color: #8E92A3;
+            font-size: 1.8rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+        }
+        .evt-close-btn:hover { color: #fff; }
+        .evt-detail-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+        .evt-info-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+        .evt-info-item ion-icon { font-size: 16px; color: #8E92A3; }
+        .evt-detail-notes {
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            color: #aaa;
+            line-height: 1.5;
+        }
+        .evt-status-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .evt-status-section label {
+            font-size: 0.85rem;
+            color: #8E92A3;
+            white-space: nowrap;
+        }
+        .evt-status-select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+        .evt-status-select option { background: #1A1B22; color: #ccc; }
+
+        /* Timeline */
+        .evt-timeline-section { margin-bottom: 20px; }
+        .evt-timeline-title, .evt-form-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #8E92A3;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 12px 0;
+        }
+        .evt-timeline-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .evt-timeline-icon {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .evt-timeline-icon ion-icon { font-size: 18px; }
+        .evt-timeline-content { flex: 1; min-width: 0; }
+        .evt-timeline-meta {
+            font-size: 0.78rem;
+            color: #8E92A3;
+            margin-bottom: 4px;
+        }
+        .evt-timeline-text {
+            font-size: 0.85rem;
+            color: #ccc;
+            line-height: 1.5;
+        }
+
+        /* Interaction Form */
+        .evt-interaction-form {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .evt-form-row {
+            margin-bottom: 10px;
+        }
+        .evt-form-select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #ccc;
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+        }
+        .evt-form-select option { background: #1A1B22; }
+        .evt-form-textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #ccc;
+            font-size: 0.85rem;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        .evt-form-textarea:focus, .evt-form-select:focus { border-color: rgba(255,255,255,0.2); }
+        .evt-form-save-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #10B981;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 18px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .evt-form-save-btn:hover { opacity: 0.85; }
+
+        /* Event CRM Light Theme */
+        [data-theme="light"] .evt-panel {
+            background: #fff;
+            border-color: #E5E7EB;
+        }
+        [data-theme="light"] .evt-title { color: #111827; }
+        [data-theme="light"] .evt-search {
+            background: #F9FAFB;
+            border-color: #E5E7EB;
+            color: #111827;
+        }
+        [data-theme="light"] .evt-table thead th {
+            background: #F9FAFB;
+            border-color: #E5E7EB;
+            color: #6B7280;
+        }
+        [data-theme="light"] .evt-row:hover { background: #F3F4F6; }
+        [data-theme="light"] .evt-row td { color: #374151; border-color: #F3F4F6; }
+        [data-theme="light"] .evt-td-name { color: #111827; }
+        [data-theme="light"] .evt-table-wrap { border-color: #E5E7EB; }
+        [data-theme="light"] .evt-modal-overlay { background: rgba(0,0,0,0.3); }
+        [data-theme="light"] .evt-modal-content {
+            background: #fff;
+            border-color: #E5E7EB;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+        }
+        [data-theme="light"] .evt-detail-name { color: #111827; }
+        [data-theme="light"] .evt-detail-info { background: #F9FAFB; }
+        [data-theme="light"] .evt-info-item { color: #374151; }
+        [data-theme="light"] .evt-detail-notes { background: #F9FAFB; color: #4B5563; }
+        [data-theme="light"] .evt-status-select {
+            background: #F9FAFB;
+            border-color: #E5E7EB;
+        }
+        [data-theme="light"] .evt-status-select option { background: #fff; color: #374151; }
+        [data-theme="light"] .evt-timeline-item { border-color: #F3F4F6; }
+        [data-theme="light"] .evt-timeline-text { color: #374151; }
+        [data-theme="light"] .evt-interaction-form {
+            background: #F9FAFB;
+            border-color: #E5E7EB;
+        }
+        [data-theme="light"] .evt-form-select,
+        [data-theme="light"] .evt-form-textarea {
+            background: #fff;
+            border-color: #E5E7EB;
+            color: #374151;
+        }
+        [data-theme="light"] .evt-form-select option { background: #fff; }
+        [data-theme="light"] .evt-close-btn { color: #9CA3AF; }
+        [data-theme="light"] .evt-close-btn:hover { color: #111827; }
+
         /* ===== VENTAS PANEL LIGHT ===== */
         [data-theme="light"] #ventas-backdrop {
             background: rgba(0, 0, 0, 0.4);
@@ -4047,8 +4414,10 @@
         return 1 - Math.pow(1 - t, 3) * Math.cos(t * Math.PI * 6) * Math.exp(-t * 8);
     }
 
+    var _counterGeneration = 0;
     function animateCounters() {
         if (!IS_DESKTOP) return;
+        var gen = ++_counterGeneration;
         var valueBigs = document.querySelectorAll('.value-big');
         valueBigs.forEach(function (el) {
             var raw = el.textContent.trim();
@@ -4072,6 +4441,7 @@
             var duration = 1200;
 
             function step(ts) {
+                if (gen !== _counterGeneration) return;
                 if (!start) start = ts;
                 var elapsed = ts - start;
                 var t = Math.min(elapsed / duration, 1);
@@ -4103,12 +4473,16 @@
     window.animateCounters = animateCounters;
 
     // Wrap renderDashboard to hook animateCounters + staggered entrance
+    var _renderTimer = null;
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof window.renderDashboard === 'function') {
             var _orig = window.renderDashboard;
             window.renderDashboard = function () {
+                // Kill any running counter animations BEFORE _orig sets new DOM values
+                ++_counterGeneration;
+                clearTimeout(_renderTimer);
                 _orig.apply(this, arguments);
-                setTimeout(function() {
+                _renderTimer = setTimeout(function() {
                     applyStaggeredEntrance();
                     animateCounters();
                 }, 60);

@@ -42,7 +42,11 @@ const elements = {
     hotelServiceRestaurante: document.getElementById('hotel-service-restaurante'),
     restAirtableWebhook: document.getElementById('rest-airtable-webhook'),
     restConfirmWebhook: document.getElementById('rest-confirm-webhook'),
-    restaurantWebhooksSection: document.getElementById('restaurant-webhooks-section')
+    restaurantWebhooksSection: document.getElementById('restaurant-webhooks-section'),
+    atEventsApiKey: document.getElementById('at-events-api-key'),
+    atEventsBaseId: document.getElementById('at-events-base-id'),
+    atEventsTableName: document.getElementById('at-events-table-name'),
+    airtableEventsSection: document.getElementById('airtable-events-section')
 };
 
 // State
@@ -297,6 +301,13 @@ async function selectClient(clientId) {
     if (elements.restConfirmWebhook) elements.restConfirmWebhook.value = restConfig.confirm_webhook_url || '';
     toggleRestaurantWebhooks();
 
+    // Populate Airtable events config
+    const atConfig = currentConfig.airtable_config || {};
+    if (elements.atEventsApiKey) elements.atEventsApiKey.value = atConfig.api_key || '';
+    if (elements.atEventsBaseId) elements.atEventsBaseId.value = atConfig.base_id || '';
+    if (elements.atEventsTableName) elements.atEventsTableName.value = atConfig.table_name || 'Leads Eventos';
+    toggleAirtableEventsSection();
+
     // Sync UI Swatches and Hex
     elements.hexPrimary.value = elements.themePrimaryInput.value;
     elements.hexSecondary.value = elements.themeSecondaryInput.value;
@@ -413,6 +424,7 @@ function setupEventListeners() {
             elements.hotelServicesSection.classList.add('hidden');
         }
         toggleRestaurantWebhooks();
+        toggleAirtableEventsSection();
     });
 
     // Toggle restaurant webhooks when restaurante service changes
@@ -503,6 +515,11 @@ function setupEventListeners() {
                 restaurant_config: {
                     airtable_webhook_url: elements.restAirtableWebhook ? elements.restAirtableWebhook.value.trim() : '',
                     confirm_webhook_url: elements.restConfirmWebhook ? elements.restConfirmWebhook.value.trim() : ''
+                },
+                airtable_config: {
+                    api_key: elements.atEventsApiKey ? elements.atEventsApiKey.value.trim() : '',
+                    base_id: elements.atEventsBaseId ? elements.atEventsBaseId.value.trim() : '',
+                    table_name: elements.atEventsTableName ? elements.atEventsTableName.value.trim() : 'Leads Eventos'
                 }
             };
 
@@ -576,6 +593,17 @@ function toggleRestaurantWebhooks() {
             elements.restaurantWebhooksSection.classList.remove('hidden');
         } else {
             elements.restaurantWebhooksSection.classList.add('hidden');
+        }
+    }
+}
+
+function toggleAirtableEventsSection() {
+    const isHotel = elements.clientTypeInput.value === 'hotel';
+    if (elements.airtableEventsSection) {
+        if (isHotel) {
+            elements.airtableEventsSection.classList.remove('hidden');
+        } else {
+            elements.airtableEventsSection.classList.add('hidden');
         }
     }
 }

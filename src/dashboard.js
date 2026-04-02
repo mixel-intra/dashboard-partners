@@ -39,7 +39,15 @@ const state = {
     restaurantSortDir: 'desc',
     restaurantNewIds: [],
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '' },
-    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: null }
+    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: null },
+    // Event CRM (Seguimiento de Eventos)
+    eventLeads: [],
+    eventSeguimiento: {},
+    eventFilters: { status: 'all', search: '' },
+    eventSortField: 'fecha_contacto',
+    eventSortDir: 'desc',
+    eventConfig: { apiKey: '', baseId: '', tableName: '' },
+    eventDetailLead: null
 };
 
 // Theme-aware chart colors (Linear/Vercel style)
@@ -121,6 +129,14 @@ async function init() {
         setLoaderProgress(92);
 
         applyGlobalFilters();
+
+        // Load event CRM if eventos tab is active and config exists
+        if (state.activeTab === 'eventos' && state.eventConfig.apiKey) {
+            const eventPanel = document.getElementById('event-crm-panel');
+            if (eventPanel) eventPanel.classList.remove('hidden');
+            fetchEventLeads();
+        }
+
         hideLoader();
     } catch (err) {
         console.error('CRITICAL INIT ERROR:', err);
@@ -181,6 +197,14 @@ async function loadConfig() {
         state.restaurantConfig = {
             airtableWebhookUrl: restConfig.airtable_webhook_url || '',
             confirmWebhookUrl: restConfig.confirm_webhook_url || ''
+        };
+
+        // Load event CRM config (Airtable)
+        const atConfig = config.airtable_config || {};
+        state.eventConfig = {
+            apiKey: atConfig.api_key || '',
+            baseId: atConfig.base_id || '',
+            tableName: atConfig.table_name || 'Leads Eventos'
         };
 
         initHotelTabs();
@@ -466,6 +490,18 @@ function switchDashTab(tab) {
         if (dashboardGrid) dashboardGrid.classList.remove('hidden');
         if (restaurantPanel) restaurantPanel.classList.add('hidden');
         applyGlobalFilters();
+
+        // Show/hide event CRM panel
+        const eventPanel = document.getElementById('event-crm-panel');
+        if (eventPanel) {
+            if (tab === 'eventos' && state.eventConfig.apiKey) {
+                eventPanel.classList.remove('hidden');
+                if (state.eventLeads.length === 0) fetchEventLeads();
+                else renderEventPanel();
+            } else {
+                eventPanel.classList.add('hidden');
+            }
+        }
     }
 }
 
@@ -503,10 +539,8 @@ function applyGlobalFilters() {
                     const isQual = isQualified(lead.estatus);
                     if (isQual) {
                         match = match && lead.tipo_servicio === expectedType;
-                    } else {
-                        // Es un lead general, se queda para que sume al total de registros
-                        match = true;
                     }
+                    // Lead no calificado: mantiene match (respeta filtro de fecha) para sumar al total de registros
                 }
             }
         }
@@ -2301,6 +2335,480 @@ window.addClosedDate = addClosedDate;
 window.removeClosedDate = removeClosedDate;
 window.saveRestaurantAvailability = saveRestaurantAvailability;
 window.loadRestaurantAvailability = loadRestaurantAvailability;
+
+// =============================================
+// MÓDULO: Panel de Seguimiento de Eventos (Mini-CRM)
+// =============================================
+
+const EVT_STATUS_LABELS = {
+    nuevo: 'Nuevo',
+    contactado: 'Contactado',
+    cotizando: 'Cotizando',
+    cotizacion_enviada: 'Cotización Enviada',
+    venta: 'Venta',
+    perdido: 'Perdido'
+};
+
+const EVT_STATUS_COLORS = {
+    nuevo: '#F59E0B',
+    contactado: '#3B82F6',
+    cotizando: '#8B5CF6',
+    cotizacion_enviada: '#06B6D4',
+    venta: '#10B981',
+    perdido: '#EF4444'
+};
+
+const EVT_INTERACTION_ICONS = {
+    llamada: 'call-outline',
+    whatsapp: 'logo-whatsapp',
+    email: 'mail-outline',
+    nota: 'document-text-outline'
+};
+
+// --- Data Loading ---
+
+async function fetchEventLeads() {
+    const { apiKey, baseId, tableName } = state.eventConfig;
+    if (!apiKey || !baseId) {
+        console.log('Event CRM: No Airtable config, skipping');
+        state.eventLeads = [];
+        renderEventPanel();
+        return;
+    }
+
+    try {
+        const encodedTable = encodeURIComponent(tableName);
+        const filterFormula = encodeURIComponent(`{hotel}='${state.clientId}'`);
+        const airtableUrl = `https://api.airtable.com/v0/${baseId}/${encodedTable}?filterByFormula=${filterFormula}`;
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(airtableUrl)}`;
+
+        const response = await fetch(proxyUrl, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+
+        if (!response.ok) throw new Error(`Airtable HTTP ${response.status}`);
+        const data = await response.json();
+
+        const records = data.records || [];
+        state.eventLeads = records.map(r => {
+            const f = r.fields || {};
+            return {
+                airtable_id: r.id,
+                id_lead: f.id_lead || null,
+                nombre: f.nombre || 'Sin nombre',
+                telefono: f.telefono || '',
+                email: f.email || '',
+                tipo_evento: f.tipo_evento || '',
+                fecha_evento: f.fecha_evento ? new Date(f.fecha_evento) : null,
+                asistentes: f.asistentes || 0,
+                fecha_contacto: f.fecha_contacto ? new Date(f.fecha_contacto) : null,
+                notas: f.notas || ''
+            };
+        });
+
+        console.log(`Event CRM: Loaded ${state.eventLeads.length} leads from Airtable`);
+    } catch (err) {
+        console.error('Event CRM: fetchEventLeads failed:', err);
+        state.eventLeads = [];
+    }
+
+    await loadEventSeguimiento();
+    mergeEventData();
+    renderEventPanel();
+}
+
+async function loadEventSeguimiento() {
+    if (!state.clientId) return;
+    try {
+        const { data, error } = await supabase
+            .from('event_seguimiento')
+            .select('*')
+            .eq('client_slug', state.clientId);
+
+        if (error) throw error;
+        state.eventSeguimiento = {};
+        (data || []).forEach(s => {
+            state.eventSeguimiento[s.id_lead] = s;
+        });
+    } catch (err) {
+        console.error('Event CRM: loadEventSeguimiento failed:', err);
+        state.eventSeguimiento = {};
+    }
+}
+
+function mergeEventData() {
+    state.eventLeads.forEach(lead => {
+        const seg = state.eventSeguimiento[lead.id_lead];
+        lead.pipeline_status = seg ? seg.estatus : 'nuevo';
+        lead.asignado_a = seg ? seg.asignado_a : null;
+        lead.seg_updated_at = seg ? seg.updated_at : null;
+    });
+}
+
+// --- Rendering ---
+
+function renderEventPanel() {
+    const panel = document.getElementById('event-crm-panel');
+    if (!panel) return;
+
+    const { apiKey, baseId } = state.eventConfig;
+    if (!apiKey || !baseId) {
+        panel.innerHTML = '<div style="text-align:center;padding:40px;opacity:0.5;">Configura Airtable en el panel de administración para activar el seguimiento de eventos.</div>';
+        return;
+    }
+
+    let leads = [...state.eventLeads];
+
+    // Filter by status
+    if (state.eventFilters.status !== 'all') {
+        leads = leads.filter(l => l.pipeline_status === state.eventFilters.status);
+    }
+
+    // Filter by search
+    if (state.eventFilters.search) {
+        const q = state.eventFilters.search.toLowerCase();
+        leads = leads.filter(l =>
+            (l.nombre || '').toLowerCase().includes(q) ||
+            (l.telefono || '').includes(q) ||
+            (l.tipo_evento || '').toLowerCase().includes(q) ||
+            (l.email || '').toLowerCase().includes(q)
+        );
+    }
+
+    // Sort
+    leads.sort((a, b) => {
+        const field = state.eventSortField;
+        let va = a[field], vb = b[field];
+        if (va instanceof Date && vb instanceof Date) return state.eventSortDir === 'desc' ? vb - va : va - vb;
+        if (typeof va === 'number' && typeof vb === 'number') return state.eventSortDir === 'desc' ? vb - va : va - vb;
+        va = String(va || '').toLowerCase();
+        vb = String(vb || '').toLowerCase();
+        return state.eventSortDir === 'desc' ? vb.localeCompare(va) : va.localeCompare(vb);
+    });
+
+    // Stats
+    const stats = { total: state.eventLeads.length };
+    Object.keys(EVT_STATUS_LABELS).forEach(k => {
+        stats[k] = state.eventLeads.filter(l => l.pipeline_status === k).length;
+    });
+
+    renderEventTable(leads, stats);
+}
+
+function renderEventTable(leads, stats) {
+    const panel = document.getElementById('event-crm-panel');
+    if (!panel) return;
+
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    // Status filter pills
+    const statusFilters = ['all', ...Object.keys(EVT_STATUS_LABELS)];
+    const pillsHtml = statusFilters.map(s => {
+        const active = state.eventFilters.status === s;
+        const label = s === 'all' ? `Todos (${stats.total})` : `${EVT_STATUS_LABELS[s]} (${stats[s] || 0})`;
+        const color = s === 'all' ? '#9CA3AF' : EVT_STATUS_COLORS[s];
+        const bg = active ? `${color}33` : 'transparent';
+        const border = active ? color : 'transparent';
+        return `<button class="evt-filter-pill" onclick="filterEventLeads('${s}')"
+            style="background:${bg};border:1px solid ${border};color:${active ? color : (isLight ? '#6B7280' : '#9CA3AF')}">${label}</button>`;
+    }).join('');
+
+    // Table rows
+    const rowsHtml = leads.length === 0
+        ? `<tr><td colspan="7" style="text-align:center;padding:24px;opacity:0.5;">No se encontraron leads</td></tr>`
+        : leads.map((l, i) => {
+            const color = EVT_STATUS_COLORS[l.pipeline_status] || '#9CA3AF';
+            const statusLabel = EVT_STATUS_LABELS[l.pipeline_status] || l.pipeline_status;
+            const fechaEvt = l.fecha_evento instanceof Date && !isNaN(l.fecha_evento)
+                ? l.fecha_evento.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+            const fechaContacto = l.fecha_contacto instanceof Date && !isNaN(l.fecha_contacto)
+                ? l.fecha_contacto.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—';
+            const tel = formatPhone(l.telefono);
+
+            return `<tr class="evt-row" onclick="openEventDetail(${i})" title="Ver detalle">
+                <td class="evt-td-name">${l.nombre}</td>
+                <td>${l.tipo_evento || '—'}</td>
+                <td>${fechaEvt}</td>
+                <td style="text-align:center">${l.asistentes || '—'}</td>
+                <td>${tel}</td>
+                <td>${fechaContacto}</td>
+                <td><span class="evt-status-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${statusLabel}</span></td>
+            </tr>`;
+        }).join('');
+
+    panel.innerHTML = `
+        <div class="evt-header">
+            <div>
+                <span class="evt-section-label">SEGUIMIENTO DE EVENTOS</span>
+                <h3 class="evt-title">Pipeline de Cotizaciones</h3>
+            </div>
+            <div class="evt-search-wrap">
+                <ion-icon name="search-outline"></ion-icon>
+                <input type="text" class="evt-search" placeholder="Buscar por nombre, tel, tipo..."
+                    value="${state.eventFilters.search}" oninput="searchEventLeads(this.value)">
+            </div>
+        </div>
+        <div class="evt-filters">${pillsHtml}</div>
+        <div class="evt-table-wrap">
+            <table class="evt-table">
+                <thead>
+                    <tr>
+                        <th onclick="sortEventLeads('nombre')">Nombre</th>
+                        <th onclick="sortEventLeads('tipo_evento')">Tipo Evento</th>
+                        <th onclick="sortEventLeads('fecha_evento')">Fecha Evento</th>
+                        <th onclick="sortEventLeads('asistentes')" style="text-align:center">Asist.</th>
+                        <th>Teléfono</th>
+                        <th onclick="sortEventLeads('fecha_contacto')">Contacto</th>
+                        <th>Estatus</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        </div>`;
+}
+
+// --- Detail Modal ---
+
+async function openEventDetail(index) {
+    const leads = getFilteredEventLeads();
+    const lead = leads[index];
+    if (!lead) return;
+
+    state.eventDetailLead = lead;
+    const modal = document.getElementById('event-detail-modal');
+    if (!modal) return;
+
+    // Load interactions
+    let interactions = [];
+    try {
+        const { data, error } = await supabase
+            .from('event_interacciones')
+            .select('*')
+            .eq('client_slug', state.clientId)
+            .eq('id_lead', lead.id_lead)
+            .order('created_at', { ascending: false });
+
+        if (!error) interactions = data || [];
+    } catch (err) {
+        console.error('Event CRM: loadInteractions failed:', err);
+    }
+
+    const color = EVT_STATUS_COLORS[lead.pipeline_status] || '#9CA3AF';
+    const fechaEvt = lead.fecha_evento instanceof Date && !isNaN(lead.fecha_evento)
+        ? lead.fecha_evento.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    const fechaContacto = lead.fecha_contacto instanceof Date && !isNaN(lead.fecha_contacto)
+        ? lead.fecha_contacto.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+    // Status dropdown options
+    const statusOptions = Object.entries(EVT_STATUS_LABELS).map(([val, label]) => {
+        const selected = val === lead.pipeline_status ? 'selected' : '';
+        return `<option value="${val}" ${selected}>${label}</option>`;
+    }).join('');
+
+    // Timeline
+    const timelineHtml = interactions.length === 0
+        ? '<p style="opacity:0.4;text-align:center;padding:16px;">Sin interacciones registradas</p>'
+        : interactions.map(ix => {
+            const icon = EVT_INTERACTION_ICONS[ix.tipo] || 'chatbubble-outline';
+            const tipoLabel = ix.tipo.charAt(0).toUpperCase() + ix.tipo.slice(1);
+            const fecha = new Date(ix.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            return `<div class="evt-timeline-item">
+                <div class="evt-timeline-icon" style="background:${EVT_STATUS_COLORS[lead.pipeline_status]}22">
+                    <ion-icon name="${icon}" style="color:${EVT_STATUS_COLORS[lead.pipeline_status]}"></ion-icon>
+                </div>
+                <div class="evt-timeline-content">
+                    <div class="evt-timeline-meta">${tipoLabel} &middot; ${fecha} &middot; <strong>${ix.vendedor_nombre}</strong></div>
+                    <div class="evt-timeline-text">${ix.resultado || ''}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+    const modalContent = document.getElementById('event-detail-content');
+    modalContent.innerHTML = `
+        <div class="evt-detail-header">
+            <div>
+                <h2 class="evt-detail-name">${lead.nombre}</h2>
+                <span class="evt-detail-sub">${lead.tipo_evento || 'Evento'} &middot; ${lead.asistentes || '?'} asistentes &middot; ${fechaEvt}</span>
+            </div>
+            <button class="evt-close-btn" onclick="closeEventDetail()">&times;</button>
+        </div>
+
+        <div class="evt-detail-info">
+            <div class="evt-info-item"><ion-icon name="call-outline"></ion-icon> ${formatPhone(lead.telefono) || '—'}</div>
+            <div class="evt-info-item"><ion-icon name="mail-outline"></ion-icon> ${lead.email || '—'}</div>
+            <div class="evt-info-item"><ion-icon name="calendar-outline"></ion-icon> Contacto: ${fechaContacto}</div>
+        </div>
+
+        ${lead.notas ? `<div class="evt-detail-notes"><strong>Notas:</strong> ${lead.notas}</div>` : ''}
+
+        <div class="evt-status-section">
+            <label>Estatus del pipeline:</label>
+            <select class="evt-status-select" onchange="updateEventStatus(${lead.id_lead}, this.value)"
+                style="border-color:${color};color:${color}">
+                ${statusOptions}
+            </select>
+        </div>
+
+        <div class="evt-timeline-section">
+            <h4 class="evt-timeline-title">Timeline de Seguimiento</h4>
+            ${timelineHtml}
+        </div>
+
+        <div class="evt-interaction-form">
+            <h4 class="evt-form-title">Registrar Interacción</h4>
+            <div class="evt-form-row">
+                <select id="evt-interaction-type" class="evt-form-select">
+                    <option value="llamada">Llamada</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="email">Email</option>
+                    <option value="nota">Nota</option>
+                </select>
+            </div>
+            <textarea id="evt-interaction-result" class="evt-form-textarea" rows="3"
+                placeholder="Describe el resultado, acuerdos, siguiente paso..."></textarea>
+            <button class="evt-form-save-btn" onclick="saveEventInteraction(${lead.id_lead})">
+                <ion-icon name="save-outline"></ion-icon> Guardar
+            </button>
+        </div>`;
+
+    modal.classList.remove('hidden');
+}
+
+function closeEventDetail() {
+    const modal = document.getElementById('event-detail-modal');
+    if (modal) modal.classList.add('hidden');
+    state.eventDetailLead = null;
+}
+
+// --- Actions ---
+
+async function updateEventStatus(idLead, newStatus) {
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userName = session ? session.name : 'Desconocido';
+
+    try {
+        const { error } = await supabase
+            .from('event_seguimiento')
+            .upsert({
+                client_slug: state.clientId,
+                id_lead: idLead,
+                estatus: newStatus,
+                updated_by: userName,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'client_slug,id_lead' });
+
+        if (error) throw error;
+
+        // Update local state
+        state.eventSeguimiento[idLead] = {
+            ...(state.eventSeguimiento[idLead] || {}),
+            client_slug: state.clientId,
+            id_lead: idLead,
+            estatus: newStatus,
+            updated_by: userName,
+            updated_at: new Date().toISOString()
+        };
+        mergeEventData();
+        renderEventPanel();
+        showToast(`Estatus actualizado a "${EVT_STATUS_LABELS[newStatus]}"`, 'success');
+    } catch (err) {
+        console.error('Event CRM: updateEventStatus failed:', err);
+        showToast('Error al actualizar estatus', 'error');
+    }
+}
+
+async function saveEventInteraction(idLead) {
+    const tipo = document.getElementById('evt-interaction-type').value;
+    const resultado = document.getElementById('evt-interaction-result').value.trim();
+
+    if (!resultado) {
+        showToast('Escribe el resultado de la interacción', 'warning');
+        return;
+    }
+
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userName = session ? session.name : 'Desconocido';
+    const userId = session ? session.id : null;
+
+    try {
+        const { error } = await supabase
+            .from('event_interacciones')
+            .insert([{
+                client_slug: state.clientId,
+                id_lead: idLead,
+                tipo: tipo,
+                resultado: resultado,
+                vendedor_nombre: userName,
+                vendedor_id: userId
+            }]);
+
+        if (error) throw error;
+
+        showToast('Interacción registrada', 'success');
+        // Refresh the detail modal
+        const lead = state.eventLeads.find(l => l.id_lead === idLead);
+        if (lead) {
+            const idx = getFilteredEventLeads().indexOf(lead);
+            if (idx >= 0) openEventDetail(idx);
+        }
+    } catch (err) {
+        console.error('Event CRM: saveEventInteraction failed:', err);
+        showToast('Error al guardar interacción', 'error');
+    }
+}
+
+// --- Filters & Sort ---
+
+function filterEventLeads(status) {
+    state.eventFilters.status = status;
+    renderEventPanel();
+}
+
+function searchEventLeads(query) {
+    state.eventFilters.search = query;
+    renderEventPanel();
+}
+
+function sortEventLeads(field) {
+    if (state.eventSortField === field) {
+        state.eventSortDir = state.eventSortDir === 'desc' ? 'asc' : 'desc';
+    } else {
+        state.eventSortField = field;
+        state.eventSortDir = 'desc';
+    }
+    renderEventPanel();
+}
+
+function getFilteredEventLeads() {
+    let leads = [...state.eventLeads];
+    if (state.eventFilters.status !== 'all') {
+        leads = leads.filter(l => l.pipeline_status === state.eventFilters.status);
+    }
+    if (state.eventFilters.search) {
+        const q = state.eventFilters.search.toLowerCase();
+        leads = leads.filter(l =>
+            (l.nombre || '').toLowerCase().includes(q) ||
+            (l.telefono || '').includes(q) ||
+            (l.tipo_evento || '').toLowerCase().includes(q) ||
+            (l.email || '').toLowerCase().includes(q)
+        );
+    }
+    return leads;
+}
+
+// Expose event CRM functions globally
+window.fetchEventLeads = fetchEventLeads;
+window.openEventDetail = openEventDetail;
+window.closeEventDetail = closeEventDetail;
+window.updateEventStatus = updateEventStatus;
+window.saveEventInteraction = saveEventInteraction;
+window.filterEventLeads = filterEventLeads;
+window.searchEventLeads = searchEventLeads;
+window.sortEventLeads = sortEventLeads;
+
+// =============================================
+// END: Panel de Seguimiento de Eventos
+// =============================================
 
 /* ============================================================
    MOBILE DASHBOARD — MD3 Dark Glass

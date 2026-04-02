@@ -104,5 +104,47 @@ VALUES
 
 
 -- =======================================================
+-- 7. TABLA: event_seguimiento
+--    Estado del lead de eventos en el pipeline de ventas
+-- =======================================================
+CREATE TABLE event_seguimiento (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_slug TEXT NOT NULL REFERENCES clients_config(id_slug) ON DELETE CASCADE,
+    id_lead BIGINT NOT NULL,
+    estatus TEXT NOT NULL DEFAULT 'nuevo'
+        CHECK (estatus IN ('nuevo', 'contactado', 'cotizando', 'cotizacion_enviada', 'venta', 'perdido')),
+    asignado_a TEXT,
+    updated_by TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(client_slug, id_lead)
+);
+
+ALTER TABLE event_seguimiento ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir lectura de seguimiento" ON event_seguimiento FOR SELECT USING (true);
+CREATE POLICY "Permitir gestión de seguimiento" ON event_seguimiento FOR ALL USING (true);
+
+
+-- =======================================================
+-- 8. TABLA: event_interacciones
+--    Log de llamadas/mensajes/notas por lead
+-- =======================================================
+CREATE TABLE event_interacciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_slug TEXT NOT NULL REFERENCES clients_config(id_slug) ON DELETE CASCADE,
+    id_lead BIGINT NOT NULL,
+    tipo TEXT NOT NULL CHECK (tipo IN ('llamada', 'whatsapp', 'email', 'nota')),
+    resultado TEXT,
+    vendedor_nombre TEXT NOT NULL,
+    vendedor_id UUID,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE event_interacciones ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir lectura de interacciones" ON event_interacciones FOR SELECT USING (true);
+CREATE POLICY "Permitir gestión de interacciones" ON event_interacciones FOR ALL USING (true);
+
+
+-- =======================================================
 -- FIN DEL SCRIPT
 -- =======================================================
