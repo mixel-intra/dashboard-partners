@@ -127,6 +127,16 @@ async function init() {
         setLoaderProgress(92);
 
         applyGlobalFilters();
+
+        // Activate hospedaje panel if reservas tab is active on load
+        if (state.activeTab === 'reservas' && state.hospedajeConfig.apiKey) {
+            const hospedajePanel = document.getElementById('hospedaje-panel');
+            const leadsTableCard = document.getElementById('leads-table-card');
+            if (hospedajePanel) hospedajePanel.classList.remove('hidden');
+            if (leadsTableCard) leadsTableCard.classList.add('hidden');
+            fetchHospedajeReservas();
+        }
+
         hideLoader();
     } catch (err) {
         console.error('CRITICAL INIT ERROR:', err);
