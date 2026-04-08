@@ -3983,7 +3983,7 @@
         .evt-fs-search input::placeholder { color: var(--text-muted, rgba(255,255,255,0.25)); }
 
         /* Body - fill available viewport */
-        .evt-fs-body { min-height: calc(100vh - 220px); }
+        .evt-fs-body { height: calc(100vh - 220px); overflow: hidden; }
 
         /* Calendar layout: main + sidebar */
         .evt-fs-calendar-layout { display: flex; gap: 0; height: calc(100vh - 240px); min-height: 500px; }
@@ -3996,10 +3996,10 @@
 
         /* Pipeline full-width */
         .evt-fs-pipeline {
-            display: flex; gap: 14px; height: calc(100vh - 240px); min-height: 500px;
+            display: flex; gap: 14px; height: 100%; min-height: 0;
             overflow-x: auto; padding-bottom: 8px;
         }
-        .evt-fs-pipeline .evt-kanban-col { flex: 1; min-width: 200px; max-width: none; display: flex; flex-direction: column; }
+        .evt-fs-pipeline .evt-kanban-col { flex: 1; min-width: 200px; max-width: none; display: flex; flex-direction: column; max-height: 100%; }
 
         /* Agenda list */
         .evt-agenda-list { padding-top: 4px; flex: 1; overflow-y: auto; }
@@ -4427,7 +4427,7 @@
             .evt-fs-header { flex-direction: column; align-items: flex-start; }
             .evt-fs-calendar-layout { flex-direction: column; height: auto; min-height: calc(100vh - 240px); }
             .evt-fs-calendar-sidebar { width: 100%; border-left: none; border-top: 1px solid rgba(255,255,255,0.06); padding: 16px 0 0; max-height: 400px; }
-            .evt-fs-pipeline { min-height: 400px; height: auto; }
+            .evt-fs-pipeline { min-height: 400px; height: 100%; }
             .evt-fs-toggle-btn { padding: 6px 12px; font-size: 0.78rem; }
             .evt-fs-search input { width: 100px; }
             .evt-kanban-col { min-width: 220px; }
