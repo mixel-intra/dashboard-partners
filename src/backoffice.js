@@ -46,7 +46,11 @@ const elements = {
     hspApiKey: document.getElementById('hsp-api-key'),
     hspBaseId: document.getElementById('hsp-base-id'),
     hspTableName: document.getElementById('hsp-table-name'),
-    hospedajeConfigSection: document.getElementById('hospedaje-config-section')
+    hospedajeConfigSection: document.getElementById('hospedaje-config-section'),
+    evtApiKey: document.getElementById('evt-api-key'),
+    evtBaseId: document.getElementById('evt-base-id'),
+    evtTableName: document.getElementById('evt-table-name'),
+    eventosConfigSection: document.getElementById('eventos-config-section')
 };
 
 // State
@@ -308,6 +312,13 @@ async function selectClient(clientId) {
     if (elements.hspTableName) elements.hspTableName.value = hspConfig.table_name || '';
     toggleHospedajeSection();
 
+    // Populate eventos config
+    const evtConfig = currentConfig.eventos_config || {};
+    if (elements.evtApiKey) elements.evtApiKey.value = evtConfig.api_key || '';
+    if (elements.evtBaseId) elements.evtBaseId.value = evtConfig.base_id || '';
+    if (elements.evtTableName) elements.evtTableName.value = evtConfig.table_name || '';
+    toggleEventosSection();
+
     // Sync UI Swatches and Hex
     elements.hexPrimary.value = elements.themePrimaryInput.value;
     elements.hexSecondary.value = elements.themeSecondaryInput.value;
@@ -425,6 +436,7 @@ function setupEventListeners() {
         }
         toggleRestaurantWebhooks();
         toggleHospedajeSection();
+        toggleEventosSection();
     });
 
     // Toggle restaurant webhooks when restaurante service changes
@@ -520,6 +532,11 @@ function setupEventListeners() {
                     api_key: elements.hspApiKey ? elements.hspApiKey.value.trim() : '',
                     base_id: elements.hspBaseId ? elements.hspBaseId.value.trim() : '',
                     table_name: elements.hspTableName ? elements.hspTableName.value.trim() : ''
+                },
+                eventos_config: {
+                    api_key: elements.evtApiKey ? elements.evtApiKey.value.trim() : '',
+                    base_id: elements.evtBaseId ? elements.evtBaseId.value.trim() : '',
+                    table_name: elements.evtTableName ? elements.evtTableName.value.trim() : ''
                 }
             };
 
@@ -604,6 +621,17 @@ function toggleHospedajeSection() {
             elements.hospedajeConfigSection.classList.remove('hidden');
         } else {
             elements.hospedajeConfigSection.classList.add('hidden');
+        }
+    }
+}
+
+function toggleEventosSection() {
+    const isHotel = elements.clientTypeInput.value === 'hotel';
+    if (elements.eventosConfigSection) {
+        if (isHotel) {
+            elements.eventosConfigSection.classList.remove('hidden');
+        } else {
+            elements.eventosConfigSection.classList.add('hidden');
         }
     }
 }

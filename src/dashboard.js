@@ -45,7 +45,13 @@ const state = {
     hospedajeFilters: { status: 'all', search: '' },
     hospedajeSortField: 'fecha_entrada',
     hospedajeSortDir: 'desc',
-    hospedajeConfig: { apiKey: '', baseId: '', tableName: '' }
+    hospedajeConfig: { apiKey: '', baseId: '', tableName: '' },
+    // Eventos CRM (Airtable)
+    eventosLeads: [],
+    eventosFilters: { status: 'proceso', search: '' },
+    eventosConfig: { apiKey: '', baseId: '', tableName: '' },
+    eventosCalendarWeekOffset: 0,
+    eventosCalendarSidebarOffset: 0
 };
 
 // Theme-aware chart colors (Linear/Vercel style)
@@ -143,6 +149,11 @@ async function init() {
             fetchHospedajeReservas();
         }
 
+        // Pre-fetch eventos data in background (pipeline opens on demand)
+        if (state.activeTab === 'eventos' && state.eventosConfig.apiKey) {
+            fetchEventosLeads();
+        }
+
         hideLoader();
     } catch (err) {
         console.error('CRITICAL INIT ERROR:', err);
@@ -211,6 +222,14 @@ async function loadConfig() {
             apiKey: hspConfig.api_key || '',
             baseId: hspConfig.base_id || '',
             tableName: hspConfig.table_name || ''
+        };
+
+        // Load eventos config (Airtable)
+        const evtConfig = config.eventos_config || {};
+        state.eventosConfig = {
+            apiKey: evtConfig.api_key || '',
+            baseId: evtConfig.base_id || '',
+            tableName: evtConfig.table_name || ''
         };
 
         initHotelTabs();
@@ -381,7 +400,9 @@ function initHotelTabs() {
 
         // Find the first unlocked service to set as active
         const firstUnlocked = Object.keys(services).find(s => services[s] === 'unlocked');
-        state.activeTab = firstUnlocked || 'eventos';
+        // Set active tab to the first unlocked service
+        const activeTab = firstUnlocked || 'eventos';
+        state.activeTab = activeTab;
 
         tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
             const tabId = btn.dataset.tab;
@@ -497,20 +518,54 @@ function switchDashTab(tab) {
         if (restaurantPanel) restaurantPanel.classList.add('hidden');
         applyGlobalFilters();
 
-        // Show/hide hospedaje panel (replaces leads table card)
+        // Show/hide CRM panels (replace leads table card when active)
         const hospedajePanel = document.getElementById('hospedaje-panel');
+        const eventosPanel = document.getElementById('eventos-panel');
         const leadsTableCard = document.getElementById('leads-table-card');
+        let crmActive = false;
+
+        // Hospedaje
         if (hospedajePanel) {
             if (tab === 'reservas' && state.hospedajeConfig.apiKey) {
                 hospedajePanel.classList.remove('hidden');
-                if (leadsTableCard) leadsTableCard.classList.add('hidden');
+                crmActive = true;
                 if (state.hospedajeReservas.length === 0) fetchHospedajeReservas();
                 else renderHospedajePanel();
             } else {
                 hospedajePanel.classList.add('hidden');
-                if (leadsTableCard) leadsTableCard.classList.remove('hidden');
             }
         }
+
+        // Eventos: always hide pipeline on tab switch, show normal dashboard
+        if (eventosPanel) {
+            eventosPanel.classList.add('hidden');
+        }
+        // Pre-fetch eventos data in background so pipeline opens fast
+        if (tab === 'eventos' && state.eventosConfig.apiKey && state.eventosLeads.length === 0) {
+            fetchEventosLeads();
+        }
+
+        // Show/hide "Ver Pipeline" CTA
+        const pipelineCta = document.getElementById('eventos-pipeline-cta');
+        if (pipelineCta) {
+            if (tab === 'eventos' && state.eventosConfig.apiKey) {
+                pipelineCta.classList.remove('hidden');
+                const countEl = document.getElementById('evt-pipeline-cta-count');
+                if (countEl && state.eventosLeads.length > 0) {
+                    countEl.textContent = `${state.eventosLeads.length} leads`;
+                }
+            } else {
+                pipelineCta.classList.add('hidden');
+            }
+        }
+
+        // Hospedaje hides leads table
+        if (leadsTableCard) {
+            if (crmActive) leadsTableCard.classList.add('hidden');
+            else leadsTableCard.classList.remove('hidden');
+        }
+        const splitRowGrid = document.getElementById('split-row-grid');
+        if (splitRowGrid) splitRowGrid.classList.remove('crm-active');
     }
 }
 
@@ -2862,6 +2917,666 @@ window.saveHospedajeAll = saveHospedajeAll;
 // END: Panel de Reservas de Hospedaje
 // =============================================
 
+// =============================================
+// MÓDULO: Panel de Eventos CRM (Airtable)
+// =============================================
+
+const EVT_STATUS_COLORS = {
+    'Nuevo Lead': '#F59E0B', 'Contactado': '#3B82F6', 'Cotizando': '#8B5CF6',
+    'Cotización Enviada': '#06B6D4', 'Venta': '#10B981', 'Perdido': '#EF4444'
+};
+const EVT_PIPELINE = ['Nuevo Lead', 'Contactado', 'Cotizando', 'Cotización Enviada', 'Venta', 'Perdido'];
+const EVT_PROCESS = ['Nuevo Lead', 'Contactado', 'Cotizando', 'Cotización Enviada'];
+const EVT_CLOSED = ['Venta', 'Perdido'];
+
+async function fetchEventosLeads() {
+    const { apiKey, baseId, tableName } = state.eventosConfig;
+    if (!apiKey || !baseId || !tableName) { state.eventosLeads = []; renderEventosPanel(); return; }
+
+    const panel = document.getElementById('eventos-panel');
+    if (panel) panel.innerHTML = '<div class="hsp-loading"><div class="hsp-spinner"></div><span>Cargando leads de eventos...</span></div>';
+
+    try {
+        const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+        if (!response.ok) throw new Error(`Airtable HTTP ${response.status}`);
+        const data = await response.json();
+
+        state.eventosLeads = (data.records || []).map(r => {
+            const f = r.fields || {};
+            return {
+                airtable_id: r.id,
+                nombre: f['Nombre Cliente'] || 'Sin nombre',
+                email: f['email'] || '',
+                telefono: f['Telefono'] || '',
+                tipo_evento: f['TipoEvento'] || '',
+                pax: parseInt(f['PAX'] || 0),
+                fecha_evento: f['FechaEvento'] || '',
+                fecha_contacto: f['FechaContacto'] ? new Date(f['FechaContacto']) : null,
+                total_estimado: parseFloat(f['TotalEstimado'] || 0),
+                estado: f['Estado'] || 'Nuevo Lead',
+                notas: f['Notas'] || '',
+                detalles: f['Detalles'] || '',
+                conversacion: f['Conversación'] || ''
+            };
+        });
+        console.log(`Eventos CRM: Loaded ${state.eventosLeads.length} leads`);
+    } catch (err) {
+        console.error('Eventos CRM: fetch failed:', err);
+        state.eventosLeads = [];
+    }
+    renderEventosPanel();
+}
+
+function renderEventosPanel() {
+    const panel = document.getElementById('eventos-panel');
+    if (!panel) return;
+    const { apiKey, baseId, tableName } = state.eventosConfig;
+    if (!apiKey || !baseId || !tableName) { panel.innerHTML = ''; panel.classList.add('hidden'); return; }
+
+    const all = state.eventosLeads;
+    const isCalendar = state.eventosFilters.status === 'calendario';
+
+    const q = (state.eventosFilters.search || '').toLowerCase();
+    const filterFn = r => !q || (r.nombre || '').toLowerCase().includes(q) || (r.telefono || '').includes(q) || (r.tipo_evento || '').toLowerCase().includes(q);
+    const filtered = all.filter(filterFn);
+
+    // Summary totals
+    const enProceso = all.filter(r => EVT_PROCESS.includes(r.estado));
+    const totalEstimado = enProceso.reduce((s, r) => s + (r.total_estimado || 0), 0);
+    const ventas = all.filter(r => r.estado === 'Venta');
+    const totalVentas = ventas.reduce((s, r) => s + (r.total_estimado || 0), 0);
+    const totalPerdido = all.filter(r => r.estado === 'Perdido').length;
+    const conversionRate = all.length > 0 ? ((ventas.length / all.length) * 100).toFixed(1) : '0';
+
+    const calendarHtml = isCalendar ? renderEventosCalendar() : '';
+
+    // Build kanban columns
+    const kanbanHtml = !isCalendar ? EVT_PIPELINE.map(stage => {
+        const color = EVT_STATUS_COLORS[stage];
+        const stageLeads = filtered.filter(r => r.estado === stage);
+        const stageTotal = stageLeads.reduce((s, r) => s + (r.total_estimado || 0), 0);
+        const cards = stageLeads.length === 0
+            ? '<div class="evt-kanban-col-empty">Sin leads</div>'
+            : stageLeads.map(r => renderKanbanCard(r, color)).join('');
+
+        return `<div class="evt-kanban-col">
+            <div class="evt-kanban-col-header">
+                <div class="evt-kanban-col-title" style="color:${color}">
+                    <span class="evt-kanban-col-dot" style="background:${color}"></span>
+                    ${stage}
+                </div>
+                <span class="evt-kanban-col-count">${stageLeads.length}</span>
+            </div>
+            <div class="evt-kanban-col-body">${cards}</div>
+            ${stageTotal > 0 ? `<div class="evt-kanban-col-total">$${stageTotal.toLocaleString('en-US', { minimumFractionDigits: 0 })}</div>` : ''}
+        </div>`;
+    }).join('') : '';
+
+    // Agenda tab: upcoming events list with date grouping
+    const agendaUpcomingHtml = isCalendar ? (() => {
+        const now = new Date();
+        const upcoming = all
+            .filter(l => l.fecha_contacto instanceof Date && !isNaN(l.fecha_contacto))
+            .sort((a, b) => a.fecha_contacto - b.fecha_contacto);
+        if (upcoming.length === 0) return '<div style="text-align:center;color:var(--text-muted);padding:40px 20px;font-size:0.85rem;">Sin eventos con fecha registrada</div>';
+
+        // Group by date
+        const groups = {};
+        upcoming.forEach(l => {
+            const key = l.fecha_contacto.toDateString();
+            if (!groups[key]) groups[key] = { date: l.fecha_contacto, leads: [] };
+            groups[key].leads.push(l);
+        });
+
+        let html = '<div class="evt-agenda-list">';
+        const todayStr = now.toDateString();
+        const tomorrowDate = new Date(now); tomorrowDate.setDate(now.getDate() + 1);
+        const tomorrowStr = tomorrowDate.toDateString();
+
+        Object.values(groups).forEach(group => {
+            const dateKey = group.date.toDateString();
+            let label;
+            if (dateKey === todayStr) label = 'Hoy';
+            else if (dateKey === tomorrowStr) label = 'Mañana';
+            else label = group.date.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
+
+            html += `<div class="evt-agenda-section-label">${label}</div>`;
+            group.leads.forEach(l => {
+                const color = EVT_STATUS_COLORS[l.estado] || '#9CA3AF';
+                const idx = state.eventosLeads.indexOf(l);
+                const timeStr = l.fecha_contacto.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                const total = l.total_estimado ? `$${l.total_estimado.toLocaleString('en-US', {minimumFractionDigits:0})}` : '';
+                html += `<div class="evt-agenda-row" onclick="openEventoDetail(${idx})">
+                    <div class="evt-agenda-dot" style="background:${color};color:${color}"></div>
+                    <div class="evt-agenda-date">${timeStr}</div>
+                    <div class="evt-agenda-info">
+                        <div class="evt-agenda-name">${l.nombre}</div>
+                        <div class="evt-agenda-meta">${l.tipo_evento || 'Evento'}${l.pax ? ` · ${l.pax} pax` : ''} · <span style="color:${color}">${l.estado}</span></div>
+                    </div>
+                    ${total ? `<div class="evt-agenda-amount">${total}</div>` : ''}
+                </div>`;
+            });
+        });
+        html += '</div>';
+        return html;
+    })() : '';
+
+    // --- Full-screen layout ---
+    panel.innerHTML = `
+        <div class="evt-fs-header">
+            <div class="evt-fs-header-left">
+                <button class="evt-back-btn" onclick="closeEventosPipeline()" title="Volver al Dashboard">
+                    <ion-icon name="arrow-back-outline"></ion-icon>
+                </button>
+                <div class="evt-fs-title-group">
+                    <h2 class="evt-fs-title">Eventos</h2>
+                    <div class="evt-fs-stats">
+                        <span class="evt-fs-stat">${all.length} <span class="evt-fs-stat-label">leads</span></span>
+                        <span class="evt-fs-stat-sep">·</span>
+                        <span class="evt-fs-stat green">${ventas.length} <span class="evt-fs-stat-label">vendidos</span></span>
+                        <span class="evt-fs-stat-sep">·</span>
+                        <span class="evt-fs-stat amber">${conversionRate}%</span>
+                        ${totalEstimado > 0 ? `<span class="evt-fs-stat-sep">·</span><span class="evt-fs-stat">$${totalEstimado.toLocaleString('en-US',{minimumFractionDigits:0})} <span class="evt-fs-stat-label">en proceso</span></span>` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="evt-fs-header-right">
+                <div class="evt-fs-toggle">
+                    <button class="evt-fs-toggle-btn ${isCalendar ? 'active' : ''}" onclick="filterEventos('calendario')">
+                        <ion-icon name="calendar-outline"></ion-icon> Agenda
+                    </button>
+                    <button class="evt-fs-toggle-btn ${!isCalendar ? 'active' : ''}" onclick="filterEventos('proceso')">
+                        <ion-icon name="git-network-outline"></ion-icon> Pipeline
+                    </button>
+                </div>
+                <div class="evt-fs-search">
+                    <ion-icon name="search-outline"></ion-icon>
+                    <input type="text" placeholder="Buscar evento..." value="${state.eventosFilters.search}" oninput="searchEventos(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <div class="evt-fs-body">
+            ${isCalendar
+                ? `<div class="evt-fs-calendar-layout">
+                    <div class="evt-fs-calendar-main">${calendarHtml}</div>
+                    <div class="evt-fs-calendar-sidebar">
+                        <div style="padding:0 0 12px;flex-shrink:0;">
+                            <div style="font-size:0.95rem;font-weight:700;color:var(--text-primary,#fff);margin-bottom:2px;">Próximos eventos</div>
+                            <div style="font-size:0.75rem;color:var(--text-muted,rgba(255,255,255,0.38));">${all.filter(l => l.fecha_contacto instanceof Date).length} eventos programados</div>
+                        </div>
+                        ${agendaUpcomingHtml}
+                    </div>
+                </div>`
+                : `<div class="evt-fs-pipeline">${kanbanHtml}</div>`
+            }
+        </div>`;
+}
+
+function renderKanbanCard(r, color) {
+    const globalIdx = state.eventosLeads.indexOf(r);
+    const total = r.total_estimado ? `$${r.total_estimado.toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '';
+    const fecha = r.fecha_evento || '';
+    const phone = (r.telefono || '').replace(/\D/g, '');
+
+    // Format fecha_contacto with date + time
+    let fechaContactoStr = '';
+    if (r.fecha_contacto instanceof Date && !isNaN(r.fecha_contacto)) {
+        const dateP = r.fecha_contacto.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+        const timeP = r.fecha_contacto.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        fechaContactoStr = `${dateP}, ${timeP}`;
+    }
+
+    const actions = [];
+    if (r.telefono) actions.push(`<a href="https://wa.me/${phone}" target="_blank" class="evt-kanban-card-action wa" onclick="event.stopPropagation()" title="WhatsApp"><ion-icon name="logo-whatsapp"></ion-icon></a>`);
+    if (r.telefono) actions.push(`<a href="tel:${r.telefono}" class="evt-kanban-card-action call" onclick="event.stopPropagation()" title="Llamar"><ion-icon name="call-outline"></ion-icon></a>`);
+    if (r.email) actions.push(`<a href="mailto:${r.email}" class="evt-kanban-card-action email" onclick="event.stopPropagation()" title="Email"><ion-icon name="mail-outline"></ion-icon></a>`);
+
+    return `<div class="evt-kanban-card" style="--card-accent:${color}" onclick="openEventoDetail(${globalIdx})" title="Ver detalle de ${r.nombre}">
+        <div class="evt-kanban-card-name">${r.nombre}</div>
+        <div class="evt-kanban-card-type">
+            ${r.tipo_evento || 'Evento'}
+        </div>
+        <div class="evt-kanban-card-meta">
+            ${r.pax ? `<span class="evt-kanban-card-pax"><ion-icon name="people-outline"></ion-icon> ${r.pax} pax</span>` : ''}
+            ${total ? `<span class="evt-kanban-card-amount">${total}</span>` : ''}
+        </div>
+        ${fechaContactoStr ? `<div class="evt-kanban-card-date"><ion-icon name="time-outline"></ion-icon> ${fechaContactoStr}</div>` : (fecha ? `<div class="evt-kanban-card-date"><ion-icon name="calendar-outline"></ion-icon> ${fecha}</div>` : '')}
+        ${actions.length ? `<div class="evt-kanban-card-actions">${actions.join('')}</div>` : ''}
+    </div>`;
+}
+
+// --- Calendar View ---
+
+function renderEventosCalendar() {
+    const view = state.eventosCalendarView || 'week';
+    const offset = state.eventosCalendarWeekOffset;
+    const today = new Date();
+    const leads = state.eventosLeads.filter(l => l.fecha_contacto instanceof Date && !isNaN(l.fecha_contacto));
+
+    // View mode buttons
+    const viewBtns = ['day', 'week', 'month'].map(v => {
+        const labels = { day: 'Día', week: 'Semana', month: 'Mes' };
+        return `<button class="evt-cal-view-btn ${view === v ? 'active' : ''}" onclick="evtCalendarView('${v}')">${labels[v]}</button>`;
+    }).join('');
+
+    if (view === 'day') return renderCalDay(today, offset, leads, viewBtns);
+    if (view === 'month') return renderCalMonth(today, offset, leads, viewBtns);
+    return renderCalWeek(today, offset, leads, viewBtns);
+}
+
+function renderCalWeek(today, offset, leads, viewBtns) {
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1 + (offset * 7));
+
+    const days = [];
+    for (let i = 0; i < 7; i++) { const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i); days.push(d); }
+
+    const dayColumns = days.map(day => {
+        const weekday = day.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
+        const dayNum = day.getDate();
+        const isToday = day.toDateString() === today.toDateString();
+        const dayLeads = leads.filter(l => l.fecha_contacto.toDateString() === day.toDateString()).sort((a, b) => a.fecha_contacto - b.fecha_contacto);
+
+        const cardsHtml = dayLeads.length === 0
+            ? '<div class="evt-cal-empty">—</div>'
+            : dayLeads.map(l => renderCalCard(l)).join('');
+
+        return `<div class="evt-cal-day ${isToday ? 'evt-cal-today' : ''}">
+            <div class="evt-cal-day-header">${weekday}<span class="evt-cal-day-num">${dayNum}</span></div>
+            ${cardsHtml}
+        </div>`;
+    }).join('');
+
+    const label = `${days[0].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} — ${days[6].toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+
+    return `<div class="evt-cal-nav">
+        <button class="evt-cal-nav-btn" onclick="evtCalendarNav(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+        <span class="evt-cal-week-label">${label}</span>
+        <button class="evt-cal-nav-btn" onclick="evtCalendarNav(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+        ${offset !== 0 ? '<button class="evt-cal-nav-btn evt-cal-today-btn" onclick="evtCalendarNav(0,true)">Hoy</button>' : ''}
+        <div class="evt-cal-view-toggle">${viewBtns}</div>
+    </div>
+    <div class="evt-cal-grid">${dayColumns}</div>`;
+}
+
+function renderCalDay(today, offset, leads, viewBtns) {
+    const day = new Date(today);
+    day.setDate(today.getDate() + offset);
+    const isToday = day.toDateString() === today.toDateString();
+    const label = day.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const dayLeads = leads.filter(l => l.fecha_contacto.toDateString() === day.toDateString()).sort((a, b) => a.fecha_contacto - b.fecha_contacto);
+
+    // Group by hour
+    const hours = {};
+    for (let h = 7; h <= 20; h++) hours[h] = [];
+    dayLeads.forEach(l => { const h = l.fecha_contacto.getHours(); if (!hours[h]) hours[h] = []; hours[h].push(l); });
+
+    const slotsHtml = Object.entries(hours).map(([h, hLeads]) => {
+        const hourLabel = `${String(h).padStart(2, '0')}:00`;
+        const cards = hLeads.length === 0
+            ? '<div class="evt-cal-empty-slot"></div>'
+            : hLeads.map(l => renderCalCard(l)).join('');
+        return `<div class="evt-cal-hour-row"><div class="evt-cal-hour-label">${hourLabel}</div><div class="evt-cal-hour-content">${cards}</div></div>`;
+    }).join('');
+
+    const dayNum = day.getDate();
+    const weekday = day.toLocaleDateString('es-MX', { weekday: 'long' });
+
+    return `<div class="evt-cal-nav">
+        <button class="evt-cal-nav-btn" onclick="evtCalendarNav(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+        <span class="evt-cal-week-label">${isToday ? '<span style="background:var(--accent-purple,#A78BFA);color:#fff;padding:2px 10px;border-radius:20px;margin-right:6px;">Hoy</span>' : ''}${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${dayNum} de ${day.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</span>
+        <button class="evt-cal-nav-btn" onclick="evtCalendarNav(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+        ${!isToday ? '<button class="evt-cal-nav-btn evt-cal-today-btn" onclick="evtCalendarNav(0,true)">Hoy</button>' : ''}
+        <div class="evt-cal-view-toggle">${viewBtns}</div>
+    </div>
+    <div class="evt-cal-day-view">${slotsHtml}</div>`;
+}
+
+function renderCalMonth(today, offset, leads, viewBtns) {
+    const refDate = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    const year = refDate.getFullYear();
+    const month = refDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startPad = (firstDay.getDay() + 6) % 7; // Monday = 0
+
+    const label = refDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+    const dayHeaders = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => `<div class="evt-cal-month-header">${d}</div>`).join('');
+
+    let cells = '';
+    // Padding
+    for (let i = 0; i < startPad; i++) cells += '<div class="evt-cal-month-cell evt-cal-month-pad"></div>';
+
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+        const cellDate = new Date(year, month, d);
+        const isToday = cellDate.toDateString() === today.toDateString();
+        const dayLeads = leads.filter(l => l.fecha_contacto.toDateString() === cellDate.toDateString());
+        const events = dayLeads.slice(0, 3).map(l => {
+            const color = EVT_STATUS_COLORS[l.estado] || '#9CA3AF';
+            return `<div class="evt-cal-month-event" style="background:${color}22;color:${color};border-left:2px solid ${color}" title="${l.nombre}">${l.nombre}</div>`;
+        }).join('');
+        const count = dayLeads.length > 3 ? `<span class="evt-cal-month-more">+${dayLeads.length - 3} más</span>` : '';
+
+        cells += `<div class="evt-cal-month-cell ${isToday ? 'evt-cal-today' : ''}" onclick="evtCalendarView('day'); state.eventosCalendarWeekOffset=${Math.round((cellDate - today) / 86400000)}; renderEventosPanel();">
+            <div class="evt-cal-month-day">${d}</div>
+            ${events}${count}
+        </div>`;
+    }
+
+    return `<div class="evt-cal-nav">
+        <button class="evt-cal-nav-btn" onclick="evtCalendarNav(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+        <span class="evt-cal-week-label">${label}</span>
+        <button class="evt-cal-nav-btn" onclick="evtCalendarNav(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+        ${offset !== 0 ? '<button class="evt-cal-nav-btn evt-cal-today-btn" onclick="evtCalendarNav(0,true)">Hoy</button>' : ''}
+        <div class="evt-cal-view-toggle">${viewBtns}</div>
+    </div>
+    <div class="evt-cal-month-grid">${dayHeaders}${cells}</div>`;
+}
+
+function renderCalCard(l) {
+    const hora = l.fecha_contacto.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    const color = EVT_STATUS_COLORS[l.estado] || '#9CA3AF';
+    const globalIdx = state.eventosLeads.indexOf(l);
+    const total = l.total_estimado ? `<span style="color:var(--accent-green,#6EE7A0);font-weight:700;font-size:0.68rem;">$${l.total_estimado.toLocaleString('en-US',{minimumFractionDigits:0})}</span>` : '';
+    return `<div class="evt-cal-card" onclick="openEventoDetail(${globalIdx})" style="border-left:3px solid ${color}">
+        <div class="evt-cal-time">${hora} ${total}</div>
+        <div class="evt-cal-name">${l.nombre}</div>
+        <div class="evt-cal-type">${l.tipo_evento || 'Evento'}${l.pax ? ` · ${l.pax} pax` : ''}</div>
+    </div>`;
+}
+
+function evtCalendarView(view) {
+    state.eventosCalendarView = view;
+    state.eventosCalendarWeekOffset = 0;
+    renderEventosPanel();
+}
+
+function evtSidebarCalNav(dir) {
+    state.eventosCalendarSidebarOffset = (state.eventosCalendarSidebarOffset || 0) + dir;
+    renderEventosPanel();
+}
+
+function evtCalendarNav(dir, reset) {
+    if (reset) state.eventosCalendarWeekOffset = 0;
+    else state.eventosCalendarWeekOffset += dir;
+    renderEventosPanel();
+}
+
+// --- Detail Modal ---
+
+async function openEventoDetail(index) {
+    const r = state.eventosLeads[index];
+    if (!r) return;
+
+    const modal = document.getElementById('eventos-detail-modal');
+    const content = document.getElementById('eventos-detail-content');
+    if (!modal || !content) return;
+
+    let interactions = [];
+    try {
+        const { data, error } = await supabase
+            .from('event_interacciones')
+            .select('*')
+            .eq('client_slug', state.clientId)
+            .eq('airtable_record_id', r.airtable_id)
+            .order('created_at', { ascending: false });
+        if (!error) interactions = data || [];
+    } catch (err) { console.error('Eventos: loadInteractions failed:', err); }
+
+    const color = EVT_STATUS_COLORS[r.estado] || '#9CA3AF';
+    const fechaContacto = r.fecha_contacto instanceof Date && !isNaN(r.fecha_contacto)
+        ? r.fecha_contacto.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    const total = r.total_estimado ? `$${r.total_estimado.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—';
+
+    const statusOptions = EVT_PIPELINE.map(s => `<option value="${s}" ${s === r.estado ? 'selected' : ''}>${s}</option>`).join('');
+    const hasHistory = interactions.length > 0;
+
+    const timelineHtml = !hasHistory
+        ? '<p style="opacity:0.4;text-align:center;padding:16px;">Sin interacciones registradas</p>'
+        : interactions.map(ix => {
+            const icon = HSP_INTERACTION_ICONS[ix.tipo] || 'chatbubble-outline';
+            const tipoLabel = ix.tipo.charAt(0).toUpperCase() + ix.tipo.slice(1);
+            const fecha = new Date(ix.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            return `<div class="hsp-timeline-item">
+                <div class="hsp-timeline-icon" style="background:${color}22">
+                    <ion-icon name="${icon}" style="color:${color}"></ion-icon>
+                </div>
+                <div class="hsp-timeline-content">
+                    <div class="hsp-timeline-meta">${tipoLabel} &middot; ${fecha} &middot; <strong>${ix.vendedor_nombre}</strong></div>
+                    <div class="hsp-timeline-text">${ix.resultado || ''}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+    // Upcoming call info
+    const now = new Date();
+    const hasUpcoming = r.fecha_contacto instanceof Date && r.fecha_contacto > now;
+    const callInfo = hasUpcoming
+        ? `<div class="evt-call-scheduled"><ion-icon name="alarm-outline"></ion-icon> Llamada programada: <strong>${fechaContacto}</strong></div>`
+        : (r.fecha_contacto ? `<div class="evt-call-past"><ion-icon name="checkmark-circle-outline"></ion-icon> Contacto: ${fechaContacto}</div>` : '');
+
+    content.innerHTML = `
+        <div class="hsp-detail-header">
+            <div>
+                <h2 class="hsp-detail-name">${r.nombre}</h2>
+                <span class="hsp-detail-sub">
+                    ${r.tipo_evento || 'Evento'} &middot; ${r.pax || '?'} pax &middot; ${r.fecha_evento || '—'}
+                    <span class="hsp-status-badge" style="background:${color}22;color:${color};border:1px solid ${color}44;margin-left:8px;">${r.estado}</span>
+                </span>
+            </div>
+            <button class="hsp-close-btn" onclick="closeEventoDetail()">&times;</button>
+        </div>
+
+        <div class="hsp-modal-layout ${hasHistory ? 'hsp-two-col' : ''}">
+            <div class="hsp-modal-left">
+                <div class="hsp-detail-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));">
+                    <div class="hsp-detail-card">
+                        <div class="hsp-detail-card-icon"><ion-icon name="people-outline"></ion-icon></div>
+                        <div><div class="hsp-detail-label">PAX</div><div class="hsp-detail-value">${r.pax || '—'}</div></div>
+                    </div>
+                    <div class="hsp-detail-card">
+                        <div class="hsp-detail-card-icon"><ion-icon name="cash-outline"></ion-icon></div>
+                        <div><div class="hsp-detail-label">Total Estimado</div><div class="hsp-detail-value">${total}</div></div>
+                    </div>
+                </div>
+
+                ${callInfo}
+
+                <div class="hsp-detail-info">
+                    <div class="hsp-info-item"><ion-icon name="call-outline"></ion-icon> ${formatPhone(r.telefono) || '—'}</div>
+                    <div class="hsp-info-item"><ion-icon name="mail-outline"></ion-icon> ${r.email || '—'}</div>
+                </div>
+
+                ${r.notas ? `<div class="hsp-detail-notes"><ion-icon name="document-text-outline"></ion-icon> ${r.notas}</div>` : ''}
+                ${r.detalles ? `<div class="hsp-detail-notes"><ion-icon name="chatbubble-outline"></ion-icon> ${r.detalles}</div>` : ''}
+
+                <div class="hsp-detail-actions" style="margin-bottom:20px;">
+                    ${r.telefono ? `<a href="https://wa.me/${r.telefono.replace(/\D/g, '')}" target="_blank" class="hsp-action-btn hsp-btn-whatsapp"><ion-icon name="logo-whatsapp"></ion-icon> WhatsApp</a>` : ''}
+                    ${r.telefono ? `<a href="tel:${r.telefono}" class="hsp-action-btn hsp-btn-call"><ion-icon name="call-outline"></ion-icon> Llamar</a>` : ''}
+                    ${r.email ? `<a href="mailto:${r.email}" class="hsp-action-btn hsp-btn-email"><ion-icon name="mail-outline"></ion-icon> Email</a>` : ''}
+                </div>
+
+                <div class="hsp-interaction-form">
+                    <h4 class="hsp-section-title">Actualizar Seguimiento</h4>
+                    <div class="hsp-form-row" style="display:flex;gap:10px;">
+                        <div style="flex:1;">
+                            <label class="hsp-form-label">Estatus</label>
+                            <select id="evt-status-dropdown" class="hsp-form-select" data-original="${r.estado}"
+                                onchange="evtCheckSaveEnabled()" style="border-color:${color};color:${color}">
+                                ${statusOptions}
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label class="hsp-form-label">Tipo de contacto</label>
+                            <select id="evt-interaction-type" class="hsp-form-select">
+                                <option value="llamada">Llamada</option>
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="email">Email</option>
+                                <option value="nota">Nota</option>
+                            </select>
+                        </div>
+                    </div>
+                    <textarea id="evt-interaction-result" class="hsp-form-textarea" rows="3"
+                        placeholder="Resultado de la interacción, acuerdos, siguiente paso..."
+                        oninput="evtCheckSaveEnabled()"></textarea>
+                    <button id="evt-save-all-btn" class="hsp-form-save-btn" disabled
+                        onclick="saveEventoAll('${r.airtable_id}')">
+                        <ion-icon name="save-outline"></ion-icon> Guardar
+                    </button>
+                </div>
+            </div>
+
+            ${hasHistory ? `
+            <div class="hsp-modal-right">
+                <h4 class="hsp-section-title">Historial de Seguimiento</h4>
+                <div class="hsp-timeline-scroll">${timelineHtml}</div>
+            </div>` : ''}
+        </div>`;
+
+    modal.classList.remove('hidden');
+}
+
+function closeEventoDetail() {
+    const modal = document.getElementById('eventos-detail-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function evtCheckSaveEnabled() {
+    const btn = document.getElementById('evt-save-all-btn');
+    if (!btn) return;
+    const dd = document.getElementById('evt-status-dropdown');
+    const txt = document.getElementById('evt-interaction-result');
+    btn.disabled = !((dd && dd.value !== dd.dataset.original) || (txt && txt.value.trim().length > 0));
+}
+
+async function saveEventoAll(airtableRecordId) {
+    const btn = document.getElementById('evt-save-all-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Guardando...'; }
+
+    const dd = document.getElementById('evt-status-dropdown');
+    const tipoEl = document.getElementById('evt-interaction-type');
+    const txtEl = document.getElementById('evt-interaction-result');
+
+    const newStatus = dd ? dd.value : null;
+    const originalStatus = dd ? dd.dataset.original : null;
+    const statusChanged = newStatus && newStatus !== originalStatus;
+    const tipo = tipoEl ? tipoEl.value : 'nota';
+    const resultado = txtEl ? txtEl.value.trim() : '';
+
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userName = session ? session.name : 'Desconocido';
+    const userId = session ? session.id : null;
+
+    try {
+        if (statusChanged) {
+            const { apiKey, baseId, tableName } = state.eventosConfig;
+            const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}/${airtableRecordId}`;
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fields: { 'Estado': newStatus } })
+            });
+            if (!response.ok) throw new Error(`Airtable PATCH ${response.status}`);
+
+            const lead = state.eventosLeads.find(r => r.airtable_id === airtableRecordId);
+            if (lead) lead.estado = newStatus;
+
+            // Auto-register venta
+            if (newStatus === 'Venta' && originalStatus !== 'Venta' && lead) {
+                await supabase.from('ventas').insert([{
+                    client_slug: state.clientId,
+                    monto: lead.total_estimado || 0,
+                    fecha: new Date().toISOString().split('T')[0],
+                    descripcion: `Evento vendido: ${lead.nombre} - ${lead.tipo_evento || ''} ${lead.pax || ''} pax`,
+                    registrado_por: userName
+                }]);
+                if (typeof refreshVentasDashboard === 'function') await refreshVentasDashboard();
+            }
+        }
+
+        const logText = resultado
+            ? (statusChanged ? `[${originalStatus} → ${newStatus}] ${resultado}` : resultado)
+            : (statusChanged ? `Estatus cambiado: ${originalStatus} → ${newStatus}` : '');
+
+        if (logText) {
+            await supabase.from('event_interacciones').insert([{
+                client_slug: state.clientId,
+                airtable_record_id: airtableRecordId,
+                tipo: resultado ? tipo : 'nota',
+                resultado: logText,
+                vendedor_nombre: userName,
+                vendedor_id: userId
+            }]);
+        }
+
+        renderEventosPanel();
+        showToast('Cambios guardados', 'success');
+
+        const lead = state.eventosLeads.find(r => r.airtable_id === airtableRecordId);
+        if (lead) openEventoDetail(state.eventosLeads.indexOf(lead));
+    } catch (err) {
+        console.error('Eventos: saveAll failed:', err);
+        showToast('Error al guardar', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<ion-icon name="save-outline"></ion-icon> Guardar'; }
+    }
+}
+
+function openEventosPipeline() {
+    const dashboardGrid = document.querySelector('.dashboard-grid');
+    const eventosPanel = document.getElementById('eventos-panel');
+    const pipelineCta = document.getElementById('eventos-pipeline-cta');
+    if (dashboardGrid) dashboardGrid.classList.add('hidden');
+    if (pipelineCta) pipelineCta.classList.add('hidden');
+    if (eventosPanel) {
+        eventosPanel.classList.remove('hidden');
+        renderEventosPanel();
+    }
+}
+
+function closeEventosPipeline() {
+    const dashboardGrid = document.querySelector('.dashboard-grid');
+    const eventosPanel = document.getElementById('eventos-panel');
+    const pipelineCta = document.getElementById('eventos-pipeline-cta');
+    if (dashboardGrid) dashboardGrid.classList.remove('hidden');
+    if (eventosPanel) eventosPanel.classList.add('hidden');
+    if (pipelineCta) pipelineCta.classList.remove('hidden');
+}
+
+function filterEventos(tab) {
+    state.eventosFilters.status = tab;
+    if (tab === 'calendario') { state.eventosCalendarWeekOffset = 0; state.eventosCalendarView = 'week'; }
+    renderEventosPanel();
+}
+
+function searchEventos(query) {
+    state.eventosFilters.search = query;
+    renderEventosPanel();
+    // Restore focus to search input after re-render
+    const input = document.querySelector('#eventos-panel .hsp-search');
+    if (input) { input.focus(); input.selectionStart = input.selectionEnd = input.value.length; }
+}
+
+// Expose eventos functions globally
+window.fetchEventosLeads = fetchEventosLeads;
+window.openEventoDetail = openEventoDetail;
+window.closeEventoDetail = closeEventoDetail;
+window.evtCheckSaveEnabled = evtCheckSaveEnabled;
+window.saveEventoAll = saveEventoAll;
+window.filterEventos = filterEventos;
+window.searchEventos = searchEventos;
+window.evtCalendarNav = evtCalendarNav;
+window.evtCalendarView = evtCalendarView;
+window.openEventosPipeline = openEventosPipeline;
+window.closeEventosPipeline = closeEventosPipeline;
+
+// =============================================
+// END: Panel de Eventos CRM
+// =============================================
+
 /* ============================================================
    MOBILE DASHBOARD — MD3 Dark Glass
    ============================================================ */
@@ -2917,7 +3632,7 @@ function renderMobileDashboard() {
     // KPI cards
     const kpiDefs = [
         { valueId: 'card-1-value', labelId: 'label-main-1', accent: '#FCD34D', icon: 'ribbon-outline' },
-        { valueId: 'card-2-value', labelId: 'label-main-2', accent: '#C4A8FF', icon: 'swap-vertical-outline' },
+        { valueId: 'card-2-value', labelId: 'label-main-2', accent: '#A78BFA', icon: 'swap-vertical-outline' },
         { valueId: 'card-3-value', labelId: 'label-main-3', accent: '#93C5FD', icon: 'cash-outline' },
         { valueId: 'card-4-value', labelId: 'label-main-4', accent: '#F8B4C8', icon: 'rocket-outline' },
         { valueId: 'card-5-value', labelId: 'label-main-5', accent: '#FCD34D', icon: 'people-outline' },
@@ -3002,22 +3717,22 @@ function _renderMobileChart() {
             labels,
             datasets: [{
                 data: values,
-                borderColor: '#C4A8FF',
+                borderColor: '#A78BFA',
                 borderWidth: 2.5,
                 fill: true,
                 backgroundColor: (context) => {
                     const chart = context.chart;
                     const { ctx: c, chartArea } = chart;
-                    if (!chartArea) return 'rgba(196,168,255,0.1)';
+                    if (!chartArea) return 'rgba(167,139,250,0.1)';
                     const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                    grad.addColorStop(0, 'rgba(196,168,255,0.38)');
-                    grad.addColorStop(1, 'rgba(196,168,255,0)');
+                    grad.addColorStop(0, 'rgba(167,139,250,0.38)');
+                    grad.addColorStop(1, 'rgba(167,139,250,0)');
                     return grad;
                 },
                 tension: 0.4,
                 pointRadius: 0,
                 pointHoverRadius: 4,
-                pointHoverBackgroundColor: '#C4A8FF',
+                pointHoverBackgroundColor: '#A78BFA',
             }]
         },
         options: {
@@ -3027,9 +3742,9 @@ function _renderMobileChart() {
                 legend: { display: false },
                 tooltip: {
                     backgroundColor: 'rgba(13,11,30,0.92)',
-                    borderColor: 'rgba(196,168,255,0.2)',
+                    borderColor: 'rgba(167,139,250,0.2)',
                     borderWidth: 1,
-                    titleColor: '#C4A8FF',
+                    titleColor: '#A78BFA',
                     bodyColor: 'rgba(255,255,255,0.9)',
                 }
             },

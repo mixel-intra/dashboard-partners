@@ -1740,6 +1740,16 @@
                 </div>
             </div>
 
+            <!-- Eventos Pipeline CTA (visible when eventos tab is active) -->
+            <div id="eventos-pipeline-cta" class="evt-pipeline-cta hidden">
+                <button class="evt-pipeline-cta-btn" onclick="openEventosPipeline()">
+                    <ion-icon name="git-network-outline"></ion-icon>
+                    <span>Ver Pipeline de Eventos</span>
+                    <span id="evt-pipeline-cta-count" class="evt-pipeline-cta-count"></span>
+                    <ion-icon name="arrow-forward-outline" style="margin-left:auto;opacity:0.5;"></ion-icon>
+                </button>
+            </div>
+
             <!-- Dashboard Grid -->
             <div class="dashboard-grid">
 
@@ -1819,7 +1829,7 @@
                 </div>
 
                 <!-- Middle Row: Chart & Table -->
-                <div class="split-row-grid">
+                <div class="split-row-grid" id="split-row-grid">
                     <!-- Main Big Chart -->
                     <div class="card-quantix big-chart-card">
                         <div class="card-header"
@@ -1960,10 +1970,22 @@
 
             </div><!-- end .dashboard-grid -->
 
+            <!-- Eventos Pipeline (full-screen, toggled from dashboard) -->
+            <div id="eventos-panel" class="evt-panel-full hidden" style="padding: 0 24px 24px;">
+                <!-- Content injected by renderEventosPanel() -->
+            </div>
+
             <!-- Hospedaje Detail Modal -->
             <div id="hospedaje-detail-modal" class="hsp-modal-overlay hidden">
                 <div class="hsp-modal-content">
                     <div id="hospedaje-detail-content"></div>
+                </div>
+            </div>
+
+            <!-- Eventos Detail Modal -->
+            <div id="eventos-detail-modal" class="hsp-modal-overlay hidden">
+                <div class="hsp-modal-content">
+                    <div id="eventos-detail-content"></div>
                 </div>
             </div>
 
@@ -3805,6 +3827,693 @@
             display: block; font-size: 0.72rem; color: #8E92A3;
             margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
         }
+
+        /* Eventos full-width panel */
+        .evt-panel-full {
+            margin-bottom: 1.25rem;
+        }
+
+        /* Pipeline CTA button */
+        .evt-pipeline-cta {
+            padding: 0 24px;
+            margin-bottom: 16px;
+        }
+        .evt-pipeline-cta-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(124, 58, 237, 0.06);
+            border: 1px solid rgba(124, 58, 237, 0.18);
+            border-radius: 14px;
+            color: var(--accent-purple, #A78BFA);
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        .evt-pipeline-cta-btn:hover {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: rgba(124, 58, 237, 0.3);
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.08);
+        }
+        .evt-pipeline-cta-btn ion-icon { font-size: 1.15rem; }
+        .evt-pipeline-cta-count {
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: rgba(124, 58, 237, 0.15);
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: var(--accent-purple, #A78BFA);
+        }
+
+        /* Back button in pipeline header */
+        .evt-back-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .evt-back-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Light theme */
+        [data-theme="light"] .evt-pipeline-cta-btn {
+            background: rgba(124, 58, 237, 0.04);
+            border-color: rgba(124, 58, 237, 0.15);
+            color: #7C3AED;
+        }
+        [data-theme="light"] .evt-pipeline-cta-btn:hover {
+            background: rgba(124, 58, 237, 0.08);
+        }
+        [data-theme="light"] .evt-pipeline-cta-count {
+            background: rgba(124, 58, 237, 0.1);
+            color: #7C3AED;
+        }
+        [data-theme="light"] .evt-back-btn {
+            background: rgba(0,0,0,0.04);
+            border-color: #E5E7EB;
+            color: #374151;
+        }
+        [data-theme="light"] .evt-back-btn:hover {
+            background: rgba(0,0,0,0.08);
+            color: #111;
+        }
+
+        .split-row-grid.crm-active { grid-template-columns: 1fr; }
+        .split-row-grid.crm-active .big-chart-card { min-height: 280px; }
+
+        /* ===== KANBAN PIPELINE (Redesigned) ===== */
+        @keyframes evt-card-in {
+            from { opacity: 0; filter: blur(4px); transform: translateY(8px); }
+            to { opacity: 1; filter: blur(0); transform: translateY(0); }
+        }
+        @keyframes evt-col-in {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes evt-chip-in {
+            from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ===== FULL-SCREEN EVENTOS LAYOUT (Premium) ===== */
+
+        /* Header */
+        .evt-fs-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+            padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .evt-fs-header-left { display: flex; align-items: center; gap: 14px; }
+        .evt-fs-title-group { display: flex; flex-direction: column; gap: 2px; }
+        .evt-fs-title {
+            font-size: 1.65rem; font-weight: 800; letter-spacing: -0.5px;
+            color: var(--text-primary, #fff); margin: 0; line-height: 1.2;
+        }
+        .evt-fs-stats { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-secondary, rgba(255,255,255,0.6)); margin-top: 2px; }
+        .evt-fs-stat { font-weight: 600; color: var(--text-primary, #fff); font-variant-numeric: tabular-nums; }
+        .evt-fs-stat.green { color: var(--accent-green, #6EE7A0); }
+        .evt-fs-stat.amber { color: var(--accent-amber, #FBBF24); }
+        .evt-fs-stat-label { font-weight: 400; color: var(--text-muted, rgba(255,255,255,0.38)); }
+        .evt-fs-stat-sep { color: var(--text-muted, rgba(255,255,255,0.2)); }
+
+        .evt-fs-header-right { display: flex; align-items: center; gap: 10px; }
+
+        .evt-fs-toggle {
+            display: flex; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px; overflow: hidden;
+        }
+        .evt-fs-toggle-btn {
+            padding: 8px 18px; font-size: 0.85rem; font-weight: 500; font-family: 'Inter', sans-serif;
+            background: none; border: none; color: var(--text-muted, rgba(255,255,255,0.38));
+            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .evt-fs-toggle-btn.active {
+            background: rgba(124, 58, 237, 0.12); color: var(--accent-purple, #A78BFA); font-weight: 600;
+        }
+        .evt-fs-toggle-btn:hover:not(.active) { color: var(--text-secondary, rgba(255,255,255,0.6)); }
+
+        .evt-fs-search {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 16px; border-radius: 10px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+            transition: border-color 0.2s;
+        }
+        .evt-fs-search:focus-within { border-color: rgba(139, 92, 246, 0.3); }
+        .evt-fs-search ion-icon { color: var(--text-muted); font-size: 1rem; flex-shrink: 0; }
+        .evt-fs-search input {
+            background: none; border: none; outline: none; color: var(--text-primary, #fff);
+            font-size: 0.85rem; font-family: 'Inter', sans-serif; width: 180px;
+        }
+        .evt-fs-search input::placeholder { color: var(--text-muted, rgba(255,255,255,0.25)); }
+
+        /* Body - fill available viewport */
+        .evt-fs-body { min-height: calc(100vh - 220px); }
+
+        /* Calendar layout: main + sidebar */
+        .evt-fs-calendar-layout { display: flex; gap: 0; height: calc(100vh - 240px); min-height: 500px; }
+        .evt-fs-calendar-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .evt-fs-calendar-sidebar {
+            width: 340px; flex-shrink: 0; padding: 0 0 0 24px;
+            border-left: 1px solid rgba(255,255,255,0.06);
+            overflow-y: auto; display: flex; flex-direction: column;
+        }
+
+        /* Pipeline full-width */
+        .evt-fs-pipeline {
+            display: flex; gap: 14px; height: calc(100vh - 240px); min-height: 500px;
+            overflow-x: auto; padding-bottom: 8px;
+        }
+        .evt-fs-pipeline .evt-kanban-col { flex: 1; min-width: 200px; max-width: none; display: flex; flex-direction: column; }
+
+        /* Agenda list */
+        .evt-agenda-list { padding-top: 4px; flex: 1; overflow-y: auto; }
+        .evt-agenda-section-label {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--text-muted, rgba(255,255,255,0.3)); padding: 12px 14px 6px; position: sticky; top: 0;
+            background: var(--bg-primary, #0F0F15); z-index: 1;
+        }
+        .evt-agenda-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 14px; border-radius: 12px; cursor: pointer;
+            transition: all 0.15s;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .evt-agenda-row:last-child { border-bottom: none; }
+        .evt-agenda-row:hover { background: rgba(255,255,255,0.04); transform: translateX(2px); }
+        .evt-agenda-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+        .evt-agenda-date {
+            width: 110px; flex-shrink: 0; font-size: 0.78rem; font-weight: 500;
+            color: var(--text-secondary, rgba(255,255,255,0.6)); line-height: 1.4;
+        }
+        .evt-agenda-info { flex: 1; min-width: 0; }
+        .evt-agenda-name {
+            font-size: 0.9rem; font-weight: 600; color: var(--text-primary, #fff);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .evt-agenda-meta { font-size: 0.76rem; color: var(--text-muted, rgba(255,255,255,0.38)); margin-top: 3px; }
+        .evt-agenda-amount {
+            font-size: 0.85rem; font-weight: 700; color: var(--accent-green, #6EE7A0);
+            flex-shrink: 0; font-variant-numeric: tabular-nums;
+        }
+
+        /* Legacy sidebar classes kept for compat */
+
+        /* Stats grid */
+        .evt-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .evt-stat-card {
+            padding: 12px 10px; border-radius: 10px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+        .evt-stat-card:hover { background: rgba(255,255,255,0.05); }
+        .evt-stat-label {
+            font-size: 0.62rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.4px; color: #6B7280; margin-bottom: 3px;
+        }
+        .evt-stat-value {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 1.1rem; font-weight: 900; color: #fff; letter-spacing: -0.03em;
+        }
+        .evt-stat-value.green { color: var(--accent-green, #82E0AA); }
+        .evt-stat-value.purple { color: var(--accent-purple, #C4A8FF); }
+        .evt-stat-value.amber { color: var(--accent-amber, #FCD34D); }
+
+        /* Mini calendar */
+        .evt-mini-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .evt-mini-cal-label {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 0.82rem; font-weight: 700; color: #E5E7EB; text-transform: capitalize;
+        }
+        .evt-mini-cal-btns { display: flex; gap: 4px; }
+        .evt-mini-cal-btn {
+            width: 26px; height: 26px; border-radius: 7px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+            color: #8E92A3; cursor: pointer; font-size: 13px;
+            display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+        }
+        .evt-mini-cal-btn:hover { border-color: rgba(196,168,255,0.3); color: var(--accent-purple, #C4A8FF); }
+        .evt-mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .evt-mini-cal-header {
+            text-align: center; font-size: 0.58rem; font-weight: 700;
+            color: #4B5563; text-transform: uppercase; padding: 3px 0;
+        }
+        .evt-mini-cal-cell {
+            aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 7px; cursor: pointer; position: relative;
+            transition: all 0.15s; font-size: 0.7rem; font-weight: 500; color: #8E92A3;
+        }
+        .evt-mini-cal-cell:hover { background: rgba(255,255,255,0.06); }
+        .evt-mini-cal-cell.today {
+            background: rgba(196,168,255,0.12); color: var(--accent-purple, #C4A8FF); font-weight: 700;
+        }
+        .evt-mini-cal-cell.has-events::after {
+            content: ''; position: absolute; bottom: 2px;
+            width: 4px; height: 4px; border-radius: 50%; background: #818CF8;
+        }
+        .evt-mini-cal-cell.pad { color: #1F2937; cursor: default; }
+        .evt-mini-cal-cell.pad:hover { background: none; }
+
+        /* Upcoming events */
+        .evt-upcoming-item {
+            display: flex; gap: 8px; padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            cursor: pointer; transition: all 0.15s;
+            animation: evt-card-in 0.35s ease both;
+        }
+        .evt-upcoming-item:last-child { border-bottom: none; }
+        .evt-upcoming-item:hover { padding-left: 4px; }
+        .evt-upcoming-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+        .evt-upcoming-info { flex: 1; min-width: 0; }
+        .evt-upcoming-name {
+            font-size: 0.78rem; font-weight: 600; color: #E5E7EB;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .evt-upcoming-meta { font-size: 0.65rem; color: #6B7280; margin-top: 1px; }
+        .evt-upcoming-amount {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 0.75rem; font-weight: 700; color: var(--accent-green, #82E0AA);
+            flex-shrink: 0; align-self: center;
+        }
+
+        /* Header & controls */
+        .evt-kanban-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+        }
+        .evt-kanban-header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .evt-kanban-summary { display: flex; gap: 10px; align-items: center; }
+        .evt-kanban-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 600;
+            animation: evt-chip-in 0.4s ease both;
+        }
+        .evt-kanban-chip:nth-child(2) { animation-delay: 0.08s; }
+        .evt-kanban-chip:nth-child(3) { animation-delay: 0.16s; }
+        .evt-kanban-chip-proceso { background: rgba(99,102,241,0.1); color: #818CF8; border: 1px solid rgba(99,102,241,0.2); }
+        .evt-kanban-chip-ventas { background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.2); }
+        .evt-kanban-chip-perdido { background: rgba(239,68,68,0.06); color: #EF4444; border: 1px solid rgba(239,68,68,0.12); }
+        .evt-kanban-controls { display: flex; gap: 8px; align-items: center; }
+        .evt-kanban-toggle {
+            display: flex; gap: 2px; background: rgba(255,255,255,0.03); border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06); padding: 3px;
+        }
+        .evt-kanban-toggle-btn {
+            padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
+            background: transparent; border: none; color: #6B7280; cursor: pointer;
+            display: flex; align-items: center; gap: 5px; transition: all 0.25s;
+        }
+        .evt-kanban-toggle-btn.active {
+            background: rgba(196,168,255,0.1); color: var(--accent-purple, #C4A8FF);
+            box-shadow: 0 0 12px rgba(196,168,255,0.08);
+        }
+        .evt-kanban-toggle-btn:hover:not(.active) { color: #9CA3AF; }
+
+        /* Kanban board */
+        .evt-kanban-board {
+            display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent;
+        }
+        .evt-kanban-board::-webkit-scrollbar { height: 5px; }
+        .evt-kanban-board::-webkit-scrollbar-track { background: transparent; }
+        .evt-kanban-board::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+        /* Kanban column */
+        .evt-kanban-col {
+            min-width: 220px; max-width: none; flex: 1;
+            display: flex; flex-direction: column;
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 14px; overflow: hidden;
+            animation: evt-col-in 0.45s ease both;
+        }
+        .evt-kanban-col:nth-child(2) { animation-delay: 0.05s; }
+        .evt-kanban-col:nth-child(3) { animation-delay: 0.10s; }
+        .evt-kanban-col:nth-child(4) { animation-delay: 0.15s; }
+        .evt-kanban-col:nth-child(5) { animation-delay: 0.20s; }
+        .evt-kanban-col:nth-child(6) { animation-delay: 0.25s; }
+        .evt-kanban-col-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .evt-kanban-col-title {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.6px; display: flex; align-items: center; gap: 7px;
+        }
+        .evt-kanban-col-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .evt-kanban-col-count {
+            font-size: 0.68rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 8px; background: rgba(255,255,255,0.05); color: #6B7280;
+        }
+        .evt-kanban-col-body {
+            flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 10px;
+            overflow-y: auto;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent;
+        }
+        .evt-kanban-col-body::-webkit-scrollbar { width: 3px; }
+        .evt-kanban-col-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+
+        /* Kanban card */
+        .evt-kanban-card {
+            padding: 12px 12px 12px 14px; border-radius: 10px; cursor: pointer;
+            background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; animation: evt-card-in 0.35s ease both;
+        }
+        .evt-kanban-card:nth-child(1) { animation-delay: 0.06s; }
+        .evt-kanban-card:nth-child(2) { animation-delay: 0.12s; }
+        .evt-kanban-card:nth-child(3) { animation-delay: 0.18s; }
+        .evt-kanban-card:nth-child(4) { animation-delay: 0.24s; }
+        .evt-kanban-card::before {
+            content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+            width: 3px; border-radius: 2px;
+            background: var(--card-accent, #818CF8);
+            opacity: 0.6; transition: opacity 0.2s;
+        }
+        .evt-kanban-card:hover {
+            background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.10);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(196,168,255,0.06);
+        }
+        .evt-kanban-card:hover::before { opacity: 1; }
+        .evt-kanban-card-name {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 0.9rem; font-weight: 600; color: #F3F4F6;
+            margin-bottom: 4px; line-height: 1.3;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .evt-kanban-card-type {
+            font-size: 0.76rem; color: #6B7280; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .evt-kanban-card-meta {
+            display: flex; justify-content: space-between; align-items: center; gap: 6px;
+        }
+        .evt-kanban-card-pax {
+            font-size: 0.74rem; color: #6B7280;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .evt-kanban-card-pax ion-icon { font-size: 13px; }
+        .evt-kanban-card-amount {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 0.85rem; font-weight: 700; color: var(--accent-green, #82E0AA);
+        }
+        .evt-kanban-card-date {
+            font-size: 0.72rem; color: #4B5563; margin-top: 8px;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .evt-kanban-card-date ion-icon { font-size: 11px; }
+        .evt-kanban-card-actions {
+            display: flex; gap: 3px; margin-top: 8px; opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .evt-kanban-card:hover .evt-kanban-card-actions { opacity: 1; }
+        .evt-kanban-card-action {
+            width: 28px; height: 28px; border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            border: none; cursor: pointer; font-size: 14px;
+            transition: all 0.15s; text-decoration: none;
+        }
+        .evt-kanban-card-action:hover { opacity: 0.8; transform: scale(1.08); }
+        .evt-kanban-card-action.wa { background: rgba(37,211,102,0.12); color: #25D366; }
+        .evt-kanban-card-action.call { background: rgba(59,130,246,0.12); color: #3B82F6; }
+        .evt-kanban-card-action.email { background: rgba(139,92,246,0.12); color: #8B5CF6; }
+        .evt-kanban-col-empty {
+            text-align: center; padding: 28px 10px; color: #374151;
+            font-size: 0.78rem; font-style: italic;
+        }
+        .evt-kanban-col-total {
+            padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.05);
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 0.85rem; font-weight: 700; color: var(--accent-green, #82E0AA); text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* Calendar View */
+        /* Calendar nav bar - Google Calendar style */
+        .evt-cal-nav {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-shrink: 0;
+        }
+        .evt-cal-nav-btn {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 8px 12px; color: #9CA3AF; cursor: pointer;
+            display: flex; align-items: center; font-size: 0.9rem; transition: all 0.15s;
+        }
+        .evt-cal-nav-btn:hover { border-color: rgba(196,168,255,0.3); color: var(--accent-purple, #C4A8FF); }
+        .evt-cal-today-btn { color: var(--accent-purple, #C4A8FF); border-color: rgba(196,168,255,0.25); font-size: 0.82rem; padding: 7px 14px; }
+        .evt-cal-week-label {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 1.05rem; font-weight: 700; color: #fff;
+        }
+
+        /* Week grid - full height, Google Calendar style */
+        .evt-cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
+            flex: 1; overflow-y: auto; background: rgba(255,255,255,0.03); border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .evt-cal-day {
+            background: rgba(255,255,255,0.02); padding: 12px; min-height: 120px;
+            display: flex; flex-direction: column;
+            animation: evt-col-in 0.4s ease both;
+            border-right: 1px solid rgba(255,255,255,0.04);
+        }
+        .evt-cal-day:last-child { border-right: none; }
+        .evt-cal-day:nth-child(2) { animation-delay: 0.04s; }
+        .evt-cal-day:nth-child(3) { animation-delay: 0.08s; }
+        .evt-cal-day:nth-child(4) { animation-delay: 0.12s; }
+        .evt-cal-day:nth-child(5) { animation-delay: 0.16s; }
+        .evt-cal-day:nth-child(6) { animation-delay: 0.20s; }
+        .evt-cal-day:nth-child(7) { animation-delay: 0.24s; }
+        .evt-cal-today {
+            background: rgba(196,168,255,0.04);
+            box-shadow: inset 0 2px 0 var(--accent-purple, #A78BFA);
+        }
+        .evt-cal-day-header {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            color: #6B7280; margin-bottom: 10px; text-align: center; letter-spacing: 0.3px;
+        }
+        .evt-cal-today .evt-cal-day-header {
+            color: var(--accent-purple, #C4A8FF);
+        }
+        .evt-cal-day-header .evt-cal-day-num {
+            display: block; font-size: 1.3rem; font-weight: 800; margin-top: 2px;
+            color: var(--text-primary, #E5E7EB); letter-spacing: -0.5px;
+        }
+        .evt-cal-today .evt-cal-day-header .evt-cal-day-num {
+            background: var(--accent-purple, #A78BFA); color: #fff; width: 34px; height: 34px;
+            border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+        }
+
+        /* Event cards in calendar */
+        .evt-cal-card {
+            padding: 8px 10px; margin-bottom: 6px; border-radius: 8px; cursor: pointer;
+            background: rgba(255,255,255,0.04); transition: all 0.15s;
+            animation: evt-card-in 0.3s ease both;
+        }
+        .evt-cal-card:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .evt-cal-time { font-size: 0.7rem; font-weight: 700; color: var(--accent-purple, #C4A8FF); }
+        .evt-cal-name { font-size: 0.82rem; font-weight: 600; color: #E5E7EB; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .evt-cal-type { font-size: 0.7rem; color: #6B7280; margin-top: 1px; }
+        .evt-cal-pax { font-size: 0.65rem; color: #9CA3AF; margin-top: 2px; display: flex; align-items: center; gap: 3px; }
+        .evt-cal-pax ion-icon { font-size: 0.7rem; }
+        .evt-cal-empty { font-size: 0.75rem; color: rgba(255,255,255,0.08); text-align: center; padding: 20px 0; }
+
+        /* View toggle */
+        .evt-cal-view-toggle { display: flex; gap: 3px; margin-left: auto; }
+        .evt-cal-view-btn {
+            padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            color: #6B7280; cursor: pointer; transition: all 0.15s;
+        }
+        .evt-cal-view-btn:hover { border-color: rgba(255,255,255,0.12); }
+        .evt-cal-view-btn.active {
+            background: rgba(196,168,255,0.1); border-color: rgba(196,168,255,0.25); color: var(--accent-purple, #C4A8FF);
+        }
+
+        /* Day view - time grid like Google Calendar */
+        .evt-cal-day-view { flex: 1; overflow-y: auto; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); }
+        .evt-cal-hour-row {
+            display: flex; gap: 0; min-height: 60px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .evt-cal-hour-label {
+            width: 64px; flex-shrink: 0; font-size: 0.72rem; font-weight: 600;
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            color: #4B5563; padding: 8px 12px 0 0; text-align: right;
+            border-right: 1px solid rgba(255,255,255,0.04);
+        }
+        .evt-cal-hour-content { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; padding: 6px 10px; }
+        .evt-cal-empty-slot { height: 1px; }
+
+        /* Month view - full height */
+        .evt-cal-month-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
+            flex: 1; background: rgba(255,255,255,0.03); border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.06); overflow: hidden;
+        }
+        .evt-cal-month-header {
+            text-align: center; font-size: 0.72rem; font-weight: 700;
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            color: #4B5563; text-transform: uppercase; padding: 10px 0;
+            background: rgba(255,255,255,0.02);
+        }
+        .evt-cal-month-cell {
+            min-height: 80px; padding: 8px; cursor: pointer;
+            background: rgba(255,255,255,0.02); transition: all 0.15s;
+        }
+        .evt-cal-month-cell:hover { background: rgba(255,255,255,0.04); }
+        .evt-cal-month-cell.evt-cal-today {
+            background: rgba(196,168,255,0.05);
+            box-shadow: inset 0 2px 0 var(--accent-purple, #A78BFA);
+        }
+        .evt-cal-month-pad { background: rgba(255,255,255,0.01); cursor: default; }
+        .evt-cal-month-day {
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 0.8rem; font-weight: 600; color: #9CA3AF; margin-bottom: 6px;
+        }
+        .evt-cal-today .evt-cal-month-day {
+            color: #fff; background: var(--accent-purple, #A78BFA);
+            width: 26px; height: 26px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .evt-cal-month-dots { display: flex; gap: 3px; flex-wrap: wrap; }
+        .evt-cal-month-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .evt-cal-month-more { font-size: 0.65rem; color: #6B7280; }
+        .evt-cal-month-event {
+            font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+            color: #fff; font-weight: 500;
+        }
+
+        /* Scheduled call badges */
+        .evt-call-scheduled {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
+            background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.15);
+            color: #F59E0B; font-size: 0.82rem;
+        }
+        .evt-call-past {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
+            background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.1);
+            color: #6B7280; font-size: 0.82rem;
+        }
+
+        /* Responsive sidebar */
+        @media (max-width: 1024px) {
+            .evt-fs-calendar-sidebar { width: 280px; }
+            .evt-fs-search input { width: 120px; }
+        }
+        @media (max-width: 768px) {
+            .evt-fs-header { flex-direction: column; align-items: flex-start; }
+            .evt-fs-calendar-layout { flex-direction: column; height: auto; min-height: calc(100vh - 240px); }
+            .evt-fs-calendar-sidebar { width: 100%; border-left: none; border-top: 1px solid rgba(255,255,255,0.06); padding: 16px 0 0; max-height: 400px; }
+            .evt-fs-pipeline { min-height: 400px; height: auto; }
+            .evt-fs-toggle-btn { padding: 6px 12px; font-size: 0.78rem; }
+            .evt-fs-search input { width: 100px; }
+            .evt-kanban-col { min-width: 220px; }
+        }
+
+        /* Calendar Light Theme */
+        [data-theme="light"] .evt-fs-header { border-color: #E5E7EB; }
+        [data-theme="light"] .evt-cal-nav-btn { background: #F9FAFB; border-color: #E5E7EB; color: #6B7280; }
+        [data-theme="light"] .evt-cal-nav-btn:hover { border-color: rgba(99,102,241,0.3); color: #6366F1; }
+        [data-theme="light"] .evt-cal-today-btn { color: #6366F1; border-color: rgba(99,102,241,0.3); }
+        [data-theme="light"] .evt-cal-week-label { color: #111827; }
+        [data-theme="light"] .evt-cal-grid { background: #E5E7EB; border-color: #E5E7EB; }
+        [data-theme="light"] .evt-cal-day { background: #fff; border-color: #F3F4F6; }
+        [data-theme="light"] .evt-cal-today { background: rgba(99,102,241,0.03); box-shadow: inset 0 2px 0 #6366F1; }
+        [data-theme="light"] .evt-cal-day-header { color: #9CA3AF; }
+        [data-theme="light"] .evt-cal-day-header .evt-cal-day-num { color: #374151; }
+        [data-theme="light"] .evt-cal-today .evt-cal-day-header { color: #6366F1; }
+        [data-theme="light"] .evt-cal-today .evt-cal-day-header .evt-cal-day-num { background: #6366F1; color: #fff; }
+        [data-theme="light"] .evt-cal-card { background: #F5F3FF; border: 1px solid #E0E7FF; }
+        [data-theme="light"] .evt-cal-card:hover { background: #EDE9FE; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        [data-theme="light"] .evt-cal-time { color: #6366F1; }
+        [data-theme="light"] .evt-cal-name { color: #111827; }
+        [data-theme="light"] .evt-cal-empty { color: #D1D5DB; }
+        [data-theme="light"] .evt-cal-view-btn { background: #F9FAFB; border-color: #E5E7EB; color: #9CA3AF; }
+        [data-theme="light"] .evt-cal-view-btn.active { background: rgba(99,102,241,0.06); border-color: rgba(99,102,241,0.25); color: #6366F1; }
+        [data-theme="light"] .evt-cal-day-view { border-color: #E5E7EB; }
+        [data-theme="light"] .evt-cal-hour-row { border-color: #F3F4F6; }
+        [data-theme="light"] .evt-cal-hour-label { color: #9CA3AF; border-color: #F3F4F6; }
+        [data-theme="light"] .evt-cal-month-grid { background: #E5E7EB; border-color: #E5E7EB; }
+        [data-theme="light"] .evt-cal-month-header { background: #F9FAFB; }
+        [data-theme="light"] .evt-cal-month-cell { background: #fff; }
+        [data-theme="light"] .evt-cal-month-cell:hover { background: #F9FAFB; }
+        [data-theme="light"] .evt-cal-month-cell.evt-cal-today { background: rgba(99,102,241,0.03); box-shadow: inset 0 2px 0 #6366F1; }
+        [data-theme="light"] .evt-cal-month-pad { background: #F9FAFB; }
+        [data-theme="light"] .evt-cal-month-day { color: #6B7280; }
+        [data-theme="light"] .evt-cal-today .evt-cal-month-day { background: #6366F1; color: #fff; }
+        [data-theme="light"] .evt-agenda-section-label { background: #fff; color: #9CA3AF; }
+        [data-theme="light"] .evt-agenda-row { border-color: #F3F4F6; }
+
+        /* Kanban Light Theme */
+        [data-theme="light"] .evt-kanban-col { background: #fff; border-color: #E5E7EB; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        [data-theme="light"] .evt-kanban-col-header { border-color: #F3F4F6; }
+        [data-theme="light"] .evt-kanban-col-count { background: #F3F4F6; color: #9CA3AF; }
+        [data-theme="light"] .evt-kanban-card { background: #FAFAFA; border-color: #F3F4F6; }
+        [data-theme="light"] .evt-kanban-card:hover { background: #F3F4F6; border-color: #E5E7EB; box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(99,102,241,0.06); }
+        [data-theme="light"] .evt-kanban-card::before { opacity: 0.5; }
+        [data-theme="light"] .evt-kanban-card-name { color: #111827; }
+        [data-theme="light"] .evt-kanban-card-type { color: #9CA3AF; }
+        [data-theme="light"] .evt-kanban-card-pax { color: #9CA3AF; }
+        [data-theme="light"] .evt-kanban-card-amount { color: #059669; }
+        [data-theme="light"] .evt-kanban-card-date { color: #D1D5DB; }
+        [data-theme="light"] .evt-kanban-toggle { background: #F3F4F6; border-color: #E5E7EB; }
+        [data-theme="light"] .evt-kanban-toggle-btn { color: #9CA3AF; }
+        [data-theme="light"] .evt-kanban-toggle-btn.active { background: rgba(99,102,241,0.08); color: #6366F1; box-shadow: none; }
+        [data-theme="light"] .evt-kanban-toggle-btn:hover:not(.active) { color: #374151; }
+        [data-theme="light"] .evt-kanban-col-total { border-color: #F3F4F6; color: #9CA3AF; }
+        [data-theme="light"] .evt-kanban-col-empty { color: #D1D5DB; }
+        [data-theme="light"] .evt-kanban-board::-webkit-scrollbar-thumb { background: #D1D5DB; }
+        [data-theme="light"] .evt-kanban-col-body::-webkit-scrollbar-thumb { background: #D1D5DB; }
+
+        /* Sidebar Light Theme */
+        [data-theme="light"] .evt-fs-toggle { background: rgba(0,0,0,0.03); border-color: #E5E7EB; }
+        [data-theme="light"] .evt-fs-toggle-btn.active { background: rgba(124,58,237,0.08); color: #7C3AED; }
+        [data-theme="light"] .evt-fs-search { background: rgba(0,0,0,0.03); border-color: #E5E7EB; }
+        [data-theme="light"] .evt-fs-search input { color: #111; }
+        [data-theme="light"] .evt-fs-calendar-sidebar { border-color: #E5E7EB; }
+        [data-theme="light"] .evt-agenda-row:hover { background: rgba(0,0,0,0.03); }
+        [data-theme="light"] .evt-agenda-row { border-color: #E5E7EB; }
+        [data-theme="light"] .evt-sb-section { border-color: #F3F4F6; }
+        [data-theme="light"] .evt-stat-card { background: #fff; border-color: #F3F4F6; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        [data-theme="light"] .evt-stat-label { color: #9CA3AF; }
+        [data-theme="light"] .evt-stat-value { color: #111827; }
+        [data-theme="light"] .evt-stat-value.green { color: #059669; }
+        [data-theme="light"] .evt-stat-value.purple { color: #6366F1; }
+        [data-theme="light"] .evt-stat-value.amber { color: #D97706; }
+        [data-theme="light"] .evt-mini-cal-label { color: #111827; }
+        [data-theme="light"] .evt-mini-cal-btn { background: #F9FAFB; border-color: #E5E7EB; color: #6B7280; }
+        [data-theme="light"] .evt-mini-cal-btn:hover { border-color: rgba(99,102,241,0.3); color: #6366F1; }
+        [data-theme="light"] .evt-mini-cal-cell { color: #6B7280; }
+        [data-theme="light"] .evt-mini-cal-cell:hover { background: #F3F4F6; }
+        [data-theme="light"] .evt-mini-cal-cell.today { background: rgba(99,102,241,0.08); color: #6366F1; }
+        [data-theme="light"] .evt-mini-cal-cell.has-events::after { background: #6366F1; }
+        [data-theme="light"] .evt-mini-cal-cell.pad { color: #E5E7EB; }
+        [data-theme="light"] .evt-upcoming-name { color: #111827; }
+        [data-theme="light"] .evt-upcoming-meta { color: #9CA3AF; }
+        [data-theme="light"] .evt-upcoming-amount { color: #059669; }
 
         /* Hospedaje Light Theme */
         [data-theme="light"] .hsp-panel { background: #fff; border-color: #E5E7EB; }

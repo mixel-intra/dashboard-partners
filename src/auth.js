@@ -55,7 +55,8 @@ function checkAuth() {
         return false;
     }
 
-    if (currentPage === 'index' && clientId) {
+    const clientPages = ['index', 'pipeline'];
+    if (clientPages.includes(currentPage) && clientId) {
         const hasAccess = session.role === 'admin' ||
             (session.clients && session.clients.includes(clientId));
 
@@ -65,7 +66,7 @@ function checkAuth() {
         }
     }
 
-    if (currentPage === 'index' && !clientId) {
+    if (clientPages.includes(currentPage) && !clientId) {
         if (session.clients && session.clients.length === 1) {
             window.location.href = `index.html?client=${session.clients[0]}`;
         } else {
