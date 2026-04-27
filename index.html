@@ -2815,70 +2815,188 @@
         }
 
         /* Light: board, toolbar, cards, drawer overlay */
+        /* ── Light theme: Restaurant board (premium, high-contrast) ── */
         [data-theme="light"] .rest-board-toolbar {
             background: #FFFFFF;
-            border: 1px solid var(--border-subtle);
+            border: 1px solid rgba(15,23,42,0.06);
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
         }
         [data-theme="light"] .rest-board-search {
-            background: var(--surface-50);
-            border: 1px solid var(--border-subtle);
+            background: #F1F5F9;
+            border: 1px solid transparent;
         }
-        [data-theme="light"] .rest-board-search > ion-icon { color: var(--text-muted); }
-        [data-theme="light"] .rest-board-search input { color: var(--text-primary); }
-        [data-theme="light"] .rest-board-search input::placeholder { color: var(--text-muted); }
-        [data-theme="light"] .rest-board-search:focus-within { border-color: rgba(117,81,255,0.4); background: #FFFFFF; }
+        [data-theme="light"] .rest-board-search > ion-icon { color: #64748B; }
+        [data-theme="light"] .rest-board-search input { color: #0F172A; }
+        [data-theme="light"] .rest-board-search input::placeholder { color: #94A3B8; }
+        [data-theme="light"] .rest-board-search:focus-within {
+            background: #FFFFFF;
+            border-color: rgba(117,81,255,0.4);
+            box-shadow: 0 0 0 3px rgba(117,81,255,0.12);
+        }
+        [data-theme="light"] .sidebar-search-kbd,
+        [data-theme="light"] .rest-sidebar-search-kbd {
+            background: #FFFFFF;
+            border: 1px solid rgba(15,23,42,0.08);
+            color: #64748B;
+        }
 
         [data-theme="light"] .rest-board {
             background: #FFFFFF;
-            border: 1px solid var(--border-subtle);
+            border: 1px solid rgba(15,23,42,0.06);
+            box-shadow: 0 1px 3px rgba(15,23,42,0.04);
         }
-        [data-theme="light"] .rest-board-day-header { border-bottom-color: var(--border-subtle); }
-        [data-theme="light"] .rest-board-day-label { color: var(--text-primary); }
-        [data-theme="light"] .rest-board-day-meta { color: var(--text-muted); }
-        [data-theme="light"] .rest-board-day-meta strong { color: var(--text-secondary); }
+        [data-theme="light"] .rest-board-day-header { border-bottom-color: rgba(15,23,42,0.08); }
+        [data-theme="light"] .rest-board-day-label { color: #0F172A; font-weight: 700; }
+        [data-theme="light"] .rest-board-day-meta { color: #64748B; }
+        [data-theme="light"] .rest-board-day-meta strong { color: #0F172A; }
 
+        /* Card base — surface elevation, subtle */
         [data-theme="light"] .rest-card {
             background: #FFFFFF;
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-xs);
+            border: 1px solid rgba(15,23,42,0.07);
+            border-left-width: 3px;
+            border-left-color: transparent;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+            transition: all 0.16s ease;
         }
         [data-theme="light"] .rest-card:hover {
-            background: var(--surface-50);
-            border-color: rgba(117,81,255,0.25);
+            background: #FAFBFC;
+            border-color: rgba(15,23,42,0.12);
+            box-shadow: 0 4px 12px rgba(15,23,42,0.06);
         }
+        /* Status colored left bar (override base) */
         [data-theme="light"] .rest-card.is-pending {
-            background: linear-gradient(180deg, #FFFBEB, #FFFFFF);
+            background: #FFFFFF;
+            border-color: rgba(15,23,42,0.07);
+            border-left-color: #F59E0B;
+        }
+        [data-theme="light"] .rest-card.is-pending:hover {
+            background: #FFFBF0;
+            border-left-color: #D97706;
+        }
+        [data-theme="light"] .rest-card.is-confirmed {
+            background: #FFFFFF;
+            border-left-color: #10B981;
+        }
+        [data-theme="light"] .rest-card.is-rejected {
+            border-left-color: #EF4444;
+        }
+
+        [data-theme="light"] .rest-card-name { color: #0F172A; font-weight: 600; }
+        [data-theme="light"] .rest-card-meta { color: #475569; }
+        [data-theme="light"] .rest-card-meta strong { color: #0F172A; }
+        [data-theme="light"] .rest-card-meta .dot { color: #CBD5E1; }
+        [data-theme="light"] .rest-card-detail { color: #475569; }
+        [data-theme="light"] .rest-card-detail.is-empty { color: #94A3B8; }
+
+        /* Status pills — proper contrast */
+        [data-theme="light"] .rest-card-pill.s-pending {
+            background: #FEF3C7;
+            color: #92400E;
             border-color: rgba(245,158,11,0.35);
         }
-        [data-theme="light"] .rest-card-name { color: var(--text-primary); }
-        [data-theme="light"] .rest-card-meta { color: var(--text-secondary); }
-        [data-theme="light"] .rest-card-meta strong { color: var(--text-primary); }
-        [data-theme="light"] .rest-card-detail { color: var(--text-secondary); }
-        [data-theme="light"] .rest-card-detail.is-empty { color: var(--text-muted); }
-
-        [data-theme="light"] .rest-card-actions { border-top-color: var(--border-subtle); }
-        [data-theme="light"] .rest-card-btn {
-            background: var(--surface-50);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-subtle);
+        [data-theme="light"] .rest-card-pill.s-confirmed {
+            background: #D1FAE5;
+            color: #065F46;
+            border-color: rgba(16,185,129,0.35);
         }
-        [data-theme="light"] .rest-card-btn:hover { background: var(--surface-100); color: var(--text-primary); }
+        [data-theme="light"] .rest-card-pill.s-rejected {
+            background: #FEE2E2;
+            color: #991B1B;
+            border-color: rgba(239,68,68,0.35);
+        }
+
+        [data-theme="light"] .rest-card-actions { border-top-color: rgba(15,23,42,0.07); }
+        [data-theme="light"] .rest-card-btn {
+            background: #F8FAFC;
+            color: #475569;
+            border: 1px solid rgba(15,23,42,0.08);
+        }
+        [data-theme="light"] .rest-card-btn:hover { background: #F1F5F9; color: #0F172A; border-color: rgba(15,23,42,0.16); }
         [data-theme="light"] .rest-card-btn.success {
             background: #ECFDF5;
             color: #047857;
-            border-color: rgba(16,185,129,0.3);
+            border-color: rgba(16,185,129,0.35);
         }
-        [data-theme="light"] .rest-card-btn.success:hover { background: #D1FAE5; }
+        [data-theme="light"] .rest-card-btn.success:hover { background: #D1FAE5; border-color: rgba(16,185,129,0.5); }
         [data-theme="light"] .rest-card-btn.danger {
             background: #FEF2F2;
             color: #B91C1C;
-            border-color: rgba(239,68,68,0.3);
+            border-color: rgba(239,68,68,0.35);
         }
-        [data-theme="light"] .rest-card-btn.danger:hover { background: #FEE2E2; }
+        [data-theme="light"] .rest-card-btn.danger:hover { background: #FEE2E2; border-color: rgba(239,68,68,0.5); }
         [data-theme="light"] .rest-card-btn.whatsapp { color: #128C7E; }
+        [data-theme="light"] .rest-card-btn.icon { background: #F8FAFC; }
 
-        [data-theme="light"] .rest-board-empty-title { color: var(--text-secondary); }
-        [data-theme="light"] .rest-board-empty-sub { color: var(--text-muted); }
+        [data-theme="light"] .rest-board-empty-title { color: #475569; }
+        [data-theme="light"] .rest-board-empty-sub { color: #94A3B8; }
+
+        /* Top toolbar (Restaurante stats + Disponibilidad/Actualizar) */
+        [data-theme="light"] .rest-toolbar-v2 .rest-title-block h3 { color: #0F172A; }
+        [data-theme="light"] .rest-toolbar-v2 .rest-title-block h3 ion-icon { color: #7551FF; }
+        [data-theme="light"] .rest-quick-stat { color: #64748B; }
+        [data-theme="light"] .rest-quick-stat strong { color: #0F172A; }
+        [data-theme="light"] .rest-quick-stat.alert strong { color: #D97706; }
+        [data-theme="light"] .rest-quick-stat-divider { color: #CBD5E1; }
+
+        /* Chips bar in toolbar */
+        [data-theme="light"] .rest-board-chips .rest-chip {
+            color: #475569;
+            background: transparent;
+            border: 1px solid transparent;
+        }
+        [data-theme="light"] .rest-board-chips .rest-chip:hover {
+            background: #F1F5F9;
+            color: #0F172A;
+        }
+        [data-theme="light"] .rest-board-chips .rest-chip.active {
+            background: rgba(117,81,255,0.10);
+            border-color: rgba(117,81,255,0.30);
+            color: #4F46E5;
+        }
+        [data-theme="light"] .rest-board-chips .rest-chip-count {
+            background: rgba(15,23,42,0.06);
+            color: #475569;
+        }
+        [data-theme="light"] .rest-board-chips .rest-chip.active .rest-chip-count {
+            background: rgba(117,81,255,0.15);
+            color: #4F46E5;
+        }
+
+        /* Date jump button */
+        [data-theme="light"] .rest-date-btn {
+            background: #FFFFFF;
+            border: 1px solid rgba(15,23,42,0.08);
+            color: #475569;
+        }
+        [data-theme="light"] .rest-date-btn:hover {
+            background: #F8FAFC;
+            border-color: rgba(117,81,255,0.30);
+            color: #4F46E5;
+        }
+        [data-theme="light"] .rest-date-btn.is-active {
+            background: rgba(117,81,255,0.08);
+            border-color: rgba(117,81,255,0.30);
+            color: #4F46E5;
+        }
+
+        /* Action buttons in top toolbar (Disponibilidad + Actualizar) */
+        [data-theme="light"] .rest-tool-btn {
+            background: #FFFFFF;
+            border: 1px solid rgba(15,23,42,0.08);
+            color: #475569;
+        }
+        [data-theme="light"] .rest-tool-btn:hover {
+            background: #F8FAFC;
+            color: #0F172A;
+            border-color: rgba(15,23,42,0.16);
+        }
+        [data-theme="light"] .rest-tool-btn.success {
+            background: #ECFDF5;
+            color: #047857;
+            border-color: rgba(16,185,129,0.35);
+        }
+        [data-theme="light"] .rest-tool-btn.success:hover { background: #D1FAE5; }
 
         [data-theme="light"] .rest-drawer {
             background: #FFFFFF;
@@ -3136,28 +3254,6 @@
             background: var(--surface-200);
         }
 
-        [data-theme="light"] .rest-card {
-            background: #FFFFFF;
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-sm);
-        }
-
-        [data-theme="light"] .rest-card:hover {
-            border-color: var(--surface-300);
-            box-shadow: var(--shadow-md);
-        }
-
-        [data-theme="light"] .rest-card-name {
-            color: var(--text-primary);
-        }
-
-        [data-theme="light"] .rest-card-meta {
-            color: var(--text-secondary);
-        }
-
-        [data-theme="light"] .rest-card-meta strong {
-            color: var(--text-primary);
-        }
 
         [data-theme="light"] .rest-card-details.expanded {
             border-top-color: var(--border-subtle);
