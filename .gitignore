@@ -5,3 +5,11 @@ dist
 .env
 *.log
 .gstack/
+
+# Local dev / test artifacts (no van a prod)
+.mcp.json
+.playwright-mcp/
+restaurant-ops-v2-*.png
+dashboard-replica.html
+dashboard-replica.css
+src/assets/big-bang-*.mp4
