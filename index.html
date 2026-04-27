@@ -243,8 +243,1438 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ===== PANEL DE RESERVAS RESTAURANTE ===== */
-        /* Stats */
+        /* ===== PANEL DE RESERVAS — OPS CONSOLE V2 ===== */
+        #restaurant-panel {
+            padding: 0 24px 16px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100dvh - 140px);
+            min-height: 480px;
+            overflow: hidden;
+            --rest-accent: var(--accent-primary, #7551FF);
+            --rest-status-pending: #F59E0B;
+            --rest-status-confirmed: #10B981;
+            --rest-status-rejected: #FF4444;
+        }
+        #restaurant-panel.hidden { display: none; }
+        #restaurant-panel > .rest-toolbar-v2,
+        #restaurant-panel > .rest-board-toolbar,
+        #restaurant-panel > .avail-panel { flex-shrink: 0; }
+
+        /* — Compact toolbar — */
+        .rest-toolbar-v2 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .rest-title-block {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+        .rest-title-block h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+        }
+        .rest-title-block h3 ion-icon {
+            color: var(--rest-accent);
+            font-size: 1.4rem;
+        }
+        .rest-quick-stats {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.82rem;
+            padding-left: 14px;
+            border-left: 1px solid rgba(255,255,255,0.08);
+        }
+        .rest-quick-stat strong { color: #fff; font-weight: 700; }
+        .rest-quick-stat-divider { color: rgba(255,255,255,0.2); }
+        .rest-quick-stat.alert { color: var(--rest-status-pending); }
+        .rest-quick-stat.alert strong { color: var(--rest-status-pending); }
+
+        .rest-toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .rest-tool-btn {
+            padding: 8px 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            font-size: 0.84rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.18s;
+        }
+        .rest-tool-btn:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.14);
+            color: #fff;
+        }
+        .rest-tool-btn.success {
+            background: rgba(16,185,129,0.07);
+            border-color: rgba(16,185,129,0.20);
+            color: var(--rest-status-confirmed);
+        }
+        .rest-tool-btn.danger {
+            background: rgba(255,68,68,0.07);
+            border-color: rgba(255,68,68,0.20);
+            color: #FF6B6B;
+        }
+        .rest-tool-btn ion-icon { font-size: 1rem; }
+
+        /* — Shell: sidebar + drawer — */
+        /* ── Top toolbar (full width) ── */
+        .rest-board-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.025);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .rest-board-search {
+            flex: 1 1 280px;
+            min-width: 240px;
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 8px 12px;
+            transition: border-color 0.18s ease, background 0.18s ease;
+        }
+        .rest-board-search > ion-icon { color: rgba(255,255,255,0.4); font-size: 1rem; }
+        .rest-board-search input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: #fff; font-size: 0.86rem; font-family: inherit;
+        }
+        .rest-board-search input::placeholder { color: rgba(255,255,255,0.32); }
+        .rest-board-search:focus-within { border-color: rgba(167,139,250,0.4); background: rgba(255,255,255,0.05); }
+        .rest-board-chips {
+            display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .rest-board-chips::-webkit-scrollbar { display: none; }
+        .rest-board-toolbar .rest-date-jump { flex-shrink: 0; }
+
+        .rest-shell {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            grid-template-rows: minmax(0, 1fr);
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+        @media (max-width: 1100px) {
+            .rest-shell { grid-template-columns: minmax(0, 1fr); }
+            .rest-context { display: none; }
+        }
+
+        /* ───── BOARD (card grid) ───── */
+        .rest-board {
+            background: rgba(255,255,255,0.025);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 18px;
+            overflow-y: auto;
+            padding: 18px 20px 24px;
+            min-height: 0;
+        }
+        .rest-board::-webkit-scrollbar { width: 8px; }
+        .rest-board::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+        .rest-board-day {
+            margin-bottom: 22px;
+        }
+        .rest-board-day-header {
+            display: flex; align-items: baseline; gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .rest-board-day-label {
+            font-size: 0.95rem; font-weight: 700; color: #fff;
+            text-transform: capitalize;
+        }
+        .rest-board-day-meta {
+            font-size: 0.74rem; color: rgba(255,255,255,0.45);
+        }
+        .rest-board-day-meta strong { color: rgba(255,255,255,0.75); font-weight: 700; }
+        .rest-board-day.is-today .rest-board-day-label::after {
+            content: "HOY";
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 8px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            background: rgba(245,158,11,0.18);
+            color: var(--rest-status-pending);
+            border: 1px solid rgba(245,158,11,0.25);
+            border-radius: 6px;
+            vertical-align: middle;
+        }
+
+        /* List layout — one row per reservation, comfortable density */
+        .rest-board-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* ── Reservation row card ── */
+        .rest-card {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(180px, 1.1fr) minmax(0, 1.4fr) auto;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-left: 3px solid transparent;
+            border-radius: 10px;
+            transition: border-color 0.15s ease, background 0.15s ease;
+            cursor: pointer;
+            min-height: 56px;
+        }
+        .rest-card:hover {
+            border-color: rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
+        }
+        .rest-card.is-pending { border-left-color: var(--rest-status-pending); }
+        .rest-card.is-confirmed { border-left-color: var(--rest-status-confirmed); }
+        .rest-card.is-rejected { border-left-color: var(--rest-status-rejected); opacity: 0.6; }
+        .rest-card.is-past { opacity: 0.55; }
+        .rest-card.is-active { background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.32); }
+
+        .rest-card-namebox { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .rest-card-namerow {
+            display: flex; align-items: center; gap: 8px; min-width: 0;
+        }
+        .rest-card-name {
+            font-size: 0.88rem; font-weight: 600; color: #fff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            min-width: 0;
+        }
+        .rest-card-meta {
+            font-size: 0.74rem; color: rgba(255,255,255,0.5);
+            display: flex; gap: 6px; align-items: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .rest-card-meta strong { color: rgba(255,255,255,0.85); font-weight: 600; }
+        .rest-card-meta .dot { color: rgba(255,255,255,0.2); }
+
+        .rest-card-pill {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .rest-card-pill.s-pending { background: rgba(245,158,11,0.14); color: #FBBF24; border: 1px solid rgba(245,158,11,0.28); }
+        .rest-card-pill.s-confirmed { background: rgba(34,197,94,0.12); color: #4ADE80; border: 1px solid rgba(34,197,94,0.25); }
+        .rest-card-pill.s-rejected { background: rgba(239,68,68,0.12); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.25); }
+        .rest-card-pill .pdot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+        .rest-card-detail {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.55);
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+        .rest-card-detail.is-empty {
+            color: rgba(255,255,255,0.25);
+            font-style: italic;
+        }
+
+        .rest-card-actions {
+            display: flex; gap: 6px; align-items: center;
+            flex-shrink: 0;
+        }
+        .rest-card-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 5px;
+            font-size: 0.74rem; font-weight: 600;
+            font-family: inherit;
+            padding: 6px 10px;
+            border-radius: 7px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.78);
+            transition: all 0.14s ease;
+            white-space: nowrap;
+            line-height: 1;
+            height: 28px;
+        }
+        .rest-card-btn ion-icon { font-size: 0.85rem; }
+        .rest-card-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .rest-card-btn.success { background: rgba(34,197,94,0.13); color: #4ADE80; border-color: rgba(34,197,94,0.26); }
+        .rest-card-btn.success:hover { background: rgba(34,197,94,0.22); }
+        .rest-card-btn.danger { background: rgba(239,68,68,0.11); color: #FCA5A5; border-color: rgba(239,68,68,0.24); }
+        .rest-card-btn.danger:hover { background: rgba(239,68,68,0.20); }
+        .rest-card-btn.icon { width: 28px; padding: 0; }
+        .rest-card-btn.whatsapp { color: #25D366; }
+        .rest-card-btn.whatsapp:hover { background: rgba(37,211,102,0.15); }
+
+        .rest-card-notes-flag {
+            position: absolute; top: 8px; right: 8px;
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--rest-status-pending);
+            opacity: 0.8;
+        }
+
+        @media (max-width: 720px) {
+            .rest-card {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 12px;
+            }
+            .rest-card-detail { white-space: normal; }
+            .rest-card-actions { justify-content: flex-end; }
+        }
+
+        .rest-board-empty {
+            grid-column: 1 / -1;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 60px 20px; gap: 12px;
+            color: rgba(255,255,255,0.45);
+        }
+        .rest-board-empty ion-icon { font-size: 2.6rem; opacity: 0.45; }
+        .rest-board-empty-title { font-size: 1rem; font-weight: 600; color: rgba(255,255,255,0.8); }
+        .rest-board-empty-sub { font-size: 0.82rem; max-width: 360px; line-height: 1.5; }
+
+        /* — Sidebar — */
+        .rest-sidebar {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            border-right: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.014);
+        }
+        .rest-sidebar-head {
+            padding: 14px 14px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .rest-sidebar-search {
+            position: relative;
+        }
+        .rest-sidebar-search > ion-icon {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.32);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+        .rest-sidebar-search input {
+            width: 100%;
+            padding: 9px 38px 9px 34px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 9px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: all 0.18s;
+        }
+        .rest-sidebar-search input:focus {
+            border-color: var(--rest-accent);
+            background: rgba(255,255,255,0.06);
+            box-shadow: 0 0 0 3px rgba(117,81,255,0.14);
+        }
+        .rest-sidebar-search input::placeholder { color: rgba(255,255,255,0.32); }
+        .rest-sidebar-search-kbd {
+            position: absolute;
+            right: 9px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.4);
+            pointer-events: none;
+            letter-spacing: 0.04em;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* — Flatpickr day dots (reservation indicator) — */
+        .flatpickr-day { position: relative; }
+        .flatpickr-day-dot {
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--rest-status-pending, #F59E0B);
+            pointer-events: none;
+        }
+        .flatpickr-day-dot.is-confirmed { background: var(--rest-status-confirmed, #10B981); }
+        .flatpickr-day-dot.is-rejected  { background: var(--rest-status-rejected, #FF4444); }
+        .flatpickr-day.selected .flatpickr-day-dot,
+        .flatpickr-day.startRange .flatpickr-day-dot,
+        .flatpickr-day.endRange .flatpickr-day-dot {
+            background: #fff;
+        }
+
+        /* — Date jump — */
+        .rest-date-jump {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .rest-date-btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px dashed rgba(255,255,255,0.12);
+            border-radius: 9px;
+            color: rgba(255,255,255,0.55);
+            font-size: 0.78rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.16s;
+        }
+        .rest-date-btn:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(117,81,255,0.30);
+            color: #fff;
+        }
+        .rest-date-btn.is-active {
+            background: rgba(117,81,255,0.14);
+            border: 1px solid rgba(117,81,255,0.34);
+            color: #fff;
+        }
+        .rest-date-btn ion-icon { font-size: 0.95rem; }
+        .rest-date-clear {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: rgba(255,68,68,0.08);
+            border: 1px solid rgba(255,68,68,0.22);
+            color: #FF6B6B;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.16s;
+        }
+        .rest-date-clear:hover {
+            background: rgba(255,68,68,0.18);
+            border-color: rgba(255,68,68,0.42);
+        }
+        .rest-date-clear ion-icon { font-size: 1rem; }
+
+        .rest-chips {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .rest-chips::-webkit-scrollbar { display: none; }
+        .rest-chip {
+            flex-shrink: 0;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: rgba(255,255,255,0.55);
+            font-size: 0.78rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.14s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .rest-chip:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+        .rest-chip.active {
+            background: rgba(117,81,255,0.16);
+            border-color: rgba(117,81,255,0.30);
+            color: #fff;
+        }
+        .rest-chip-count {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.10);
+            min-width: 18px;
+            text-align: center;
+        }
+        .rest-chip.active .rest-chip-count {
+            background: rgba(255,255,255,0.20);
+        }
+
+        /* — Sidebar list — */
+        .rest-sidebar-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 8px 14px;
+        }
+        .rest-sidebar-list::-webkit-scrollbar { width: 6px; }
+        .rest-sidebar-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+        }
+        .rest-day-group {
+            margin-top: 12px;
+        }
+        .rest-day-group:first-child { margin-top: 4px; }
+        .rest-day-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px 6px;
+            margin-bottom: 2px;
+            position: sticky;
+            top: 0;
+            background: linear-gradient(to bottom,
+                rgba(15,13,30,0.92) 60%,
+                rgba(15,13,30,0));
+            backdrop-filter: blur(8px);
+            z-index: 1;
+        }
+        .rest-day-label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.42);
+        }
+        .rest-day-group.is-today .rest-day-label { color: var(--rest-status-pending); }
+        .rest-day-group.is-past .rest-day-label { color: rgba(255,255,255,0.25); }
+        .rest-day-count {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.42);
+            background: rgba(255,255,255,0.06);
+            border-radius: 99px;
+            padding: 1px 7px;
+            font-weight: 600;
+        }
+
+        /* — Sidebar item — */
+        .rest-item {
+            display: grid;
+            grid-template-columns: 48px 1fr;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 10px 10px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            margin: 1px 0;
+            position: relative;
+            transition: background 0.14s, border-color 0.14s;
+        }
+        .rest-item:hover {
+            background: rgba(255,255,255,0.04);
+        }
+        .rest-item.is-active {
+            background: rgba(117,81,255,0.13);
+            border-color: rgba(117,81,255,0.30);
+        }
+        .rest-item.is-active::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 14px;
+            bottom: 14px;
+            width: 3px;
+            border-radius: 2px;
+            background: var(--rest-accent);
+        }
+        .rest-item-time {
+            text-align: center;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.05;
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .rest-item-time-period {
+            font-size: 0.58rem;
+            color: rgba(255,255,255,0.4);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .rest-item-time-empty {
+            color: rgba(255,255,255,0.25);
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .rest-item-body { min-width: 0; }
+        .rest-item-row1 {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 2px;
+        }
+        .rest-item-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .rest-item-dot.s-pending {
+            background: var(--rest-status-pending);
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.18);
+        }
+        .rest-item-dot.s-confirmed { background: var(--rest-status-confirmed); }
+        .rest-item-dot.s-rejected { background: var(--rest-status-rejected); }
+        .rest-item-name {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            min-width: 0;
+        }
+        .rest-item-source {
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            opacity: 0.7;
+            display: inline-flex;
+        }
+        .rest-item-source.whatsapp { color: #25D366; }
+        .rest-item-source.instagram { color: #E1306C; }
+        .rest-item-source.web { color: rgba(255,255,255,0.5); }
+        .rest-item-meta {
+            font-size: 0.74rem;
+            color: rgba(255,255,255,0.45);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .rest-item-meta strong {
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+        }
+        .rest-item-notes-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--rest-status-pending);
+            display: inline-block;
+            margin-left: 3px;
+            vertical-align: middle;
+        }
+        .rest-item.is-past { opacity: 0.55; }
+        .rest-item.is-past:hover { opacity: 0.85; }
+        .rest-item.is-new::after {
+            content: '';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--rest-status-pending);
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.20);
+        }
+
+        .rest-empty-list {
+            padding: 60px 20px;
+            text-align: center;
+            color: rgba(255,255,255,0.35);
+        }
+        .rest-empty-list ion-icon {
+            font-size: 2.4rem;
+            margin-bottom: 8px;
+            opacity: 0.4;
+            display: block;
+        }
+        .rest-empty-list-title {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 4px;
+        }
+        .rest-empty-list-sub {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.32);
+        }
+
+        /* — Drawer (now an overlay sheet, not a grid column) — */
+        .rest-drawer {
+            position: fixed;
+            top: 0; right: 0; bottom: 0;
+            width: 540px; max-width: 100vw;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            background: rgba(15, 13, 30, 0.96);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-left: 1px solid rgba(255,255,255,0.08);
+            box-shadow: -16px 0 48px rgba(0,0,0,0.45);
+            overflow: hidden;
+            transform: translateX(100%);
+            transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+            z-index: 1200;
+            pointer-events: none;
+        }
+        .rest-drawer.is-open {
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+        .rest-drawer-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease;
+            z-index: 1190;
+        }
+        .rest-drawer-backdrop.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .rest-drawer-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+        }
+        .rest-drawer-empty ion-icon {
+            font-size: 3rem;
+            opacity: 0.32;
+            margin-bottom: 12px;
+        }
+        .rest-drawer-empty-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 6px;
+        }
+        .rest-drawer-empty-sub {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.4);
+            max-width: 320px;
+            line-height: 1.5;
+        }
+
+        .rest-drawer-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+        }
+        .rest-drawer-header {
+            padding: 28px 28px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .rest-drawer-headline {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .rest-drawer-name-block { min-width: 0; flex: 1; }
+        .rest-drawer-name {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0 0 6px;
+            line-height: 1.25;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .rest-drawer-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .rest-drawer-status-pill.s-pending {
+            background: rgba(245,158,11,0.15);
+            color: var(--rest-status-pending);
+        }
+        .rest-drawer-status-pill.s-confirmed {
+            background: rgba(16,185,129,0.15);
+            color: var(--rest-status-confirmed);
+        }
+        .rest-drawer-status-pill.s-rejected {
+            background: rgba(255,68,68,0.15);
+            color: var(--rest-status-rejected);
+        }
+        .rest-drawer-status-pill .dot {
+            width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+        }
+        .rest-drawer-meta {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.55);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .rest-drawer-meta strong { color: rgba(255,255,255,0.85); font-weight: 600; }
+        .rest-drawer-meta-divider { color: rgba(255,255,255,0.2); }
+        .rest-drawer-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+        }
+        .rest-drawer-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .rest-drawer-close:hover {
+            background: rgba(255,255,255,0.10);
+            color: #fff;
+        }
+
+        .rest-drawer-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .rest-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.75);
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.18s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .rest-action:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+        }
+        .rest-action.success {
+            background: rgba(16,185,129,0.10);
+            border-color: rgba(16,185,129,0.25);
+            color: var(--rest-status-confirmed);
+        }
+        .rest-action.success:hover {
+            background: rgba(16,185,129,0.20);
+            border-color: rgba(16,185,129,0.45);
+        }
+        .rest-action.danger {
+            background: rgba(255,68,68,0.10);
+            border-color: rgba(255,68,68,0.25);
+            color: var(--rest-status-rejected);
+        }
+        .rest-action.danger:hover {
+            background: rgba(255,68,68,0.20);
+            border-color: rgba(255,68,68,0.45);
+        }
+        .rest-action.primary {
+            background: rgba(117,81,255,0.12);
+            border-color: rgba(117,81,255,0.30);
+            color: #B5A2FF;
+        }
+        .rest-action.primary:hover {
+            background: rgba(117,81,255,0.24);
+            border-color: rgba(117,81,255,0.50);
+            color: #fff;
+        }
+        .rest-action.whatsapp:hover {
+            background: rgba(37,211,102,0.14);
+            border-color: rgba(37,211,102,0.35);
+            color: #25D366;
+        }
+        .rest-action.call:hover {
+            background: rgba(58,134,255,0.14);
+            border-color: rgba(58,134,255,0.35);
+            color: #3A86FF;
+        }
+        .rest-action.icon-only {
+            width: 36px;
+            padding: 8px 0;
+            justify-content: center;
+        }
+        .rest-action ion-icon { font-size: 1rem; }
+
+        .rest-drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 22px 28px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            min-height: 0;
+            width: 100%;
+        }
+        .rest-drawer-body::-webkit-scrollbar { width: 6px; }
+        .rest-drawer-body::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+        }
+
+        .rest-section {
+            display: flex;
+            flex-direction: column;
+        }
+        .rest-section-title {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.10em;
+            font-weight: 700;
+            color: rgba(255,255,255,0.42);
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .rest-section-title ion-icon { font-size: 0.9rem; }
+
+        .rest-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .rest-info-cell {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 14px 16px;
+            min-width: 0;
+        }
+        .rest-info-cell.full { grid-column: 1 / -1; }
+        .rest-info-cell-label {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .rest-info-cell-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #fff;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .rest-info-cell-value.large {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        .rest-info-cell-value.muted { color: rgba(255,255,255,0.4); font-weight: 400; }
+
+        /* — Chat block (Kommo conversation, placeholder until wired) — */
+        .rest-chat {
+            display: flex;
+            flex-direction: column;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .rest-chat-thread {
+            padding: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .rest-chat-thread::-webkit-scrollbar { width: 5px; }
+        .rest-chat-thread::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+        }
+        .rest-chat-msg {
+            max-width: 85%;
+            padding: 9px 13px;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            line-height: 1.45;
+            color: rgba(255,255,255,0.88);
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+        .rest-chat-msg.them {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-top-left-radius: 4px;
+            align-self: flex-start;
+        }
+        .rest-chat-msg.mine {
+            background: rgba(117,81,255,0.18);
+            border: 1px solid rgba(117,81,255,0.32);
+            border-top-right-radius: 4px;
+            align-self: flex-end;
+            color: #fff;
+        }
+        .rest-chat-msg-time {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.4);
+            margin-top: 4px;
+        }
+        .rest-chat-empty {
+            padding: 28px 16px;
+            text-align: center;
+            color: rgba(255,255,255,0.35);
+            font-size: 0.82rem;
+        }
+        .rest-chat-empty ion-icon {
+            font-size: 1.8rem;
+            opacity: 0.5;
+            display: block;
+            margin: 0 auto 6px;
+        }
+
+        .rest-chat-composer {
+            border-top: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .rest-chat-templates {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .rest-chat-tpl {
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.72rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.16s;
+        }
+        .rest-chat-tpl:hover {
+            background: rgba(117,81,255,0.10);
+            border-color: rgba(117,81,255,0.25);
+            color: #fff;
+        }
+        .rest-chat-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        .rest-chat-input {
+            flex: 1;
+            min-height: 40px;
+            max-height: 140px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            resize: none;
+            transition: all 0.18s;
+        }
+        .rest-chat-input:focus {
+            border-color: var(--rest-accent);
+            background: rgba(255,255,255,0.06);
+        }
+        .rest-chat-input::placeholder { color: rgba(255,255,255,0.32); }
+        .rest-chat-send {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: none;
+            background: var(--rest-accent);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.18s;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .rest-chat-send:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(117,81,255,0.40);
+        }
+        .rest-chat-send:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .rest-chat-banner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.22);
+            border-radius: 10px;
+            color: var(--rest-status-pending);
+            font-size: 0.78rem;
+        }
+        .rest-chat-banner ion-icon { font-size: 1rem; flex-shrink: 0; }
+
+        /* — Open in CRM button — */
+        .rest-open-crm {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            background: rgba(117,81,255,0.12);
+            border: 1px solid rgba(117,81,255,0.32);
+            color: var(--rest-accent, #7551FF);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .rest-open-crm:hover {
+            background: rgba(117,81,255,0.2);
+            border-color: rgba(117,81,255,0.5);
+        }
+        .rest-open-crm ion-icon { font-size: 1.05rem; }
+        .rest-open-crm.is-disabled {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        /* — Notes inline in drawer — */
+        .rest-drawer-notes {
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+        .rest-drawer-notes textarea {
+            width: 100%;
+            min-height: 60px;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            outline: none;
+            padding: 0;
+        }
+        .rest-drawer-notes textarea::placeholder { color: rgba(255,255,255,0.32); }
+
+        /* — Conversation original (Airtable detalles, antes de Kommo) — */
+        .rest-orig-convo {
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.83rem;
+            line-height: 1.55;
+            color: rgba(255,255,255,0.65);
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .rest-orig-convo::-webkit-scrollbar { width: 5px; }
+        .rest-orig-convo::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+        }
+
+        /* — Today badge (kept) — */
+        .rest-today-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(245,158,11,0.15);
+            color: var(--rest-status-pending);
+            border: 1px solid rgba(245,158,11,0.20);
+        }
+
+        /* — Notes dot (kept) — */
+        .rest-has-notes-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--rest-status-pending);
+            display: inline-block;
+            flex-shrink: 0;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+
+        /* ─── Context column (right rail) ─── */
+        .rest-context {
+            display: flex;
+            flex-direction: column;
+            min-width: 0; min-height: 0;
+            background: rgba(255,255,255,0.025);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 18px;
+            overflow-y: auto;
+            padding: 18px 16px;
+            gap: 18px;
+        }
+        .rest-context::-webkit-scrollbar { width: 6px; }
+        .rest-context::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+        .rest-context-empty {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 40px 12px; color: rgba(255,255,255,0.4); gap: 10px;
+            margin: auto;
+        }
+        .rest-context-empty ion-icon { font-size: 2rem; opacity: 0.5; }
+        .rest-context-empty-title { font-size: 0.92rem; font-weight: 600; color: rgba(255,255,255,0.7); }
+        .rest-context-empty-sub { font-size: 0.78rem; line-height: 1.45; max-width: 260px; }
+        .rest-context-content { display: flex; flex-direction: column; gap: 18px; }
+        .rest-ctx-section {
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .rest-ctx-section-title {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.5); font-weight: 700; margin-bottom: 12px;
+        }
+        .rest-ctx-section-title ion-icon { font-size: 0.9rem; vertical-align: -2px; margin-right: 6px; }
+        .rest-ctx-day-label { color: rgba(255,255,255,0.7); text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 0.72rem; }
+        .rest-ctx-count {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 22px; padding: 0 6px; height: 18px; border-radius: 999px;
+            background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7);
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 0;
+        }
+
+        /* Capacity */
+        .rest-ctx-cap-row { display: flex; align-items: baseline; justify-content: space-between; }
+        .rest-ctx-cap-numbers { display: flex; align-items: baseline; gap: 4px; color: #fff; }
+        .rest-ctx-cap-used { font-size: 1.6rem; font-weight: 700; }
+        .rest-ctx-cap-sep { color: rgba(255,255,255,0.3); font-size: 1rem; }
+        .rest-ctx-cap-total { font-size: 1rem; color: rgba(255,255,255,0.7); font-weight: 600; }
+        .rest-ctx-cap-unit { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-left: 4px; }
+        .rest-ctx-cap-pct { font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.6); }
+        .rest-ctx-cap-bar {
+            height: 6px; border-radius: 3px;
+            background: rgba(255,255,255,0.06);
+            overflow: hidden; margin: 8px 0 10px;
+        }
+        .rest-ctx-cap-bar-fill {
+            height: 100%; width: 0%;
+            background: var(--rest-status-confirmed, #22c55e);
+            border-radius: 3px;
+            transition: width 0.4s ease, background 0.3s ease;
+        }
+        .rest-ctx-cap-bar-fill.warn { background: #f59e0b; }
+        .rest-ctx-cap-bar-fill.danger { background: #ef4444; }
+        .rest-ctx-cap-meta { display: flex; gap: 6px; font-size: 0.75rem; color: rgba(255,255,255,0.55); }
+        .rest-ctx-cap-meta strong { color: rgba(255,255,255,0.85); font-weight: 700; }
+        .rest-ctx-dot { color: rgba(255,255,255,0.25); }
+
+        /* Same day list */
+        .rest-ctx-day-list { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow-y: auto; }
+        .rest-ctx-day-list::-webkit-scrollbar { width: 4px; }
+        .rest-ctx-day-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+        .rest-ctx-day-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px; border-radius: 9px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .rest-ctx-day-row:hover { background: rgba(255,255,255,0.05); }
+        .rest-ctx-day-row.is-current {
+            background: rgba(167,139,250,0.10);
+            border-color: rgba(167,139,250,0.28);
+        }
+        .rest-ctx-day-time {
+            min-width: 52px; text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-size: 0.72rem; color: rgba(255,255,255,0.55); font-weight: 600;
+        }
+        .rest-ctx-day-status {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--rest-status-pending);
+            flex-shrink: 0;
+        }
+        .rest-ctx-day-status.s-confirmed { background: var(--rest-status-confirmed); }
+        .rest-ctx-day-status.s-rejected { background: var(--rest-status-rejected); }
+        .rest-ctx-day-name { font-size: 0.82rem; color: rgba(255,255,255,0.85); font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rest-ctx-day-pax { font-size: 0.72rem; color: rgba(255,255,255,0.55); font-weight: 600; flex-shrink: 0; }
+        .rest-ctx-day-pax strong { color: rgba(255,255,255,0.9); }
+        .rest-ctx-empty-list { padding: 14px 4px; text-align: center; font-size: 0.78rem; color: rgba(255,255,255,0.35); }
+
+        /* Heatmap */
+        .rest-ctx-heatmap-head { align-items: center !important; }
+        .rest-ctx-heatmap-nav {
+            background: transparent; border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.55); width: 22px; height: 22px;
+            border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.15s ease;
+        }
+        .rest-ctx-heatmap-nav:hover { color: #fff; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+        .rest-ctx-heatmap-nav ion-icon { font-size: 0.85rem; }
+        .rest-ctx-heatmap {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .rest-ctx-hm-dow {
+            font-size: 0.6rem; text-align: center; color: rgba(255,255,255,0.35);
+            font-weight: 700; letter-spacing: 0.05em; padding-bottom: 2px;
+        }
+        .rest-ctx-hm-cell {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.55);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.12s ease, border-color 0.12s ease;
+        }
+        .rest-ctx-hm-cell.empty { visibility: hidden; }
+        .rest-ctx-hm-cell:hover { transform: scale(1.08); border-color: rgba(255,255,255,0.25); }
+        .rest-ctx-hm-cell.lvl0 { background: rgba(255,255,255,0.04); }
+        .rest-ctx-hm-cell.lvl1 { background: rgba(167,139,250,0.18); color: rgba(255,255,255,0.75); }
+        .rest-ctx-hm-cell.lvl2 { background: rgba(167,139,250,0.34); color: #fff; }
+        .rest-ctx-hm-cell.lvl3 { background: rgba(139,92,246,0.55); color: #fff; }
+        .rest-ctx-hm-cell.lvl4 { background: rgba(139,92,246,0.85); color: #fff; }
+        .rest-ctx-hm-cell.is-today { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.6); }
+        .rest-ctx-hm-cell.is-current { box-shadow: inset 0 0 0 1.5px #A78BFA; }
+        .rest-ctx-hm-cell.is-closed::after {
+            content: ""; position: absolute; inset: 4px;
+            background: repeating-linear-gradient(45deg, rgba(255,255,255,0.0) 0 3px, rgba(239,68,68,0.35) 3px 4px);
+            border-radius: 4px; pointer-events: none;
+        }
+        .rest-ctx-heatmap-legend {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 0.62rem; color: rgba(255,255,255,0.4);
+            margin-top: 10px; justify-content: flex-end;
+        }
+        .hm-sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+        .hm-sw.lvl0 { background: rgba(255,255,255,0.04); }
+        .hm-sw.lvl1 { background: rgba(167,139,250,0.18); }
+        .hm-sw.lvl2 { background: rgba(167,139,250,0.34); }
+        .hm-sw.lvl3 { background: rgba(139,92,246,0.55); }
+        .hm-sw.lvl4 { background: rgba(139,92,246,0.85); }
+
+        /* — Mobile — */
+        @media (max-width: 880px) {
+            #restaurant-panel {
+                padding: 0 12px 12px;
+                height: calc(100dvh - 120px);
+            }
+            .rest-shell { grid-template-columns: 1fr; }
+            .rest-context { display: none; }
+            .rest-drawer { width: 100vw; }
+            .rest-drawer-close { display: flex; }
+            .rest-board-grid { grid-template-columns: 1fr; }
+            .rest-quick-stats { font-size: 0.74rem; padding-left: 10px; gap: 6px; }
+            .rest-toolbar-v2 { gap: 10px; }
+            #restaurant-panel .hidden-mobile { display: none !important; }
+        }
+
+        /* — Stats card style preserved (used in old elements still referenced) — */
         .rest-stat-card {
             display: flex;
             align-items: center;
@@ -1291,7 +2721,359 @@
             gap: 10px;
         }
 
-        /* ===== LIGHT THEME — Restaurant & Inline ===== */
+        /* ===== LIGHT THEME — Ops Console V2 ===== */
+        [data-theme="light"] .rest-toolbar-v2 .rest-quick-stats {
+            color: var(--text-secondary);
+            border-left-color: var(--border-subtle);
+        }
+        [data-theme="light"] .rest-toolbar-v2 .rest-quick-stat strong { color: var(--text-primary); }
+        [data-theme="light"] .rest-toolbar-v2 .rest-quick-stat-divider { color: var(--text-muted); }
+        [data-theme="light"] .rest-tool-btn {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        [data-theme="light"] .rest-tool-btn:hover {
+            background: var(--surface-50);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-tool-btn.success {
+            background: #ECFDF5;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #047857;
+        }
+
+        [data-theme="light"] .rest-shell {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-sm);
+        }
+        [data-theme="light"] .rest-sidebar {
+            background: var(--surface-50);
+            border-right: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-sidebar-head {
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-sidebar-search input {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-sidebar-search input:focus {
+            border-color: var(--accent-primary);
+            background: #FFFFFF;
+        }
+        [data-theme="light"] .rest-sidebar-search input::placeholder { color: var(--text-muted); }
+        [data-theme="light"] .rest-sidebar-search > ion-icon { color: var(--text-muted); }
+        [data-theme="light"] .rest-sidebar-search-kbd {
+            background: var(--surface-100);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+        }
+
+        [data-theme="light"] .rest-date-btn {
+            background: #FFFFFF;
+            border: 1px dashed var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        [data-theme="light"] .rest-date-btn:hover {
+            background: var(--surface-50);
+            border-color: rgba(117,81,255,0.40);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-date-btn.is-active {
+            background: rgba(117,81,255,0.08);
+            border: 1px solid rgba(117,81,255,0.40);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-date-clear {
+            background: #FEF2F2;
+            border: 1px solid rgba(239,68,68,0.30);
+            color: #B91C1C;
+        }
+
+        [data-theme="light"] .rest-chip {
+            color: var(--text-secondary);
+        }
+        [data-theme="light"] .rest-chip:hover {
+            background: var(--surface-100);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-chip.active {
+            background: var(--accent-primary);
+            color: #FFFFFF;
+            border-color: var(--accent-primary);
+        }
+        [data-theme="light"] .rest-chip-count {
+            background: var(--surface-200);
+            color: var(--text-secondary);
+        }
+        [data-theme="light"] .rest-chip.active .rest-chip-count {
+            background: rgba(255,255,255,0.25);
+            color: #FFFFFF;
+        }
+
+        /* Light: board, toolbar, cards, drawer overlay */
+        [data-theme="light"] .rest-board-toolbar {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-board-search {
+            background: var(--surface-50);
+            border: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-board-search > ion-icon { color: var(--text-muted); }
+        [data-theme="light"] .rest-board-search input { color: var(--text-primary); }
+        [data-theme="light"] .rest-board-search input::placeholder { color: var(--text-muted); }
+        [data-theme="light"] .rest-board-search:focus-within { border-color: rgba(117,81,255,0.4); background: #FFFFFF; }
+
+        [data-theme="light"] .rest-board {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-board-day-header { border-bottom-color: var(--border-subtle); }
+        [data-theme="light"] .rest-board-day-label { color: var(--text-primary); }
+        [data-theme="light"] .rest-board-day-meta { color: var(--text-muted); }
+        [data-theme="light"] .rest-board-day-meta strong { color: var(--text-secondary); }
+
+        [data-theme="light"] .rest-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-xs);
+        }
+        [data-theme="light"] .rest-card:hover {
+            background: var(--surface-50);
+            border-color: rgba(117,81,255,0.25);
+        }
+        [data-theme="light"] .rest-card.is-pending {
+            background: linear-gradient(180deg, #FFFBEB, #FFFFFF);
+            border-color: rgba(245,158,11,0.35);
+        }
+        [data-theme="light"] .rest-card-name { color: var(--text-primary); }
+        [data-theme="light"] .rest-card-meta { color: var(--text-secondary); }
+        [data-theme="light"] .rest-card-meta strong { color: var(--text-primary); }
+        [data-theme="light"] .rest-card-detail { color: var(--text-secondary); }
+        [data-theme="light"] .rest-card-detail.is-empty { color: var(--text-muted); }
+
+        [data-theme="light"] .rest-card-actions { border-top-color: var(--border-subtle); }
+        [data-theme="light"] .rest-card-btn {
+            background: var(--surface-50);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-card-btn:hover { background: var(--surface-100); color: var(--text-primary); }
+        [data-theme="light"] .rest-card-btn.success {
+            background: #ECFDF5;
+            color: #047857;
+            border-color: rgba(16,185,129,0.3);
+        }
+        [data-theme="light"] .rest-card-btn.success:hover { background: #D1FAE5; }
+        [data-theme="light"] .rest-card-btn.danger {
+            background: #FEF2F2;
+            color: #B91C1C;
+            border-color: rgba(239,68,68,0.3);
+        }
+        [data-theme="light"] .rest-card-btn.danger:hover { background: #FEE2E2; }
+        [data-theme="light"] .rest-card-btn.whatsapp { color: #128C7E; }
+
+        [data-theme="light"] .rest-board-empty-title { color: var(--text-secondary); }
+        [data-theme="light"] .rest-board-empty-sub { color: var(--text-muted); }
+
+        [data-theme="light"] .rest-drawer {
+            background: #FFFFFF;
+            border-left: 1px solid var(--border-subtle);
+            box-shadow: -16px 0 48px rgba(15,23,42,0.10);
+        }
+
+        [data-theme="light"] .rest-day-header {
+            background: linear-gradient(to bottom, var(--surface-50) 60%, rgba(255,255,255,0));
+        }
+        [data-theme="light"] .rest-day-label { color: var(--text-secondary); }
+        [data-theme="light"] .rest-day-count {
+            background: var(--surface-100);
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] .rest-item:hover { background: var(--surface-100); }
+        [data-theme="light"] .rest-item.is-active {
+            background: rgba(117, 81, 255, 0.08);
+            border-color: rgba(117, 81, 255, 0.25);
+        }
+        [data-theme="light"] .rest-item-time { color: var(--text-primary); }
+        [data-theme="light"] .rest-item-time-period { color: var(--text-muted); }
+        [data-theme="light"] .rest-item-name { color: var(--text-primary); }
+        [data-theme="light"] .rest-item-meta { color: var(--text-secondary); }
+        [data-theme="light"] .rest-item-meta strong { color: var(--text-primary); }
+
+        [data-theme="light"] .rest-empty-list { color: var(--text-muted); }
+        [data-theme="light"] .rest-empty-list-title { color: var(--text-secondary); }
+        [data-theme="light"] .rest-empty-list-sub { color: var(--text-muted); }
+
+        [data-theme="light"] .rest-drawer { background: #FFFFFF; }
+        [data-theme="light"] .rest-drawer-empty { color: var(--text-muted); }
+        [data-theme="light"] .rest-drawer-empty-title { color: var(--text-secondary); }
+        [data-theme="light"] .rest-drawer-empty-sub { color: var(--text-muted); }
+        [data-theme="light"] .rest-drawer-header {
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-drawer-name { color: var(--text-primary); }
+        [data-theme="light"] .rest-drawer-meta { color: var(--text-secondary); }
+        [data-theme="light"] .rest-drawer-meta strong { color: var(--text-primary); }
+        [data-theme="light"] .rest-drawer-meta-divider { color: var(--text-muted); }
+        [data-theme="light"] .rest-drawer-close {
+            background: var(--surface-100);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        [data-theme="light"] .rest-drawer-close:hover {
+            background: var(--surface-200);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .rest-action {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        [data-theme="light"] .rest-action:hover {
+            background: var(--surface-100);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-action.success {
+            background: #ECFDF5;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #047857;
+        }
+        [data-theme="light"] .rest-action.danger {
+            background: #FEF2F2;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #B91C1C;
+        }
+        [data-theme="light"] .rest-action.primary {
+            background: rgba(117, 81, 255, 0.08);
+            border: 1px solid rgba(117, 81, 255, 0.30);
+            color: var(--accent-primary);
+        }
+
+        [data-theme="light"] .rest-info-cell {
+            background: var(--surface-50);
+            border: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-info-cell-label { color: var(--text-muted); }
+        [data-theme="light"] .rest-info-cell-value { color: var(--text-primary); }
+
+        [data-theme="light"] .rest-section-title { color: var(--text-secondary); }
+
+        [data-theme="light"] .rest-chat {
+            background: var(--surface-50);
+            border: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-chat-msg.them {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-chat-msg.mine {
+            background: rgba(117, 81, 255, 0.10);
+            border: 1px solid rgba(117, 81, 255, 0.25);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-chat-msg-time { color: var(--text-muted); }
+        [data-theme="light"] .rest-chat-empty { color: var(--text-muted); }
+        [data-theme="light"] .rest-chat-composer {
+            background: #FFFFFF;
+            border-top: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-chat-tpl {
+            background: var(--surface-50);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        [data-theme="light"] .rest-chat-tpl:hover {
+            background: rgba(117, 81, 255, 0.08);
+            border-color: rgba(117, 81, 255, 0.25);
+            color: var(--accent-primary);
+        }
+        [data-theme="light"] .rest-chat-input {
+            background: var(--surface-50);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+        [data-theme="light"] .rest-chat-input:focus {
+            background: #FFFFFF;
+            border-color: var(--accent-primary);
+        }
+        [data-theme="light"] .rest-chat-banner {
+            background: #FFFBEB;
+            border: 1px solid rgba(245, 158, 11, 0.30);
+            color: #92400E;
+        }
+
+        [data-theme="light"] .rest-drawer-notes {
+            background: var(--surface-50);
+            border: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-drawer-notes textarea { color: var(--text-primary); }
+        [data-theme="light"] .rest-drawer-notes textarea::placeholder { color: var(--text-muted); }
+
+        [data-theme="light"] .rest-orig-convo {
+            background: var(--surface-50);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] @media (max-width: 880px) {
+            .rest-drawer { background: #FFFFFF; }
+        }
+
+        /* — Light: Context column — */
+        [data-theme="light"] .rest-context {
+            background: var(--surface-50);
+            border-left: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-context-empty-title { color: var(--text-secondary); }
+        [data-theme="light"] .rest-context-empty-sub { color: var(--text-muted); }
+        [data-theme="light"] .rest-ctx-section {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+        }
+        [data-theme="light"] .rest-ctx-section-title { color: var(--text-muted); }
+        [data-theme="light"] .rest-ctx-day-label { color: var(--text-secondary); }
+        [data-theme="light"] .rest-ctx-count { background: var(--surface-100); color: var(--text-secondary); }
+        [data-theme="light"] .rest-ctx-cap-numbers { color: var(--text-primary); }
+        [data-theme="light"] .rest-ctx-cap-total { color: var(--text-secondary); }
+        [data-theme="light"] .rest-ctx-cap-pct { color: var(--text-secondary); }
+        [data-theme="light"] .rest-ctx-cap-bar { background: var(--surface-100); }
+        [data-theme="light"] .rest-ctx-cap-meta { color: var(--text-secondary); }
+        [data-theme="light"] .rest-ctx-cap-meta strong { color: var(--text-primary); }
+        [data-theme="light"] .rest-ctx-day-row { background: var(--surface-50); }
+        [data-theme="light"] .rest-ctx-day-row:hover { background: var(--surface-100); }
+        [data-theme="light"] .rest-ctx-day-row.is-current { background: rgba(117,81,255,0.08); border-color: rgba(117,81,255,0.25); }
+        [data-theme="light"] .rest-ctx-day-time { color: var(--text-muted); }
+        [data-theme="light"] .rest-ctx-day-name { color: var(--text-primary); }
+        [data-theme="light"] .rest-ctx-day-pax { color: var(--text-secondary); }
+        [data-theme="light"] .rest-ctx-day-pax strong { color: var(--text-primary); }
+        [data-theme="light"] .rest-ctx-empty-list { color: var(--text-muted); }
+        [data-theme="light"] .rest-ctx-heatmap-nav { color: var(--text-secondary); border-color: var(--border-subtle); }
+        [data-theme="light"] .rest-ctx-heatmap-nav:hover { color: var(--text-primary); background: var(--surface-100); }
+        [data-theme="light"] .rest-ctx-hm-dow { color: var(--text-muted); }
+        [data-theme="light"] .rest-ctx-hm-cell { background: var(--surface-100); color: var(--text-secondary); }
+        [data-theme="light"] .rest-ctx-hm-cell.lvl0 { background: var(--surface-100); }
+        [data-theme="light"] .rest-ctx-hm-cell.lvl1 { background: rgba(117,81,255,0.14); color: var(--text-primary); }
+        [data-theme="light"] .rest-ctx-hm-cell.lvl2 { background: rgba(117,81,255,0.30); color: #fff; }
+        [data-theme="light"] .rest-ctx-hm-cell.lvl3 { background: rgba(117,81,255,0.55); color: #fff; }
+        [data-theme="light"] .rest-ctx-hm-cell.lvl4 { background: rgba(79,70,229,0.85); color: #fff; }
+        [data-theme="light"] .rest-ctx-hm-cell.is-today { box-shadow: inset 0 0 0 1.5px rgba(15,23,42,0.55); }
+        [data-theme="light"] .rest-ctx-hm-cell.is-current { box-shadow: inset 0 0 0 1.5px #4F46E5; }
+        [data-theme="light"] .rest-ctx-heatmap-legend { color: var(--text-muted); }
+        [data-theme="light"] .hm-sw.lvl0 { background: var(--surface-100); }
+        [data-theme="light"] .hm-sw.lvl1 { background: rgba(117,81,255,0.14); }
+        [data-theme="light"] .hm-sw.lvl2 { background: rgba(117,81,255,0.30); }
+        [data-theme="light"] .hm-sw.lvl3 { background: rgba(117,81,255,0.55); }
+        [data-theme="light"] .hm-sw.lvl4 { background: rgba(79,70,229,0.85); }
+
+        /* ===== LIGHT THEME — Restaurant & Inline (legacy, kept for modals & avail) ===== */
         [data-theme="light"] .rest-stat-card {
             background: #FFFFFF;
             border: 1px solid var(--border-subtle);
@@ -1644,6 +3426,25 @@
                 </div>
             </div>
 
+            <!-- Hotel Tabs (centered in header, visible solo para clientes tipo hotel) -->
+            <div id="hotel-tabs" class="dashboard-tabs hidden">
+                <div class="dash-tabs-segment">
+                    <button class="dash-tab active" data-tab="eventos">
+                        <ion-icon name="calendar-outline"></ion-icon><span>Eventos</span>
+                    </button>
+                    <button class="dash-tab" data-tab="reservas">
+                        <ion-icon name="bed-outline"></ion-icon><span>Reservas</span>
+                    </button>
+                    <button class="dash-tab" data-tab="daypass">
+                        <ion-icon name="sunny-outline"></ion-icon><span>Day Pass</span>
+                    </button>
+                    <button class="dash-tab" data-tab="restaurante">
+                        <ion-icon name="restaurant-outline"></ion-icon><span>Restaurante</span> <span id="rest-new-badge"
+                            class="rest-new-badge"></span>
+                    </button>
+                </div>
+            </div>
+
             <div class="header-right">
                 <div class="desktop-actions">
                     <button onclick="toggleTheme()" class="theme-pill-btn" title="Cambiar tema">
@@ -1721,23 +3522,15 @@
                 </div>
             </div>
 
-            <!-- Hotel Tabs (visible solo para clientes tipo hotel) -->
-            <div id="hotel-tabs" class="dashboard-tabs hidden">
-                <div class="dash-tabs-segment">
-                    <button class="dash-tab active" data-tab="eventos">
-                        <ion-icon name="calendar-outline"></ion-icon> Eventos
-                    </button>
-                    <button class="dash-tab" data-tab="reservas">
-                        <ion-icon name="bed-outline"></ion-icon> Reservas
-                    </button>
-                    <button class="dash-tab" data-tab="daypass">
-                        <ion-icon name="sunny-outline"></ion-icon> Day Pass
-                    </button>
-                    <button class="dash-tab" data-tab="restaurante">
-                        <ion-icon name="restaurant-outline"></ion-icon> Restaurante <span id="rest-new-badge"
-                            class="rest-new-badge"></span>
-                    </button>
-                </div>
+
+            <!-- Eventos Pipeline CTA (visible when eventos tab is active) -->
+            <div id="eventos-pipeline-cta" class="evt-pipeline-cta hidden">
+                <button class="evt-pipeline-cta-btn" onclick="openEventosPipeline()">
+                    <ion-icon name="git-network-outline"></ion-icon>
+                    <span>Ver Pipeline de Eventos</span>
+                    <span id="evt-pipeline-cta-count" class="evt-pipeline-cta-count"></span>
+                    <ion-icon name="arrow-forward-outline" style="margin-left:auto;opacity:0.5;"></ion-icon>
+                </button>
             </div>
 
             <!-- Eventos Pipeline CTA (visible when eventos tab is active) -->
@@ -1989,51 +3782,43 @@
                 </div>
             </div>
 
-            <!-- ===== PANEL DE RESERVAS RESTAURANTE ===== -->
-            <div id="restaurant-panel" class="hidden" style="padding: 0 24px 24px;">
-                <!-- Header -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <div>
-                        <span class="label-sub"
-                            style="font-size:0.7rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">GESTIÓN
-                            DE RESERVAS</span>
-                        <h3
-                            style="font-size:1.4rem; font-weight:700; margin:4px 0 0; display:flex; align-items:center; gap:8px;">
-                            <ion-icon name="restaurant-outline" style="color:var(--accent-primary);"></ion-icon>
+            <!-- ===== PANEL DE RESERVAS RESTAURANTE — OPS CONSOLE ===== -->
+            <div id="restaurant-panel" class="hidden">
+                <!-- Compact header -->
+                <div class="rest-toolbar-v2">
+                    <div class="rest-title-block">
+                        <h3>
+                            <ion-icon name="restaurant-outline"></ion-icon>
                             Restaurante
                         </h3>
+                        <div class="rest-quick-stats" id="rest-quick-stats">
+                            <span class="rest-quick-stat"><strong id="rest-stat-hoy">0</strong> hoy</span>
+                            <span class="rest-quick-stat-divider">·</span>
+                            <span class="rest-quick-stat"><strong id="rest-stat-pax-hoy">0</strong> pax</span>
+                            <span class="rest-quick-stat-divider">·</span>
+                            <span class="rest-quick-stat alert">
+                                <strong id="rest-stat-pendientes">0</strong> pendientes
+                            </span>
+                            <span class="rest-quick-stat-divider hidden-mobile">·</span>
+                            <span class="rest-quick-stat hidden-mobile">
+                                <strong id="rest-stat-semana">0</strong> esta semana
+                            </span>
+                        </div>
                     </div>
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                        <button id="avail-toggle-btn" onclick="toggleAvailabilityPanel()" title="Panel de disponibilidad">
+                    <div class="rest-toolbar-actions">
+                        <button id="avail-toggle-btn" class="rest-tool-btn success" onclick="toggleAvailabilityPanel()" title="Panel de disponibilidad">
                             <ion-icon name="shield-checkmark-outline"></ion-icon>
                             <span id="avail-btn-label">Disponibilidad</span>
                         </button>
-                        <div class="rest-view-toggle">
-                            <button class="rest-view-btn active" data-view="cards"
-                                onclick="toggleRestaurantView('cards')" title="Vista tarjetas">
-                                <ion-icon name="grid-outline"></ion-icon>
-                            </button>
-                            <button class="rest-view-btn" data-view="agenda"
-                                onclick="toggleRestaurantView('agenda')" title="Vista agenda">
-                                <ion-icon name="calendar-clear-outline"></ion-icon>
-                            </button>
-                            <button class="rest-view-btn" data-view="table" onclick="toggleRestaurantView('table')"
-                                title="Vista tabla">
-                                <ion-icon name="list-outline"></ion-icon>
-                            </button>
-                        </div>
-                        <button onclick="fetchRestaurantReservations()" title="Actualizar reservas"
-                            style="padding:8px 16px; display:flex; align-items:center; gap:6px; border-radius:12px;
-                                       background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
-                                       color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.85rem; font-family:'Inter',sans-serif;">
-                            <ion-icon name="refresh-outline"></ion-icon> Actualizar
+                        <button onclick="fetchRestaurantReservations()" class="rest-tool-btn" title="Actualizar reservas">
+                            <ion-icon name="refresh-outline"></ion-icon>
+                            <span class="hidden-mobile">Actualizar</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Availability Panel -->
+                <!-- Availability Panel (kept) -->
                 <div id="avail-panel" class="avail-panel">
-                    <!-- Row 1: Accepting reservations toggle -->
                     <div class="avail-panel-row">
                         <div>
                             <div class="avail-panel-label">Aceptando reservas</div>
@@ -2045,7 +3830,6 @@
                         </div>
                     </div>
                     <div class="avail-sep"></div>
-                    <!-- Row 2: Daily capacity -->
                     <div class="avail-panel-row">
                         <div>
                             <div class="avail-panel-label">Capacidad máxima por día</div>
@@ -2056,7 +3840,6 @@
                             title="Reservas máximas por día">
                     </div>
                     <div class="avail-sep"></div>
-                    <!-- Row 3: Closed dates -->
                     <div>
                         <div class="avail-panel-label" style="margin-bottom:10px;">Fechas inhabilitadas</div>
                         <div class="avail-date-add-row">
@@ -2069,7 +3852,6 @@
                             <span style="font-size:0.78rem; color:rgba(255,255,255,0.25);">Sin fechas inhabilitadas</span>
                         </div>
                     </div>
-                    <!-- Save -->
                     <div class="avail-save-row">
                         <span id="avail-save-status" class="avail-save-status">✓ Guardado</span>
                         <button class="avail-save-btn" onclick="saveRestaurantAvailability()">
@@ -2078,92 +3860,208 @@
                     </div>
                 </div>
 
-                <!-- Stats Bar -->
-                <div id="rest-stats-bar"
-                    style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:20px;">
-                    <div class="rest-stat-card">
-                        <div class="rest-stat-icon" style="color:#F59E0B;"><ion-icon name="today-outline"></ion-icon>
-                        </div>
-                        <div class="rest-stat-info">
-                            <span class="rest-stat-value" id="rest-stat-hoy">0</span>
-                            <span class="rest-stat-label">Hoy</span>
-                        </div>
-                    </div>
-                    <div class="rest-stat-card">
-                        <div class="rest-stat-icon" style="color:#7551FF;"><ion-icon name="calendar-outline"></ion-icon>
-                        </div>
-                        <div class="rest-stat-info">
-                            <span class="rest-stat-value" id="rest-stat-semana">0</span>
-                            <span class="rest-stat-label">Esta semana</span>
-                        </div>
-                    </div>
-                    <div class="rest-stat-card">
-                        <div class="rest-stat-icon" style="color:#01F1E3;"><ion-icon
-                                name="hourglass-outline"></ion-icon></div>
-                        <div class="rest-stat-info">
-                            <span class="rest-stat-value" id="rest-stat-pendientes">0</span>
-                            <span class="rest-stat-label">Pendientes</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Filtros por Estado + Búsqueda -->
-                <div class="rest-toolbar">
-                    <div class="rest-filters-row">
-                        <button class="rest-filter-btn active" data-status="all"
-                            onclick="filterRestaurantByStatus('all')">
-                            Todos <span id="rest-count-all" class="rest-count-badge">0</span>
-                        </button>
-                        <button class="rest-filter-btn" data-status="Nuevo Lead"
-                            onclick="filterRestaurantByStatus('Nuevo Lead')">
-                            Nuevos <span id="rest-count-nuevo" class="rest-count-badge">0</span>
-                        </button>
-                        <button class="rest-filter-btn" data-status="Confirmado"
-                            onclick="filterRestaurantByStatus('Confirmado')">
-                            Confirmados <span id="rest-count-confirmado" class="rest-count-badge">0</span>
-                        </button>
-                        <button class="rest-filter-btn" data-status="Rechazado"
-                            onclick="filterRestaurantByStatus('Rechazado')">
-                            Rechazados <span id="rest-count-rechazado" class="rest-count-badge">0</span>
-                        </button>
-                    </div>
-                    <div class="rest-search-wrapper">
-                        <ion-icon name="search-outline" class="rest-search-icon"></ion-icon>
-                        <input type="text" id="rest-search-input" class="rest-search-input"
-                            placeholder="Buscar nombre, tel, email..."
+                <!-- Top toolbar: search + chips + date jump (full width) -->
+                <div class="rest-board-toolbar">
+                    <div class="rest-board-search">
+                        <ion-icon name="search-outline"></ion-icon>
+                        <input type="text" id="rest-search-input"
+                            placeholder="Buscar por nombre, teléfono o tipo de evento..."
                             oninput="searchRestaurantReservations(this.value)">
+                        <span class="rest-sidebar-search-kbd">⌘K</span>
+                    </div>
+                    <div class="rest-board-chips" id="rest-chips">
+                        <button class="rest-chip active" data-status="nuevos" onclick="filterRestaurantByStatus('nuevos')" title="Leads sin responder">
+                            Pendientes <span class="rest-chip-count" id="rest-count-nuevos">0</span>
+                        </button>
+                        <button class="rest-chip" data-status="confirmadas" onclick="filterRestaurantByStatus('confirmadas')" title="Reservas confirmadas a futuro">
+                            Confirmadas <span class="rest-chip-count" id="rest-count-confirmadas">0</span>
+                        </button>
+                        <button class="rest-chip" data-status="todas" onclick="filterRestaurantByStatus('todas')" title="Todas las reservas">
+                            Todas <span class="rest-chip-count" id="rest-count-todas">0</span>
+                        </button>
+                        <button class="rest-chip" data-status="rechazadas" onclick="filterRestaurantByStatus('rechazadas')" title="Reservas rechazadas">
+                            Rechazadas <span class="rest-chip-count" id="rest-count-rechazadas">0</span>
+                        </button>
+                    </div>
+                    <div class="rest-date-jump">
+                        <button id="rest-date-btn" class="rest-date-btn" onclick="openDateJump(event)" title="Saltar a una fecha">
+                            <ion-icon name="calendar-outline"></ion-icon>
+                            <span id="rest-date-btn-label">Saltar a fecha</span>
+                        </button>
+                        <button id="rest-date-clear" class="rest-date-clear hidden" onclick="clearDateJump()" title="Quitar filtro de fecha">
+                            <ion-icon name="close-outline"></ion-icon>
+                        </button>
+                        <input type="text" id="rest-date-picker" style="display:none;">
                     </div>
                 </div>
 
-                <!-- Cards View -->
-                <div id="rest-cards-container" class="rest-cards-grid"></div>
+                <!-- Shell: board (cards) + context rail -->
+                <div class="rest-shell">
+                    <!-- Main: card board -->
+                    <section class="rest-board" id="rest-board">
+                        <!-- Cards rendered here, grouped by day -->
+                        <div class="rest-empty-list">
+                            <ion-icon name="restaurant-outline"></ion-icon>
+                            <div class="rest-empty-list-title">Cargando reservas…</div>
+                        </div>
+                    </section>
 
-                <!-- Agenda View -->
-                <div id="rest-agenda-container" class="rest-agenda-container hidden"></div>
+                    <!-- Detail drawer-overlay (hidden until reservation selected) -->
+                    <section class="rest-drawer" id="rest-drawer">
+                        <!-- Empty state by default (hidden in modal layout, kept for compat) -->
+                        <div class="rest-drawer-empty hidden" id="rest-drawer-empty">
+                            <ion-icon name="reader-outline"></ion-icon>
+                            <div class="rest-drawer-empty-title">Selecciona una reserva</div>
+                            <div class="rest-drawer-empty-sub">Elige una reserva para ver el detalle.</div>
+                        </div>
+                        <!-- Content (hidden until selected) -->
+                        <div class="rest-drawer-content hidden" id="rest-drawer-content">
+                            <!-- Header -->
+                            <div class="rest-drawer-header">
+                                <div class="rest-drawer-headline">
+                                    <div class="rest-drawer-name-block">
+                                        <h3 class="rest-drawer-name" id="rdm-name"></h3>
+                                        <div class="rest-drawer-meta">
+                                            <span id="rdm-date"><strong></strong></span>
+                                            <span class="rest-drawer-meta-divider">·</span>
+                                            <span id="rdm-time-meta"></span>
+                                            <span class="rest-drawer-meta-divider">·</span>
+                                            <span><strong id="rdm-pax-meta"></strong> pax</span>
+                                            <span class="rest-drawer-meta-divider" id="rdm-source-divider">·</span>
+                                            <span class="rest-drawer-source" id="rdm-source"></span>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; gap:8px; align-items:center;">
+                                        <span class="rest-drawer-status-pill" id="rdm-status-pill"><span class="dot"></span><span id="rdm-status-text"></span></span>
+                                        <button class="rest-drawer-close" onclick="closeDrawer()" aria-label="Cerrar">&times;</button>
+                                    </div>
+                                </div>
+                                <div class="rest-drawer-actions" id="rdm-actions">
+                                    <!-- Actions injected by JS -->
+                                </div>
+                            </div>
+                            <!-- Body -->
+                            <div class="rest-drawer-body">
+                                <!-- Info grid -->
+                                <div class="rest-section">
+                                    <div class="rest-section-title">
+                                        <ion-icon name="information-circle-outline"></ion-icon>
+                                        Información
+                                    </div>
+                                    <div class="rest-info-grid">
+                                        <div class="rest-info-cell">
+                                            <div class="rest-info-cell-label">Tipo de evento</div>
+                                            <div class="rest-info-cell-value" id="rdm-tipo">—</div>
+                                        </div>
+                                        <div class="rest-info-cell" id="rdm-phone-block">
+                                            <div class="rest-info-cell-label">Teléfono</div>
+                                            <div class="rest-info-cell-value" id="rdm-phone">—</div>
+                                        </div>
+                                        <div class="rest-info-cell full" id="rdm-email-block">
+                                            <div class="rest-info-cell-label">Email</div>
+                                            <div class="rest-info-cell-value" id="rdm-email">—</div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <!-- Table View -->
-                <div id="rest-table-container" class="hidden">
-                    <div class="rest-table-wrapper">
-                        <table class="rest-table">
-                            <thead>
-                                <tr>
-                                    <th class="rest-th-sortable" data-sort="estado"
-                                        onclick="sortRestaurantTable('estado')">Estado</th>
-                                    <th class="rest-th-sortable" data-sort="nombre"
-                                        onclick="sortRestaurantTable('nombre')">Nombre</th>
-                                    <th class="rest-th-sortable active" data-sort="fechaEvento"
-                                        onclick="sortRestaurantTable('fechaEvento')">Fecha</th>
-                                    <th>Hora</th>
-                                    <th class="rest-th-sortable" data-sort="pax" onclick="sortRestaurantTable('pax')">
-                                        PAX</th>
-                                    <th class="rest-th-sortable" data-sort="tipoEvento"
-                                        onclick="sortRestaurantTable('tipoEvento')">Tipo</th>
-                                    <th>Contacto</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rest-table-body"></tbody>
-                        </table>
-                    </div>
+                                <!-- Quick action: jump to the CRM for full conversation -->
+                                <div class="rest-section">
+                                    <a id="rdm-open-crm" class="rest-open-crm" target="_blank" rel="noopener" href="#">
+                                        <ion-icon name="open-outline"></ion-icon>
+                                        <span>Abrir en CRM</span>
+                                    </a>
+                                </div>
+
+                                <!-- Original conversation (Airtable detalles, si existe) -->
+                                <div class="rest-section hidden" id="rdm-orig-block">
+                                    <div class="rest-section-title">
+                                        <ion-icon name="document-text-outline"></ion-icon>
+                                        Detalles originales del lead
+                                    </div>
+                                    <div class="rest-orig-convo" id="rdm-orig-convo"></div>
+                                </div>
+
+                                <!-- Internal notes -->
+                                <div class="rest-section">
+                                    <div class="rest-section-title">
+                                        <ion-icon name="bookmark-outline"></ion-icon>
+                                        Notas internas
+                                    </div>
+                                    <div class="rest-drawer-notes">
+                                        <textarea id="rdm-notes" placeholder="Agregar notas del staff (no se envían al cliente)…"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Backdrop for detail overlay -->
+                    <div class="rest-drawer-backdrop" id="rest-drawer-backdrop" onclick="closeDrawer()"></div>
+
+                    <!-- Context: capacity (today by default) + month heatmap -->
+                    <aside class="rest-context" id="rest-context">
+                        <div class="rest-context-empty hidden" id="rest-context-empty">
+                            <ion-icon name="albums-outline"></ion-icon>
+                            <div class="rest-context-empty-title">Contexto del día</div>
+                            <div class="rest-context-empty-sub">Selecciona una reserva para ver el aforo y las otras reservas del mismo día.</div>
+                        </div>
+                        <div class="rest-context-content" id="rest-context-content">
+                            <!-- Capacity card -->
+                            <div class="rest-ctx-section">
+                                <div class="rest-ctx-section-title">
+                                    <span><ion-icon name="people-outline"></ion-icon> Aforo del día</span>
+                                    <span class="rest-ctx-day-label" id="ctx-day-label">—</span>
+                                </div>
+                                <div class="rest-ctx-cap">
+                                    <div class="rest-ctx-cap-row">
+                                        <div class="rest-ctx-cap-numbers">
+                                            <span class="rest-ctx-cap-used" id="ctx-cap-used">0</span>
+                                            <span class="rest-ctx-cap-sep">/</span>
+                                            <span class="rest-ctx-cap-total" id="ctx-cap-total">∞</span>
+                                            <span class="rest-ctx-cap-unit">pax</span>
+                                        </div>
+                                        <span class="rest-ctx-cap-pct" id="ctx-cap-pct"></span>
+                                    </div>
+                                    <div class="rest-ctx-cap-bar">
+                                        <div class="rest-ctx-cap-bar-fill" id="ctx-cap-bar-fill"></div>
+                                    </div>
+                                    <div class="rest-ctx-cap-meta">
+                                        <span><strong id="ctx-cap-confirmed">0</strong> confirmadas</span>
+                                        <span class="rest-ctx-dot">·</span>
+                                        <span><strong id="ctx-cap-pending">0</strong> pendientes</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Same day reservations -->
+                            <div class="rest-ctx-section">
+                                <div class="rest-ctx-section-title">
+                                    <span><ion-icon name="time-outline"></ion-icon> Reservas del mismo día</span>
+                                    <span class="rest-ctx-count" id="ctx-day-count">0</span>
+                                </div>
+                                <div class="rest-ctx-day-list" id="ctx-day-list"></div>
+                            </div>
+
+                            <!-- Month heatmap -->
+                            <div class="rest-ctx-section">
+                                <div class="rest-ctx-section-title rest-ctx-heatmap-head">
+                                    <button class="rest-ctx-heatmap-nav" onclick="ctxHeatmapShift(-1)" title="Mes anterior"><ion-icon name="chevron-back-outline"></ion-icon></button>
+                                    <span id="ctx-heatmap-label">—</span>
+                                    <button class="rest-ctx-heatmap-nav" onclick="ctxHeatmapShift(1)" title="Mes siguiente"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+                                </div>
+                                <div class="rest-ctx-heatmap" id="ctx-heatmap"></div>
+                                <div class="rest-ctx-heatmap-legend">
+                                    <span>Menos</span>
+                                    <span class="hm-sw lvl0"></span>
+                                    <span class="hm-sw lvl1"></span>
+                                    <span class="hm-sw lvl2"></span>
+                                    <span class="hm-sw lvl3"></span>
+                                    <span class="hm-sw lvl4"></span>
+                                    <span>Más</span>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
             </div>
 
@@ -2228,85 +4126,6 @@
                                 Confirmar Reserva
                             </button>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal Detalle de Reserva -->
-            <div id="rest-detail-modal" class="hidden"
-                style="position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(10px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px;">
-                <div style="background:rgba(15,13,30,0.96); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
-                            border:1px solid rgba(255,255,255,0.10); border-radius:24px;
-                            width:100%; max-width:520px; max-height:90vh; overflow:hidden;
-                            display:flex; flex-direction:column;
-                            box-shadow:0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);">
-
-                    <!-- Header -->
-                    <div style="padding:20px 24px 16px; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;">
-                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
-                            <div style="min-width:0;">
-                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
-                                    <h3 id="rdm-name" style="font-size:1.15rem; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></h3>
-                                    <span id="rdm-status-pill" style="padding:3px 10px; border-radius:8px; font-size:0.72rem; font-weight:600; flex-shrink:0;"></span>
-                                    <span id="rdm-today-badge" class="rest-today-badge" style="display:none;">HOY</span>
-                                </div>
-                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                    <span id="rdm-date" style="font-size:0.88rem; font-weight:600; color:rgba(255,255,255,0.8);"></span>
-                                    <span id="rdm-time" class="rest-card-time" style="display:none;"></span>
-                                </div>
-                            </div>
-                            <button onclick="closeDetailModal()"
-                                style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.09); border-radius:10px; color:rgba(255,255,255,0.5); width:32px; height:32px; font-size:1.2rem; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; line-height:1; transition:all 0.18s;"
-                                onmouseover="this.style.background='rgba(255,255,255,0.12)'; this.style.color='#fff';"
-                                onmouseout="this.style.background='rgba(255,255,255,0.06)'; this.style.color='rgba(255,255,255,0.5)';">&times;</button>
-                        </div>
-                    </div>
-
-                    <!-- Body -->
-                    <div style="flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:16px;">
-
-                        <!-- Info grid -->
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px;">
-                                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:4px;">Personas</div>
-                                <div id="rdm-pax" style="font-size:1.3rem; font-weight:700; color:#fff;"></div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px;">
-                                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:4px;">Tipo</div>
-                                <div id="rdm-tipo" style="font-size:0.88rem; font-weight:600; color:#fff;"></div>
-                            </div>
-                            <div id="rdm-phone-block" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px; display:none;">
-                                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:4px;">Teléfono</div>
-                                <div id="rdm-phone" style="font-size:0.88rem; font-weight:600; color:#fff;"></div>
-                            </div>
-                            <div id="rdm-email-block" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px; display:none;">
-                                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:4px;">Email</div>
-                                <div id="rdm-email" style="font-size:0.85rem; font-weight:500; color:#fff; word-break:break-all;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Conversación -->
-                        <div id="rdm-convo-block" style="display:none;">
-                            <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:8px;">Conversación / Detalles</div>
-                            <pre id="rdm-convo" style="white-space:pre-wrap; word-break:break-word; font-family:'Inter',sans-serif;
-                                font-size:0.83rem; line-height:1.6; color:rgba(255,255,255,0.65);
-                                background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
-                                border-radius:12px; padding:14px; max-height:150px; overflow-y:auto; margin:0;"></pre>
-                        </div>
-
-                        <!-- Notas internas -->
-                        <div>
-                            <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.38); margin-bottom:8px;">Notas internas</div>
-                            <textarea id="rdm-notes" class="rest-notes-area" style="margin-top:0;" placeholder="Agregar notas del staff..."></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Footer actions -->
-                    <div style="padding:16px 24px; border-top:1px solid rgba(255,255,255,0.07); flex-shrink:0; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                        <!-- Contact -->
-                        <div id="rdm-contact-actions" style="display:flex; gap:8px; flex:1; flex-wrap:wrap;"></div>
-                        <!-- Status actions -->
-                        <div id="rdm-status-actions" style="display:flex; gap:8px; flex-shrink:0;"></div>
                     </div>
                 </div>
             </div>
@@ -2436,7 +4255,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260227b"></script>
+    <script src="src/dashboard.js?v=20260426-opencrm"></script>
 
     <!-- Client Switcher Drawer -->
     <style>

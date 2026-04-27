@@ -955,28 +955,43 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 
 .status-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; border: 1px solid transparent; }
 
-/* === DASHBOARD TABS === */
-.dashboard-tabs { margin-bottom: 1.5rem; }
+/* === DASHBOARD TABS (Apple-minimal, centered in header) === */
+.dashboard-tabs {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+}
 .dash-tabs-segment {
-    display: inline-flex; background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 4px; gap: 2px;
+    display: inline-flex; gap: 4px;
+    background: transparent; border: 0; padding: 0; border-radius: 0;
 }
 .dash-tab {
-    display: flex; align-items: center; gap: 7px; padding: 8px 16px;
-    border: 1px solid transparent; border-radius: 10px; cursor: pointer;
-    color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;
-    background: transparent; font-family: inherit; transition: all 0.2s ease;
+    position: relative;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px 8px;
+    border: 0; border-radius: 0; cursor: pointer;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.82rem; font-weight: 500; letter-spacing: -0.005em;
+    background: transparent; font-family: inherit;
+    transition: color 0.18s ease, font-weight 0.18s ease;
 }
-.tab-lock-icon { font-size: 0.75rem; opacity: 0.5; }
-.dash-tab ion-icon { font-size: 1rem; }
-.dash-tab:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
-.dash-tab.active {
-    background: linear-gradient(135deg, rgba(167,139,250,0.18), rgba(139,92,246,0.12));
-    border-color: rgba(167,139,250,0.28); color: #A78BFA;
-    box-shadow: 0 4px 14px rgba(138,43,226,0.18), inset 0 1px 0 rgba(167,139,250,0.1);
+.tab-lock-icon { font-size: 0.72rem; opacity: 0.45; }
+.dash-tab ion-icon { font-size: 0.95rem; }
+.dash-tab:hover { color: rgba(255,255,255,0.85); background: transparent; }
+.dash-tab.active { color: #FFFFFF; font-weight: 600; background: transparent; }
+.dash-tab.active ion-icon { color: inherit; }
+.dash-tab.active::after {
+    content: "";
+    position: absolute;
+    left: 50%; bottom: 0;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: #FFFFFF;
+    transform: translateX(-50%);
 }
-.dash-tab.locked { opacity: 0.4; cursor: not-allowed; }
+.dash-tab.locked { opacity: 0.3; cursor: not-allowed; }
 .dash-tab.hidden { display: none; }
+/* allow absolute centering inside the header */
+.main-header { position: relative; }
 
 /* === CHART MODE TOGGLE === */
 .chart-mode-toggle {
@@ -1103,8 +1118,17 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
     .modal-content { width: 95%; max-height: 90vh; border-radius: 18px; }
     .modal-header { padding: 16px 18px; }
     .modal-body { padding: 14px 18px; }
-    .dash-tabs-segment { flex-wrap: wrap; gap: 4px; }
+    /* On mobile, drop absolute centering and render below header content */
+    .dashboard-tabs {
+        position: static; transform: none;
+        display: flex; justify-content: center;
+        width: 100%; margin: 4px 0 8px;
+        overflow-x: auto; scrollbar-width: none;
+    }
+    .dashboard-tabs::-webkit-scrollbar { display: none; }
+    .dash-tabs-segment { flex-wrap: nowrap; gap: 2px; }
     .dash-tab { font-size: 0.78rem; padding: 6px 12px; }
+    .dash-tab.active::after { left: 12px; right: 12px; }
     .flatpickr-calendar {
         position: fixed !important; left: 0 !important; right: 0 !important;
         bottom: 0 !important; top: auto !important;
@@ -1184,10 +1208,12 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 [data-theme="light"] .tab-btn { background: #F1F5F9; border-color: rgba(15,23,42,0.08); color: #475569; }
 [data-theme="light"] .tab-btn:hover { background: #E2E8F0; color: #0F172A; }
 [data-theme="light"] .tab-btn.active { background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(79,70,229,0.07)); border-color: rgba(99,102,241,0.25); color: #4F46E5; box-shadow: none; }
-[data-theme="light"] .dash-tabs-segment { background: #F1F5F9; border-color: rgba(15,23,42,0.08); }
-[data-theme="light"] .dash-tab { color: #475569; }
-[data-theme="light"] .dash-tab:hover { background: #E2E8F0; color: #0F172A; }
-[data-theme="light"] .dash-tab.active { background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(79,70,229,0.07)); border-color: rgba(99,102,241,0.2); color: #4F46E5; box-shadow: none; }
+[data-theme="light"] .dash-tabs-segment { background: transparent; border-color: transparent; }
+[data-theme="light"] .dash-tab { color: rgba(15,23,42,0.5); }
+[data-theme="light"] .dash-tab:hover { background: transparent; color: rgba(15,23,42,0.85); }
+[data-theme="light"] .dash-tab.active { background: transparent; color: #0F172A; border-color: transparent; box-shadow: none; font-weight: 600; }
+[data-theme="light"] .dash-tab.active ion-icon { color: inherit; }
+[data-theme="light"] .dash-tab.active::after { background: #0F172A; }
 [data-theme="light"] .chart-mode-btn.active { background: linear-gradient(135deg, #6366F1, #4F46E5) !important; }
 [data-theme="light"] .modal-overlay { background: rgba(15,23,42,0.4); }
 [data-theme="light"] .modal-content { background: #FFF; border-color: rgba(15,23,42,0.1); box-shadow: 0 24px 60px rgba(15,23,42,0.15); }

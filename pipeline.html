@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline de Cotizaciones | Eventos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="./src/theme-intra.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0A0618;
+            color: #E5E7EB;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ===== COSMIC BACKGROUND (inherit from theme) ===== */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: -1; pointer-events: none;
+            background:
+                radial-gradient(circle 700px at -80px -120px, rgba(138,43,226,0.28) 0%, rgba(88,28,135,0.10) 45%, transparent 70%),
+                radial-gradient(circle 750px at calc(100% + 80px) calc(100% + 80px), rgba(79,70,229,0.22) 0%, rgba(49,46,129,0.08) 45%, transparent 70%),
+                radial-gradient(circle 400px at 75% 35%, rgba(6,182,212,0.08) 0%, transparent 65%);
+        }
+        body::after {
+            content: '';
+            position: fixed; inset: 0; z-index: -1; pointer-events: none;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.018) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        /* ===== TYPOGRAPHY ===== */
+        .font-display { font-family: 'Satoshi', 'Inter', sans-serif; }
+
+        /* ===== LAYOUT ===== */
+        .pipe-app {
+            display: flex; flex-direction: column; height: 100vh;
+        }
+
+        /* ===== TOP NAV ===== */
+        .pipe-topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px; gap: 12px;
+            background: rgba(10,6,24,0.7);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            position: sticky; top: 0; z-index: 100;
+            flex-shrink: 0;
+        }
+        .pipe-topbar-left { display: flex; align-items: center; gap: 14px; }
+        .pipe-back-btn {
+            display: flex; align-items: center; gap: 5px;
+            padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 500;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+            color: #8E92A3; cursor: pointer; text-decoration: none; transition: all 0.2s;
+        }
+        .pipe-back-btn:hover { border-color: rgba(196,168,255,0.3); color: #C4A8FF; }
+        .pipe-topbar-title {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 1.05rem; font-weight: 700; color: #fff;
+            letter-spacing: -0.02em;
+        }
+        .pipe-topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        /* ===== STAT CHIPS ===== */
+        .pipe-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 600;
+            backdrop-filter: blur(8px);
+            animation: chip-in 0.4s ease both;
+        }
+        .pipe-chip:nth-child(2) { animation-delay: 0.08s; }
+        .pipe-chip:nth-child(3) { animation-delay: 0.16s; }
+        @keyframes chip-in {
+            from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .pipe-chip-proceso {
+            background: rgba(99,102,241,0.1); color: #818CF8;
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+        .pipe-chip-ventas {
+            background: rgba(16,185,129,0.1); color: #10B981;
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .pipe-chip-perdido {
+            background: rgba(239,68,68,0.06); color: #EF4444;
+            border: 1px solid rgba(239,68,68,0.12);
+        }
+
+        /* ===== CONTROLS BAR ===== */
+        .pipe-controls {
+            display: flex; align-items: center; gap: 10px; padding: 12px 20px;
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .pipe-toggle {
+            display: flex; gap: 2px; background: rgba(255,255,255,0.03);
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); padding: 3px;
+        }
+        .pipe-toggle-btn {
+            padding: 7px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+            background: transparent; border: none; color: #6B7280; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; transition: all 0.25s;
+            position: relative;
+        }
+        .pipe-toggle-btn.active {
+            background: rgba(196,168,255,0.1);
+            color: #C4A8FF;
+            box-shadow: 0 0 12px rgba(196,168,255,0.08);
+        }
+        .pipe-toggle-btn:hover:not(.active) { color: #9CA3AF; }
+        .pipe-search-wrap {
+            position: relative; display: flex; align-items: center; margin-left: auto;
+        }
+        .pipe-search-wrap ion-icon {
+            position: absolute; left: 11px; color: #6B7280; font-size: 15px;
+        }
+        .pipe-search {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px; padding: 8px 12px 8px 34px;
+            color: #fff; font-size: 0.82rem; width: 240px; outline: none;
+            transition: all 0.25s;
+        }
+        .pipe-search:focus {
+            border-color: rgba(196,168,255,0.3);
+            box-shadow: 0 0 0 3px rgba(196,168,255,0.06);
+            width: 280px;
+        }
+        .pipe-search::placeholder { color: #4B5563; }
+
+        /* ===== MAIN WORKSPACE ===== */
+        .pipe-workspace {
+            display: flex; flex: 1; overflow: hidden;
+            gap: 0;
+        }
+
+        /* ===== KANBAN PANEL (LEFT) ===== */
+        .pipe-kanban-panel {
+            flex: 1; min-width: 0; display: flex; flex-direction: column;
+            overflow: hidden;
+            transition: flex 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pipe-kanban-panel.full-width { flex: 1; }
+
+        .pipe-board {
+            display: flex; gap: 12px; padding: 0 20px 20px;
+            overflow-x: auto; flex: 1;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent;
+        }
+        .pipe-board::-webkit-scrollbar { height: 5px; }
+        .pipe-board::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+        /* ===== KANBAN COLUMN ===== */
+        .pipe-col {
+            min-width: 230px; max-width: 280px; flex: 1;
+            display: flex; flex-direction: column;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 14px;
+            overflow: hidden;
+            animation: col-in 0.45s ease both;
+        }
+        .pipe-col:nth-child(2) { animation-delay: 0.05s; }
+        .pipe-col:nth-child(3) { animation-delay: 0.10s; }
+        .pipe-col:nth-child(4) { animation-delay: 0.15s; }
+        .pipe-col:nth-child(5) { animation-delay: 0.20s; }
+        .pipe-col:nth-child(6) { animation-delay: 0.25s; }
+        @keyframes col-in {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pipe-col-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .pipe-col-title {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.6px; display: flex; align-items: center; gap: 7px;
+        }
+        .pipe-col-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .pipe-col-count {
+            font-size: 0.68rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 8px; background: rgba(255,255,255,0.05); color: #6B7280;
+        }
+        .pipe-col-body {
+            flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 8px;
+            overflow-y: auto;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent;
+        }
+        .pipe-col-body::-webkit-scrollbar { width: 3px; }
+        .pipe-col-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+        .pipe-col-footer {
+            padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.05);
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.78rem; font-weight: 700; color: #6B7280; text-align: right;
+        }
+        .pipe-col-empty {
+            text-align: center; padding: 28px 10px; color: #374151; font-size: 0.78rem;
+            font-style: italic;
+        }
+
+        /* ===== KANBAN CARD ===== */
+        .pipe-card {
+            padding: 12px 13px; border-radius: 10px; cursor: pointer;
+            background: rgba(255,255,255,0.035);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            animation: card-in 0.35s ease both;
+        }
+        .pipe-card:nth-child(1) { animation-delay: 0.06s; }
+        .pipe-card:nth-child(2) { animation-delay: 0.12s; }
+        .pipe-card:nth-child(3) { animation-delay: 0.18s; }
+        .pipe-card:nth-child(4) { animation-delay: 0.24s; }
+        .pipe-card:nth-child(5) { animation-delay: 0.30s; }
+        @keyframes card-in {
+            from { opacity: 0; filter: blur(4px); transform: translateY(8px); }
+            to { opacity: 1; filter: blur(0); transform: translateY(0); }
+        }
+        .pipe-card::before {
+            content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+            width: 3px; border-radius: 2px;
+            background: var(--card-accent, #818CF8);
+            opacity: 0.6; transition: opacity 0.2s;
+        }
+        .pipe-card:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.10);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(196,168,255,0.06);
+        }
+        .pipe-card:hover::before { opacity: 1; }
+        .pipe-card-name {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.84rem; font-weight: 600; color: #F3F4F6;
+            margin-bottom: 3px; line-height: 1.3; padding-left: 8px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pipe-card-type {
+            font-size: 0.7rem; color: #6B7280; padding-left: 8px; margin-bottom: 6px;
+        }
+        .pipe-card-meta {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 6px; padding-left: 8px;
+        }
+        .pipe-card-pax {
+            font-size: 0.68rem; color: #6B7280;
+            display: flex; align-items: center; gap: 3px;
+        }
+        .pipe-card-pax ion-icon { font-size: 12px; }
+        .pipe-card-amount {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.8rem; font-weight: 700; color: #82E0AA;
+        }
+        .pipe-card-date {
+            font-size: 0.66rem; color: #4B5563; margin-top: 6px; padding-left: 8px;
+            display: flex; align-items: center; gap: 3px;
+        }
+        .pipe-card-date ion-icon { font-size: 11px; }
+        .pipe-card-actions {
+            display: flex; gap: 3px; margin-top: 8px; padding-left: 8px;
+            opacity: 0; transition: opacity 0.15s;
+        }
+        .pipe-card:hover .pipe-card-actions { opacity: 1; }
+        .pipe-card-action {
+            width: 28px; height: 28px; border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            border: none; cursor: pointer; font-size: 14px; transition: all 0.15s;
+            text-decoration: none;
+        }
+        .pipe-card-action:hover { opacity: 0.8; transform: scale(1.08); }
+        .pipe-card-action.wa { background: rgba(37,211,102,0.12); color: #25D366; }
+        .pipe-card-action.call { background: rgba(59,130,246,0.12); color: #3B82F6; }
+        .pipe-card-action.email { background: rgba(139,92,246,0.12); color: #8B5CF6; }
+
+        /* ===== SIDEBAR (RIGHT) — Calendar & Stats ===== */
+        .pipe-sidebar {
+            width: 340px; flex-shrink: 0;
+            border-left: 1px solid rgba(255,255,255,0.05);
+            background: rgba(10,6,24,0.4);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent;
+        }
+        .pipe-sidebar.collapsed { width: 0; opacity: 0; overflow: hidden; padding: 0; border: none; }
+        .pipe-sidebar::-webkit-scrollbar { width: 3px; }
+        .pipe-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+
+        .pipe-sidebar-toggle {
+            display: none; /* shown on mobile */
+            position: fixed; bottom: 20px; right: 20px; z-index: 200;
+            width: 48px; height: 48px; border-radius: 14px;
+            background: rgba(196,168,255,0.15); border: 1px solid rgba(196,168,255,0.25);
+            color: #C4A8FF; font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+        }
+        .pipe-sidebar-toggle:hover { background: rgba(196,168,255,0.25); }
+
+        /* Sidebar sections */
+        .pipe-sb-section {
+            padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .pipe-sb-section:last-child { border-bottom: none; }
+        .pipe-sb-title {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.8px; color: #6B7280; margin-bottom: 12px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .pipe-sb-title ion-icon { font-size: 14px; color: #C4A8FF; }
+
+        /* ===== STATS GRID ===== */
+        .pipe-stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .pipe-stat-card {
+            padding: 14px 12px; border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+        .pipe-stat-card:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.08);
+        }
+        .pipe-stat-label {
+            font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.4px; color: #6B7280; margin-bottom: 4px;
+        }
+        .pipe-stat-value {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 1.2rem; font-weight: 900; color: #fff;
+            letter-spacing: -0.03em;
+        }
+        .pipe-stat-value.green { color: #82E0AA; }
+        .pipe-stat-value.purple { color: #C4A8FF; }
+        .pipe-stat-value.amber { color: #FCD34D; }
+        .pipe-stat-value.red { color: #F8B4C8; }
+
+        /* ===== MINI CALENDAR ===== */
+        .pipe-mini-cal-nav {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .pipe-mini-cal-label {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.85rem; font-weight: 700; color: #E5E7EB;
+            text-transform: capitalize;
+        }
+        .pipe-mini-cal-btns { display: flex; gap: 4px; }
+        .pipe-mini-cal-btn {
+            width: 28px; height: 28px; border-radius: 8px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+            color: #8E92A3; cursor: pointer; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .pipe-mini-cal-btn:hover { border-color: rgba(196,168,255,0.3); color: #C4A8FF; }
+        .pipe-mini-cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+        }
+        .pipe-mini-cal-header {
+            text-align: center; font-size: 0.6rem; font-weight: 700;
+            color: #4B5563; text-transform: uppercase; padding: 4px 0;
+        }
+        .pipe-mini-cal-cell {
+            aspect-ratio: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            border-radius: 8px; cursor: pointer; position: relative;
+            transition: all 0.15s; font-size: 0.72rem; font-weight: 500; color: #8E92A3;
+        }
+        .pipe-mini-cal-cell:hover { background: rgba(255,255,255,0.06); }
+        .pipe-mini-cal-cell.today {
+            background: rgba(196,168,255,0.12);
+            color: #C4A8FF; font-weight: 700;
+            box-shadow: 0 0 12px rgba(196,168,255,0.1);
+        }
+        .pipe-mini-cal-cell.has-events::after {
+            content: ''; position: absolute; bottom: 3px;
+            width: 4px; height: 4px; border-radius: 50%;
+            background: #818CF8;
+        }
+        .pipe-mini-cal-cell.pad { color: #1F2937; cursor: default; }
+        .pipe-mini-cal-cell.pad:hover { background: none; }
+
+        /* ===== UPCOMING EVENTS LIST ===== */
+        .pipe-upcoming-item {
+            display: flex; gap: 10px; padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            cursor: pointer; transition: all 0.15s;
+            animation: card-in 0.35s ease both;
+        }
+        .pipe-upcoming-item:last-child { border-bottom: none; }
+        .pipe-upcoming-item:hover { padding-left: 4px; }
+        .pipe-upcoming-item:nth-child(1) { animation-delay: 0.05s; }
+        .pipe-upcoming-item:nth-child(2) { animation-delay: 0.10s; }
+        .pipe-upcoming-item:nth-child(3) { animation-delay: 0.15s; }
+        .pipe-upcoming-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+        }
+        .pipe-upcoming-info { flex: 1; min-width: 0; }
+        .pipe-upcoming-name {
+            font-size: 0.8rem; font-weight: 600; color: #E5E7EB;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pipe-upcoming-meta { font-size: 0.68rem; color: #6B7280; margin-top: 2px; }
+        .pipe-upcoming-amount {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.78rem; font-weight: 700; color: #82E0AA;
+            flex-shrink: 0; align-self: center;
+        }
+
+        /* ===== FULL CALENDAR VIEW ===== */
+        .pipe-calendar-full {
+            flex: 1; display: flex; flex-direction: column;
+            padding: 0 20px 20px; overflow: hidden;
+        }
+        .pipe-cal-nav {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+            flex-shrink: 0;
+        }
+        .pipe-cal-nav-btn {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 6px 10px; color: #9CA3AF; cursor: pointer;
+            display: flex; align-items: center; font-size: 0.82rem;
+            transition: all 0.15s;
+        }
+        .pipe-cal-nav-btn:hover { border-color: rgba(196,168,255,0.3); color: #C4A8FF; }
+        .pipe-cal-today-btn { color: #C4A8FF; border-color: rgba(196,168,255,0.25); }
+        .pipe-cal-week-label {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.95rem; font-weight: 700; color: #fff;
+        }
+        .pipe-cal-view-toggle { display: flex; gap: 3px; margin-left: auto; }
+        .pipe-cal-view-btn {
+            padding: 5px 12px; border-radius: 7px; font-size: 0.72rem; font-weight: 600;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            color: #6B7280; cursor: pointer; transition: all 0.15s;
+        }
+        .pipe-cal-view-btn:hover { border-color: rgba(255,255,255,0.12); }
+        .pipe-cal-view-btn.active {
+            background: rgba(196,168,255,0.1); border-color: rgba(196,168,255,0.25); color: #C4A8FF;
+        }
+
+        /* Week grid */
+        .pipe-cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+            flex: 1; overflow-y: auto;
+        }
+        .pipe-cal-day {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 12px; padding: 10px; min-height: 100px;
+            display: flex; flex-direction: column;
+            animation: col-in 0.4s ease both;
+        }
+        .pipe-cal-day:nth-child(2) { animation-delay: 0.04s; }
+        .pipe-cal-day:nth-child(3) { animation-delay: 0.08s; }
+        .pipe-cal-day:nth-child(4) { animation-delay: 0.12s; }
+        .pipe-cal-day:nth-child(5) { animation-delay: 0.16s; }
+        .pipe-cal-day:nth-child(6) { animation-delay: 0.20s; }
+        .pipe-cal-day:nth-child(7) { animation-delay: 0.24s; }
+        .pipe-cal-today {
+            border-color: rgba(196,168,255,0.25);
+            background: rgba(196,168,255,0.04);
+            box-shadow: 0 0 20px rgba(196,168,255,0.06);
+        }
+        .pipe-cal-day-header {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            color: #6B7280; margin-bottom: 8px; text-align: center;
+        }
+        .pipe-cal-today .pipe-cal-day-header { color: #C4A8FF; }
+        .pipe-cal-day-body { flex: 1; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; }
+        .pipe-cal-card {
+            padding: 7px 8px; border-radius: 8px; cursor: pointer;
+            background: rgba(255,255,255,0.04); transition: all 0.15s;
+            border-left: 3px solid var(--cal-accent, #818CF8);
+            animation: card-in 0.3s ease both;
+        }
+        .pipe-cal-card:hover { background: rgba(255,255,255,0.08); transform: translateX(2px); }
+        .pipe-cal-time { font-size: 0.65rem; font-weight: 700; color: #C4A8FF; }
+        .pipe-cal-name { font-size: 0.74rem; font-weight: 600; color: #E5E7EB; margin-top: 1px; }
+        .pipe-cal-type { font-size: 0.64rem; color: #6B7280; }
+        .pipe-cal-empty { font-size: 0.7rem; color: rgba(255,255,255,0.1); text-align: center; padding: 16px 0; }
+
+        /* Day view */
+        .pipe-cal-day-view { flex: 1; overflow-y: auto; }
+        .pipe-cal-hour-row {
+            display: flex; gap: 12px; min-height: 52px;
+            border-bottom: 1px solid rgba(255,255,255,0.03); padding: 4px 0;
+        }
+        .pipe-cal-hour-label {
+            width: 50px; flex-shrink: 0; font-size: 0.68rem; font-weight: 600;
+            color: #4B5563; padding-top: 4px; text-align: right;
+            font-family: 'Satoshi', sans-serif;
+        }
+        .pipe-cal-hour-content { flex: 1; display: flex; flex-wrap: wrap; gap: 5px; align-items: flex-start; }
+        .pipe-cal-empty-slot { height: 1px; }
+
+        /* Month view */
+        .pipe-cal-month-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+            flex: 1; overflow-y: auto;
+        }
+        .pipe-cal-month-header {
+            text-align: center; font-size: 0.68rem; font-weight: 700;
+            font-family: 'Satoshi', sans-serif;
+            color: #4B5563; text-transform: uppercase; padding: 8px 0;
+        }
+        .pipe-cal-month-cell {
+            min-height: 68px; padding: 8px; border-radius: 10px; cursor: pointer;
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03);
+            transition: all 0.15s;
+        }
+        .pipe-cal-month-cell:hover { background: rgba(255,255,255,0.05); }
+        .pipe-cal-month-cell.pipe-cal-today {
+            border-color: rgba(196,168,255,0.25); background: rgba(196,168,255,0.05);
+        }
+        .pipe-cal-month-pad { background: none; border: none; cursor: default; }
+        .pipe-cal-month-day {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.75rem; font-weight: 600; color: #9CA3AF; margin-bottom: 4px;
+        }
+        .pipe-cal-today .pipe-cal-month-day { color: #C4A8FF; }
+        .pipe-cal-month-dots { display: flex; gap: 3px; flex-wrap: wrap; }
+        .pipe-cal-month-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .pipe-cal-month-more { font-size: 0.58rem; color: #6B7280; }
+
+        /* ===== DETAIL MODAL ===== */
+        .pipe-modal-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.55); backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: flex-start;
+            padding: 24px; overflow-y: auto;
+            animation: overlay-in 0.25s ease;
+        }
+        @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+        .pipe-modal-overlay.hidden { display: none; }
+        .pipe-modal-content {
+            background: rgba(18,14,32,0.95); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 20px; max-width: 960px; width: 100%;
+            padding: 28px; box-shadow: 0 24px 80px rgba(0,0,0,0.6); margin: auto 0;
+            backdrop-filter: blur(20px);
+            animation: modal-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes modal-in {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .pipe-detail-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .pipe-detail-name {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 1.35rem; font-weight: 900; color: #fff;
+            margin: 0; letter-spacing: -0.02em;
+        }
+        .pipe-detail-sub {
+            margin-top: 8px; display: block; color: #8E92A3; font-size: 0.82rem;
+        }
+        .pipe-close-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; color: #8E92A3; width: 36px; height: 36px;
+            font-size: 1.4rem; cursor: pointer; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .pipe-close-btn:hover { color: #fff; border-color: rgba(255,255,255,0.15); }
+        .pipe-modal-layout { display: flex; gap: 24px; }
+        .pipe-modal-layout:not(.pipe-two-col) { flex-direction: column; }
+        .pipe-two-col .pipe-modal-left { flex: 1; min-width: 0; }
+        .pipe-two-col .pipe-modal-right {
+            width: 320px; flex-shrink: 0;
+            border-left: 1px solid rgba(255,255,255,0.05);
+            padding-left: 24px; max-height: 65vh; overflow-y: auto;
+        }
+        @media (max-width: 768px) {
+            .pipe-modal-layout.pipe-two-col { flex-direction: column; }
+            .pipe-two-col .pipe-modal-right {
+                width: 100%; border-left: none; padding-left: 0;
+                border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px; max-height: none;
+            }
+        }
+        .pipe-detail-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px; margin-bottom: 16px;
+        }
+        .pipe-detail-card {
+            display: flex; align-items: center; gap: 10px; padding: 14px;
+            background: rgba(255,255,255,0.03); border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .pipe-detail-card-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: rgba(196,168,255,0.1);
+            display: flex; align-items: center; justify-content: center;
+            color: #C4A8FF; font-size: 18px;
+        }
+        .pipe-detail-label { font-size: 0.68rem; color: #6B7280; text-transform: uppercase; letter-spacing: 0.3px; }
+        .pipe-detail-value {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 1rem; font-weight: 700; color: #fff;
+        }
+        .pipe-detail-info {
+            display: flex; flex-wrap: wrap; gap: 14px;
+            padding: 12px 14px; background: rgba(255,255,255,0.03);
+            border-radius: 10px; margin-bottom: 14px;
+        }
+        .pipe-info-item {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 0.82rem; color: #D1D5DB;
+        }
+        .pipe-info-item ion-icon { font-size: 15px; color: #6B7280; }
+        .pipe-detail-notes {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 12px 14px; background: rgba(255,255,255,0.025);
+            border-radius: 10px; margin-bottom: 14px;
+            font-size: 0.82rem; color: #9CA3AF; line-height: 1.5;
+        }
+        .pipe-detail-notes ion-icon { flex-shrink: 0; margin-top: 2px; color: #6B7280; }
+        .pipe-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+        .pipe-action-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 8px 14px; border-radius: 10px;
+            font-size: 0.82rem; font-weight: 600; text-decoration: none;
+            transition: all 0.2s; cursor: pointer; border: none;
+        }
+        .pipe-action-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .pipe-btn-whatsapp { background: rgba(37,211,102,0.15); color: #25D366; border: 1px solid rgba(37,211,102,0.2); }
+        .pipe-btn-call { background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.2); }
+        .pipe-btn-email { background: rgba(139,92,246,0.15); color: #8B5CF6; border: 1px solid rgba(139,92,246,0.2); }
+        .pipe-call-scheduled {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
+            background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.15);
+            color: #F59E0B; font-size: 0.82rem;
+        }
+        .pipe-call-past {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
+            background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.1);
+            color: #6B7280; font-size: 0.82rem;
+        }
+        .pipe-section-title {
+            font-family: 'Satoshi', sans-serif;
+            font-size: 0.8rem; font-weight: 700; color: #6B7280;
+            text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;
+        }
+        .pipe-interaction-form {
+            background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 14px; padding: 16px;
+        }
+        .pipe-form-label {
+            display: block; font-size: 0.68rem; color: #6B7280;
+            margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .pipe-form-select {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 8px 12px; color: #D1D5DB;
+            font-size: 0.82rem; width: 100%; outline: none; transition: border-color 0.2s;
+        }
+        .pipe-form-select:focus { border-color: rgba(196,168,255,0.3); }
+        .pipe-form-select option { background: #120E20; }
+        .pipe-form-textarea {
+            width: 100%; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            padding: 10px 12px; color: #D1D5DB; font-size: 0.82rem;
+            resize: vertical; outline: none; margin-bottom: 10px; font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .pipe-form-textarea:focus { border-color: rgba(196,168,255,0.3); }
+        .pipe-form-save-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(130,224,170,0.15); color: #82E0AA;
+            border: 1px solid rgba(130,224,170,0.2);
+            border-radius: 10px; padding: 9px 18px;
+            font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .pipe-form-save-btn:hover:not(:disabled) { background: rgba(130,224,170,0.25); }
+        .pipe-form-save-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .pipe-timeline-item {
+            display: flex; gap: 12px; padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .pipe-timeline-icon {
+            flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pipe-timeline-icon ion-icon { font-size: 17px; }
+        .pipe-timeline-content { flex: 1; min-width: 0; }
+        .pipe-timeline-meta { font-size: 0.75rem; color: #6B7280; margin-bottom: 3px; }
+        .pipe-timeline-text { font-size: 0.82rem; color: #D1D5DB; line-height: 1.5; }
+        .pipe-status-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 0.7rem; font-weight: 600; white-space: nowrap;
+        }
+
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed; bottom: 24px; right: 24px; z-index: 99999;
+            display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto; display: flex; align-items: center; gap: 10px;
+            padding: 14px 20px; border-radius: 14px; font-size: 0.82rem;
+            font-family: 'Inter', sans-serif; color: #fff;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4); backdrop-filter: blur(12px);
+            animation: toast-in 0.3s ease forwards; max-width: 380px;
+        }
+        .toast.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); }
+        .toast.error { background: rgba(255,68,68,0.12); border: 1px solid rgba(255,68,68,0.25); }
+        .toast.fade-out { animation: toast-out 0.3s ease forwards; }
+        @keyframes toast-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toast-out { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+
+        /* ===== LOADING ===== */
+        .pipe-loading {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; padding: 80px; color: #6B7280; font-size: 0.82rem;
+        }
+        .pipe-spinner {
+            width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.08);
+            border-top-color: #C4A8FF; border-radius: 50%;
+            animation: pipe-spin 0.6s linear infinite;
+        }
+        @keyframes pipe-spin { to { transform: rotate(360deg); } }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .pipe-sidebar { width: 300px; }
+        }
+        @media (max-width: 768px) {
+            .pipe-workspace { flex-direction: column; }
+            .pipe-sidebar {
+                width: 100%; border-left: none;
+                border-top: 1px solid rgba(255,255,255,0.05);
+                max-height: 50vh;
+            }
+            .pipe-sidebar.collapsed { max-height: 0; }
+            .pipe-col { min-width: 200px; }
+            .pipe-cal-grid { grid-template-columns: repeat(3, 1fr); }
+            .pipe-search { width: 160px; }
+            .pipe-search:focus { width: 200px; }
+        }
+        @media (max-width: 480px) {
+            .pipe-topbar { padding: 10px 14px; }
+            .pipe-controls { padding: 10px 14px; }
+            .pipe-board { padding: 0 14px 14px; }
+            .pipe-calendar-full { padding: 0 14px 14px; }
+        }
+
+        /* ===== LIGHT THEME ===== */
+        [data-theme="light"] body { background: #F5F3FF; color: #374151; }
+        [data-theme="light"] body::before, [data-theme="light"] body::after { opacity: 0; }
+        [data-theme="light"] .pipe-topbar { background: rgba(255,255,255,0.85); border-color: #E5E7EB; }
+        [data-theme="light"] .pipe-topbar-title { color: #111827; }
+        [data-theme="light"] .pipe-back-btn { background: #F3F4F6; border-color: #E5E7EB; color: #6B7280; }
+        [data-theme="light"] .pipe-back-btn:hover { color: #6366F1; border-color: rgba(99,102,241,0.3); }
+        [data-theme="light"] .pipe-toggle { background: #F3F4F6; border-color: #E5E7EB; }
+        [data-theme="light"] .pipe-toggle-btn { color: #9CA3AF; }
+        [data-theme="light"] .pipe-toggle-btn.active { background: rgba(99,102,241,0.08); color: #6366F1; box-shadow: none; }
+        [data-theme="light"] .pipe-toggle-btn:hover:not(.active) { color: #374151; }
+        [data-theme="light"] .pipe-search { background: #fff; border-color: #E5E7EB; color: #111827; }
+        [data-theme="light"] .pipe-search:focus { border-color: rgba(99,102,241,0.4); box-shadow: 0 0 0 3px rgba(99,102,241,0.06); }
+        [data-theme="light"] .pipe-search::placeholder { color: #D1D5DB; }
+        [data-theme="light"] .pipe-col { background: #fff; border-color: #E5E7EB; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        [data-theme="light"] .pipe-col-header { border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-col-count { background: #F3F4F6; color: #9CA3AF; }
+        [data-theme="light"] .pipe-col-footer { border-color: #F3F4F6; color: #9CA3AF; }
+        [data-theme="light"] .pipe-col-empty { color: #D1D5DB; }
+        [data-theme="light"] .pipe-card { background: #FAFAFA; border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-card:hover { background: #F3F4F6; border-color: #E5E7EB; box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(99,102,241,0.06); }
+        [data-theme="light"] .pipe-card-name { color: #111827; }
+        [data-theme="light"] .pipe-card-type { color: #9CA3AF; }
+        [data-theme="light"] .pipe-card-pax { color: #9CA3AF; }
+        [data-theme="light"] .pipe-card-amount { color: #059669; }
+        [data-theme="light"] .pipe-card-date { color: #D1D5DB; }
+        [data-theme="light"] .pipe-sidebar { background: rgba(255,255,255,0.6); border-color: #E5E7EB; }
+        [data-theme="light"] .pipe-sb-section { border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-stat-card { background: #fff; border-color: #F3F4F6; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        [data-theme="light"] .pipe-stat-card:hover { border-color: #E5E7EB; }
+        [data-theme="light"] .pipe-stat-label { color: #9CA3AF; }
+        [data-theme="light"] .pipe-stat-value { color: #111827; }
+        [data-theme="light"] .pipe-stat-value.green { color: #059669; }
+        [data-theme="light"] .pipe-stat-value.purple { color: #6366F1; }
+        [data-theme="light"] .pipe-stat-value.amber { color: #D97706; }
+        [data-theme="light"] .pipe-stat-value.red { color: #DC2626; }
+        [data-theme="light"] .pipe-mini-cal-label { color: #111827; }
+        [data-theme="light"] .pipe-mini-cal-btn { background: #F9FAFB; border-color: #E5E7EB; color: #6B7280; }
+        [data-theme="light"] .pipe-mini-cal-btn:hover { border-color: rgba(99,102,241,0.3); color: #6366F1; }
+        [data-theme="light"] .pipe-mini-cal-cell { color: #6B7280; }
+        [data-theme="light"] .pipe-mini-cal-cell:hover { background: #F3F4F6; }
+        [data-theme="light"] .pipe-mini-cal-cell.today { background: rgba(99,102,241,0.08); color: #6366F1; box-shadow: none; }
+        [data-theme="light"] .pipe-mini-cal-cell.has-events::after { background: #6366F1; }
+        [data-theme="light"] .pipe-mini-cal-cell.pad { color: #E5E7EB; }
+        [data-theme="light"] .pipe-upcoming-name { color: #111827; }
+        [data-theme="light"] .pipe-upcoming-meta { color: #9CA3AF; }
+        [data-theme="light"] .pipe-upcoming-amount { color: #059669; }
+        [data-theme="light"] .pipe-modal-content { background: rgba(255,255,255,0.95); border-color: #E5E7EB; box-shadow: 0 24px 60px rgba(0,0,0,0.12); }
+        [data-theme="light"] .pipe-detail-name { color: #111827; }
+        [data-theme="light"] .pipe-detail-card { background: #F9FAFB; border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-detail-card-icon { background: rgba(99,102,241,0.08); color: #6366F1; }
+        [data-theme="light"] .pipe-detail-value { color: #111827; }
+        [data-theme="light"] .pipe-detail-info { background: #F9FAFB; }
+        [data-theme="light"] .pipe-info-item { color: #374151; }
+        [data-theme="light"] .pipe-detail-notes { background: #F9FAFB; color: #6B7280; }
+        [data-theme="light"] .pipe-close-btn { background: #F3F4F6; border-color: #E5E7EB; color: #9CA3AF; }
+        [data-theme="light"] .pipe-close-btn:hover { color: #111827; }
+        [data-theme="light"] .pipe-two-col .pipe-modal-right { border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-timeline-item { border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-timeline-text { color: #374151; }
+        [data-theme="light"] .pipe-timeline-meta { color: #9CA3AF; }
+        [data-theme="light"] .pipe-interaction-form { background: #F9FAFB; border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-form-select, [data-theme="light"] .pipe-form-textarea {
+            background: #fff; border-color: #E5E7EB; color: #374151;
+        }
+        [data-theme="light"] .pipe-form-select:focus, [data-theme="light"] .pipe-form-textarea:focus { border-color: rgba(99,102,241,0.4); }
+        [data-theme="light"] .pipe-form-select option { background: #fff; }
+        [data-theme="light"] .pipe-form-save-btn { background: rgba(16,185,129,0.1); color: #059669; border-color: rgba(16,185,129,0.2); }
+        [data-theme="light"] .pipe-modal-overlay { background: rgba(0,0,0,0.2); }
+        [data-theme="light"] .pipe-cal-nav-btn { background: #F9FAFB; border-color: #E5E7EB; color: #6B7280; }
+        [data-theme="light"] .pipe-cal-nav-btn:hover { border-color: rgba(99,102,241,0.3); color: #6366F1; }
+        [data-theme="light"] .pipe-cal-today-btn { color: #6366F1; border-color: rgba(99,102,241,0.3); }
+        [data-theme="light"] .pipe-cal-week-label { color: #111827; }
+        [data-theme="light"] .pipe-cal-day { background: #fff; border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-cal-today { border-color: rgba(99,102,241,0.25); background: rgba(99,102,241,0.03); box-shadow: none; }
+        [data-theme="light"] .pipe-cal-day-header { color: #9CA3AF; }
+        [data-theme="light"] .pipe-cal-today .pipe-cal-day-header { color: #6366F1; }
+        [data-theme="light"] .pipe-cal-card { background: #FAFAFA; border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-cal-card:hover { background: #F3F4F6; }
+        [data-theme="light"] .pipe-cal-time { color: #6366F1; }
+        [data-theme="light"] .pipe-cal-name { color: #111827; }
+        [data-theme="light"] .pipe-cal-type { color: #9CA3AF; }
+        [data-theme="light"] .pipe-cal-view-btn { background: #F9FAFB; border-color: #E5E7EB; color: #9CA3AF; }
+        [data-theme="light"] .pipe-cal-view-btn.active { background: rgba(99,102,241,0.06); border-color: rgba(99,102,241,0.25); color: #6366F1; }
+        [data-theme="light"] .pipe-cal-month-cell { background: #fff; border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-cal-month-cell:hover { background: #F3F4F6; }
+        [data-theme="light"] .pipe-cal-month-day { color: #6B7280; }
+        [data-theme="light"] .pipe-cal-hour-row { border-color: #F3F4F6; }
+        [data-theme="light"] .pipe-cal-hour-label { color: #D1D5DB; }
+        [data-theme="light"] .pipe-sidebar-toggle { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.2); color: #6366F1; }
+        [data-theme="light"] .toast { color: #374151; }
+        [data-theme="light"] .toast.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); color: #065F46; }
+        [data-theme="light"] .toast.error { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #991B1B; }
+        [data-theme="light"] .pipe-chip-proceso { background: rgba(99,102,241,0.06); border-color: rgba(99,102,241,0.15); }
+        [data-theme="light"] .pipe-chip-ventas { background: rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.15); }
+        [data-theme="light"] .pipe-chip-perdido { background: rgba(239,68,68,0.04); border-color: rgba(239,68,68,0.1); }
+    </style>
+</head>
+
+<body>
+    <script>
+        (function () {
+            var t = localStorage.getItem('intra-theme');
+            if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
+    <div class="pipe-app">
+        <!-- Top Bar -->
+        <div class="pipe-topbar">
+            <div class="pipe-topbar-left">
+                <a id="back-btn" class="pipe-back-btn" href="#">
+                    <ion-icon name="arrow-back-outline"></ion-icon> Dashboard
+                </a>
+                <span class="pipe-topbar-title font-display">Pipeline de Cotizaciones</span>
+            </div>
+            <div class="pipe-topbar-right" id="summary-chips"></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="pipe-controls">
+            <div class="pipe-toggle">
+                <button class="pipe-toggle-btn active" id="btn-pipeline" onclick="switchView('pipeline')">
+                    <ion-icon name="grid-outline"></ion-icon> Pipeline
+                </button>
+                <button class="pipe-toggle-btn" id="btn-agenda" onclick="switchView('calendario')">
+                    <ion-icon name="calendar-outline"></ion-icon> Agenda
+                </button>
+            </div>
+            <div class="pipe-search-wrap">
+                <ion-icon name="search-outline"></ion-icon>
+                <input type="text" class="pipe-search" id="search-input" placeholder="Buscar cliente, tipo, teléfono..." oninput="onSearch(this.value)">
+            </div>
+        </div>
+
+        <!-- Main Workspace: Kanban + Sidebar or Full Calendar -->
+        <div class="pipe-workspace">
+            <div class="pipe-kanban-panel" id="kanban-panel">
+                <div id="pipeline-content">
+                    <div class="pipe-loading"><div class="pipe-spinner"></div><span>Cargando pipeline...</span></div>
+                </div>
+            </div>
+            <div class="pipe-sidebar" id="sidebar-panel">
+                <div id="sidebar-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="pipe-modal-overlay hidden">
+        <div class="pipe-modal-content">
+            <div id="detail-content"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="src/config.js"></script>
+    <script src="src/auth.js"></script>
+    <script>
+    // ============================================================
+    // Pipeline Standalone — State & Logic (Redesigned)
+    // ============================================================
+
+    const EVT_STATUS_COLORS = {
+        'Nuevo Lead': '#F59E0B', 'Contactado': '#3B82F6', 'Cotizando': '#8B5CF6',
+        'Cotización Enviada': '#06B6D4', 'Venta': '#10B981', 'Perdido': '#EF4444'
+    };
+    const EVT_PIPELINE = ['Nuevo Lead', 'Contactado', 'Cotizando', 'Cotización Enviada', 'Venta', 'Perdido'];
+    const EVT_PROCESS = ['Nuevo Lead', 'Contactado', 'Cotizando', 'Cotización Enviada'];
+
+    const INTERACTION_ICONS = {
+        llamada: 'call-outline', whatsapp: 'logo-whatsapp',
+        email: 'mail-outline', nota: 'document-text-outline'
+    };
+
+    const state = {
+        clientId: null,
+        eventosConfig: { apiKey: '', baseId: '', tableName: '' },
+        leads: [],
+        view: 'pipeline',
+        search: '',
+        calendarView: 'week',
+        calendarOffset: 0,
+        sidebarCalendarOffset: 0
+    };
+
+    // ===== Init =====
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!checkAuth()) return;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        state.clientId = urlParams.get('client');
+
+        document.getElementById('back-btn').href = `index.html?client=${state.clientId}&from=pipeline`;
+
+        const { data: config, error } = await supabase
+            .from('clients_config')
+            .select('eventos_config')
+            .eq('id_slug', state.clientId)
+            .single();
+
+        if (error || !config) {
+            document.getElementById('pipeline-content').innerHTML =
+                '<div class="pipe-loading" style="color:#EF4444;">Error cargando configuración</div>';
+            return;
+        }
+
+        const evtConfig = config.eventos_config || {};
+        state.eventosConfig = {
+            apiKey: evtConfig.api_key || evtConfig.apiKey || '',
+            baseId: evtConfig.base_id || evtConfig.baseId || '',
+            tableName: evtConfig.table_name || evtConfig.tableName || ''
+        };
+
+        if (!state.eventosConfig.apiKey) {
+            document.getElementById('pipeline-content').innerHTML =
+                '<div class="pipe-loading">Pipeline de eventos no configurado para este cliente.</div>';
+            return;
+        }
+
+        await fetchLeads();
+    });
+
+    // ===== Fetch =====
+    async function fetchLeads() {
+        const { apiKey, baseId, tableName } = state.eventosConfig;
+        document.getElementById('pipeline-content').innerHTML =
+            '<div class="pipe-loading"><div class="pipe-spinner"></div><span>Cargando leads de eventos...</span></div>';
+
+        try {
+            const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+
+            state.leads = (data.records || []).map(r => {
+                const f = r.fields || {};
+                return {
+                    airtable_id: r.id,
+                    nombre: f['Nombre Cliente'] || 'Sin nombre',
+                    email: f['email'] || '',
+                    telefono: f['Telefono'] || '',
+                    tipo_evento: f['TipoEvento'] || '',
+                    pax: parseInt(f['PAX'] || 0),
+                    fecha_evento: f['FechaEvento'] || '',
+                    fecha_contacto: f['FechaContacto'] ? new Date(f['FechaContacto']) : null,
+                    total_estimado: parseFloat(f['TotalEstimado'] || 0),
+                    estado: f['Estado'] || 'Nuevo Lead',
+                    notas: f['Notas'] || '',
+                    detalles: f['Detalles'] || '',
+                    conversacion: f['Conversación'] || ''
+                };
+            });
+        } catch (err) {
+            console.error('Pipeline fetch failed:', err);
+            state.leads = [];
+        }
+        render();
+    }
+
+    // ===== Render =====
+    function render() {
+        renderSummary();
+        if (state.view === 'calendario') {
+            document.getElementById('sidebar-panel').classList.add('collapsed');
+            document.getElementById('kanban-panel').classList.add('full-width');
+            renderCalendar();
+        } else {
+            document.getElementById('sidebar-panel').classList.remove('collapsed');
+            document.getElementById('kanban-panel').classList.remove('full-width');
+            renderKanban();
+            renderSidebar();
+        }
+    }
+
+    function renderSummary() {
+        const all = state.leads;
+        const enProceso = all.filter(r => EVT_PROCESS.includes(r.estado));
+        const totalEstimado = enProceso.reduce((s, r) => s + (r.total_estimado || 0), 0);
+        const totalVentas = all.filter(r => r.estado === 'Venta').reduce((s, r) => s + (r.total_estimado || 0), 0);
+        const perdidos = all.filter(r => r.estado === 'Perdido').length;
+
+        let html = `
+            <span class="pipe-chip pipe-chip-proceso">
+                <ion-icon name="trending-up-outline"></ion-icon>
+                $${totalEstimado.toLocaleString('en-US', { minimumFractionDigits: 0 })} en proceso
+            </span>
+            <span class="pipe-chip pipe-chip-ventas">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                $${totalVentas.toLocaleString('en-US', { minimumFractionDigits: 0 })} vendido
+            </span>`;
+        if (perdidos > 0) html += `<span class="pipe-chip pipe-chip-perdido">${perdidos} perdido${perdidos > 1 ? 's' : ''}</span>`;
+        document.getElementById('summary-chips').innerHTML = html;
+    }
+
+    function getFiltered() {
+        const q = state.search.toLowerCase();
+        if (!q) return state.leads;
+        return state.leads.filter(r =>
+            (r.nombre || '').toLowerCase().includes(q) ||
+            (r.telefono || '').includes(q) ||
+            (r.tipo_evento || '').toLowerCase().includes(q)
+        );
+    }
+
+    // ===== Kanban =====
+    function renderKanban() {
+        const filtered = getFiltered();
+        const html = EVT_PIPELINE.map(stage => {
+            const color = EVT_STATUS_COLORS[stage];
+            const stageLeads = filtered.filter(r => r.estado === stage);
+            const stageTotal = stageLeads.reduce((s, r) => s + (r.total_estimado || 0), 0);
+            const cards = stageLeads.length === 0
+                ? '<div class="pipe-col-empty">Sin leads</div>'
+                : stageLeads.map(r => renderCard(r, color)).join('');
+
+            return `<div class="pipe-col">
+                <div class="pipe-col-header">
+                    <div class="pipe-col-title" style="color:${color}">
+                        <span class="pipe-col-dot" style="background:${color}"></span>
+                        ${stage}
+                    </div>
+                    <span class="pipe-col-count">${stageLeads.length}</span>
+                </div>
+                <div class="pipe-col-body">${cards}</div>
+                ${stageTotal > 0 ? `<div class="pipe-col-footer">$${stageTotal.toLocaleString('en-US', { minimumFractionDigits: 0 })}</div>` : ''}
+            </div>`;
+        }).join('');
+
+        document.getElementById('pipeline-content').innerHTML = `<div class="pipe-board">${html}</div>`;
+    }
+
+    function renderCard(r, accentColor) {
+        const idx = state.leads.indexOf(r);
+        const total = r.total_estimado ? `$${r.total_estimado.toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '';
+        const phone = (r.telefono || '').replace(/\D/g, '');
+
+        const actions = [];
+        if (r.telefono) actions.push(`<a href="https://wa.me/${phone}" target="_blank" class="pipe-card-action wa" onclick="event.stopPropagation()" title="WhatsApp"><ion-icon name="logo-whatsapp"></ion-icon></a>`);
+        if (r.telefono) actions.push(`<a href="tel:${r.telefono}" class="pipe-card-action call" onclick="event.stopPropagation()" title="Llamar"><ion-icon name="call-outline"></ion-icon></a>`);
+        if (r.email) actions.push(`<a href="mailto:${r.email}" class="pipe-card-action email" onclick="event.stopPropagation()" title="Email"><ion-icon name="mail-outline"></ion-icon></a>`);
+
+        return `<div class="pipe-card" style="--card-accent:${accentColor}" onclick="openDetail(${idx})">
+            <div class="pipe-card-name">${r.nombre}</div>
+            <div class="pipe-card-type">${r.tipo_evento || 'Evento'}</div>
+            <div class="pipe-card-meta">
+                ${r.pax ? `<span class="pipe-card-pax"><ion-icon name="people-outline"></ion-icon> ${r.pax} pax</span>` : '<span></span>'}
+                ${total ? `<span class="pipe-card-amount">${total}</span>` : ''}
+            </div>
+            ${r.fecha_evento ? `<div class="pipe-card-date"><ion-icon name="calendar-outline"></ion-icon> ${r.fecha_evento}</div>` : ''}
+            ${actions.length ? `<div class="pipe-card-actions">${actions.join('')}</div>` : ''}
+        </div>`;
+    }
+
+    // ===== Sidebar =====
+    function renderSidebar() {
+        const all = state.leads;
+        const enProceso = all.filter(r => EVT_PROCESS.includes(r.estado));
+        const totalProceso = enProceso.reduce((s, r) => s + (r.total_estimado || 0), 0);
+        const ventas = all.filter(r => r.estado === 'Venta');
+        const totalVentas = ventas.reduce((s, r) => s + (r.total_estimado || 0), 0);
+        const perdidos = all.filter(r => r.estado === 'Perdido').length;
+        const conversionRate = all.length > 0 ? ((ventas.length / all.length) * 100).toFixed(1) : '0';
+
+        // Mini calendar
+        const today = new Date();
+        const offset = state.sidebarCalendarOffset;
+        const refDate = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+        const year = refDate.getFullYear(), month = refDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startPad = (firstDay.getDay() + 6) % 7;
+        const monthLabel = refDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+
+        const datedLeads = all.filter(l => l.fecha_contacto instanceof Date && !isNaN(l.fecha_contacto));
+        const dayHeaders = ['L','M','X','J','V','S','D'].map(d => `<div class="pipe-mini-cal-header">${d}</div>`).join('');
+
+        let cells = '';
+        for (let i = 0; i < startPad; i++) cells += '<div class="pipe-mini-cal-cell pad"></div>';
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+            const cellDate = new Date(year, month, d);
+            const isToday = cellDate.toDateString() === today.toDateString();
+            const hasEvents = datedLeads.some(l => l.fecha_contacto.toDateString() === cellDate.toDateString());
+            cells += `<div class="pipe-mini-cal-cell ${isToday ? 'today' : ''} ${hasEvents ? 'has-events' : ''}">${d}</div>`;
+        }
+
+        // Upcoming events (next 5)
+        const now = new Date();
+        const upcoming = datedLeads
+            .filter(l => l.fecha_contacto >= new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+            .sort((a, b) => a.fecha_contacto - b.fecha_contacto)
+            .slice(0, 5);
+
+        const upcomingHtml = upcoming.length === 0
+            ? '<div style="text-align:center;color:#4B5563;font-size:0.78rem;padding:12px;">Sin eventos próximos</div>'
+            : upcoming.map(l => {
+                const color = EVT_STATUS_COLORS[l.estado] || '#9CA3AF';
+                const idx = state.leads.indexOf(l);
+                const dateStr = l.fecha_contacto.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+                const total = l.total_estimado ? `$${l.total_estimado.toLocaleString('en-US', {minimumFractionDigits:0})}` : '';
+                return `<div class="pipe-upcoming-item" onclick="openDetail(${idx})">
+                    <div class="pipe-upcoming-dot" style="background:${color}"></div>
+                    <div class="pipe-upcoming-info">
+                        <div class="pipe-upcoming-name">${l.nombre}</div>
+                        <div class="pipe-upcoming-meta">${l.tipo_evento || 'Evento'} · ${dateStr} · ${l.pax || '?'} pax</div>
+                    </div>
+                    ${total ? `<div class="pipe-upcoming-amount">${total}</div>` : ''}
+                </div>`;
+            }).join('');
+
+        document.getElementById('sidebar-content').innerHTML = `
+            <!-- Stats -->
+            <div class="pipe-sb-section">
+                <div class="pipe-sb-title"><ion-icon name="analytics-outline"></ion-icon> Resumen</div>
+                <div class="pipe-stats-grid">
+                    <div class="pipe-stat-card">
+                        <div class="pipe-stat-label">Total Leads</div>
+                        <div class="pipe-stat-value purple">${all.length}</div>
+                    </div>
+                    <div class="pipe-stat-card">
+                        <div class="pipe-stat-label">Conversión</div>
+                        <div class="pipe-stat-value amber">${conversionRate}%</div>
+                    </div>
+                    <div class="pipe-stat-card">
+                        <div class="pipe-stat-label">En Proceso</div>
+                        <div class="pipe-stat-value">$${totalProceso.toLocaleString('en-US', {minimumFractionDigits:0})}</div>
+                    </div>
+                    <div class="pipe-stat-card">
+                        <div class="pipe-stat-label">Vendido</div>
+                        <div class="pipe-stat-value green">$${totalVentas.toLocaleString('en-US', {minimumFractionDigits:0})}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mini Calendar -->
+            <div class="pipe-sb-section">
+                <div class="pipe-sb-title"><ion-icon name="calendar-outline"></ion-icon> Calendario</div>
+                <div class="pipe-mini-cal-nav">
+                    <span class="pipe-mini-cal-label font-display">${monthLabel}</span>
+                    <div class="pipe-mini-cal-btns">
+                        <button class="pipe-mini-cal-btn" onclick="sidebarCalNav(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+                        <button class="pipe-mini-cal-btn" onclick="sidebarCalNav(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+                    </div>
+                </div>
+                <div class="pipe-mini-cal-grid">${dayHeaders}${cells}</div>
+            </div>
+
+            <!-- Upcoming -->
+            <div class="pipe-sb-section">
+                <div class="pipe-sb-title"><ion-icon name="time-outline"></ion-icon> Próximos Eventos</div>
+                ${upcomingHtml}
+            </div>
+        `;
+    }
+
+    function sidebarCalNav(dir) {
+        state.sidebarCalendarOffset += dir;
+        renderSidebar();
+    }
+
+    // ===== Calendar (Full View) =====
+    function renderCalendar() {
+        const view = state.calendarView;
+        const offset = state.calendarOffset;
+        const today = new Date();
+        const leads = state.leads.filter(l => l.fecha_contacto instanceof Date && !isNaN(l.fecha_contacto));
+
+        const viewBtns = ['day', 'week', 'month'].map(v => {
+            const labels = { day: 'Día', week: 'Semana', month: 'Mes' };
+            return `<button class="pipe-cal-view-btn ${view === v ? 'active' : ''}" onclick="setCalView('${v}')">${labels[v]}</button>`;
+        }).join('');
+
+        let html = '';
+        if (view === 'day') html = renderCalDay(today, offset, leads, viewBtns);
+        else if (view === 'month') html = renderCalMonth(today, offset, leads, viewBtns);
+        else html = renderCalWeek(today, offset, leads, viewBtns);
+
+        document.getElementById('pipeline-content').innerHTML = `<div class="pipe-calendar-full">${html}</div>`;
+    }
+
+    function renderCalWeek(today, offset, leads, viewBtns) {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay() + 1 + (offset * 7));
+        const days = [];
+        for (let i = 0; i < 7; i++) { const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i); days.push(d); }
+
+        const cols = days.map(day => {
+            const dayStr = day.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
+            const isToday = day.toDateString() === today.toDateString();
+            const dayLeads = leads.filter(l => l.fecha_contacto.toDateString() === day.toDateString()).sort((a, b) => a.fecha_contacto - b.fecha_contacto);
+            const cards = dayLeads.length === 0
+                ? '<div class="pipe-cal-empty">—</div>'
+                : dayLeads.map(l => renderCalCard(l)).join('');
+            return `<div class="pipe-cal-day ${isToday ? 'pipe-cal-today' : ''}"><div class="pipe-cal-day-header">${dayStr}</div><div class="pipe-cal-day-body">${cards}</div></div>`;
+        }).join('');
+
+        const label = `${days[0].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} — ${days[6].toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+        return `<div class="pipe-cal-nav">
+            <button class="pipe-cal-nav-btn" onclick="calNav(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+            <span class="pipe-cal-week-label font-display">${label}</span>
+            <button class="pipe-cal-nav-btn" onclick="calNav(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+            ${offset !== 0 ? '<button class="pipe-cal-nav-btn pipe-cal-today-btn" onclick="calNav(0,true)">Hoy</button>' : ''}
+            <div class="pipe-cal-view-toggle">${viewBtns}</div>
+        </div><div class="pipe-cal-grid">${cols}</div>`;
+    }
+
+    function renderCalDay(today, offset, leads, viewBtns) {
+        const day = new Date(today); day.setDate(today.getDate() + offset);
+        const isToday = day.toDateString() === today.toDateString();
+        const label = day.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const dayLeads = leads.filter(l => l.fecha_contacto.toDateString() === day.toDateString()).sort((a, b) => a.fecha_contacto - b.fecha_contacto);
+
+        const hours = {}; for (let h = 7; h <= 20; h++) hours[h] = [];
+        dayLeads.forEach(l => { const h = l.fecha_contacto.getHours(); if (!hours[h]) hours[h] = []; hours[h].push(l); });
+
+        const slots = Object.entries(hours).map(([h, hLeads]) => {
+            const hourLabel = `${String(h).padStart(2, '0')}:00`;
+            const cards = hLeads.length === 0 ? '<div class="pipe-cal-empty-slot"></div>' : hLeads.map(l => renderCalCard(l)).join('');
+            return `<div class="pipe-cal-hour-row"><div class="pipe-cal-hour-label">${hourLabel}</div><div class="pipe-cal-hour-content">${cards}</div></div>`;
+        }).join('');
+
+        return `<div class="pipe-cal-nav">
+            <button class="pipe-cal-nav-btn" onclick="calNav(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+            <span class="pipe-cal-week-label font-display">${isToday ? 'Hoy — ' : ''}${label}</span>
+            <button class="pipe-cal-nav-btn" onclick="calNav(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+            ${!isToday ? '<button class="pipe-cal-nav-btn pipe-cal-today-btn" onclick="calNav(0,true)">Hoy</button>' : ''}
+            <div class="pipe-cal-view-toggle">${viewBtns}</div>
+        </div><div class="pipe-cal-day-view">${slots}</div>`;
+    }
+
+    function renderCalMonth(today, offset, leads, viewBtns) {
+        const refDate = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+        const year = refDate.getFullYear(), month = refDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startPad = (firstDay.getDay() + 6) % 7;
+        const label = refDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+        const dayHeaders = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d => `<div class="pipe-cal-month-header">${d}</div>`).join('');
+
+        let cells = '';
+        for (let i = 0; i < startPad; i++) cells += '<div class="pipe-cal-month-cell pipe-cal-month-pad"></div>';
+
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+            const cellDate = new Date(year, month, d);
+            const isToday = cellDate.toDateString() === today.toDateString();
+            const dayLeads = leads.filter(l => l.fecha_contacto.toDateString() === cellDate.toDateString());
+            const dots = dayLeads.slice(0, 3).map(l => {
+                const color = EVT_STATUS_COLORS[l.estado] || '#9CA3AF';
+                return `<div class="pipe-cal-month-dot" style="background:${color}" title="${l.nombre}"></div>`;
+            }).join('');
+            const count = dayLeads.length > 3 ? `<span class="pipe-cal-month-more">+${dayLeads.length - 3}</span>` : '';
+            const dayOffset = Math.round((cellDate - today) / 86400000);
+            cells += `<div class="pipe-cal-month-cell ${isToday ? 'pipe-cal-today' : ''}" onclick="setCalView('day'); state.calendarOffset=${dayOffset}; renderCalendar();">
+                <div class="pipe-cal-month-day">${d}</div>
+                <div class="pipe-cal-month-dots">${dots}${count}</div>
+            </div>`;
+        }
+
+        return `<div class="pipe-cal-nav">
+            <button class="pipe-cal-nav-btn" onclick="calNav(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+            <span class="pipe-cal-week-label font-display">${label}</span>
+            <button class="pipe-cal-nav-btn" onclick="calNav(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+            ${offset !== 0 ? '<button class="pipe-cal-nav-btn pipe-cal-today-btn" onclick="calNav(0,true)">Hoy</button>' : ''}
+            <div class="pipe-cal-view-toggle">${viewBtns}</div>
+        </div><div class="pipe-cal-month-grid">${dayHeaders}${cells}</div>`;
+    }
+
+    function renderCalCard(l) {
+        const hora = l.fecha_contacto.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        const color = EVT_STATUS_COLORS[l.estado] || '#9CA3AF';
+        const idx = state.leads.indexOf(l);
+        return `<div class="pipe-cal-card" style="--cal-accent:${color}; border-left-color:${color}" onclick="openDetail(${idx})">
+            <div class="pipe-cal-time">${hora}</div>
+            <div class="pipe-cal-name">${l.nombre}</div>
+            <div class="pipe-cal-type">${l.tipo_evento} · ${l.pax} pax</div>
+        </div>`;
+    }
+
+    // ===== Detail Modal =====
+    async function openDetail(index) {
+        const r = state.leads[index];
+        if (!r) return;
+
+        const modal = document.getElementById('detail-modal');
+        const content = document.getElementById('detail-content');
+
+        let interactions = [];
+        try {
+            const { data, error } = await supabase
+                .from('event_interacciones')
+                .select('*')
+                .eq('client_slug', state.clientId)
+                .eq('airtable_record_id', r.airtable_id)
+                .order('created_at', { ascending: false });
+            if (!error) interactions = data || [];
+        } catch (err) { console.error('loadInteractions failed:', err); }
+
+        const color = EVT_STATUS_COLORS[r.estado] || '#9CA3AF';
+        const fechaContacto = r.fecha_contacto instanceof Date && !isNaN(r.fecha_contacto)
+            ? r.fecha_contacto.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+        const total = r.total_estimado ? `$${r.total_estimado.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—';
+        const statusOptions = EVT_PIPELINE.map(s => `<option value="${s}" ${s === r.estado ? 'selected' : ''}>${s}</option>`).join('');
+        const hasHistory = interactions.length > 0;
+
+        const timelineHtml = !hasHistory
+            ? '<p style="opacity:0.3;text-align:center;padding:16px;font-size:0.8rem;">Sin interacciones registradas</p>'
+            : interactions.map(ix => {
+                const icon = INTERACTION_ICONS[ix.tipo] || 'chatbubble-outline';
+                const tipoLabel = ix.tipo.charAt(0).toUpperCase() + ix.tipo.slice(1);
+                const fecha = new Date(ix.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                return `<div class="pipe-timeline-item">
+                    <div class="pipe-timeline-icon" style="background:${color}18">
+                        <ion-icon name="${icon}" style="color:${color}"></ion-icon>
+                    </div>
+                    <div class="pipe-timeline-content">
+                        <div class="pipe-timeline-meta">${tipoLabel} &middot; ${fecha} &middot; <strong>${ix.vendedor_nombre}</strong></div>
+                        <div class="pipe-timeline-text">${ix.resultado || ''}</div>
+                    </div>
+                </div>`;
+            }).join('');
+
+        const now = new Date();
+        const hasUpcoming = r.fecha_contacto instanceof Date && r.fecha_contacto > now;
+        const callInfo = hasUpcoming
+            ? `<div class="pipe-call-scheduled"><ion-icon name="alarm-outline"></ion-icon> Llamada programada: <strong>${fechaContacto}</strong></div>`
+            : (r.fecha_contacto ? `<div class="pipe-call-past"><ion-icon name="checkmark-circle-outline"></ion-icon> Contacto: ${fechaContacto}</div>` : '');
+
+        const phone = (r.telefono || '').replace(/\D/g, '');
+
+        content.innerHTML = `
+            <div class="pipe-detail-header">
+                <div>
+                    <h2 class="pipe-detail-name font-display">${r.nombre}</h2>
+                    <span class="pipe-detail-sub">
+                        ${r.tipo_evento || 'Evento'} &middot; ${r.pax || '?'} pax &middot; ${r.fecha_evento || '—'}
+                        <span class="pipe-status-badge" style="background:${color}18;color:${color};border:1px solid ${color}33;margin-left:8px;">${r.estado}</span>
+                    </span>
+                </div>
+                <button class="pipe-close-btn" onclick="closeDetail()">&times;</button>
+            </div>
+
+            <div class="pipe-modal-layout ${hasHistory ? 'pipe-two-col' : ''}">
+                <div class="pipe-modal-left">
+                    <div class="pipe-detail-grid">
+                        <div class="pipe-detail-card">
+                            <div class="pipe-detail-card-icon"><ion-icon name="people-outline"></ion-icon></div>
+                            <div><div class="pipe-detail-label">PAX</div><div class="pipe-detail-value">${r.pax || '—'}</div></div>
+                        </div>
+                        <div class="pipe-detail-card">
+                            <div class="pipe-detail-card-icon"><ion-icon name="cash-outline"></ion-icon></div>
+                            <div><div class="pipe-detail-label">Total Estimado</div><div class="pipe-detail-value">${total}</div></div>
+                        </div>
+                    </div>
+
+                    ${callInfo}
+
+                    <div class="pipe-detail-info">
+                        <div class="pipe-info-item"><ion-icon name="call-outline"></ion-icon> ${formatPhone(r.telefono) || '—'}</div>
+                        <div class="pipe-info-item"><ion-icon name="mail-outline"></ion-icon> ${r.email || '—'}</div>
+                    </div>
+
+                    ${r.notas ? `<div class="pipe-detail-notes"><ion-icon name="document-text-outline"></ion-icon> ${r.notas}</div>` : ''}
+                    ${r.detalles ? `<div class="pipe-detail-notes"><ion-icon name="chatbubble-outline"></ion-icon> ${r.detalles}</div>` : ''}
+
+                    <div class="pipe-detail-actions">
+                        ${r.telefono ? `<a href="https://wa.me/${phone}" target="_blank" class="pipe-action-btn pipe-btn-whatsapp"><ion-icon name="logo-whatsapp"></ion-icon> WhatsApp</a>` : ''}
+                        ${r.telefono ? `<a href="tel:${r.telefono}" class="pipe-action-btn pipe-btn-call"><ion-icon name="call-outline"></ion-icon> Llamar</a>` : ''}
+                        ${r.email ? `<a href="mailto:${r.email}" class="pipe-action-btn pipe-btn-email"><ion-icon name="mail-outline"></ion-icon> Email</a>` : ''}
+                    </div>
+
+                    <div class="pipe-interaction-form">
+                        <h4 class="pipe-section-title">Actualizar Seguimiento</h4>
+                        <div style="display:flex;gap:10px;margin-bottom:10px;">
+                            <div style="flex:1;">
+                                <label class="pipe-form-label">Estatus</label>
+                                <select id="pipe-status-dd" class="pipe-form-select" data-original="${r.estado}"
+                                    onchange="checkSaveEnabled()" style="border-color:${color};color:${color}">
+                                    ${statusOptions}
+                                </select>
+                            </div>
+                            <div style="flex:1;">
+                                <label class="pipe-form-label">Tipo de contacto</label>
+                                <select id="pipe-interaction-type" class="pipe-form-select">
+                                    <option value="llamada">Llamada</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                    <option value="email">Email</option>
+                                    <option value="nota">Nota</option>
+                                </select>
+                            </div>
+                        </div>
+                        <textarea id="pipe-interaction-result" class="pipe-form-textarea" rows="3"
+                            placeholder="Resultado de la interacción, acuerdos, siguiente paso..."
+                            oninput="checkSaveEnabled()"></textarea>
+                        <button id="pipe-save-btn" class="pipe-form-save-btn" disabled
+                            onclick="saveAll('${r.airtable_id}')">
+                            <ion-icon name="save-outline"></ion-icon> Guardar
+                        </button>
+                    </div>
+                </div>
+
+                ${hasHistory ? `
+                <div class="pipe-modal-right">
+                    <h4 class="pipe-section-title">Historial de Seguimiento</h4>
+                    <div>${timelineHtml}</div>
+                </div>` : ''}
+            </div>`;
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeDetail() {
+        document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    function checkSaveEnabled() {
+        const btn = document.getElementById('pipe-save-btn');
+        if (!btn) return;
+        const dd = document.getElementById('pipe-status-dd');
+        const txt = document.getElementById('pipe-interaction-result');
+        btn.disabled = !((dd && dd.value !== dd.dataset.original) || (txt && txt.value.trim().length > 0));
+    }
+
+    async function saveAll(airtableRecordId) {
+        const btn = document.getElementById('pipe-save-btn');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Guardando...'; }
+
+        const dd = document.getElementById('pipe-status-dd');
+        const tipoEl = document.getElementById('pipe-interaction-type');
+        const txtEl = document.getElementById('pipe-interaction-result');
+
+        const newStatus = dd ? dd.value : null;
+        const originalStatus = dd ? dd.dataset.original : null;
+        const statusChanged = newStatus && newStatus !== originalStatus;
+        const tipo = tipoEl ? tipoEl.value : 'nota';
+        const resultado = txtEl ? txtEl.value.trim() : '';
+
+        const session = getSession();
+        const userName = session ? session.name : 'Desconocido';
+        const userId = session ? session.id : null;
+
+        try {
+            if (statusChanged) {
+                const { apiKey, baseId, tableName } = state.eventosConfig;
+                const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}/${airtableRecordId}`;
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fields: { 'Estado': newStatus } })
+                });
+                if (!response.ok) throw new Error(`Airtable PATCH ${response.status}`);
+
+                const lead = state.leads.find(r => r.airtable_id === airtableRecordId);
+                if (lead) lead.estado = newStatus;
+
+                if (newStatus === 'Venta' && originalStatus !== 'Venta' && lead) {
+                    await supabase.from('ventas').insert([{
+                        client_slug: state.clientId,
+                        monto: lead.total_estimado || 0,
+                        fecha: new Date().toISOString().split('T')[0],
+                        descripcion: `Evento vendido: ${lead.nombre} - ${lead.tipo_evento || ''} ${lead.pax || ''} pax`,
+                        registrado_por: userName
+                    }]);
+                }
+            }
+
+            const logText = resultado
+                ? (statusChanged ? `[${originalStatus} → ${newStatus}] ${resultado}` : resultado)
+                : (statusChanged ? `Estatus cambiado: ${originalStatus} → ${newStatus}` : '');
+
+            if (logText) {
+                await supabase.from('event_interacciones').insert([{
+                    client_slug: state.clientId,
+                    airtable_record_id: airtableRecordId,
+                    tipo: resultado ? tipo : 'nota',
+                    resultado: logText,
+                    vendedor_nombre: userName,
+                    vendedor_id: userId
+                }]);
+            }
+
+            render();
+            showToast('Cambios guardados', 'success');
+
+            const lead = state.leads.find(r => r.airtable_id === airtableRecordId);
+            if (lead) openDetail(state.leads.indexOf(lead));
+        } catch (err) {
+            console.error('saveAll failed:', err);
+            showToast('Error al guardar', 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<ion-icon name="save-outline"></ion-icon> Guardar'; }
+        }
+    }
+
+    // ===== Helpers =====
+    function formatPhone(phone) {
+        if (!phone) return '—';
+        const raw = String(phone).trim();
+        if (!raw.startsWith('+')) return raw;
+        const digits = raw.replace(/\D/g, '');
+        const code = '+' + digits.slice(0, 2);
+        let local = digits.slice(2);
+        if (code === '+52' && local.length === 11 && local.startsWith('1')) local = local.slice(1);
+        if (local.length === 10) return `[${code}] ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+        return `[${code}] ${local}`;
+    }
+
+    function showToast(message, type = 'success', duration = 3500) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const icons = { success: 'checkmark-circle', error: 'alert-circle' };
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<ion-icon name="${icons[type] || icons.success}-outline"></ion-icon><span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 300); }, duration);
+    }
+
+    // ===== View Controls =====
+    function switchView(view) {
+        state.view = view;
+        state.calendarOffset = 0;
+        state.calendarView = 'week';
+        document.getElementById('btn-pipeline').classList.toggle('active', view === 'pipeline');
+        document.getElementById('btn-agenda').classList.toggle('active', view === 'calendario');
+        render();
+    }
+
+    function onSearch(query) {
+        state.search = query;
+        render();
+        const input = document.getElementById('search-input');
+        if (input) { input.focus(); input.selectionStart = input.selectionEnd = input.value.length; }
+    }
+
+    function setCalView(v) {
+        state.calendarView = v;
+        state.calendarOffset = 0;
+        renderCalendar();
+    }
+
+    function calNav(dir, reset) {
+        if (reset) state.calendarOffset = 0;
+        else state.calendarOffset += dir;
+        renderCalendar();
+    }
+
+    // Close modal on overlay click
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('detail-modal');
+        if (e.target === modal) closeDetail();
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeDetail();
+    });
+    </script>
+</body>
+
+</html>
