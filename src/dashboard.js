@@ -96,6 +96,12 @@ function setLoaderProgress(pct) {
 
 function hideLoader() {
     setLoaderProgress(100);
+    // Switch from loader bg (#060410) to theme bg so overscroll matches dashboard
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const themeBg = isDark ? '#0E0B2A' : '#EEEEF8';
+    document.documentElement.style.background = themeBg;
+    const mc = document.querySelector('meta[name="theme-color"]');
+    if (mc) mc.setAttribute('content', themeBg);
     setTimeout(() => {
         const loader = document.getElementById('dashboard-loader');
         if (!loader) return;
@@ -3973,7 +3979,7 @@ function renderMobileDashboard() {
         dateEl.textContent = now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
     }
 
-    // Name + avatar
+    // Name + avatar + greeting
     const _sess = typeof getSession === 'function' ? getSession() : null;
     const fullName = (_sess && _sess.name) ? _sess.name : (state.config.clientName || 'Admin');
     const firstName = fullName.split(' ')[0];
@@ -3981,6 +3987,13 @@ function renderMobileDashboard() {
     const avatarEl = document.getElementById('mob-avatar');
     if (nameEl) nameEl.textContent = firstName;
     if (avatarEl) avatarEl.textContent = firstName.charAt(0).toUpperCase();
+
+    const greetEl = document.getElementById('mob-greeting');
+    if (greetEl) {
+        const h = new Date().getHours();
+        const saludo = h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches';
+        greetEl.textContent = `${saludo}, ${firstName}`;
+    }
 
     // Client chip
     const chipEl = document.getElementById('mob-client-chip');
@@ -3997,7 +4010,10 @@ function renderMobileDashboard() {
     const rangeEl = document.getElementById('mob-range-label');
     if (rangeEl) {
         const desktopRange = document.getElementById('current-range-label');
-        rangeEl.textContent = desktopRange ? desktopRange.textContent : 'Todo el tiempo';
+        const txt = desktopRange ? desktopRange.textContent : 'Todo el tiempo';
+        const span = rangeEl.querySelector('span');
+        if (span) span.textContent = txt;
+        else rangeEl.textContent = txt;
     }
 
     // KPI cards
@@ -4016,9 +4032,15 @@ function renderMobileDashboard() {
         kpiScroll.innerHTML = kpiDefs.map(k => {
             const value = document.getElementById(k.valueId)?.textContent || '--';
             const label = document.getElementById(k.labelId)?.textContent || '';
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
             const [r, g, b] = [k.accent.slice(1,3), k.accent.slice(3,5), k.accent.slice(5,7)].map(h => parseInt(h, 16));
-            return `<div class="mob-kpi-card" style="background:rgba(${r},${g},${b},0.08);border:1px solid rgba(${r},${g},${b},0.18);box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-                <div class="mob-kpi-icon" style="background:rgba(${r},${g},${b},0.15);border-color:rgba(${r},${g},${b},0.25);box-shadow:0 0 16px rgba(${r},${g},${b},0.3);">
+            const cardBg = isLight ? `rgba(255,255,255,0.7)` : `rgba(${r},${g},${b},0.08)`;
+            const cardBorder = isLight ? `rgba(${r},${g},${b},0.15)` : `rgba(${r},${g},${b},0.18)`;
+            const cardShadow = isLight ? `0 4px 16px rgba(15,23,42,0.06)` : `0 8px 32px rgba(0,0,0,0.3)`;
+            const iconBg = isLight ? `rgba(${r},${g},${b},0.1)` : `rgba(${r},${g},${b},0.15)`;
+            const iconShadow = isLight ? `none` : `0 0 16px rgba(${r},${g},${b},0.3)`;
+            return `<div class="mob-kpi-card" style="background:${cardBg};border:1px solid ${cardBorder};box-shadow:${cardShadow};">
+                <div class="mob-kpi-icon" style="background:${iconBg};border-color:rgba(${r},${g},${b},0.25);box-shadow:${iconShadow};">
                     <ion-icon name="${k.icon}" style="color:${k.accent};font-size:1.1rem;"></ion-icon>
                 </div>
                 <div class="mob-kpi-label">${label}</div>
@@ -4036,7 +4058,8 @@ function renderMobileDashboard() {
         const qualified = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l.estatus) : true);
         const recent = qualified.slice(-6).reverse();
         if (recent.length === 0) {
-            leadsList.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:12px 0;">Sin leads recientes</p>';
+            const emptyColor = document.documentElement.getAttribute('data-theme') === 'light' ? 'rgba(15,23,42,0.3)' : 'rgba(255,255,255,0.3)';
+            leadsList.innerHTML = `<p style="color:${emptyColor};font-size:13px;text-align:center;padding:12px 0;">Sin leads recientes</p>`;
         } else {
             leadsList.innerHTML = recent.map(l => {
                 const name = l.nombre || l.name || `Lead #${l.id || ''}`;

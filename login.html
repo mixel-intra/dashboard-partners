@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Acceso | Dashboard Partners</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -655,6 +655,183 @@
                 border-radius: 18px;
                 max-height: 85vh;
             }
+            .clients-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .right-section {
+                position: relative;
+                padding: 2rem 1.5rem;
+            }
+
+            /* ── Dash panel mobile ── */
+            #dash-panel {
+                padding: 0 !important;
+                overflow-y: auto !important;
+                align-items: stretch !important;
+            }
+
+            /* Header compacto — ocultar saludo y avatar en mobile */
+            #dash-panel .user-greeting {
+                display: none !important;
+            }
+
+            #dash-panel .greeting-text h2 {
+                font-size: 1.15rem;
+                font-weight: 600;
+                letter-spacing: -0.3px;
+            }
+
+            #dash-panel .greeting-text p {
+                display: none;
+            }
+
+            #dash-panel .session-actions {
+                gap: 6px;
+            }
+
+            #dash-panel .sess-btn {
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.06);
+                border: none;
+                font-size: 1rem;
+            }
+
+            /* Search */
+            #dash-panel .hub-search-wrap {
+                margin: 16px 20px 8px;
+                width: calc(100% - 40px);
+                position: sticky;
+                top: 0;
+                z-index: 99;
+                padding-top: max(12px, env(safe-area-inset-top, 12px));
+            }
+
+            #dash-panel #hub-search {
+                height: 42px;
+                background: rgba(255, 255, 255, 0.06);
+                border: none;
+                border-radius: 12px;
+                font-size: 0.88rem;
+            }
+
+            #dash-panel #hub-search:focus {
+                background: rgba(255, 255, 255, 0.09);
+                box-shadow: 0 0 0 2px rgba(117, 81, 255, 0.25);
+                border: none;
+            }
+
+            #dash-panel #hub-search::placeholder {
+                color: rgba(255, 255, 255, 0.2);
+            }
+
+            /* Cards list */
+            #dash-panel .clients-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 2px;
+                padding: 12px 12px 40px;
+                padding-bottom: calc(40px + env(safe-area-inset-bottom));
+            }
+
+            #dash-panel .client-card {
+                height: auto;
+                min-height: auto;
+                transform: none;
+                opacity: 1;
+                flex-direction: row;
+                align-items: center;
+                padding: 14px 16px;
+                border-radius: 14px;
+                background: transparent;
+                border: none;
+                gap: 14px;
+                transition: background 0.15s;
+            }
+
+            #dash-panel .client-card::after {
+                display: none;
+            }
+
+            #dash-panel .client-card:active {
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            #dash-panel .client-card:hover {
+                border-color: transparent;
+                box-shadow: none;
+            }
+
+            #dash-panel .client-card.card-visible {
+                opacity: 1;
+                transform: none;
+            }
+
+            /* Logo */
+            #dash-panel .card-logo-stage {
+                flex: 0 0 auto;
+                width: 48px;
+                height: 48px;
+                padding: 0;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #dash-panel .card-logo-stage img {
+                max-width: 36px;
+                max-height: 36px;
+            }
+
+            #dash-panel .card-letter {
+                font-size: 1.2rem;
+                color: rgba(255, 255, 255, 0.4);
+            }
+
+            /* Info */
+            #dash-panel .card-info {
+                flex: 1;
+                padding: 0;
+                min-width: 0;
+            }
+
+            #dash-panel .card-name {
+                font-size: 0.9rem;
+                font-weight: 500;
+                color: rgba(255, 255, 255, 0.9);
+            }
+
+            #dash-panel .card-slug {
+                display: none;
+            }
+
+            /* Arrow */
+            #dash-panel .card-arrow {
+                position: static;
+                flex-shrink: 0;
+                width: 28px;
+                height: 28px;
+                opacity: 1;
+                transform: none;
+                background: transparent;
+                border: none;
+                color: rgba(255, 255, 255, 0.15);
+                font-size: 0.9rem;
+                box-shadow: none;
+            }
+
+            #dash-panel .client-card:hover .card-arrow {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                color: rgba(255, 255, 255, 0.15);
+            }
+
             .clients-grid {
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;

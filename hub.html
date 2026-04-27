@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Intra | Selector de Entornos</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -530,37 +530,8 @@
                 min-height: 100dvh;
             }
 
-            /* ── Header compacto ── */
+            /* ── Header compacto — ocultar saludo y avatar en mobile ── */
             .user-greeting {
-                position: sticky;
-                top: 0;
-                z-index: 100;
-                background: rgba(10, 10, 12, 0.92);
-                backdrop-filter: blur(20px);
-                -webkit-backdrop-filter: blur(20px);
-                padding: 16px 20px;
-                margin-bottom: 0;
-                display: flex !important;
-                align-items: center;
-                gap: 12px;
-                border-bottom: none;
-            }
-
-            .avatar {
-                width: 36px !important;
-                height: 36px !important;
-                font-size: 0.85rem !important;
-                box-shadow: none !important;
-                background: #7551FF !important;
-            }
-
-            .greeting-text h2 {
-                font-size: 1.15rem !important;
-                font-weight: 600 !important;
-                letter-spacing: -0.3px !important;
-            }
-
-            .greeting-text p {
                 display: none !important;
             }
 
@@ -600,8 +571,9 @@
                 margin: 16px 20px 8px !important;
                 width: calc(100% - 40px) !important;
                 position: sticky;
-                top: 68px;
+                top: 0;
                 z-index: 99;
+                padding-top: max(12px, env(safe-area-inset-top, 12px));
             }
 
             #hub-search {
@@ -696,9 +668,7 @@
             }
 
             .card-slug {
-                font-size: 0.72rem !important;
-                color: rgba(255, 255, 255, 0.22) !important;
-                margin-top: 2px !important;
+                display: none !important;
             }
 
             /* Arrow */

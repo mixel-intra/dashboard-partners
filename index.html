@@ -3,8 +3,22 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0E0B2A" id="meta-theme-color">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Dashboard partners | Client Dashboard</title>
+    <script>
+        // Theme init en <head> para que Safari use el theme-color correcto desde el primer paint
+        (function () {
+            var t = localStorage.getItem('intra-theme');
+            if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+            // Use loader color (#060410) during splash to avoid mismatched stripes on iOS
+            document.documentElement.style.background = '#060410';
+            var mc = document.getElementById('meta-theme-color');
+            if (mc) mc.setAttribute('content', '#060410');
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,22 +36,23 @@
 </head>
 
 <body>
-    <!-- Theme init — antes de cualquier render para evitar flash -->
+    <!-- Theme init ya se ejecutó en <head> -->
     <script>
-        (function () {
-            var t = localStorage.getItem('intra-theme');
-            if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', t);
-        })();
         function toggleTheme() {
             var cur = document.documentElement.getAttribute('data-theme') || 'dark';
             var next = cur === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('intra-theme', next);
+            var bg = next === 'dark' ? '#0E0B2A' : '#EEEEF8';
+            document.documentElement.style.background = bg;
+            var mc = document.querySelector('meta[name="theme-color"]');
+            if (mc) mc.setAttribute('content', bg);
             var icon = document.getElementById('theme-icon');
             if (icon) icon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
             var mIcon = document.getElementById('mobile-theme-icon');
             if (mIcon) mIcon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
+            var mobIcon = document.getElementById('mob-theme-icon');
+            if (mobIcon) mobIcon.setAttribute('name', next === 'dark' ? 'moon-outline' : 'sunny-outline');
             // Defer heavy re-render so CSS transition starts immediately
             setTimeout(function() {
                 if (typeof renderDashboard === 'function') {
@@ -52,6 +67,8 @@
             if (icon) icon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
             var mIcon = document.getElementById('mobile-theme-icon');
             if (mIcon) mIcon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
+            var mobIcon = document.getElementById('mob-theme-icon');
+            if (mobIcon) mobIcon.setAttribute('name', t === 'light' ? 'sunny-outline' : 'moon-outline');
         });
 
         // Sidebar hamburger toggle
@@ -85,6 +102,41 @@
             if (backdrop) backdrop.classList.remove('open');
             if (sheet) sheet.classList.remove('open');
         }
+
+        // Mobile date range bottom sheet
+        function openMobileDateSheet() {
+            var backdrop = document.getElementById('mob-date-backdrop');
+            var sheet = document.getElementById('mob-date-sheet');
+            if (backdrop) backdrop.classList.add('open');
+            if (sheet) sheet.classList.add('open');
+        }
+        function closeMobileDateSheet() {
+            var backdrop = document.getElementById('mob-date-backdrop');
+            var sheet = document.getElementById('mob-date-sheet');
+            if (backdrop) backdrop.classList.remove('open');
+            if (sheet) sheet.classList.remove('open');
+        }
+        function mobSetRange(range) {
+            closeMobileDateSheet();
+            // Reuse desktop setPredefinedRange (defined in dashboard.js)
+            if (typeof setPredefinedRange === 'function') {
+                setPredefinedRange(range);
+            }
+            // Update desktop label too
+            var labels = { today: 'Hoy', '7d': 'Últimos 7 días', '30d': 'Últimos 30 días', 'this-month': 'Este mes', 'last-month': 'Mes pasado', all: 'Todo el tiempo' };
+            var desktopLabel = document.getElementById('current-range-label');
+            if (desktopLabel) desktopLabel.textContent = labels[range] || 'Todo el tiempo';
+            // Update mobile label
+            var mobLabel = document.getElementById('mob-range-label');
+            if (mobLabel) {
+                var span = mobLabel.querySelector('span');
+                if (span) span.textContent = labels[range] || 'Todo el tiempo';
+            }
+            // Apply filters
+            if (typeof applyGlobalFilters === 'function') {
+                applyGlobalFilters();
+            }
+        }
     </script>
 
     <!-- ===== LOADING SCREEN ===== -->
@@ -92,9 +144,9 @@
         /* ===== WEB3 HERO LOADING SCREEN ===== */
         #dashboard-loader {
             position: fixed;
-            inset: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             z-index: 9999;
-            background: #000;
+            background: #060410;
             display: flex;
             flex-direction: column;
             transition: opacity 1.2s ease;
@@ -3481,6 +3533,16 @@
                 </button>
             </div>
 
+            <!-- Eventos Pipeline CTA (visible when eventos tab is active) -->
+            <div id="eventos-pipeline-cta" class="evt-pipeline-cta hidden">
+                <button class="evt-pipeline-cta-btn" onclick="openEventosPipeline()">
+                    <ion-icon name="git-network-outline"></ion-icon>
+                    <span>Ver Pipeline de Eventos</span>
+                    <span id="evt-pipeline-cta-count" class="evt-pipeline-cta-count"></span>
+                    <ion-icon name="arrow-forward-outline" style="margin-left:auto;opacity:0.5;"></ion-icon>
+                </button>
+            </div>
+
             <!-- Dashboard Grid -->
             <div class="dashboard-grid">
 
@@ -5740,7 +5802,7 @@
         .evt-fs-search input::placeholder { color: var(--text-muted, rgba(255,255,255,0.25)); }
 
         /* Body - fill available viewport */
-        .evt-fs-body { min-height: calc(100vh - 220px); }
+        .evt-fs-body { height: calc(100vh - 220px); overflow: hidden; }
 
         /* Calendar layout: main + sidebar */
         .evt-fs-calendar-layout { display: flex; gap: 0; height: calc(100vh - 240px); min-height: 500px; }
@@ -5753,10 +5815,10 @@
 
         /* Pipeline full-width */
         .evt-fs-pipeline {
-            display: flex; gap: 14px; height: calc(100vh - 240px); min-height: 500px;
+            display: flex; gap: 14px; height: 100%; min-height: 0;
             overflow-x: auto; padding-bottom: 8px;
         }
-        .evt-fs-pipeline .evt-kanban-col { flex: 1; min-width: 200px; max-width: none; display: flex; flex-direction: column; }
+        .evt-fs-pipeline .evt-kanban-col { flex: 1; min-width: 200px; max-width: none; display: flex; flex-direction: column; max-height: 100%; }
 
         /* Agenda list */
         .evt-agenda-list { padding-top: 4px; flex: 1; overflow-y: auto; }
@@ -6184,7 +6246,7 @@
             .evt-fs-header { flex-direction: column; align-items: flex-start; }
             .evt-fs-calendar-layout { flex-direction: column; height: auto; min-height: calc(100vh - 240px); }
             .evt-fs-calendar-sidebar { width: 100%; border-left: none; border-top: 1px solid rgba(255,255,255,0.06); padding: 16px 0 0; max-height: 400px; }
-            .evt-fs-pipeline { min-height: 400px; height: auto; }
+            .evt-fs-pipeline { min-height: 400px; height: 100%; }
             .evt-fs-toggle-btn { padding: 6px 12px; font-size: 0.78rem; }
             .evt-fs-search input { width: 100px; }
             .evt-kanban-col { min-width: 220px; }
@@ -6817,6 +6879,22 @@
         </div>
     </div>
 
+    <!-- Mobile Date Range Bottom Sheet -->
+    <div id="mob-date-backdrop" onclick="closeMobileDateSheet()"></div>
+    <div id="mob-date-sheet">
+        <div class="mm-handle"></div>
+        <div class="mm-items">
+            <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);margin:0 0 8px 4px;">Filtrar por fecha</p>
+            <button class="mm-item" onclick="mobSetRange('today')"><div class="mm-icon" style="background:rgba(196,168,255,0.1);"><ion-icon name="today-outline" style="color:#C4A8FF;"></ion-icon></div><span>Hoy</span></button>
+            <button class="mm-item" onclick="mobSetRange('7d')"><div class="mm-icon" style="background:rgba(99,102,241,0.1);"><ion-icon name="calendar-outline" style="color:rgba(99,102,241,0.8);"></ion-icon></div><span>Últimos 7 días</span></button>
+            <button class="mm-item" onclick="mobSetRange('30d')"><div class="mm-icon" style="background:rgba(6,182,212,0.1);"><ion-icon name="calendar-outline" style="color:rgba(6,182,212,0.8);"></ion-icon></div><span>Últimos 30 días</span></button>
+            <button class="mm-item" onclick="mobSetRange('this-month')"><div class="mm-icon" style="background:rgba(109,213,140,0.1);"><ion-icon name="calendar-outline" style="color:rgba(109,213,140,0.8);"></ion-icon></div><span>Este mes</span></button>
+            <button class="mm-item" onclick="mobSetRange('last-month')"><div class="mm-icon" style="background:rgba(251,191,36,0.1);"><ion-icon name="calendar-outline" style="color:rgba(251,191,36,0.8);"></ion-icon></div><span>Mes pasado</span></button>
+            <div class="mm-divider"></div>
+            <button class="mm-item" onclick="mobSetRange('all')"><div class="mm-icon"><ion-icon name="infinite-outline"></ion-icon></div><span>Todo el tiempo</span></button>
+        </div>
+    </div>
+
 <!-- ===== MOBILE DASHBOARD (Figma MD3 Dark Glass) ===== -->
 <div class="mobile-dash" id="mobile-dash">
 
@@ -6836,13 +6914,15 @@
         <div class="mob-header">
             <div>
                 <p class="mob-date" id="mob-date">--</p>
-                <h1 class="mob-greeting">¡Hola, <span id="mob-name">Admin</span>! 👋</h1>
+                <h2 class="mob-greeting" id="mob-greeting" style="margin:0;font-size:1.15rem;font-weight:700;"></h2>
             </div>
             <div class="mob-header-right">
                 <button class="mob-icon-btn" onclick="toggleTheme()" title="Tema">
                     <ion-icon name="moon-outline" id="mob-theme-icon"></ion-icon>
                 </button>
-                <div class="mob-avatar" id="mob-avatar">A</div>
+                <button class="mob-icon-btn" onclick="toggleMobileMenu()" title="Menú">
+                    <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+                </button>
             </div>
         </div>
 
@@ -6855,7 +6935,11 @@
         <!-- KPI section -->
         <div class="mob-section-row">
             <span class="mob-section-title">Métricas clave</span>
-            <span class="mob-section-sub" id="mob-range-label">Todo el tiempo</span>
+            <button class="mob-range-btn" id="mob-range-label" onclick="openMobileDateSheet()">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <span>Todo el tiempo</span>
+                <ion-icon name="chevron-down-outline" style="font-size:10px;"></ion-icon>
+            </button>
         </div>
         <div class="mob-kpi-scroll" id="mob-kpi-scroll">
             <!-- Populated by JS -->
