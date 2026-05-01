@@ -50,7 +50,9 @@ const elements = {
     evtApiKey: document.getElementById('evt-api-key'),
     evtBaseId: document.getElementById('evt-base-id'),
     evtTableName: document.getElementById('evt-table-name'),
-    eventosConfigSection: document.getElementById('eventos-config-section')
+    eventosConfigSection: document.getElementById('eventos-config-section'),
+    clientSupabaseUrl: document.getElementById('client-supabase-url'),
+    clientSupabaseAnonKey: document.getElementById('client-supabase-anon-key')
 };
 
 // State
@@ -319,6 +321,10 @@ async function selectClient(clientId) {
     if (elements.evtTableName) elements.evtTableName.value = evtConfig.table_name || '';
     toggleEventosSection();
 
+    // Populate Supabase del cliente (multi-tenant infra)
+    if (elements.clientSupabaseUrl) elements.clientSupabaseUrl.value = currentConfig.supabase_url || '';
+    if (elements.clientSupabaseAnonKey) elements.clientSupabaseAnonKey.value = currentConfig.supabase_anon_key || '';
+
     // Sync UI Swatches and Hex
     elements.hexPrimary.value = elements.themePrimaryInput.value;
     elements.hexSecondary.value = elements.themeSecondaryInput.value;
@@ -537,7 +543,9 @@ function setupEventListeners() {
                     api_key: elements.evtApiKey ? elements.evtApiKey.value.trim() : '',
                     base_id: elements.evtBaseId ? elements.evtBaseId.value.trim() : '',
                     table_name: elements.evtTableName ? elements.evtTableName.value.trim() : ''
-                }
+                },
+                supabase_url:      elements.clientSupabaseUrl      ? (elements.clientSupabaseUrl.value.trim()      || null) : null,
+                supabase_anon_key: elements.clientSupabaseAnonKey  ? (elements.clientSupabaseAnonKey.value.trim()  || null) : null
             };
 
             const { error } = await supabase

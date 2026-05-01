@@ -38,7 +38,7 @@ const state = {
     restaurantSelectedIndex: null,
     restaurantDatePicker: null,
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '', crmLeadUrlTemplate: '' },
-    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: null },
+    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: 80 },
     // Hospedaje reservations (Airtable)
     hospedajeReservas: [],
     hospedajeFilters: { status: 'all', search: '' },
@@ -1606,9 +1606,14 @@ async function fetchRestaurantReservations() {
         return;
     }
 
-    const list = document.getElementById('rest-sidebar-list');
-    if (list) {
-        list.innerHTML = `<div class="rest-empty-list">
+    const refreshBtn = document.getElementById('rest-refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.classList.add('loading');
+        refreshBtn.disabled = true;
+    }
+    const board = document.getElementById('rest-board');
+    if (board && !state.restaurantReservations.length) {
+        board.innerHTML = `<div class="rest-empty-list">
             <ion-icon name="sync-outline" class="spin"></ion-icon>
             <div class="rest-empty-list-title">Cargando reservas…</div>
         </div>`;
@@ -1649,9 +1654,16 @@ async function fetchRestaurantReservations() {
         renderRestaurantReservations();
         updateNewReservationsBadge();
         refreshDatePickerDots();
+        if (typeof showToast === 'function') showToast('Reservas actualizadas', 'success');
     } catch (error) {
         console.error('Error fetching restaurant reservations:', error);
         renderRestaurantEmpty('Error al cargar las reservas. Intenta de nuevo.');
+        if (typeof showToast === 'function') showToast('Error al actualizar reservas', 'error');
+    } finally {
+        if (refreshBtn) {
+            refreshBtn.classList.remove('loading');
+            refreshBtn.disabled = false;
+        }
     }
 }
 
@@ -2362,9 +2374,9 @@ function ctxHeatmapJumpToDate(key) {
 }
 
 function renderRestaurantEmpty(message) {
-    const list = document.getElementById('rest-sidebar-list');
-    if (list) {
-        list.innerHTML = `<div class="rest-empty-list">
+    const board = document.getElementById('rest-board');
+    if (board) {
+        board.innerHTML = `<div class="rest-empty-list">
             <ion-icon name="alert-circle-outline"></ion-icon>
             <div class="rest-empty-list-title">${escapeHtml(message)}</div>
         </div>`;
@@ -2643,7 +2655,7 @@ async function loadRestaurantAvailability() {
             state.restaurantAvailability = {
                 accepting: data.accepting_reservations !== false,
                 closedDates: data.closed_dates || [],
-                dailyCapacity: data.daily_capacity || null
+                dailyCapacity: data.daily_capacity || 80
             };
         }
     } catch (e) {
