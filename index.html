@@ -379,9 +379,15 @@
         .rest-board-chips {
             display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto;
             scrollbar-width: none;
+            flex-shrink: 0;
+            padding-right: 12px;
+            border-right: 1px solid rgba(255,255,255,0.07);
         }
         .rest-board-chips::-webkit-scrollbar { display: none; }
         .rest-board-toolbar .rest-date-jump { flex-shrink: 0; }
+        @media (max-width: 900px) {
+            .rest-board-chips { border-right: none; padding-right: 0; }
+        }
 
         .rest-shell {
             position: relative;
@@ -725,12 +731,13 @@
         .rest-chips::-webkit-scrollbar { display: none; }
         .rest-chip {
             flex-shrink: 0;
-            padding: 5px 10px;
+            padding: 6px 12px;
             border-radius: 8px;
-            background: transparent;
-            border: 1px solid transparent;
-            color: rgba(255,255,255,0.55);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.72);
             font-size: 0.78rem;
+            font-weight: 500;
             font-family: 'Inter', sans-serif;
             cursor: pointer;
             transition: all 0.14s;
@@ -740,13 +747,16 @@
             white-space: nowrap;
         }
         .rest-chip:hover {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.14);
             color: #fff;
         }
         .rest-chip.active {
-            background: rgba(117,81,255,0.16);
-            border-color: rgba(117,81,255,0.30);
+            background: rgba(117,81,255,0.22);
+            border-color: rgba(117,81,255,0.55);
             color: #fff;
+            font-weight: 600;
+            box-shadow: 0 0 0 1px rgba(117,81,255,0.20), 0 4px 12px -4px rgba(117,81,255,0.30);
         }
         .rest-chip-count {
             font-size: 0.7rem;
@@ -2942,19 +2952,22 @@
         [data-theme="light"] .rest-quick-stat-divider { color: #CBD5E1; }
 
         /* Chips bar in toolbar */
+        [data-theme="light"] .rest-board-chips { border-right-color: #E2E8F0; }
         [data-theme="light"] .rest-board-chips .rest-chip {
             color: #475569;
-            background: transparent;
-            border: 1px solid transparent;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
         }
         [data-theme="light"] .rest-board-chips .rest-chip:hover {
             background: #F1F5F9;
+            border-color: #CBD5E1;
             color: #0F172A;
         }
         [data-theme="light"] .rest-board-chips .rest-chip.active {
             background: rgba(117,81,255,0.10);
-            border-color: rgba(117,81,255,0.30);
+            border-color: rgba(117,81,255,0.50);
             color: #4F46E5;
+            box-shadow: 0 0 0 1px rgba(117,81,255,0.15), 0 4px 12px -4px rgba(117,81,255,0.25);
         }
         [data-theme="light"] .rest-board-chips .rest-chip-count {
             background: rgba(15,23,42,0.06);
@@ -3958,15 +3971,8 @@
                     </div>
                 </div>
 
-                <!-- Top toolbar: search + chips + date jump (full width) -->
+                <!-- Top toolbar: filters (left) → search → date jump (right) -->
                 <div class="rest-board-toolbar">
-                    <div class="rest-board-search">
-                        <ion-icon name="search-outline"></ion-icon>
-                        <input type="text" id="rest-search-input"
-                            placeholder="Buscar por nombre, teléfono o tipo de evento..."
-                            oninput="searchRestaurantReservations(this.value)">
-                        <span class="rest-sidebar-search-kbd">⌘K</span>
-                    </div>
                     <div class="rest-board-chips" id="rest-chips">
                         <button class="rest-chip active" data-status="nuevos" onclick="filterRestaurantByStatus('nuevos')" title="Leads sin responder">
                             Pendientes <span class="rest-chip-count" id="rest-count-nuevos">0</span>
@@ -3980,6 +3986,13 @@
                         <button class="rest-chip" data-status="rechazadas" onclick="filterRestaurantByStatus('rechazadas')" title="Reservas rechazadas">
                             Rechazadas <span class="rest-chip-count" id="rest-count-rechazadas">0</span>
                         </button>
+                    </div>
+                    <div class="rest-board-search">
+                        <ion-icon name="search-outline"></ion-icon>
+                        <input type="text" id="rest-search-input"
+                            placeholder="Buscar por nombre, teléfono o tipo de evento..."
+                            oninput="searchRestaurantReservations(this.value)">
+                        <span class="rest-sidebar-search-kbd">⌘K</span>
                     </div>
                     <div class="rest-date-jump">
                         <button id="rest-date-btn" class="rest-date-btn" onclick="openDateJump(event)" title="Saltar a una fecha">
