@@ -1293,6 +1293,39 @@
                             </div>
                         </div>
 
+                        <!-- ── SECCIÓN 5: Infraestructura · Supabase del cliente ── -->
+                        <div class="sc sc-accent-blue" id="sec-infra">
+                            <div class="sc-head">
+                                <div class="sc-icon sci-blue">
+                                    <ion-icon name="server-outline"></ion-icon>
+                                </div>
+                                <div class="sc-labels">
+                                    <span class="sc-eyebrow">Infraestructura</span>
+                                    <span class="sc-title">Supabase del cliente</span>
+                                </div>
+                            </div>
+                            <div class="sc-body">
+                                <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 14px;line-height:1.5;">
+                                    Datos del Supabase aislado donde viven las tablas operacionales del cliente
+                                    (disponibilidad del restaurante, buffers del agente, etc.).
+                                    Si lo dejas vacío, el dashboard usará el Supabase admin como fallback —
+                                    funcional pero <strong>no recomendado en producción</strong>.
+                                </p>
+                                <div class="fg">
+                                    <div class="fg-group">
+                                        <label class="fgl">Supabase URL</label>
+                                        <input type="text" id="client-supabase-url" class="fi"
+                                               placeholder="https://xxxxxxxxxxxx.supabase.co">
+                                    </div>
+                                    <div class="fg-group">
+                                        <label class="fgl">Supabase Anon Key (pública, embebida en el frontend)</label>
+                                        <input type="password" id="client-supabase-anon-key" class="fi"
+                                               placeholder="eyJhbGciOiJIUzI1NiIs...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div><!-- /editor-body -->
                 </form>
 
