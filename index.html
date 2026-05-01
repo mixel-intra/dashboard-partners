@@ -673,34 +673,36 @@
         .rest-date-jump {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
         .rest-date-btn {
-            flex: 1;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 7px 10px;
-            background: rgba(255,255,255,0.03);
-            border: 1px dashed rgba(255,255,255,0.12);
-            border-radius: 9px;
-            color: rgba(255,255,255,0.55);
-            font-size: 0.78rem;
+            gap: 8px;
+            padding: 9px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 10px;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.84rem;
+            font-weight: 500;
             font-family: 'Inter', sans-serif;
             cursor: pointer;
             transition: all 0.16s;
+            white-space: nowrap;
         }
         .rest-date-btn:hover {
-            background: rgba(255,255,255,0.06);
-            border-color: rgba(117,81,255,0.30);
+            background: rgba(117,81,255,0.10);
+            border-color: rgba(117,81,255,0.40);
             color: #fff;
         }
         .rest-date-btn.is-active {
-            background: rgba(117,81,255,0.14);
-            border: 1px solid rgba(117,81,255,0.34);
+            background: rgba(117,81,255,0.18);
+            border: 1px solid rgba(117,81,255,0.50);
             color: #fff;
+            box-shadow: 0 0 0 1px rgba(117,81,255,0.20);
         }
-        .rest-date-btn ion-icon { font-size: 0.95rem; }
+        .rest-date-btn ion-icon { font-size: 1.05rem; color: #A78BFA; }
         .rest-date-clear {
             width: 28px;
             height: 28px;
@@ -2786,19 +2788,21 @@
 
         [data-theme="light"] .rest-date-btn {
             background: #FFFFFF;
-            border: 1px dashed var(--border-subtle);
-            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
         }
         [data-theme="light"] .rest-date-btn:hover {
-            background: var(--surface-50);
-            border-color: rgba(117,81,255,0.40);
+            background: rgba(117,81,255,0.06);
+            border-color: rgba(117,81,255,0.45);
             color: var(--text-primary);
         }
         [data-theme="light"] .rest-date-btn.is-active {
-            background: rgba(117,81,255,0.08);
-            border: 1px solid rgba(117,81,255,0.40);
-            color: var(--text-primary);
+            background: rgba(117,81,255,0.10);
+            border: 1px solid rgba(117,81,255,0.50);
+            color: #4F46E5;
+            box-shadow: 0 0 0 1px rgba(117,81,255,0.15);
         }
+        [data-theme="light"] .rest-date-btn ion-icon { color: #7551FF; }
         [data-theme="light"] .rest-date-clear {
             background: #FEF2F2;
             border: 1px solid rgba(239,68,68,0.30);
@@ -2981,19 +2985,21 @@
         /* Date jump button */
         [data-theme="light"] .rest-date-btn {
             background: #FFFFFF;
-            border: 1px solid rgba(15,23,42,0.08);
-            color: #475569;
+            border: 1px solid #E2E8F0;
+            color: #0F172A;
         }
         [data-theme="light"] .rest-date-btn:hover {
-            background: #F8FAFC;
-            border-color: rgba(117,81,255,0.30);
+            background: rgba(117,81,255,0.06);
+            border-color: rgba(117,81,255,0.45);
             color: #4F46E5;
         }
         [data-theme="light"] .rest-date-btn.is-active {
-            background: rgba(117,81,255,0.08);
-            border-color: rgba(117,81,255,0.30);
+            background: rgba(117,81,255,0.10);
+            border-color: rgba(117,81,255,0.50);
             color: #4F46E5;
+            box-shadow: 0 0 0 1px rgba(117,81,255,0.15);
         }
+        [data-theme="light"] .rest-date-btn ion-icon { color: #7551FF; }
 
         /* Action buttons in top toolbar (Disponibilidad + Actualizar) */
         [data-theme="light"] .rest-tool-btn {
@@ -3992,7 +3998,6 @@
                         <input type="text" id="rest-search-input"
                             placeholder="Buscar por nombre, teléfono o tipo de evento..."
                             oninput="searchRestaurantReservations(this.value)">
-                        <span class="rest-sidebar-search-kbd">⌘K</span>
                     </div>
                     <div class="rest-date-jump">
                         <button id="rest-date-btn" class="rest-date-btn" onclick="openDateJump(event)" title="Saltar a una fecha">
