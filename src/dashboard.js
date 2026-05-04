@@ -2223,6 +2223,8 @@ function populateContextPanel(r, index) {
     const active = sameDay.filter(({ res }) => res.estado !== 'Rechazado');
     const confirmedCount = sameDay.filter(({ res }) => res.estado === 'Confirmado').length;
     const pendingCount = sameDay.filter(({ res }) => res.estado === 'Nuevo Lead').length;
+    const rejectedCount = sameDay.filter(({ res }) => res.estado === 'Rechazado').length;
+    const otherCount = sameDay.length - confirmedCount - pendingCount - rejectedCount;
     const paxUsed = active.reduce((sum, { res }) => sum + (parseInt(res.pax) || 0), 0);
     const dailyCap = state.restaurantAvailability && state.restaurantAvailability.dailyCapacity
         ? parseInt(state.restaurantAvailability.dailyCapacity)
@@ -2231,8 +2233,15 @@ function populateContextPanel(r, index) {
     document.getElementById('ctx-day-label').textContent = targetDate.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
     document.getElementById('ctx-cap-used').textContent = paxUsed;
     document.getElementById('ctx-cap-total').textContent = dailyCap || '∞';
-    document.getElementById('ctx-cap-confirmed').textContent = confirmedCount;
-    document.getElementById('ctx-cap-pending').textContent = pendingCount;
+    const metaEl = document.getElementById('ctx-cap-meta');
+    if (metaEl) {
+        const parts = [];
+        parts.push(`<span><strong>${confirmedCount}</strong> confirmadas</span>`);
+        parts.push(`<span><strong>${pendingCount}</strong> pendientes</span>`);
+        if (rejectedCount > 0) parts.push(`<span class="rest-ctx-meta-rejected"><strong>${rejectedCount}</strong> rechazadas</span>`);
+        if (otherCount > 0) parts.push(`<span><strong>${otherCount}</strong> otras</span>`);
+        metaEl.innerHTML = parts.join('<span class="rest-ctx-dot">·</span>');
+    }
 
     const fill = document.getElementById('ctx-cap-bar-fill');
     const pctEl = document.getElementById('ctx-cap-pct');

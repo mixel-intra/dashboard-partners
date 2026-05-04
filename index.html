@@ -1578,8 +1578,10 @@
         }
         .rest-ctx-cap-bar-fill.warn { background: #f59e0b; }
         .rest-ctx-cap-bar-fill.danger { background: #ef4444; }
-        .rest-ctx-cap-meta { display: flex; gap: 6px; font-size: 0.75rem; color: rgba(255,255,255,0.55); }
+        .rest-ctx-cap-meta { display: flex; gap: 6px; font-size: 0.75rem; color: rgba(255,255,255,0.55); flex-wrap: wrap; }
         .rest-ctx-cap-meta strong { color: rgba(255,255,255,0.85); font-weight: 700; }
+        .rest-ctx-cap-meta .rest-ctx-meta-rejected { color: rgba(255,107,107,0.75); }
+        .rest-ctx-cap-meta .rest-ctx-meta-rejected strong { color: #FF8A8A; }
         .rest-ctx-dot { color: rgba(255,255,255,0.25); }
 
         /* Same day list */
@@ -4141,10 +4143,10 @@
                                     <div class="rest-ctx-cap-bar">
                                         <div class="rest-ctx-cap-bar-fill" id="ctx-cap-bar-fill"></div>
                                     </div>
-                                    <div class="rest-ctx-cap-meta">
-                                        <span><strong id="ctx-cap-confirmed">0</strong> confirmadas</span>
+                                    <div class="rest-ctx-cap-meta" id="ctx-cap-meta">
+                                        <span><strong>0</strong> confirmadas</span>
                                         <span class="rest-ctx-dot">·</span>
-                                        <span><strong id="ctx-cap-pending">0</strong> pendientes</span>
+                                        <span><strong>0</strong> pendientes</span>
                                     </div>
                                 </div>
                             </div>
