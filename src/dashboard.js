@@ -1607,6 +1607,9 @@ async function fetchRestaurantReservations() {
             title: 'Restaurante en preparación',
             subtitle: 'Aún no hay un origen de reservas configurado para este entorno.'
         });
+        if (state.restaurantSelectedIndex === null && document.getElementById('rest-context-content')) {
+            populateContextForToday();
+        }
         return;
     }
 
@@ -1666,6 +1669,9 @@ async function fetchRestaurantReservations() {
             title: 'No pudimos cargar las reservas',
             subtitle: 'Revisa tu conexión y vuelve a intentar con el botón "Actualizar".'
         });
+        if (state.restaurantSelectedIndex === null && document.getElementById('rest-context-content')) {
+            populateContextForToday();
+        }
         if (typeof showToast === 'function') showToast('Error al actualizar reservas', 'error');
     } finally {
         if (refreshBtn) {
