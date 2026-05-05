@@ -1504,10 +1504,15 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 .mob-section-sub { font-size: 12px; color: #A78BFA; }
 .mob-see-all { display: flex; align-items: center; gap: 2px; font-size: 12px; color: #A78BFA; background: none; border: none; cursor: pointer; }
 
-/* KPI scroll */
-.mob-kpi-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; }
+/* KPI grid — 2 columnas en mobile, todas las cards visibles sin scroll */
+.mob-kpi-scroll { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-bottom: 8px; margin-bottom: 16px; }
 .mob-kpi-scroll::-webkit-scrollbar { display: none; }
-.mob-kpi-card { flex: 0 0 140px; height: 178px; padding: 14px; border-radius: 20px; scroll-snap-align: start; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; flex-direction: column; justify-content: space-between; }
+.mob-kpi-card { min-height: 158px; padding: 14px; border-radius: 20px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-width: 0; overflow: hidden; }
+.mob-kpi-label { word-wrap: break-word; overflow-wrap: anywhere; }
+.mob-kpi-value { word-wrap: break-word; overflow-wrap: anywhere; }
+@media (max-width: 360px) {
+    .mob-kpi-scroll { grid-template-columns: 1fr; }
+}
 .mob-kpi-icon { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1rem; margin-bottom: 2px; border: 1px solid; }
 .mob-kpi-label { font-size: 11px; color: rgba(255,255,255,0.38); letter-spacing: 0.2px; line-height: 1.35; }
 .mob-kpi-value { font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.92); letter-spacing: -0.5px; line-height: 1; }
