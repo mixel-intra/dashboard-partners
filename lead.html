@@ -2,168 +2,432 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
   <title>Lead condicionado · Cefemex Capital</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f5f5f7;
+      --bg: #f2f2f7;
       --card: #ffffff;
-      --text: #1d1d1f;
+      --text: #0a0a0a;
       --muted: #6e6e73;
-      --rule: #d2d2d7;
-      --accent: #0071e3;
+      --rule: #e5e5ea;
+      --rule-soft: #f0f0f3;
+      --blue: #0071e3;
+      --green: #34c759;
       --wa: #25d366;
+      --amber: #ff9500;
+      --red: #ff3b30;
+      --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.06);
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { margin: 0; padding: 0; }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.55;
+      line-height: 1.45;
       -webkit-font-smoothing: antialiased;
-      padding: 32px 16px;
+      padding: 16px 14px 32px;
+      padding-bottom: calc(32px + env(safe-area-inset-bottom));
     }
-    .wrap {
-      max-width: 640px;
+    .container {
+      max-width: 480px;
       margin: 0 auto;
+    }
+
+    /* ---------- Top status pill ---------- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 4px;
+    }
+    .brand {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px 5px 8px;
+      background: rgba(255, 149, 0, .14);
+      color: #b35900;
+      border-radius: 999px;
+      font-size: 12px; font-weight: 700;
+    }
+    .status-pill .dot {
+      width: 7px; height: 7px; border-radius: 999px;
+      background: var(--amber);
+      box-shadow: 0 0 0 3px rgba(255,149,0,.18);
+    }
+
+    /* ---------- Hero card ---------- */
+    .hero {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 22px 22px 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+    .hero-row {
+      display: flex; align-items: center; gap: 18px;
+    }
+    .ring {
+      position: relative;
+      width: 96px; height: 96px;
+      flex-shrink: 0;
+    }
+    .ring svg { transform: rotate(-90deg); display: block; }
+    .ring .track { stroke: var(--rule); }
+    .ring .bar { stroke: var(--amber); stroke-linecap: round; }
+    .ring-text {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      line-height: 1;
+    }
+    .ring-text .num { font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+    .ring-text .denom { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 600; }
+    .hero-meta { flex: 1; min-width: 0; }
+    .hero-name {
+      font-size: 22px; font-weight: 800; letter-spacing: -.02em;
+      margin: 0 0 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hero-sub { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+    .hero-amount {
+      font-size: 26px; font-weight: 800; letter-spacing: -.02em;
+      color: var(--text);
+      margin: 0;
+    }
+    .hero-amount-label {
+      font-size: 11px; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+
+    /* ---------- WhatsApp CTA ---------- */
+    .cta-wa {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px;
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: var(--wa);
+      color: #fff;
+      border: 0;
+      border-radius: 14px;
+      font-size: 16px; font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 6px 18px rgba(37, 211, 102, .35);
+      transition: transform .12s ease, box-shadow .2s ease;
+    }
+    .cta-wa:active { transform: scale(.98); box-shadow: 0 3px 10px rgba(37, 211, 102, .35); }
+    .cta-wa svg { width: 20px; height: 20px; }
+    .cta-wa-sub { display: block; font-size: 11px; font-weight: 500; opacity: .85; margin-top: 1px; }
+
+    /* ---------- Section card ---------- */
+    .card {
       background: var(--card);
       border-radius: 18px;
-      padding: 36px 36px 28px;
-      box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 28px rgba(0,0,0,.06);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
     }
-    .greeting { margin: 0 0 8px; font-size: 16px; }
-    .intro { margin: 0 0 24px; font-size: 16px; color: var(--text); }
-    hr.rule {
-      border: 0; border-top: 1px solid var(--rule);
-      margin: 22px 0 18px;
-    }
-    .section-title {
-      display: flex; align-items: center; gap: 8px;
-      margin: 0 0 12px;
-      font-size: 15px; font-weight: 700;
-      letter-spacing: .02em;
-    }
-    .section-title .ic {
-      width: 22px; height: 22px; display: inline-grid; place-items: center;
-      font-size: 16px; line-height: 1;
-    }
-    ul.lines {
-      list-style: none; padding: 0; margin: 0;
-    }
-    ul.lines li {
-      padding: 4px 0;
-      font-size: 14.5px;
-      color: var(--text);
-    }
-    ul.lines li b { font-weight: 600; }
-    ul.lines li .arrow { color: var(--muted); }
-    .wa-link {
-      color: var(--wa);
-      font-weight: 600;
-      text-decoration: none;
-      border-bottom: 1px dashed rgba(37, 211, 102, .45);
-    }
-    .wa-link:hover { border-bottom-style: solid; }
-    .wa-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      margin-left: 8px;
-      padding: 2px 8px;
-      background: rgba(37, 211, 102, .12);
-      color: #128c4d;
-      border-radius: 999px;
-      font-size: 11.5px; font-weight: 600;
-      vertical-align: middle;
-    }
-    .footer {
-      margin-top: 28px;
-      padding-top: 14px;
-      border-top: 1px solid var(--rule);
-      font-size: 12.5px;
+    .card-title {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
       color: var(--muted);
-      text-align: left;
+      margin: 0 0 12px;
+      display: flex; align-items: center; gap: 6px;
     }
-    .lead-id {
-      display: inline-block;
-      margin-top: 4px;
-      font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+
+    /* ---------- Key facts grid ---------- */
+    .facts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .fact {
+      background: var(--rule-soft);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .fact-label {
+      font-size: 10.5px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+    .fact-value {
+      font-size: 14.5px; font-weight: 600;
+      color: var(--text);
+      line-height: 1.25;
+    }
+    .fact.full { grid-column: 1 / -1; }
+
+    /* ---------- Cuestionario rows ---------- */
+    .qrow {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 0;
+      border-top: 1px solid var(--rule-soft);
+    }
+    .qrow:first-of-type { border-top: 0; padding-top: 4px; }
+    .qrow-main {
+      min-width: 0;
+    }
+    .qrow-label {
+      font-size: 13.5px; font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .qrow-value {
+      font-size: 12px; color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .qbar {
+      position: relative;
+      height: 5px;
+      background: var(--rule);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .qbar > i {
+      position: absolute; inset: 0 auto 0 0;
+      border-radius: 999px;
+    }
+    .qbar.full > i  { background: var(--green); width: 100%; }
+    .qbar.zero      { background: rgba(255, 59, 48, .16); }
+    .qbar.zero > i  { background: var(--red); width: 0; }
+    .qpts {
+      font-size: 12px; font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      min-width: 56px;
+      text-align: right;
+    }
+    .qpts.zero { color: var(--red); }
+    .qpts.full { color: var(--green); }
+
+    /* ---------- Notes callout ---------- */
+    .notes {
+      background: #fff8e6;
+      border: 1px solid #ffe2a8;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .notes-title {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: #8a5a00;
+      margin: 0 0 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .notes ul {
+      margin: 0; padding: 0; list-style: none;
+    }
+    .notes li {
+      font-size: 13.5px;
+      color: #4a3500;
+      padding: 4px 0 4px 14px;
+      position: relative;
+      line-height: 1.45;
+    }
+    .notes li::before {
+      content: "•";
+      position: absolute; left: 2px; top: 4px;
+      color: var(--amber); font-weight: 800;
+    }
+
+    /* ---------- Footer ---------- */
+    .footer {
+      text-align: center;
       font-size: 11.5px;
       color: var(--muted);
+      margin-top: 18px;
+      padding: 0 8px;
+      line-height: 1.5;
     }
-    @media (max-width: 520px) {
-      .wrap { padding: 24px 20px; border-radius: 14px; }
+    .footer .lead-id {
+      display: block;
+      margin-top: 6px;
+      font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+      font-size: 10.5px;
+      opacity: .8;
+    }
+
+    /* ---------- Tablet/desktop ---------- */
+    @media (min-width: 600px) {
+      body { padding: 32px 20px; }
+      .container { max-width: 520px; }
+      .hero { padding: 26px 26px 22px; }
+      .hero-name { font-size: 24px; }
+      .hero-amount { font-size: 30px; }
     }
   </style>
 </head>
 <body>
 
-  <div class="wrap">
-    <p class="greeting">Hola equipo,</p>
-    <p class="intro">Tenemos un nuevo lead condicionado que requiere atención:</p>
+  <div class="container">
 
-    <hr class="rule">
-
-    <h2 class="section-title"><span class="ic">📊</span> CLASIFICACIÓN</h2>
-    <ul class="lines">
-      <li>- Estado: Condicionado</li>
-      <li>- Score: 70/100 puntos</li>
-      <li>- Fecha: 2026-05-04 18:12:12</li>
-    </ul>
-
-    <hr class="rule">
-
-    <h2 class="section-title"><span class="ic">👤</span> DATOS DEL PROSPECTO</h2>
-    <ul class="lines">
-      <li>- Nombre: aracelyxool</li>
-      <li>- Teléfono:
-        <a class="wa-link"
-           href="https://wa.me/5219996354204"
-           target="_blank" rel="noopener">+5219996354204</a>
-        <span class="wa-badge">WhatsApp</span>
-      </li>
-    </ul>
-
-    <hr class="rule">
-
-    <h2 class="section-title"><span class="ic">💰</span> SOLICITUD DE CRÉDITO</h2>
-    <ul class="lines">
-      <li>- Monto: $150,000</li>
-      <li>- Urgencia: Esta semana</li>
-      <li>- Garantía: Sí, en Yucatán (Hacienda)</li>
-      <li>- Ubicación negocio: Yucatán</li>
-      <li>- Tipo de ingresos: Diarios</li>
-    </ul>
-
-    <hr class="rule">
-
-    <h2 class="section-title"><span class="ic">📋</span> RESULTADOS DEL CUESTIONARIO</h2>
-    <ul class="lines">
-      <li>- Refuerzo de Garantía: Libre de adeudos <span class="arrow">→</span> 15/15 pts</li>
-      <li>- Ventas anuales: $292,000 <span class="arrow">→</span> 0/20 pts</li>
-      <li>- Ingresos comprobables: &lt; 50% (Efectivo) <span class="arrow">→</span> 0/20 pts</li>
-      <li>- Personalidad jurídica: Persona Física <span class="arrow">→</span> 5/5 pts</li>
-      <li>- Antigüedad: &gt; 2 años (30 años) <span class="arrow">→</span> 10/10 pts</li>
-      <li>- Sector: Comercio/Manufactura <span class="arrow">→</span> 5/5 pts</li>
-      <li>- Historial crediticio: Bueno <span class="arrow">→</span> 15/15 pts</li>
-      <li>- Saldos vencidos: No <span class="arrow">→</span> 10/10 pts</li>
-    </ul>
-
-    <hr class="rule">
-
-    <h2 class="section-title"><span class="ic">📝</span> NOTAS IMPORTANTES</h2>
-    <ul class="lines">
-      <li>- El prospecto indica ingresos diarios de $800, pero son totalmente en efectivo.</li>
-      <li>- El score es condicionado principalmente por los bajos ingresos anuales declarados y la falta de comprobación de los mismos.</li>
-    </ul>
-
-    <div class="footer">
-      ---<br>
-      Correo generado automáticamente por el agente de precalificación de Cefemex Capital
-      <div class="lead-id" id="lead-id"></div>
+    <!-- Top -->
+    <div class="topbar">
+      <span class="brand">Cefemex Capital</span>
+      <span class="status-pill"><span class="dot"></span> Condicionado</span>
     </div>
+
+    <!-- Hero: score + nombre + monto -->
+    <section class="hero">
+      <div class="hero-row">
+        <div class="ring" aria-label="Score 70 de 100">
+          <svg width="96" height="96" viewBox="0 0 96 96">
+            <circle class="track" cx="48" cy="48" r="42" fill="none" stroke-width="8"/>
+            <circle class="bar"   cx="48" cy="48" r="42" fill="none" stroke-width="8"
+                    stroke-dasharray="263.9" stroke-dashoffset="79.2"/>
+          </svg>
+          <div class="ring-text">
+            <span class="num">70</span>
+            <span class="denom">/ 100</span>
+          </div>
+        </div>
+        <div class="hero-meta">
+          <h1 class="hero-name">aracelyxool</h1>
+          <p class="hero-sub">Yucatán · Persona Física</p>
+          <div class="hero-amount-label">Monto solicitado</div>
+          <p class="hero-amount">$150,000</p>
+        </div>
+      </div>
+
+      <a class="cta-wa"
+         href="https://wa.me/5219996354204?text=Hola%20aracelyxool%2C%20te%20contactamos%20de%20Cefemex%20Capital"
+         target="_blank" rel="noopener">
+        <svg viewBox="0 0 32 32" fill="currentColor"><path d="M16.001 3C9.373 3 4 8.373 4 15c0 2.385.696 4.605 1.892 6.482L4 29l7.717-1.853A11.94 11.94 0 0 0 16 27c6.627 0 12-5.373 12-12S22.628 3 16.001 3Zm0 21.6a9.55 9.55 0 0 1-4.872-1.336l-.349-.207-4.582 1.1 1.123-4.46-.227-.36A9.567 9.567 0 0 1 6.4 15c0-5.293 4.308-9.6 9.6-9.6S25.6 9.707 25.6 15s-4.307 9.6-9.6 9.6Zm5.42-7.18c-.297-.149-1.756-.866-2.028-.964-.272-.099-.47-.149-.668.149-.198.297-.767.964-.94 1.163-.173.198-.347.223-.644.074-.297-.148-1.253-.462-2.387-1.473-.882-.787-1.477-1.76-1.65-2.057-.173-.297-.018-.457.13-.605.133-.132.297-.347.446-.52.148-.173.198-.297.297-.495.099-.198.05-.371-.025-.52-.074-.149-.668-1.611-.916-2.207-.241-.58-.487-.501-.668-.51l-.57-.01a1.1 1.1 0 0 0-.797.371c-.272.297-1.04 1.014-1.04 2.476 0 1.461 1.064 2.872 1.213 3.07.149.198 2.094 3.2 5.075 4.487.71.306 1.262.488 1.694.625.711.226 1.359.194 1.871.118.571-.085 1.756-.717 2.005-1.41.247-.694.247-1.288.173-1.41-.074-.123-.272-.198-.57-.347Z"/></svg>
+        <span>
+          Contactar por WhatsApp
+          <span class="cta-wa-sub">+52 1 999 635 4204</span>
+        </span>
+      </a>
+    </section>
+
+    <!-- Datos clave -->
+    <section class="card">
+      <div class="card-title">Solicitud de crédito</div>
+      <div class="facts">
+        <div class="fact">
+          <div class="fact-label">Urgencia</div>
+          <div class="fact-value">Esta semana</div>
+        </div>
+        <div class="fact">
+          <div class="fact-label">Tipo de ingresos</div>
+          <div class="fact-value">Diarios</div>
+        </div>
+        <div class="fact full">
+          <div class="fact-label">Garantía</div>
+          <div class="fact-value">Hacienda en Yucatán · Libre de adeudos</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cuestionario -->
+    <section class="card">
+      <div class="card-title">Resultados del cuestionario · 60/100</div>
+
+      <div class="qrow">
+        <div class="qrow-main">
+          <div class="qrow-label">Refuerzo de garantía</div>
+          <div class="qrow-value">Libre de adeudos</div>
+          <div class="qbar full"><i></i></div>
+        </div>
+        <div class="qpts full">15/15</div>
+      </div>
+
+      <div class="qrow">
+        <div class="qrow-main">
+          <div class="qrow-label">Ventas anuales</div>
+          <div class="qrow-value">$292,000</div>
+          <div class="qbar zero"><i></i></div>
+        </div>
+        <div class="qpts zero">0/20</div>
+      </div>
+
+      <div class="qrow">
+        <div class="qrow-main">
+          <div class="qrow-label">Ingresos comprobables</div>
+          <div class="qrow-value">&lt; 50% (Efectivo)</div>
+          <div class="qbar zero"><i></i></div>
+        </div>
+        <div class="qpts zero">0/20</div>
+      </div>
+
+      <div class="qrow">
+        <div class="qrow-main">
+          <div class="qrow-label">Personalidad jurídica</div>
+          <div class="qrow-value">Persona Física</div>
+          <div class="qbar full"><i></i></div>
+        </div>
+        <div class="qpts full">5/5</div>
+      </div>
+
+      <div class="qrow">
+        <div class="qrow-main">
+          <div class="qrow-label">Antigüedad</div>
+          <div class="qrow-value">&gt; 2 años (30 años)</div>
+          <div class="qbar full"><i></i></div>
+        </div>
+        <div class="qpts full">10/10</div>
+      </div>
+
+      <div class="qrow">
+        <div class="qrow-main">
+          <div class="qrow-label">Sector</div>
+          <div class="qrow-value">Comercio / Manufactura</div>
+          <div class="qbar full"><i></i></div>
+        </div>
+        <div class="qpts full">5/5</div>
+      </div>
+
+      <div class="qrow">
+        <div class="qrow-main">
+          <div class="qrow-label">Historial crediticio</div>
+          <div class="qrow-value">Bueno</div>
+          <div class="qbar full"><i></i></div>
+        </div>
+        <div class="qpts full">15/15</div>
+      </div>
+
+      <div class="qrow">
+        <div class="qrow-main">
+          <div class="qrow-label">Saldos vencidos</div>
+          <div class="qrow-value">No</div>
+          <div class="qbar full"><i></i></div>
+        </div>
+        <div class="qpts full">10/10</div>
+      </div>
+    </section>
+
+    <!-- Notas -->
+    <section class="notes">
+      <div class="notes-title">Notas importantes</div>
+      <ul>
+        <li>El prospecto indica ingresos diarios de $800, pero son totalmente en efectivo.</li>
+        <li>El score es condicionado principalmente por los bajos ingresos anuales declarados y la falta de comprobación de los mismos.</li>
+      </ul>
+    </section>
+
+    <!-- Footer -->
+    <div class="footer">
+      Generado por el agente de precalificación de Cefemex Capital · 2026-05-04 18:12
+      <span class="lead-id" id="lead-id"></span>
+    </div>
+
   </div>
 
   <script>
