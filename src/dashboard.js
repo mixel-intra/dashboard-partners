@@ -1630,16 +1630,16 @@ async function fetchRestaurantReservations() {
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(webhookUrl)}`;
         console.log('Fetching restaurant reservations from:', webhookUrl);
         const response = await fetch(proxyUrl);
-        if (!response.ok) {
-            const errBody = await response.json().catch(() => ({}));
-            console.error('Proxy error detail:', errBody);
-            throw new Error(errBody.error || `HTTP Error: ${response.status}`);
-        }
         const rawData = await response.json().catch(() => null);
+
+        if (!response.ok) {
+            console.warn('Webhook respondió con error', response.status, rawData);
+        }
 
         // Normaliza: el webhook puede responder array vacío, objeto vacío, null
         // o un objeto con error (n8n devuelve {error: ...} cuando no encuentra
-        // nada). Cualquiera de estos = "sin reservas todavía", no es un error.
+        // nada — incluso con status 4xx/5xx). Cualquiera de estos = "sin
+        // reservas todavía", no un error técnico que asuste al operador.
         let dataArray;
         if (Array.isArray(rawData)) {
             dataArray = rawData;
@@ -1679,16 +1679,18 @@ async function fetchRestaurantReservations() {
         refreshDatePickerDots();
         if (typeof showToast === 'function') showToast('Reservas actualizadas', 'success');
     } catch (error) {
+        // Solo errores genuinos de red (fetch lanza) llegan aquí — no responses
+        // 4xx/5xx, esos los normalizamos arriba como "sin reservas".
         console.error('Error fetching restaurant reservations:', error);
         renderRestaurantEmpty({
             icon: 'cloud-offline-outline',
-            title: 'No pudimos cargar las reservas',
-            subtitle: 'Revisa tu conexión y vuelve a intentar con el botón "Actualizar".'
+            title: 'Sin conexión',
+            subtitle: 'No pudimos contactar al servidor. Revisa tu internet y prueba "Actualizar".'
         });
         if (state.restaurantSelectedIndex === null && document.getElementById('rest-context-content')) {
             populateContextForToday();
         }
-        if (typeof showToast === 'function') showToast('Error al actualizar reservas', 'error');
+        if (typeof showToast === 'function') showToast('Sin conexión', 'error');
     } finally {
         if (refreshBtn) {
             refreshBtn.classList.remove('loading');
