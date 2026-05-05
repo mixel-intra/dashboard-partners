@@ -1602,7 +1602,14 @@ async function saveEditedReservation() {
 async function fetchRestaurantReservations() {
     const webhookUrl = state.restaurantConfig.airtableWebhookUrl;
     if (!webhookUrl) {
-        renderRestaurantEmpty('No hay webhook de AirTable configurado para restaurante.');
+        renderRestaurantEmpty({
+            icon: 'cog-outline',
+            title: 'Restaurante en preparación',
+            subtitle: 'Aún no hay un origen de reservas configurado para este entorno.'
+        });
+        if (state.restaurantSelectedIndex === null && document.getElementById('rest-context-content')) {
+            populateContextForToday();
+        }
         return;
     }
 
@@ -1657,7 +1664,14 @@ async function fetchRestaurantReservations() {
         if (typeof showToast === 'function') showToast('Reservas actualizadas', 'success');
     } catch (error) {
         console.error('Error fetching restaurant reservations:', error);
-        renderRestaurantEmpty('Error al cargar las reservas. Intenta de nuevo.');
+        renderRestaurantEmpty({
+            icon: 'cloud-offline-outline',
+            title: 'No pudimos cargar las reservas',
+            subtitle: 'Revisa tu conexión y vuelve a intentar con el botón "Actualizar".'
+        });
+        if (state.restaurantSelectedIndex === null && document.getElementById('rest-context-content')) {
+            populateContextForToday();
+        }
         if (typeof showToast === 'function') showToast('Error al actualizar reservas', 'error');
     } finally {
         if (refreshBtn) {
@@ -2382,14 +2396,16 @@ function ctxHeatmapJumpToDate(key) {
     }
 }
 
-function renderRestaurantEmpty(message) {
+function renderRestaurantEmpty(opts) {
     const board = document.getElementById('rest-board');
-    if (board) {
-        board.innerHTML = `<div class="rest-empty-list">
-            <ion-icon name="alert-circle-outline"></ion-icon>
-            <div class="rest-empty-list-title">${escapeHtml(message)}</div>
-        </div>`;
-    }
+    if (!board) return;
+    const { icon = 'restaurant-outline', title = 'Sin reservas todavía', subtitle = '' } =
+        typeof opts === 'string' ? { title: opts } : (opts || {});
+    board.innerHTML = `<div class="rest-board-empty">
+        <ion-icon name="${icon}"></ion-icon>
+        <div class="rest-board-empty-title">${escapeHtml(title)}</div>
+        ${subtitle ? `<div class="rest-board-empty-sub">${escapeHtml(subtitle)}</div>` : ''}
+    </div>`;
 }
 
 function formatReservationDate(input) {
