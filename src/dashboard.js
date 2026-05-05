@@ -1635,9 +1635,25 @@ async function fetchRestaurantReservations() {
             console.error('Proxy error detail:', errBody);
             throw new Error(errBody.error || `HTTP Error: ${response.status}`);
         }
-        const rawData = await response.json();
+        const rawData = await response.json().catch(() => null);
 
-        state.restaurantReservations = (Array.isArray(rawData) ? rawData : [rawData]).map(r => ({
+        // Normaliza: el webhook puede responder array vacío, objeto vacío, null
+        // o un objeto con error (n8n devuelve {error: ...} cuando no encuentra
+        // nada). Cualquiera de estos = "sin reservas todavía", no es un error.
+        let dataArray;
+        if (Array.isArray(rawData)) {
+            dataArray = rawData;
+        } else if (rawData && typeof rawData === 'object' && !rawData.error) {
+            const hasAnyRealKey = Object.keys(rawData).some(k => {
+                const v = rawData[k];
+                return v !== null && v !== '' && v !== undefined;
+            });
+            dataArray = hasAnyRealKey ? [rawData] : [];
+        } else {
+            dataArray = [];
+        }
+
+        state.restaurantReservations = dataArray.map(r => ({
             id: r.id || r.ID || r.record_id || '',
             kommoLeadId: r.kommo_lead_id || r.kommoLeadId || null,
             kommoChatId: r.kommo_chat_id || r.kommoChatId || '',
