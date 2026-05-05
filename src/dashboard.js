@@ -414,6 +414,15 @@ function initHotelTabs() {
         const activeTab = firstUnlocked || 'eventos';
         state.activeTab = activeTab;
 
+        // Mobile: si el cliente usa principalmente Restaurante (es el único o
+        // el primer servicio habilitado), mostramos el panel restaurante
+        // directamente en mobile en lugar del dashboard genérico de KPIs.
+        if (firstUnlocked === 'restaurante') {
+            document.body.dataset.mobileMode = 'restaurant';
+        } else {
+            delete document.body.dataset.mobileMode;
+        }
+
         tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
             const tabId = btn.dataset.tab;
             const status = services[tabId] || 'unlocked';

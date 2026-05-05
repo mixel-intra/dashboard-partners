@@ -1597,6 +1597,64 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 [data-theme="light"] .mob-tab-pill ion-icon { color: #94A3B8; }
 [data-theme="light"] .mob-tab span { color: #94A3B8; }
 [data-theme="light"] .mob-tab-active .mob-tab-pill { background: rgba(99,102,241,0.1); box-shadow: 0 0 12px rgba(99,102,241,0.15); }
+
+/* ============================================================
+   MOBILE — RESTAURANT-FIRST CLIENTS
+   Cuando el cliente es principalmente Restaurante (data-mobile-mode="restaurant"
+   en body, lo setea initHotelTabs), saltamos el dashboard genérico y
+   mostramos el panel del restaurante apilado verticalmente.
+   ============================================================ */
+@media (max-width: 480px) {
+    body[data-mobile-mode="restaurant"] #app-wrapper { display: flex !important; }
+    body[data-mobile-mode="restaurant"] .mobile-dash { display: none !important; }
+    body[data-mobile-mode="restaurant"] html,
+    body[data-mobile-mode="restaurant"] body {
+        overflow: auto !important;
+        height: auto !important;
+        min-height: 100dvh !important;
+    }
+    body[data-mobile-mode="restaurant"] .sidebar { display: none !important; }
+    body[data-mobile-mode="restaurant"] .main-content { padding: 8px !important; }
+    body[data-mobile-mode="restaurant"] .top-bar { padding: 8px 12px !important; }
+    body[data-mobile-mode="restaurant"] #restaurant-panel {
+        padding: 0 !important;
+        height: auto !important;
+        min-height: calc(100dvh - 64px);
+    }
+    /* Apila el board y el right rail en lugar de ocultar el rail */
+    body[data-mobile-mode="restaurant"] .rest-shell {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+    body[data-mobile-mode="restaurant"] .rest-context {
+        display: block !important;
+        width: 100% !important;
+    }
+    body[data-mobile-mode="restaurant"] .rest-board {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    /* Toolbar más compacto */
+    body[data-mobile-mode="restaurant"] .rest-board-toolbar {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+    body[data-mobile-mode="restaurant"] .rest-toolbar-v2 {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+    body[data-mobile-mode="restaurant"] .rest-board-search {
+        flex: 1 1 100% !important;
+        min-width: 0 !important;
+    }
+    body[data-mobile-mode="restaurant"] .rest-board-chips {
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+    }
+    /* Header del entorno se compacta */
+    body[data-mobile-mode="restaurant"] .full-width-layout { padding: 0 !important; }
+}
 [data-theme="light"] .mob-tab-active .mob-tab-pill ion-icon { color: #6366F1; }
 [data-theme="light"] .mob-tab-active span { color: #6366F1; }
 
