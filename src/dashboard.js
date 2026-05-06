@@ -4511,9 +4511,15 @@ function attachRestMobileSwipeHandlers() {
     cards.forEach(card => {
         if (card.dataset.swipeBound === '1') return;
         card.dataset.swipeBound = '1';
+        const wrap = card.closest('.restm-card-wrap');
 
         let startX = 0, startY = 0, currentX = 0, dragging = false, locked = null;
         const threshold = 80;
+
+        const clearSwipeClasses = () => {
+            if (!wrap) return;
+            wrap.classList.remove('is-swiping-right', 'is-swiping-left');
+        };
 
         card.addEventListener('touchstart', e => {
             startX = e.touches[0].clientX;
@@ -4536,6 +4542,17 @@ function attachRestMobileSwipeHandlers() {
             if (locked !== 'x') return;
             currentX = dx;
             card.style.transform = `translateX(${dx}px)`;
+            if (wrap) {
+                if (dx > 8) {
+                    wrap.classList.add('is-swiping-right');
+                    wrap.classList.remove('is-swiping-left');
+                } else if (dx < -8) {
+                    wrap.classList.add('is-swiping-left');
+                    wrap.classList.remove('is-swiping-right');
+                } else {
+                    clearSwipeClasses();
+                }
+            }
         }, { passive: true });
 
         card.addEventListener('touchend', () => {
@@ -4547,13 +4564,14 @@ function attachRestMobileSwipeHandlers() {
                 const idx = parseInt(card.dataset.idx);
                 if (dx > 0) {
                     card.style.transform = 'translateX(110%)';
-                    setTimeout(() => { card.style.transform = ''; restMobileQuickConfirm(idx); }, 220);
+                    setTimeout(() => { card.style.transform = ''; clearSwipeClasses(); restMobileQuickConfirm(idx); }, 220);
                 } else {
                     card.style.transform = 'translateX(-110%)';
-                    setTimeout(() => { card.style.transform = ''; restMobileQuickReject(idx); }, 220);
+                    setTimeout(() => { card.style.transform = ''; clearSwipeClasses(); restMobileQuickReject(idx); }, 220);
                 }
             } else {
                 card.style.transform = '';
+                clearSwipeClasses();
             }
         });
 
@@ -4561,6 +4579,7 @@ function attachRestMobileSwipeHandlers() {
             dragging = false;
             card.classList.remove('is-swiping');
             card.style.transform = '';
+            clearSwipeClasses();
         });
     });
 }
