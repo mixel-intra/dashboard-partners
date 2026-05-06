@@ -1817,14 +1817,22 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 .restm-card-actions {
     position: absolute; inset: 0; display: flex; align-items: stretch;
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.16s ease;
 }
+.restm-card-wrap.is-swiping-right .restm-card-actions,
+.restm-card-wrap.is-swiping-left .restm-card-actions { opacity: 1; }
 .restm-card-action {
     flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
     font-size: 13px; font-weight: 700; color: #FFF;
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.16s ease;
 }
-.restm-card-action.confirm { background: linear-gradient(90deg, #10B981 0%, #059669 100%); justify-content: flex-start; padding-left: 24px; }
-.restm-card-action.reject { background: linear-gradient(90deg, #EF4444 0%, #DC2626 100%); justify-content: flex-end; padding-right: 24px; }
+.restm-card-action.confirm { background: #10B981; justify-content: flex-start; padding-left: 24px; }
+.restm-card-action.reject { background: #EF4444; justify-content: flex-end; padding-right: 24px; }
+.restm-card-wrap.is-swiping-right .restm-card-action.confirm { opacity: 1; }
+.restm-card-wrap.is-swiping-left .restm-card-action.reject { opacity: 1; }
 .restm-card {
     position: relative;
     z-index: 1;
@@ -1833,9 +1841,7 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
     gap: 12px;
     padding: 14px;
     border-radius: 16px;
-    background: rgba(255,255,255,0.055);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: #1A1438;
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 4px 16px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.05);
     cursor: pointer;
@@ -1843,7 +1849,7 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
     will-change: transform;
     touch-action: pan-y;
 }
-[data-theme="light"] .restm-card { background: rgba(255,255,255,0.85); border-color: rgba(15,23,42,0.06); box-shadow: 0 2px 8px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.9); }
+[data-theme="light"] .restm-card { background: #FFFFFF; border-color: rgba(15,23,42,0.08); box-shadow: 0 2px 8px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.9); }
 .restm-card:active { transform: scale(0.985); }
 .restm-card.is-swiping { transition: none; }
 
