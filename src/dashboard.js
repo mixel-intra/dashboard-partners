@@ -2217,9 +2217,13 @@ function populateOpenCrmButton(r) {
 // CONTEXT PANEL (right rail): aforo, mismo día, heatmap mensual
 // =============================================
 function populateContextForToday() {
-    // Build a synthetic "anchor" reservation for today so populateContextPanel can reuse logic
-    const today = new Date();
-    const fakeAnchor = { fecha_parsed: today, fechaEvento: today.toISOString().slice(0,10) };
+    // Si hay un filtro de fecha activo (Saltar a fecha o tap en heatmap),
+    // el right rail debe reflejar esa fecha — no hoy. Cuando no hay filtro,
+    // usa hoy.
+    const target = state.restaurantFilters && state.restaurantFilters.date
+        ? new Date(state.restaurantFilters.date)
+        : new Date();
+    const fakeAnchor = { fecha_parsed: target, fechaEvento: target.toISOString().slice(0,10) };
     const empty = document.getElementById('rest-context-empty');
     const content = document.getElementById('rest-context-content');
     if (empty) empty.classList.add('hidden');
