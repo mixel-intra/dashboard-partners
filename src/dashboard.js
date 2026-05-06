@@ -4216,3 +4216,728 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+
+// ============================================================
+// REST-MOBILE — UX dedicada para clientes restaurante en mobile
+// Activa cuando body[data-mobile-mode="restaurant"] y viewport ≤ 480px.
+// Reusa state, fetchRestaurantReservations, confirmReservation, etc.
+// ============================================================
+
+state.restMobile = state.restMobile || {
+    activeTab: 'pendientes',
+    monthAnchor: null,
+    selectedIdx: null
+};
+
+function isRestMobileActive() {
+    return document.body.dataset.mobileMode === 'restaurant';
+}
+
+function todayKeyMx() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function fmtDateLong(d) {
+    return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function renderRestMobile() {
+    if (!isRestMobileActive()) return;
+    renderRestMobileHeader();
+    renderRestMobileAforo();
+    renderRestMobileBanner();
+    renderRestMobileTabs();
+    renderRestMobileList();
+}
+
+function renderRestMobileHeader() {
+    const dateEl = document.getElementById('restm-date');
+    if (dateEl) {
+        const now = new Date();
+        dateEl.textContent = now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+    const clientEl = document.getElementById('restm-client');
+    if (clientEl && state.config && state.config.clientName) {
+        clientEl.textContent = state.config.clientName;
+    }
+    const themeIcon = document.getElementById('restm-theme-icon');
+    if (themeIcon) {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        themeIcon.setAttribute('name', isLight ? 'sunny-outline' : 'moon-outline');
+    }
+}
+
+function renderRestMobileAforo() {
+    const all = state.restaurantReservations || [];
+    const todayK = todayKeyMx();
+    const todays = all.filter(r => {
+        const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
+        return d && dateKey(d) === todayK;
+    });
+    const active = todays.filter(r => r.estado !== 'Rechazado');
+    const confirmed = todays.filter(r => r.estado === 'Confirmado').length;
+    const pending = todays.filter(r => r.estado === 'Nuevo Lead').length;
+    const paxUsed = active.reduce((sum, r) => sum + (parseInt(r.pax) || 0), 0);
+    const dailyCap = state.restaurantAvailability && state.restaurantAvailability.dailyCapacity
+        ? parseInt(state.restaurantAvailability.dailyCapacity) : null;
+
+    const usedEl = document.getElementById('restm-aforo-used');
+    const totalEl = document.getElementById('restm-aforo-total');
+    const metaEl = document.getElementById('restm-aforo-meta');
+    const ringEl = document.getElementById('restm-aforo-ring');
+    const pctEl = document.getElementById('restm-aforo-pct');
+
+    if (usedEl) usedEl.textContent = paxUsed;
+    if (totalEl) totalEl.textContent = dailyCap || '∞';
+    if (metaEl) {
+        if (todays.length === 0) {
+            metaEl.textContent = 'Sin reservas hoy';
+        } else {
+            const parts = [];
+            if (confirmed) parts.push(`${confirmed} confirmadas`);
+            if (pending) parts.push(`${pending} pendientes`);
+            metaEl.textContent = parts.join(' · ') || 'Sin reservas hoy';
+        }
+    }
+    if (ringEl && pctEl) {
+        let pct = 0;
+        if (dailyCap && dailyCap > 0) pct = Math.min(100, Math.round((paxUsed / dailyCap) * 100));
+        ringEl.style.setProperty('--pct', pct + '%');
+        ringEl.style.background = `conic-gradient(${pct >= 90 ? '#F87171' : pct >= 70 ? '#FBBF24' : '#A78BFA'} ${pct}%, rgba(255,255,255,0.08) 0)`;
+        pctEl.textContent = pct + '%';
+    }
+}
+
+function renderRestMobileBanner() {
+    const banner = document.getElementById('restm-banner');
+    if (!banner) return;
+    const av = state.restaurantAvailability || {};
+    const todayK = todayKeyMx();
+    const closed = Array.isArray(av.closedDates) ? av.closedDates : [];
+    const isClosedToday = closed.includes(todayK);
+    const accepting = av.accepting !== false;
+
+    let html = '';
+    let cls = '';
+    if (!accepting) {
+        cls = 'danger';
+        html = `<ion-icon name="alert-circle-outline"></ion-icon><span><strong>No estamos aceptando reservas.</strong> Reactiva en Disponibilidad.</span>`;
+    } else if (isClosedToday) {
+        cls = 'danger';
+        html = `<ion-icon name="lock-closed-outline"></ion-icon><span><strong>Hoy está cerrado.</strong> No se reciben reservas para la fecha de hoy.</span>`;
+    } else {
+        const dailyCap = av.dailyCapacity ? parseInt(av.dailyCapacity) : null;
+        if (dailyCap) {
+            const all = state.restaurantReservations || [];
+            const todays = all.filter(r => {
+                const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
+                return d && dateKey(d) === todayK && r.estado !== 'Rechazado';
+            });
+            const paxUsed = todays.reduce((sum, r) => sum + (parseInt(r.pax) || 0), 0);
+            if (paxUsed >= dailyCap) {
+                cls = 'danger';
+                html = `<ion-icon name="people-outline"></ion-icon><span><strong>Aforo lleno hoy.</strong> ${paxUsed}/${dailyCap} pax confirmados o pendientes.</span>`;
+            } else if (paxUsed / dailyCap >= 0.8) {
+                cls = '';
+                html = `<ion-icon name="warning-outline"></ion-icon><span>Quedan pocos lugares hoy: ${dailyCap - paxUsed} de ${dailyCap}.</span>`;
+            }
+        }
+    }
+
+    if (html) {
+        banner.className = 'restm-banner ' + cls;
+        banner.innerHTML = html;
+    } else {
+        banner.className = 'restm-banner hidden';
+        banner.innerHTML = '';
+    }
+}
+
+function getRestMobileFilteredReservations() {
+    const all = state.restaurantReservations || [];
+    const todayK = todayKeyMx();
+    const tab = state.restMobile.activeTab;
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+
+    return all.filter(r => {
+        const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
+        const dKey = d ? dateKey(d) : null;
+        const isUpcoming = !d || (() => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x >= todayDate; })();
+        if (tab === 'pendientes') return r.estado === 'Nuevo Lead' && isUpcoming;
+        if (tab === 'hoy') return dKey === todayK;
+        if (tab === 'proximas') return r.estado === 'Confirmado' && isUpcoming;
+        return true;
+    });
+}
+
+function renderRestMobileTabs() {
+    const all = state.restaurantReservations || [];
+    const todayK = todayKeyMx();
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+
+    const counts = { pendientes: 0, hoy: 0, proximas: 0 };
+    all.forEach(r => {
+        const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
+        const dKey = d ? dateKey(d) : null;
+        const isUpcoming = !d || (() => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x >= todayDate; })();
+        if (r.estado === 'Nuevo Lead' && isUpcoming) counts.pendientes++;
+        if (dKey === todayK) counts.hoy++;
+        if (r.estado === 'Confirmado' && isUpcoming) counts.proximas++;
+    });
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setText('restm-count-pendientes', counts.pendientes);
+    setText('restm-count-hoy', counts.hoy);
+    setText('restm-count-proximas', counts.proximas);
+
+    document.querySelectorAll('.restm-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === state.restMobile.activeTab);
+    });
+}
+
+function restMobileSetTab(tab) {
+    state.restMobile.activeTab = tab;
+    renderRestMobileTabs();
+    renderRestMobileList();
+}
+
+function renderRestMobileList() {
+    const list = document.getElementById('restm-list');
+    if (!list) return;
+
+    const filtered = getRestMobileFilteredReservations();
+    const todayK = todayKeyMx();
+
+    if (filtered.length === 0) {
+        const tab = state.restMobile.activeTab;
+        const emptyByTab = {
+            pendientes: { icon: 'checkmark-done-outline', title: 'Todo al día ✨', sub: 'No hay reservas pendientes por responder.' },
+            hoy: { icon: 'restaurant-outline', title: 'Sin reservas hoy', sub: 'Cuando lleguen reservas para hoy las verás aquí.' },
+            proximas: { icon: 'calendar-clear-outline', title: 'Sin próximas', sub: 'Todavía no hay reservas confirmadas a futuro.' }
+        };
+        const empty = emptyByTab[tab] || emptyByTab.pendientes;
+        list.innerHTML = `<div class="restm-empty">
+            <ion-icon name="${empty.icon}"></ion-icon>
+            <div class="restm-empty-title">${escapeHtml(empty.title)}</div>
+            <div class="restm-empty-sub">${escapeHtml(empty.sub)}</div>
+        </div>`;
+        return;
+    }
+
+    // Sort: today first, future ASC, past at bottom
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+    filtered.sort((a, b) => {
+        const aD = a.fecha_parsed ? new Date(a.fecha_parsed) : new Date(0);
+        const bD = b.fecha_parsed ? new Date(b.fecha_parsed) : new Date(0);
+        aD.setHours(0, 0, 0, 0); bD.setHours(0, 0, 0, 0);
+        const aPast = aD < todayDate, bPast = bD < todayDate;
+        if (!aPast && bPast) return -1;
+        if (aPast && !bPast) return 1;
+        if (aD.getTime() === bD.getTime()) {
+            return (a.horaEvento || '').localeCompare(b.horaEvento || '');
+        }
+        return aPast ? bD - aD : aD - bD;
+    });
+
+    // Group by day
+    const groups = new Map();
+    filtered.forEach(r => {
+        const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
+        const k = d ? dateKey(d) : 'sin-fecha';
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(r);
+    });
+
+    const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const monthShort = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const tomorrow = new Date(todayDate); tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const groupLabel = (k) => {
+        if (k === 'sin-fecha') return 'Sin fecha';
+        const d = new Date(k + 'T00:00:00');
+        const day = new Date(d); day.setHours(0, 0, 0, 0);
+        if (day.getTime() === todayDate.getTime()) return 'Hoy';
+        if (day.getTime() === tomorrow.getTime()) return 'Mañana';
+        return `${dayNames[d.getDay()]} ${d.getDate()} ${monthShort[d.getMonth()]}`;
+    };
+
+    let html = '';
+    groups.forEach((items, k) => {
+        const isToday = k === todayK;
+        html += `<div class="restm-day-label ${isToday ? 'is-today' : ''}">${escapeHtml(groupLabel(k))}</div>`;
+        items.forEach(r => {
+            const idx = state.restaurantReservations.indexOf(r);
+            html += renderRestMobileCard(r, idx);
+        });
+    });
+
+    list.innerHTML = html;
+    attachRestMobileSwipeHandlers();
+}
+
+function renderRestMobileCard(r, idx) {
+    const time = r.horaEvento ? formatTime(r.horaEvento) : '—';
+    const [hh, mm] = (time || '').split(':');
+    const stateCls = r.estado === 'Confirmado' ? 'confirmed' : (r.estado === 'Rechazado' ? 'rejected' : '');
+    const tipo = r.tipoEvento || 'Reserva';
+    const pax = parseInt(r.pax) || 0;
+    return `<div class="restm-card-wrap">
+        <div class="restm-card-actions">
+            <div class="restm-card-action confirm"><ion-icon name="checkmark-outline"></ion-icon><span>Confirmar</span></div>
+            <div class="restm-card-action reject"><span>Rechazar</span><ion-icon name="close-outline"></ion-icon></div>
+        </div>
+        <div class="restm-card" data-idx="${idx}" onclick="openRestMobileSheet(${idx})">
+            <div class="restm-card-time">
+                <div class="restm-card-time-h">${hh && hh !== '—' ? hh : '—'}</div>
+                <div class="restm-card-time-m">${mm || ''}</div>
+            </div>
+            <div class="restm-card-info">
+                <div class="restm-card-name">${escapeHtml(r.nombre || 'Sin nombre')}</div>
+                <div class="restm-card-meta">
+                    <span><strong>${pax}</strong> pax</span>
+                    <span class="restm-card-dot"></span>
+                    <span>${escapeHtml(tipo)}</span>
+                </div>
+            </div>
+            <div class="restm-card-state ${stateCls}"></div>
+        </div>
+    </div>`;
+}
+
+// Swipe gestures: swipe right → confirmar, swipe left → rechazar
+function attachRestMobileSwipeHandlers() {
+    const cards = document.querySelectorAll('#restm-list .restm-card');
+    cards.forEach(card => {
+        if (card.dataset.swipeBound === '1') return;
+        card.dataset.swipeBound = '1';
+
+        let startX = 0, startY = 0, currentX = 0, dragging = false, locked = null;
+        const threshold = 80;
+
+        card.addEventListener('touchstart', e => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            currentX = 0;
+            dragging = true;
+            locked = null;
+            card.classList.add('is-swiping');
+        }, { passive: true });
+
+        card.addEventListener('touchmove', e => {
+            if (!dragging) return;
+            const dx = e.touches[0].clientX - startX;
+            const dy = e.touches[0].clientY - startY;
+            if (locked === null) {
+                if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+                    locked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+                }
+            }
+            if (locked !== 'x') return;
+            currentX = dx;
+            card.style.transform = `translateX(${dx}px)`;
+        }, { passive: true });
+
+        card.addEventListener('touchend', () => {
+            if (!dragging) return;
+            dragging = false;
+            card.classList.remove('is-swiping');
+            const dx = currentX;
+            if (Math.abs(dx) >= threshold && locked === 'x') {
+                const idx = parseInt(card.dataset.idx);
+                if (dx > 0) {
+                    card.style.transform = 'translateX(110%)';
+                    setTimeout(() => { card.style.transform = ''; restMobileQuickConfirm(idx); }, 220);
+                } else {
+                    card.style.transform = 'translateX(-110%)';
+                    setTimeout(() => { card.style.transform = ''; restMobileQuickReject(idx); }, 220);
+                }
+            } else {
+                card.style.transform = '';
+            }
+        });
+
+        card.addEventListener('touchcancel', () => {
+            dragging = false;
+            card.classList.remove('is-swiping');
+            card.style.transform = '';
+        });
+    });
+}
+
+function restMobileQuickConfirm(idx) { confirmReservation(idx); }
+function restMobileQuickReject(idx) { rejectReservation(idx); }
+
+// Refresh
+function restMobileRefresh() {
+    const icon = document.getElementById('restm-sync-icon');
+    if (icon) icon.classList.add('spinning');
+    Promise.resolve(fetchRestaurantReservations()).finally(() => {
+        setTimeout(() => { if (icon) icon.classList.remove('spinning'); }, 400);
+    });
+}
+
+// ============================================================
+// Bottom sheet — detalle de reserva
+// ============================================================
+function openRestMobileSheet(idx) {
+    const r = state.restaurantReservations[idx];
+    if (!r) return;
+    state.restMobile.selectedIdx = idx;
+    const content = document.getElementById('restm-sheet-content');
+    if (!content) return;
+
+    const fechaTxt = formatReservationDate(r);
+    const time = r.horaEvento ? formatTime(r.horaEvento) : null;
+    const stateCls = r.estado === 'Confirmado' ? 'success' : (r.estado === 'Rechazado' ? 'danger' : 'warn');
+    const stateIcon = r.estado === 'Confirmado' ? 'checkmark-circle-outline' : (r.estado === 'Rechazado' ? 'close-circle-outline' : 'time-outline');
+    const isResolved = r.estado === 'Confirmado' || r.estado === 'Rechazado';
+
+    const tel = (r.telefono || '').replace(/[^\d+]/g, '');
+    const waLink = tel ? `https://wa.me/${tel.replace(/^\+/, '')}` : null;
+    const callLink = tel ? `tel:${tel}` : null;
+
+    content.innerHTML = `
+        <div class="restm-detail-head">
+            <div class="restm-detail-name">${escapeHtml(r.nombre || 'Sin nombre')}</div>
+            <div class="restm-detail-meta">
+                <span class="restm-pill ${stateCls}"><ion-icon name="${stateIcon}"></ion-icon>${escapeHtml(r.estado || 'Nuevo Lead')}</span>
+                <span class="restm-pill"><ion-icon name="calendar-outline"></ion-icon>${escapeHtml(fechaTxt)}</span>
+                ${time ? `<span class="restm-pill"><ion-icon name="time-outline"></ion-icon>${escapeHtml(time)}</span>` : ''}
+                <span class="restm-pill"><ion-icon name="people-outline"></ion-icon>${parseInt(r.pax) || 0} pax</span>
+                ${r.tipoEvento ? `<span class="restm-pill"><ion-icon name="pricetag-outline"></ion-icon>${escapeHtml(r.tipoEvento)}</span>` : ''}
+            </div>
+        </div>
+
+        <div class="restm-channels">
+            <a class="restm-channel call ${callLink ? '' : 'disabled'}" ${callLink ? `href="${callLink}"` : ''}>
+                <ion-icon name="call-outline"></ion-icon><span>Llamar</span>
+            </a>
+            <a class="restm-channel whatsapp ${waLink ? '' : 'disabled'}" ${waLink ? `href="${waLink}" target="_blank" rel="noopener"` : ''}>
+                <ion-icon name="logo-whatsapp"></ion-icon><span>WhatsApp</span>
+            </a>
+        </div>
+
+        ${r.detalles ? `<div class="restm-section">
+            <h4>Detalles</h4>
+            <div class="restm-detail-text">${escapeHtml(r.detalles)}</div>
+        </div>` : ''}
+
+        ${r.conversacion ? `<div class="restm-section">
+            <h4>Conversación</h4>
+            <div class="restm-detail-text">${escapeHtml(r.conversacion)}</div>
+        </div>` : ''}
+
+        <div class="restm-actions-row">
+            <button class="restm-action-btn reject" ${isResolved ? 'disabled' : ''} onclick="closeRestMobileSheet(); rejectReservation(${idx});">
+                <ion-icon name="close-outline"></ion-icon> Rechazar
+            </button>
+            <button class="restm-action-btn confirm" ${isResolved ? 'disabled' : ''} onclick="closeRestMobileSheet(); confirmReservation(${idx});">
+                <ion-icon name="checkmark-outline"></ion-icon> Confirmar
+            </button>
+        </div>
+    `;
+
+    const sheet = document.getElementById('restm-sheet');
+    if (sheet) sheet.dataset.active = 'true';
+}
+
+function closeRestMobileSheet() {
+    const sheet = document.getElementById('restm-sheet');
+    if (sheet) sheet.dataset.active = 'false';
+    state.restMobile.selectedIdx = null;
+}
+
+// ============================================================
+// Bottom sheet — calendario mensual
+// ============================================================
+function openRestMobileMonthSheet() {
+    if (!state.restMobile.monthAnchor) {
+        const now = new Date();
+        state.restMobile.monthAnchor = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    renderRestMobileMonthSheet();
+    const sheet = document.getElementById('restm-month-sheet');
+    if (sheet) sheet.dataset.active = 'true';
+}
+
+function closeRestMobileMonthSheet() {
+    const sheet = document.getElementById('restm-month-sheet');
+    if (sheet) sheet.dataset.active = 'false';
+}
+
+function restMobileMonthShift(delta) {
+    const a = state.restMobile.monthAnchor || new Date();
+    state.restMobile.monthAnchor = new Date(a.getFullYear(), a.getMonth() + delta, 1);
+    renderRestMobileMonthSheet();
+}
+
+function renderRestMobileMonthSheet() {
+    const cont = document.getElementById('restm-month-sheet-content');
+    if (!cont) return;
+    const anchor = state.restMobile.monthAnchor;
+    const year = anchor.getFullYear(), month = anchor.getMonth();
+    const monthLabel = anchor.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+
+    const buckets = {};
+    (state.restaurantReservations || []).forEach(res => {
+        if (res.estado === 'Rechazado') return;
+        const d = res.fecha_parsed || parseFechaEvento(res.fechaEvento);
+        if (!d || d.getFullYear() !== year || d.getMonth() !== month) return;
+        const k = dateKey(d);
+        buckets[k] = (buckets[k] || 0) + (parseInt(res.pax) || 0);
+    });
+
+    const dailyCap = state.restaurantAvailability && state.restaurantAvailability.dailyCapacity
+        ? parseInt(state.restaurantAvailability.dailyCapacity) : null;
+    const maxVal = Math.max(1, ...Object.values(buckets));
+    const ref = dailyCap || maxVal;
+    const lvl = (v) => {
+        if (!v) return 0;
+        const r = v / ref;
+        if (r >= 0.85) return 4;
+        if (r >= 0.6) return 3;
+        if (r >= 0.35) return 2;
+        return 1;
+    };
+
+    const closed = (state.restaurantAvailability && state.restaurantAvailability.closedDates) || [];
+    const todayK = todayKeyMx();
+    const dows = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+    const firstOfMonth = new Date(year, month, 1);
+    const startBlank = (firstOfMonth.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    let cells = '';
+    dows.forEach(d => cells += `<div class="restm-month-dow">${d}</div>`);
+    for (let i = 0; i < startBlank; i++) cells += `<div class="restm-month-cell empty"></div>`;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const k = dateKey(d);
+        const v = buckets[k] || 0;
+        const cls = ['restm-month-cell', `lvl${lvl(v)}`];
+        if (k === todayK) cls.push('is-today');
+        if (closed.includes(k)) cls.push('is-closed');
+        cells += `<button class="${cls.join(' ')}" onclick="restMobileJumpToDate('${k}')">${day}</button>`;
+    }
+
+    cont.innerHTML = `
+        <div class="restm-month-head">
+            <button class="restm-month-nav" onclick="restMobileMonthShift(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+            <div class="restm-month-title">${escapeHtml(monthLabel)}</div>
+            <button class="restm-month-nav" onclick="restMobileMonthShift(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+        </div>
+        <div class="restm-month-grid">${cells}</div>
+        <div class="restm-month-legend">
+            <span class="restm-month-legend-dot" style="background:rgba(167,139,250,0.18);"></span><span>Pocas</span>
+            <span class="restm-month-legend-dot" style="background:rgba(167,139,250,0.55);margin-left:6px;"></span><span>Llenándose</span>
+            <span class="restm-month-legend-dot" style="background:rgba(167,139,250,0.85);margin-left:6px;"></span><span>Casi lleno</span>
+            <span class="restm-month-legend-dot" style="background:rgba(239,68,68,0.4);margin-left:6px;"></span><span>Cerrado</span>
+        </div>
+    `;
+}
+
+function restMobileJumpToDate(key) {
+    closeRestMobileMonthSheet();
+    const idx = (state.restaurantReservations || []).findIndex(r => {
+        const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
+        return d && dateKey(d) === key;
+    });
+    if (idx >= 0) {
+        setTimeout(() => openRestMobileSheet(idx), 280);
+    }
+}
+
+// ============================================================
+// Bottom sheet — disponibilidad
+// ============================================================
+function openRestMobileAforoSheet() {
+    renderRestMobileAforoSheet();
+    const sheet = document.getElementById('restm-month-sheet');
+    // Reuse the month sheet container by repurposing its content? No — we
+    // use its own sheet element. Open a dedicated availability sheet via the
+    // menu sheet container? Cleaner: open a fresh sheet using #restm-sheet
+    // momentarily. Simpler: render into restm-sheet-content with an availability layout.
+    const main = document.getElementById('restm-sheet-content');
+    const mainSheet = document.getElementById('restm-sheet');
+    if (!main || !mainSheet) return;
+    main.innerHTML = renderRestMobileAforoHTML();
+    mainSheet.dataset.active = 'true';
+    mainSheet.dataset.kind = 'availability';
+    bindRestMobileAforoEvents();
+}
+
+function renderRestMobileAforoHTML() {
+    const av = state.restaurantAvailability || { accepting: true, closedDates: [], dailyCapacity: null };
+    const accepting = av.accepting !== false;
+    const cap = av.dailyCapacity || '';
+    const closed = Array.isArray(av.closedDates) ? [...av.closedDates].sort() : [];
+    return `
+        <h3 class="restm-sheet-title">Disponibilidad</h3>
+        <div class="restm-avail-row">
+            <div class="restm-avail-info">
+                <div class="restm-avail-label">Aceptar reservas</div>
+                <div class="restm-avail-sub">Si lo apagas, el agente IA dirá que no hay disponibilidad.</div>
+            </div>
+            <label class="restm-toggle">
+                <input type="checkbox" id="restm-av-toggle" ${accepting ? 'checked' : ''}>
+                <span class="restm-toggle-track"><span class="restm-toggle-thumb"></span></span>
+            </label>
+        </div>
+        <div class="restm-avail-row">
+            <div class="restm-avail-info">
+                <div class="restm-avail-label">Aforo diario</div>
+                <div class="restm-avail-sub">Pax máximos por día. Vacío = sin límite.</div>
+            </div>
+            <input type="number" min="1" placeholder="∞" value="${cap}" class="restm-input" id="restm-av-cap">
+        </div>
+        <div class="restm-section">
+            <h4>Fechas cerradas</h4>
+            <div class="restm-closed-list" id="restm-av-closed">
+                ${closed.length ? closed.map(d => `<span class="restm-closed-chip" data-date="${d}">${escapeHtml(new Date(d + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }))} <ion-icon name="close-outline"></ion-icon></span>`).join('') : '<span style="font-size:12px;opacity:0.5;">Sin fechas cerradas configuradas.</span>'}
+            </div>
+            <input type="date" id="restm-av-newdate" class="restm-add-date" style="text-align:left;">
+        </div>
+        <div class="restm-actions-row">
+            <button class="restm-action-btn reject" onclick="closeRestMobileSheet();">Cancelar</button>
+            <button class="restm-action-btn confirm" id="restm-av-save">Guardar</button>
+        </div>
+    `;
+}
+
+function bindRestMobileAforoEvents() {
+    const closedList = document.getElementById('restm-av-closed');
+    if (closedList) {
+        closedList.querySelectorAll('.restm-closed-chip').forEach(chip => {
+            chip.addEventListener('click', () => chip.remove());
+        });
+    }
+    const newDate = document.getElementById('restm-av-newdate');
+    if (newDate) {
+        newDate.addEventListener('change', () => {
+            const v = newDate.value;
+            if (!v) return;
+            if (closedList && !closedList.querySelector(`[data-date="${v}"]`)) {
+                const placeholder = closedList.querySelector('span[style]');
+                if (placeholder) placeholder.remove();
+                const chip = document.createElement('span');
+                chip.className = 'restm-closed-chip';
+                chip.dataset.date = v;
+                chip.innerHTML = `${new Date(v + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })} <ion-icon name="close-outline"></ion-icon>`;
+                chip.addEventListener('click', () => chip.remove());
+                closedList.appendChild(chip);
+            }
+            newDate.value = '';
+        });
+    }
+    const saveBtn = document.getElementById('restm-av-save');
+    if (saveBtn) saveBtn.addEventListener('click', restMobileSaveAvailability);
+}
+
+async function restMobileSaveAvailability() {
+    const toggle = document.getElementById('restm-av-toggle');
+    const capInput = document.getElementById('restm-av-cap');
+    const closedList = document.getElementById('restm-av-closed');
+    const accepting = toggle ? toggle.checked : true;
+    const capVal = capInput ? parseInt(capInput.value) : NaN;
+    const dailyCapacity = isNaN(capVal) || capVal < 1 ? null : capVal;
+    const closedDates = closedList ? Array.from(closedList.querySelectorAll('.restm-closed-chip')).map(c => c.dataset.date) : [];
+
+    state.restaurantAvailability = state.restaurantAvailability || {};
+    state.restaurantAvailability.accepting = accepting;
+    state.restaurantAvailability.closedDates = closedDates;
+    state.restaurantAvailability.dailyCapacity = dailyCapacity;
+
+    const saveBtn = document.getElementById('restm-av-save');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Guardando...'; }
+
+    try {
+        const db = window.clientSupabase || window.supabase;
+        if (!db) throw new Error('Supabase no inicializado');
+        const { error } = await db.from('restaurant_availability').upsert({
+            singleton: true,
+            accepting_reservations: accepting,
+            closed_dates: closedDates,
+            daily_capacity: dailyCapacity
+        }, { onConflict: 'singleton' });
+        if (error) throw error;
+        if (typeof showToast === 'function') showToast('Disponibilidad actualizada', 'success');
+        closeRestMobileSheet();
+        renderRestMobile();
+    } catch (e) {
+        console.error('Error saving availability:', e);
+        if (typeof showToast === 'function') showToast('No se pudo guardar', 'error');
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; }
+    }
+}
+
+// ============================================================
+// Menu sheet
+// ============================================================
+function openRestMobileMenuSheet() {
+    const sheet = document.getElementById('restm-menu-sheet');
+    if (sheet) sheet.dataset.active = 'true';
+}
+function closeRestMobileMenuSheet() {
+    const sheet = document.getElementById('restm-menu-sheet');
+    if (sheet) sheet.dataset.active = 'false';
+}
+
+// Bottom navigation router
+function restMobileBottomNav(view) {
+    document.querySelectorAll('.restm-bb-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    if (view === 'calendario') openRestMobileMonthSheet();
+    else if (view === 'disponibilidad') openRestMobileAforoSheet();
+    else if (view === 'reservas') {
+        // already showing
+        const list = document.getElementById('restm-list-wrap');
+    }
+    // Reset to "reservas" after sheet close
+    if (view !== 'reservas') {
+        setTimeout(() => {
+            document.querySelectorAll('.restm-bb-item').forEach(b => b.classList.toggle('active', b.dataset.view === 'reservas'));
+        }, 350);
+    }
+}
+
+// Hook: render rest-mobile after fetching reservations
+const _origFetchRest = fetchRestaurantReservations;
+window.__restMobileBootstrapped = window.__restMobileBootstrapped || false;
+function bootstrapRestMobile() {
+    if (window.__restMobileBootstrapped) return;
+    window.__restMobileBootstrapped = true;
+    const orig = window.fetchRestaurantReservations;
+    window.fetchRestaurantReservations = async function(...args) {
+        const res = await orig.apply(this, args);
+        try { renderRestMobile(); } catch (e) { console.warn('renderRestMobile error', e); }
+        return res;
+    };
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrapRestMobile);
+} else {
+    bootstrapRestMobile();
+}
+
+// Re-render when theme changes
+document.addEventListener('click', e => {
+    if (e.target && e.target.closest && e.target.closest('[onclick*="toggleTheme"]')) {
+        setTimeout(renderRestMobileHeader, 10);
+    }
+});
+
+// Expose
+window.restMobileSetTab = restMobileSetTab;
+window.restMobileBottomNav = restMobileBottomNav;
+window.restMobileRefresh = restMobileRefresh;
+window.openRestMobileSheet = openRestMobileSheet;
+window.closeRestMobileSheet = closeRestMobileSheet;
+window.openRestMobileMonthSheet = openRestMobileMonthSheet;
+window.closeRestMobileMonthSheet = closeRestMobileMonthSheet;
+window.restMobileMonthShift = restMobileMonthShift;
+window.restMobileJumpToDate = restMobileJumpToDate;
+window.openRestMobileAforoSheet = openRestMobileAforoSheet;
+window.openRestMobileMenuSheet = openRestMobileMenuSheet;
+window.closeRestMobileMenuSheet = closeRestMobileMenuSheet;
+window.renderRestMobile = renderRestMobile;

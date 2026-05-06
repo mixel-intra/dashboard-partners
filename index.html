@@ -7097,6 +7097,160 @@
 
 </div><!-- /#mobile-dash -->
 
+
+<!-- ============================================================
+     MOBILE — RESTAURANT (UX dedicada, no responsive del desktop)
+     Se muestra cuando:
+       - viewport ≤ 480px
+       - body[data-mobile-mode="restaurant"]
+     ============================================================ -->
+<div class="rest-mobile" id="rest-mobile">
+
+    <!-- Background ambient -->
+    <div class="restm-bg">
+        <div class="restm-orb restm-orb-1"></div>
+        <div class="restm-orb restm-orb-2"></div>
+    </div>
+
+    <!-- Sticky top: header + aforo + tabs -->
+    <header class="restm-top">
+        <div class="restm-header">
+            <div class="restm-greet">
+                <p class="restm-eyebrow" id="restm-date">--</p>
+                <h1 class="restm-title">Reservas</h1>
+                <span class="restm-client" id="restm-client">107 Rooftop</span>
+            </div>
+            <div class="restm-actions">
+                <button class="restm-iconbtn" onclick="toggleTheme()" aria-label="Tema">
+                    <ion-icon name="moon-outline" id="restm-theme-icon"></ion-icon>
+                </button>
+                <button class="restm-iconbtn" onclick="restMobileRefresh()" aria-label="Actualizar">
+                    <ion-icon name="sync-outline" id="restm-sync-icon"></ion-icon>
+                </button>
+                <button class="restm-iconbtn" onclick="openRestMobileMenuSheet()" aria-label="Más opciones">
+                    <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- Aforo card (tap para abrir disponibilidad) -->
+        <button class="restm-aforo" id="restm-aforo-card" onclick="openRestMobileAforoSheet()">
+            <div class="restm-aforo-left">
+                <span class="restm-aforo-eyebrow">Aforo de hoy</span>
+                <div class="restm-aforo-numbers">
+                    <span class="restm-aforo-used" id="restm-aforo-used">0</span>
+                    <span class="restm-aforo-sep">/</span>
+                    <span class="restm-aforo-total" id="restm-aforo-total">∞</span>
+                    <span class="restm-aforo-unit">pax</span>
+                </div>
+                <div class="restm-aforo-meta" id="restm-aforo-meta">Sin reservas hoy</div>
+            </div>
+            <div class="restm-aforo-right">
+                <div class="restm-aforo-ring" id="restm-aforo-ring">
+                    <span id="restm-aforo-pct">0%</span>
+                </div>
+            </div>
+        </button>
+
+        <!-- Banner de disponibilidad (cerrado / lleno / aviso) -->
+        <div class="restm-banner hidden" id="restm-banner"></div>
+
+        <!-- Tabs de filtro -->
+        <div class="restm-tabs" role="tablist">
+            <button class="restm-tab active" data-tab="pendientes" onclick="restMobileSetTab('pendientes')">
+                <span>Pendientes</span>
+                <span class="restm-tab-count" id="restm-count-pendientes">0</span>
+            </button>
+            <button class="restm-tab" data-tab="hoy" onclick="restMobileSetTab('hoy')">
+                <span>Hoy</span>
+                <span class="restm-tab-count" id="restm-count-hoy">0</span>
+            </button>
+            <button class="restm-tab" data-tab="proximas" onclick="restMobileSetTab('proximas')">
+                <span>Próximas</span>
+                <span class="restm-tab-count" id="restm-count-proximas">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Lista de reservas (scrollable) -->
+    <main class="restm-list-wrap">
+        <div class="restm-list" id="restm-list">
+            <!-- Populated by renderRestMobileList() -->
+        </div>
+    </main>
+
+    <!-- Bottom tab bar -->
+    <nav class="restm-bottombar">
+        <button class="restm-bb-item active" data-view="reservas" onclick="restMobileBottomNav('reservas')">
+            <ion-icon name="restaurant-outline"></ion-icon>
+            <span>Reservas</span>
+        </button>
+        <button class="restm-bb-item" data-view="calendario" onclick="restMobileBottomNav('calendario')">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <span>Calendario</span>
+        </button>
+        <button class="restm-bb-item" data-view="disponibilidad" onclick="restMobileBottomNav('disponibilidad')">
+            <ion-icon name="time-outline"></ion-icon>
+            <span>Disponibilidad</span>
+        </button>
+    </nav>
+
+</div><!-- /#rest-mobile -->
+
+
+<!-- Bottom sheet: detalle de reserva -->
+<div class="restm-sheet" id="restm-sheet" data-active="false" aria-hidden="true">
+    <div class="restm-sheet-backdrop" onclick="closeRestMobileSheet()"></div>
+    <div class="restm-sheet-panel" id="restm-sheet-panel">
+        <div class="restm-sheet-handle"></div>
+        <div class="restm-sheet-content" id="restm-sheet-content">
+            <!-- Populated by openRestMobileSheet(idx) -->
+        </div>
+    </div>
+</div>
+
+<!-- Bottom sheet: calendario mensual completo -->
+<div class="restm-sheet" id="restm-month-sheet" data-active="false" aria-hidden="true">
+    <div class="restm-sheet-backdrop" onclick="closeRestMobileMonthSheet()"></div>
+    <div class="restm-sheet-panel">
+        <div class="restm-sheet-handle"></div>
+        <div class="restm-sheet-content" id="restm-month-sheet-content">
+            <!-- Populated by openRestMobileMonthSheet() -->
+        </div>
+    </div>
+</div>
+
+<!-- Bottom sheet: menú overflow -->
+<div class="restm-sheet" id="restm-menu-sheet" data-active="false" aria-hidden="true">
+    <div class="restm-sheet-backdrop" onclick="closeRestMobileMenuSheet()"></div>
+    <div class="restm-sheet-panel">
+        <div class="restm-sheet-handle"></div>
+        <div class="restm-sheet-content">
+            <h3 class="restm-sheet-title">Más opciones</h3>
+            <button class="restm-menu-item" onclick="closeRestMobileMenuSheet(); openRestMobileAforoSheet();">
+                <ion-icon name="people-outline"></ion-icon>
+                <span>Configurar disponibilidad</span>
+            </button>
+            <button class="restm-menu-item" onclick="closeRestMobileMenuSheet(); openRestMobileMonthSheet();">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <span>Calendario mensual</span>
+            </button>
+            <button class="restm-menu-item" onclick="closeRestMobileMenuSheet(); restMobileRefresh();">
+                <ion-icon name="sync-outline"></ion-icon>
+                <span>Actualizar reservas</span>
+            </button>
+            <button class="restm-menu-item" onclick="closeRestMobileMenuSheet(); window.open(window.location.href.replace('reporteintra.vercel.app','reporteintra.vercel.app').split('?')[0] + '?client=' + state.clientId,'_blank');" id="restm-menu-desktop">
+                <ion-icon name="desktop-outline"></ion-icon>
+                <span>Abrir versión completa</span>
+            </button>
+            <button class="restm-menu-item" onclick="closeRestMobileMenuSheet(); window.location.href='hub.html';">
+                <ion-icon name="apps-outline"></ion-icon>
+                <span>Cambiar de cliente</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- ===== PREMIUM ANIMATIONS — Desktop only (min-width: 481px) ===== -->
 <script>
 (function () {
