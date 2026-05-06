@@ -2407,19 +2407,18 @@ function ctxHeatmapShift(delta) {
 }
 
 function ctxHeatmapJumpToDate(key) {
-    // Find first reservation on that date and select it
-    const all = state.restaurantReservations || [];
-    const idx = all.findIndex(res => {
-        const d = res.fecha_parsed || parseFechaEvento(res.fechaEvento);
-        return d && dateKey(d) === key;
-    });
-    if (idx >= 0) {
-        selectReservation(idx);
-    } else {
-        // No reservation: just jump the sidebar list to that date if available
-        if (typeof scrollSidebarToDate === 'function') {
-            scrollSidebarToDate(key);
-        }
+    // Aplica el filtro de fecha al board (mismo comportamiento que "Saltar a
+    // fecha"). NO abre el detalle de la primera reserva: deja que el operador
+    // vea la lista filtrada y elija manualmente cuál ver.
+    const target = new Date(key + 'T00:00:00');
+    if (isNaN(target.getTime())) return;
+    if (typeof applyDateJump === 'function') {
+        applyDateJump(target);
+    }
+    state.ctxHeatmapCurrentKey = key;
+    if (typeof renderContextHeatmap === 'function') renderContextHeatmap();
+    if (typeof scrollSidebarToDate === 'function') {
+        scrollSidebarToDate(key);
     }
 }
 
