@@ -4227,7 +4227,8 @@ document.addEventListener('DOMContentLoaded', function() {
 state.restMobile = state.restMobile || {
     activeTab: 'pendientes',
     monthAnchor: null,
-    selectedIdx: null
+    selectedIdx: null,
+    dateFilter: null
 };
 
 function isRestMobileActive() {
@@ -4360,6 +4361,16 @@ function getRestMobileFilteredReservations() {
     const todayK = todayKeyMx();
     const tab = state.restMobile.activeTab;
     const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+    const dateFilter = state.restMobile.dateFilter;
+
+    // Cuando hay filtro de fecha activo, ignoramos los tabs y mostramos solo
+    // las reservas de ese día (todos los estados).
+    if (dateFilter) {
+        return all.filter(r => {
+            const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
+            return d && dateKey(d) === dateFilter;
+        });
+    }
 
     return all.filter(r => {
         const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
@@ -4398,8 +4409,14 @@ function renderRestMobileTabs() {
 
 function restMobileSetTab(tab) {
     state.restMobile.activeTab = tab;
+    state.restMobile.dateFilter = null;
     renderRestMobileTabs();
     renderRestMobileList();
+}
+
+function restMobileClearDateFilter() {
+    state.restMobile.dateFilter = null;
+    renderRestMobile();
 }
 
 function renderRestMobileList() {
@@ -4408,16 +4425,36 @@ function renderRestMobileList() {
 
     const filtered = getRestMobileFilteredReservations();
     const todayK = todayKeyMx();
+    const dateFilter = state.restMobile.dateFilter;
+
+    // Chip de filtro activo (cuando se saltó a una fecha desde el calendario)
+    let filterChipHtml = '';
+    if (dateFilter) {
+        const fDate = new Date(dateFilter + 'T00:00:00');
+        const fLabel = fDate.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'long' });
+        filterChipHtml = `<button class="restm-filter-chip" onclick="restMobileClearDateFilter()">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <span>${escapeHtml(fLabel)}</span>
+            <ion-icon name="close-outline" class="restm-filter-chip-x"></ion-icon>
+        </button>`;
+    }
 
     if (filtered.length === 0) {
         const tab = state.restMobile.activeTab;
-        const emptyByTab = {
-            pendientes: { icon: 'checkmark-done-outline', title: 'Todo al día ✨', sub: 'No hay reservas pendientes por responder.' },
-            hoy: { icon: 'restaurant-outline', title: 'Sin reservas hoy', sub: 'Cuando lleguen reservas para hoy las verás aquí.' },
-            proximas: { icon: 'calendar-clear-outline', title: 'Sin próximas', sub: 'Todavía no hay reservas confirmadas a futuro.' }
-        };
-        const empty = emptyByTab[tab] || emptyByTab.pendientes;
-        list.innerHTML = `<div class="restm-empty">
+        let empty;
+        if (dateFilter) {
+            const fDate = new Date(dateFilter + 'T00:00:00');
+            const fLabel = fDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+            empty = { icon: 'calendar-clear-outline', title: 'Sin reservas este día', sub: `No hay reservas para ${fLabel}.` };
+        } else {
+            const emptyByTab = {
+                pendientes: { icon: 'checkmark-done-outline', title: 'Todo al día ✨', sub: 'No hay reservas pendientes por responder.' },
+                hoy: { icon: 'restaurant-outline', title: 'Sin reservas hoy', sub: 'Cuando lleguen reservas para hoy las verás aquí.' },
+                proximas: { icon: 'calendar-clear-outline', title: 'Sin próximas', sub: 'Todavía no hay reservas confirmadas a futuro.' }
+            };
+            empty = emptyByTab[tab] || emptyByTab.pendientes;
+        }
+        list.innerHTML = filterChipHtml + `<div class="restm-empty">
             <ion-icon name="${empty.icon}"></ion-icon>
             <div class="restm-empty-title">${escapeHtml(empty.title)}</div>
             <div class="restm-empty-sub">${escapeHtml(empty.sub)}</div>
@@ -4462,7 +4499,7 @@ function renderRestMobileList() {
         return `${dayNames[d.getDay()]} ${d.getDate()} ${monthShort[d.getMonth()]}`;
     };
 
-    let html = '';
+    let html = filterChipHtml;
     groups.forEach((items, k) => {
         const isToday = k === todayK;
         html += `<div class="restm-day-label ${isToday ? 'is-today' : ''}">${escapeHtml(groupLabel(k))}</div>`;
@@ -4758,13 +4795,12 @@ function renderRestMobileMonthSheet() {
 
 function restMobileJumpToDate(key) {
     closeRestMobileMonthSheet();
-    const idx = (state.restaurantReservations || []).findIndex(r => {
-        const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
-        return d && dateKey(d) === key;
-    });
-    if (idx >= 0) {
-        setTimeout(() => openRestMobileSheet(idx), 280);
-    }
+    state.restMobile.dateFilter = key;
+    setTimeout(() => {
+        renderRestMobile();
+        const wrap = document.querySelector('.restm-list-wrap');
+        if (wrap) wrap.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 220);
 }
 
 // ============================================================
@@ -4948,6 +4984,7 @@ document.addEventListener('click', e => {
 
 // Expose
 window.restMobileSetTab = restMobileSetTab;
+window.restMobileClearDateFilter = restMobileClearDateFilter;
 window.restMobileBottomNav = restMobileBottomNav;
 window.restMobileRefresh = restMobileRefresh;
 window.openRestMobileSheet = openRestMobileSheet;
