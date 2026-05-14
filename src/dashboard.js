@@ -50,7 +50,11 @@ const state = {
     eventosFilters: { status: 'proceso', search: '' },
     eventosConfig: { apiKey: '', baseId: '', tableName: '' },
     eventosCalendarWeekOffset: 0,
-    eventosCalendarSidebarOffset: 0
+    eventosCalendarSidebarOffset: 0,
+    // Social listening (reseñas online)
+    socialListeningReviews: [],
+    socialListeningFilters: { source: '', sentiment: '', priority: '' },
+    socialListeningLoaded: false
 };
 
 // Theme-aware chart colors (Linear/Vercel style)
@@ -403,7 +407,8 @@ function initHotelTabs() {
             eventos: 'unlocked',
             reservas: 'locked',
             daypass: 'locked',
-            restaurante: 'locked'
+            restaurante: 'locked',
+            social_listening: 'locked'
         };
 
         tabsContainer.classList.remove('hidden');
@@ -526,10 +531,15 @@ function switchDashTab(tab) {
         });
     }
 
-    // Toggle between regular dashboard and restaurant panel
+    // Toggle between regular dashboard and special panels (restaurant, social listening)
     const dashboardGrid = document.querySelector('.dashboard-grid');
     const restaurantPanel = document.getElementById('restaurant-panel');
+    const socialListeningPanel = document.getElementById('social-listening-panel');
     const contentHeaderRow = document.querySelector('.content-header-row');
+
+    // Always hide the panels we are not switching to
+    if (tab !== 'restaurante' && restaurantPanel) restaurantPanel.classList.add('hidden');
+    if (tab !== 'social_listening' && socialListeningPanel) socialListeningPanel.classList.add('hidden');
 
     if (tab === 'restaurante') {
         if (dashboardGrid) dashboardGrid.classList.add('hidden');
@@ -541,10 +551,17 @@ function switchDashTab(tab) {
             loadRestaurantAvailability();
             markRestaurantAsSeen();
         }
+    } else if (tab === 'social_listening') {
+        if (dashboardGrid) dashboardGrid.classList.add('hidden');
+        if (contentHeaderRow) contentHeaderRow.classList.add('hidden');
+        if (socialListeningPanel) {
+            socialListeningPanel.classList.remove('hidden');
+            if (!state.socialListeningLoaded) fetchSocialListeningReviews();
+            else renderSocialListeningPanel();
+        }
     } else {
         if (dashboardGrid) dashboardGrid.classList.remove('hidden');
         if (contentHeaderRow) contentHeaderRow.classList.remove('hidden');
-        if (restaurantPanel) restaurantPanel.classList.add('hidden');
         applyGlobalFilters();
 
         // Show/hide CRM panels (replace leads table card when active)
@@ -5000,3 +5017,160 @@ window.openRestMobileAforoSheet = openRestMobileAforoSheet;
 window.openRestMobileMenuSheet = openRestMobileMenuSheet;
 window.closeRestMobileMenuSheet = closeRestMobileMenuSheet;
 window.renderRestMobile = renderRestMobile;
+
+// ============================================================
+// SOCIAL LISTENING — Panel de Reputación (reseñas Google/TripAdvisor/Booking)
+// ============================================================
+async function fetchSocialListeningReviews() {
+    // Las reviews viven en una tabla única del admin Supabase, filtradas por hotel_id.
+    const db = window.adminSupabase || window.supabase;
+    if (!db || !state.clientId) return;
+    try {
+        const { data, error } = await db
+            .from('reviews')
+            .select('*')
+            .eq('hotel_id', state.clientId)
+            .order('review_date', { ascending: false })
+            .limit(500);
+        if (error) {
+            console.error('social_listening fetch:', error);
+            state.socialListeningReviews = [];
+        } else {
+            state.socialListeningReviews = data || [];
+        }
+        state.socialListeningLoaded = true;
+        wireSocialListeningFilters();
+        renderSocialListeningPanel();
+    } catch (e) {
+        console.error('social_listening fetch fatal:', e);
+        state.socialListeningReviews = [];
+        renderSocialListeningPanel();
+    }
+}
+
+let _slFiltersWired = false;
+function wireSocialListeningFilters() {
+    if (_slFiltersWired) return;
+    const src = document.getElementById('sl-filter-source');
+    const sen = document.getElementById('sl-filter-sentiment');
+    const pri = document.getElementById('sl-filter-priority');
+    if (!src || !sen || !pri) return;
+    const handler = () => {
+        state.socialListeningFilters = {
+            source: src.value,
+            sentiment: sen.value,
+            priority: pri.value
+        };
+        renderSocialListeningPanel();
+    };
+    src.addEventListener('change', handler);
+    sen.addEventListener('change', handler);
+    pri.addEventListener('change', handler);
+    _slFiltersWired = true;
+}
+
+function getFilteredSocialListeningReviews() {
+    const f = state.socialListeningFilters;
+    return state.socialListeningReviews.filter(r => {
+        if (f.source && r.source !== f.source) return false;
+        if (f.sentiment && r.sentiment !== f.sentiment) return false;
+        if (f.priority && r.priority !== f.priority) return false;
+        return true;
+    });
+}
+
+function renderSocialListeningPanel() {
+    const list = document.getElementById('sl-reviews-list');
+    const empty = document.getElementById('sl-empty');
+    if (!list || !empty) return;
+
+    // Stats (sobre TODAS las reviews, sin filtros, para el contexto global)
+    const all = state.socialListeningReviews;
+    const ratings = all.map(r => r.rating).filter(v => typeof v === 'number');
+    const avg = ratings.length
+        ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+        : '—';
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+    setText('sl-avg-rating', avg);
+    setText('sl-total', all.length);
+    setText('sl-positive', all.filter(r => r.sentiment === 'positive').length);
+    setText('sl-neutral',  all.filter(r => r.sentiment === 'neutral').length);
+    setText('sl-negative', all.filter(r => r.sentiment === 'negative').length);
+    setText('sl-high',     all.filter(r => r.priority === 'high').length);
+
+    // Render del listado filtrado
+    const filtered = getFilteredSocialListeningReviews();
+    if (filtered.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+    }
+    empty.classList.add('hidden');
+    list.innerHTML = filtered.map(renderSocialReviewCard).join('');
+    // Wire toggle "ver más" links
+    list.querySelectorAll('.sl-review-toggle').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const card = e.target.closest('.sl-review');
+            if (!card) return;
+            const expanded = card.classList.toggle('expanded');
+            btn.textContent = expanded ? 'Ver menos' : 'Ver más';
+        });
+    });
+}
+
+function renderSocialReviewCard(r) {
+    const sourceLabels = { google: 'Google', tripadvisor: 'TripAdvisor', booking: 'Booking' };
+    const sourceIcons  = { google: 'logo-google', tripadvisor: 'airplane', booking: 'bed-outline' };
+    const sentimentLabels = { positive: 'Positivo', neutral: 'Neutral', negative: 'Negativo' };
+    const priorityLabels  = { high: 'Urgente', medium: 'Media', low: 'Baja' };
+    const categoryLabels = {
+        service: 'Servicio', cleanliness: 'Limpieza', location: 'Ubicación',
+        food: 'Comida', price: 'Precio', rooms: 'Habitaciones',
+        amenities: 'Amenidades', other: 'Otro'
+    };
+
+    const rating = typeof r.rating === 'number'
+        ? '★'.repeat(Math.round(r.rating)) + '☆'.repeat(5 - Math.round(r.rating))
+        : '';
+    const dateStr = r.review_date
+        ? new Date(r.review_date).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '';
+    const body = r.body || '';
+    const needsToggle = body.length > 280;
+    const cardClass = 'sl-review' + (r.priority === 'high' ? ' sl-priority-high' : '');
+
+    return `
+        <article class="${cardClass}">
+            <div class="sl-review-head">
+                <div class="sl-review-author">
+                    ${r.author_avatar_url
+                        ? `<img src="${escapeHtml(r.author_avatar_url)}" alt="" style="width:24px;height:24px;border-radius:50%;">`
+                        : `<ion-icon name="person-circle-outline" style="font-size:24px;color:var(--text-muted);"></ion-icon>`}
+                    ${escapeHtml(r.author || 'Anónimo')}
+                </div>
+                <span class="sl-review-source sl-source-${r.source}">
+                    <ion-icon name="${sourceIcons[r.source] || 'globe-outline'}"></ion-icon>
+                    ${sourceLabels[r.source] || r.source}
+                </span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span class="sl-review-rating">${rating}</span>
+                <span class="sl-review-date">${dateStr}</span>
+            </div>
+            ${r.title ? `<h4 class="sl-review-title">${escapeHtml(r.title)}</h4>` : ''}
+            <p class="sl-review-body">${escapeHtml(body)}</p>
+            ${needsToggle ? '<button class="sl-review-toggle">Ver más</button>' : ''}
+            ${r.summary ? `<div class="sl-summary">${escapeHtml(r.summary)}</div>` : ''}
+            <div class="sl-review-tags">
+                ${r.sentiment ? `<span class="sl-tag sl-tag-sentiment-${r.sentiment}">${sentimentLabels[r.sentiment]}</span>` : ''}
+                ${r.category ? `<span class="sl-tag">${categoryLabels[r.category] || r.category}</span>` : ''}
+                ${r.priority === 'high' ? `<span class="sl-tag sl-tag-priority-high">Urgente</span>` : ''}
+                ${(r.topics || []).slice(0, 3).map(t => `<span class="sl-tag">${escapeHtml(t)}</span>`).join('')}
+            </div>
+            ${r.review_url ? `<a href="${escapeHtml(r.review_url)}" target="_blank" rel="noopener" style="font-size:0.74rem;color:var(--accent-primary,#7551FF);text-decoration:none;">Ver en ${sourceLabels[r.source] || 'fuente'} ↗</a>` : ''}
+        </article>
+    `;
+}

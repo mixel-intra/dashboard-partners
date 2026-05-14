@@ -51,6 +51,14 @@ const elements = {
     evtBaseId: document.getElementById('evt-base-id'),
     evtTableName: document.getElementById('evt-table-name'),
     eventosConfigSection: document.getElementById('eventos-config-section'),
+    hotelServiceSocialListening: document.getElementById('hotel-service-social-listening'),
+    slGoogleUrl: document.getElementById('sl-google-url'),
+    slTripadvisorUrl: document.getElementById('sl-tripadvisor-url'),
+    slBookingUrl: document.getElementById('sl-booking-url'),
+    slFrequency: document.getElementById('sl-frequency'),
+    slLastScrapeInfo: document.getElementById('sl-last-scrape-info'),
+    slTestBtn: document.getElementById('sl-test-btn'),
+    socialListeningConfigSection: document.getElementById('social-listening-config-section'),
     clientSupabaseUrl: document.getElementById('client-supabase-url'),
     clientSupabaseAnonKey: document.getElementById('client-supabase-anon-key')
 };
@@ -294,12 +302,16 @@ async function selectClient(clientId) {
         eventos: 'unlocked',
         reservas: 'locked',
         daypass: 'locked',
-        restaurante: 'locked'
+        restaurante: 'locked',
+        social_listening: 'locked'
     };
     elements.hotelServiceEventos.value = hotelServices.eventos || 'unlocked';
     elements.hotelServiceReservas.value = hotelServices.reservas || 'locked';
     elements.hotelServiceDaypass.value = hotelServices.daypass || 'locked';
     elements.hotelServiceRestaurante.value = hotelServices.restaurante || 'locked';
+    if (elements.hotelServiceSocialListening) {
+        elements.hotelServiceSocialListening.value = hotelServices.social_listening || 'locked';
+    }
 
     // Populate restaurant config
     const restConfig = currentConfig.restaurant_config || {};
@@ -320,6 +332,25 @@ async function selectClient(clientId) {
     if (elements.evtBaseId) elements.evtBaseId.value = evtConfig.base_id || '';
     if (elements.evtTableName) elements.evtTableName.value = evtConfig.table_name || '';
     toggleEventosSection();
+
+    // Populate social listening config
+    const slConfig = currentConfig.social_listening_config || {};
+    if (elements.slGoogleUrl) elements.slGoogleUrl.value = slConfig.google_maps_url || '';
+    if (elements.slTripadvisorUrl) elements.slTripadvisorUrl.value = slConfig.tripadvisor_url || '';
+    if (elements.slBookingUrl) elements.slBookingUrl.value = slConfig.booking_url || '';
+    if (elements.slFrequency) elements.slFrequency.value = slConfig.scrape_frequency_hours || 24;
+    if (elements.slLastScrapeInfo) {
+        if (slConfig.last_scraped_at) {
+            const when = new Date(slConfig.last_scraped_at).toLocaleString('es-MX');
+            const status = slConfig.last_scrape_status === 'error'
+                ? `<span style="color:var(--danger,#f87171);">Error: ${slConfig.last_scrape_error || 'desconocido'}</span>`
+                : '<span style="color:var(--success,#34d399);">OK</span>';
+            elements.slLastScrapeInfo.innerHTML = `Último scrape: ${when} · ${status}`;
+        } else {
+            elements.slLastScrapeInfo.innerHTML = 'Aún no se ha ejecutado ningún scrape.';
+        }
+    }
+    toggleSocialListeningSection();
 
     // Populate Supabase del cliente (multi-tenant infra)
     if (elements.clientSupabaseUrl) elements.clientSupabaseUrl.value = currentConfig.supabase_url || '';
@@ -443,10 +474,17 @@ function setupEventListeners() {
         toggleRestaurantWebhooks();
         toggleHospedajeSection();
         toggleEventosSection();
+        toggleSocialListeningSection();
     });
 
     // Toggle restaurant webhooks when restaurante service changes
     elements.hotelServiceRestaurante.addEventListener('change', toggleRestaurantWebhooks);
+    if (elements.hotelServiceSocialListening) {
+        elements.hotelServiceSocialListening.addEventListener('change', toggleSocialListeningSection);
+    }
+    if (elements.slTestBtn) {
+        elements.slTestBtn.addEventListener('click', triggerSocialListeningScrape);
+    }
 
     // Sync Hex Text -> Color Picker
     const syncHex = (hexEl, pickerEl) => {
@@ -528,7 +566,10 @@ function setupEventListeners() {
                     eventos: elements.hotelServiceEventos.value,
                     reservas: elements.hotelServiceReservas.value,
                     daypass: elements.hotelServiceDaypass.value,
-                    restaurante: elements.hotelServiceRestaurante.value
+                    restaurante: elements.hotelServiceRestaurante.value,
+                    social_listening: elements.hotelServiceSocialListening
+                        ? elements.hotelServiceSocialListening.value
+                        : 'locked'
                 },
                 restaurant_config: {
                     airtable_webhook_url: elements.restAirtableWebhook ? elements.restAirtableWebhook.value.trim() : '',
@@ -543,6 +584,15 @@ function setupEventListeners() {
                     api_key: elements.evtApiKey ? elements.evtApiKey.value.trim() : '',
                     base_id: elements.evtBaseId ? elements.evtBaseId.value.trim() : '',
                     table_name: elements.evtTableName ? elements.evtTableName.value.trim() : ''
+                },
+                social_listening_config: {
+                    google_maps_url: elements.slGoogleUrl ? elements.slGoogleUrl.value.trim() : '',
+                    tripadvisor_url: elements.slTripadvisorUrl ? elements.slTripadvisorUrl.value.trim() : '',
+                    booking_url:     elements.slBookingUrl     ? elements.slBookingUrl.value.trim()     : '',
+                    scrape_frequency_hours: elements.slFrequency ? parseInt(elements.slFrequency.value, 10) || 24 : 24,
+                    last_scraped_at:      currentConfig.social_listening_config?.last_scraped_at || null,
+                    last_scrape_status:   currentConfig.social_listening_config?.last_scrape_status || null,
+                    last_scrape_error:    currentConfig.social_listening_config?.last_scrape_error || null
                 },
                 supabase_url:      elements.clientSupabaseUrl      ? (elements.clientSupabaseUrl.value.trim()      || null) : null,
                 supabase_anon_key: elements.clientSupabaseAnonKey  ? (elements.clientSupabaseAnonKey.value.trim()  || null) : null
@@ -640,6 +690,50 @@ function toggleEventosSection() {
             elements.eventosConfigSection.classList.remove('hidden');
         } else {
             elements.eventosConfigSection.classList.add('hidden');
+        }
+    }
+}
+
+async function triggerSocialListeningScrape() {
+    const clientId = elements.clientIdInput.value;
+    if (!clientId) {
+        alert('Guarda primero el cliente.');
+        return;
+    }
+    const btn = elements.slTestBtn;
+    if (!btn) return;
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<ion-icon name="hourglass-outline"></ion-icon> Scrapeando…';
+    try {
+        const res = await fetch(`/api/scrape-reviews?client=${encodeURIComponent(clientId)}`, {
+            method: 'POST'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        const total = (data.results || []).reduce((acc, r) => acc + (r.inserted || 0), 0);
+        alert(`Scrape OK. Reviews nuevas insertadas: ${total}`);
+        // refresh visible config so last_scraped_at updates
+        await loadRegistry();
+        selectClient(clientId);
+    } catch (err) {
+        console.error('Scrape error:', err);
+        alert('Error en scrape: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+    }
+}
+
+function toggleSocialListeningSection() {
+    const isHotel = elements.clientTypeInput.value === 'hotel';
+    const isUnlocked = elements.hotelServiceSocialListening
+        && elements.hotelServiceSocialListening.value === 'unlocked';
+    if (elements.socialListeningConfigSection) {
+        if (isHotel && isUnlocked) {
+            elements.socialListeningConfigSection.classList.remove('hidden');
+        } else {
+            elements.socialListeningConfigSection.classList.add('hidden');
         }
     }
 }

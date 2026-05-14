@@ -14,5 +14,16 @@
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
     }
+  ],
+  "functions": {
+    "api/scrape-reviews.js": {
+      "maxDuration": 300
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/scrape-reviews",
+      "schedule": "0 6 * * *"
+    }
   ]
 }
