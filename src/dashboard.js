@@ -5274,50 +5274,65 @@ function renderSocialListeningPanel() {
         }).join('') || '<div style="color:var(--sl-text-dim);font-size:0.82rem;">Sin datos</div>';
     }
 
-    // AI Summary
+    // AI Summary — cards visuales
     const analysis = analyzeReviews(all);
 
-    const fmtTopicList = (items, kind) => {
-        if (!items.length) return '<li class="sl-ai-empty">Sin datos suficientes</li>';
-        const labels = {
-            pos: (n) => `${n} mención${n > 1 ? 'es' : ''} positiva${n > 1 ? 's' : ''}`,
-            neg: (n) => `${n} queja${n > 1 ? 's' : ''} relacionada${n > 1 ? 's' : ''}`
-        };
-        return items.map(i => {
-            const count = kind === 'pos' ? i.pos : i.neg;
-            const total = i.total;
-            const sub = kind === 'pos'
-                ? `Mencionado ${total} veces · ${count} valoraciones positivas`
-                : `Mencionado ${total} veces · ${count} con sentimiento negativo`;
-            return `
-                <li>
-                    <div class="sl-ai-row">
-                        <strong>${escapeHtml(i.topic)}</strong>
-                        <em>${labels[kind](count)}</em>
+    const fmtTopicCards = (items, kind) => {
+        if (!items.length) return '<div class="sl-ai-empty-card">Sin datos suficientes</div>';
+        const maxCount = Math.max(...items.map(i => kind === 'pos' ? i.pos : i.neg));
+        return `<div class="sl-ai-grid">
+            ${items.slice(0, 4).map(i => {
+                const count = kind === 'pos' ? i.pos : i.neg;
+                const total = i.total;
+                const pctOfMax = Math.max(15, Math.round((count / maxCount) * 100));
+                const label = kind === 'pos' ? 'mención' : 'queja';
+                const sub = kind === 'pos'
+                    ? `${total} reseña${total > 1 ? 's' : ''} mencionan este tema`
+                    : `${total} reseña${total > 1 ? 's' : ''} reportan este tema`;
+                return `
+                    <div class="sl-ai-stat-card ${kind === 'pos' ? 'pos' : 'neg'}">
+                        <div class="sl-ai-stat-num">${count}<small>${count > 1 ? label + 's' : label}</small></div>
+                        <div class="sl-ai-stat-label">${escapeHtml(i.topic)}</div>
+                        <div class="sl-ai-stat-sub">${sub}</div>
+                        <div class="sl-ai-stat-bar"><span style="width:${pctOfMax}%"></span></div>
                     </div>
-                    <span class="sl-ai-sub">${sub}</span>
-                </li>
-            `;
-        }).join('');
+                `;
+            }).join('')}
+        </div>`;
     };
 
-    const fmtUrgentList = (items) => {
-        if (!items.length) return '<li class="sl-ai-empty">Sin reseñas urgentes ✓</li>';
-        const sourceLabels = { google: 'Google Maps', tripadvisor: 'TripAdvisor', booking: 'Booking.com' };
-        return items.map(r => `
-            <li>
-                <div class="sl-ai-row">
-                    <strong>${escapeHtml(r.author || 'Anónimo')}</strong>
-                    <em>${sourceLabels[r.source] || r.source}</em>
-                </div>
-                <span class="sl-ai-sub">${escapeHtml(r.summary || r.title || (r.body || '').slice(0, 110) + '…')}</span>
-            </li>
-        `).join('');
+    const fmtUrgentCards = (items) => {
+        if (!items.length) return '<div class="sl-ai-empty-card">Sin reseñas urgentes ✓</div>';
+        const sourceLabels = { google: 'Google', tripadvisor: 'TripAdvisor', booking: 'Booking' };
+        return `<div class="sl-ai-urgent-list">
+            ${items.slice(0, 4).map(r => {
+                const initials = (r.author || '?').trim().split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
+                const stars = typeof r.rating === 'number'
+                    ? '★'.repeat(Math.round(r.rating)) + `<span class="star-empty">${'★'.repeat(5 - Math.round(r.rating))}</span>`
+                    : '';
+                const summary = r.summary || r.title || (r.body || '').slice(0, 90) + '…';
+                return `
+                    <div class="sl-ai-urgent-row">
+                        <div class="sl-ai-urgent-head">
+                            <div class="sl-ai-urgent-avatar">${escapeHtml(initials)}</div>
+                            <div class="sl-ai-urgent-info">
+                                <div class="sl-ai-urgent-name">${escapeHtml(r.author || 'Anónimo')}</div>
+                                <div class="sl-ai-urgent-meta">
+                                    <span class="sl-ai-urgent-stars">${stars}</span>
+                                    <span class="sl-ai-urgent-source">${sourceLabels[r.source] || r.source}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sl-ai-urgent-summary">${escapeHtml(summary)}</div>
+                    </div>
+                `;
+            }).join('')}
+        </div>`;
     };
 
-    setHTML('sl-ai-strengths',    fmtTopicList(analysis.strengths,    'pos'));
-    setHTML('sl-ai-improvements', fmtTopicList(analysis.improvements, 'neg'));
-    setHTML('sl-ai-urgent',       fmtUrgentList(analysis.urgent));
+    setHTML('sl-ai-strengths',    fmtTopicCards(analysis.strengths,    'pos'));
+    setHTML('sl-ai-improvements', fmtTopicCards(analysis.improvements, 'neg'));
+    setHTML('sl-ai-urgent',       fmtUrgentCards(analysis.urgent));
     setText('sl-ai-recommendation', analysis.recommendation);
 
     // Top topics
