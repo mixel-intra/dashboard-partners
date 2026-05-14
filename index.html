@@ -372,32 +372,35 @@
         .sl-ai-cols {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
-            margin-bottom: 18px;
+            gap: 16px;
+            margin-bottom: 20px;
         }
-        @media (max-width: 900px) {
+        @media (max-width: 1000px) {
             .sl-ai-cols { grid-template-columns: 1fr; }
         }
         .sl-ai-col {
-            background: rgba(255,255,255,0.025);
+            background: rgba(255,255,255,0.03);
             border: 1px solid var(--sl-card-border);
-            border-radius: 12px;
-            padding: 14px 16px;
+            border-radius: 14px;
+            padding: 18px 20px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 14px;
         }
         .sl-ai-col-head {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: -0.005em;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--sl-card-border);
         }
         .sl-ai-col-icon {
-            width: 22px; height: 22px;
-            border-radius: 6px;
+            width: 28px; height: 28px;
+            border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 12px;
+            font-size: 15px;
+            font-weight: 700;
         }
         .sl-ai-col-strengths   .sl-ai-col-icon { background: var(--sl-pos-soft); color: var(--sl-pos); }
         .sl-ai-col-strengths   .sl-ai-col-head { color: var(--sl-pos); }
@@ -408,56 +411,79 @@
         .sl-ai-list {
             list-style: none;
             margin: 0; padding: 0;
-            display: flex; flex-direction: column; gap: 6px;
+            display: flex; flex-direction: column; gap: 12px;
         }
         .sl-ai-list li {
             display: flex;
-            align-items: baseline;
-            gap: 10px;
-            font-size: 0.82rem;
-            line-height: 1.4;
+            flex-direction: column;
+            gap: 3px;
             color: var(--sl-text);
         }
+        .sl-ai-list li > .sl-ai-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+        }
         .sl-ai-list li strong {
+            font-size: 1rem;
             font-weight: 600;
             text-transform: capitalize;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
         }
         .sl-ai-list li em {
-            margin-left: auto;
             font-style: normal;
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             color: var(--sl-text-dim);
             font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .sl-ai-list li .sl-ai-sub {
+            font-size: 0.82rem;
+            color: var(--sl-text-muted);
+            line-height: 1.45;
+        }
+        .sl-ai-list li.sl-ai-empty {
+            color: var(--sl-text-dim);
+            font-style: italic;
+            font-size: 0.86rem;
         }
 
         .sl-ai-recommendation {
-            background: linear-gradient(90deg, rgba(117,81,255,0.08), rgba(1,241,227,0.04));
-            border: 1px solid rgba(117,81,255,0.18);
-            border-radius: 12px;
-            padding: 14px 18px;
+            background: linear-gradient(90deg, rgba(117,81,255,0.1), rgba(1,241,227,0.05));
+            border: 1px solid rgba(117,81,255,0.22);
+            border-radius: 14px;
+            padding: 18px 22px;
             display: flex;
             align-items: flex-start;
-            gap: 14px;
+            gap: 16px;
         }
         .sl-ai-rec-icon {
-            font-size: 20px;
+            font-size: 26px;
             line-height: 1;
             margin-top: 1px;
+            flex-shrink: 0;
         }
         .sl-ai-rec-body { flex: 1; }
         .sl-ai-rec-eyebrow {
-            font-size: 0.64rem;
-            letter-spacing: 0.16em;
+            font-size: 0.7rem;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
             font-weight: 700;
             color: #B5A4FF;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .sl-ai-rec-text {
-            font-size: 0.88rem;
-            line-height: 1.5;
+            font-size: 1rem;
+            line-height: 1.55;
             color: var(--sl-text);
             margin: 0;
+            font-weight: 500;
         }
 
         /* ============================================================
