@@ -4,7 +4,10 @@
 -- ============================================================
 -- Pegar en el SQL Editor del Supabase admin DESPUÉS de las
 -- migrations 002 y 003. Habilita social_listening en el cliente
--- existente y carga 22 reseñas reales pre-analizadas.
+-- existente y carga 15 reseñas REALES pre-analizadas
+-- (11 Google Maps + 4 TripAdvisor, textos literales de las páginas
+-- públicas del hotel). Para agregar más, anexar capturas reales —
+-- no inventar reseñas.
 --
 -- Si quieres usarlo en otro cliente, Find&Replace:
 --   'garden-inn-santa-fe' → 'tu-slug-aquí'
@@ -25,7 +28,7 @@ SET hotel_services = COALESCE(hotel_services, '{}'::jsonb)
     )
 WHERE id_slug = 'garden-inn-santa-fe';
 
--- 2. Reseñas (22) — reales, tomadas de Google + TripAdvisor + Booking
+-- 2. Reseñas (15) — todas reales, textos literales de Google + TripAdvisor
 DELETE FROM reviews WHERE hotel_id = 'garden-inn-santa-fe';
 
 INSERT INTO reviews (
@@ -34,7 +37,7 @@ INSERT INTO reviews (
     analyzed_at, analysis_model
 ) VALUES
 
--- ─── GOOGLE MAPS (11 reseñas, promedio ~4.2) ──────────────────────────
+-- ─── GOOGLE MAPS (11 reseñas reales) ──────────────────────────
 ('garden-inn-santa-fe','google','g_rafael_arzola_2026_02','Rafael Arzola',5.0,
  NULL,
  'El Hilton Garden Inn Santa Fe es un hotel que transmite calma desde que llegas. No es un lugar que intente deslumbrar con lujo exagerado, sino que apuesta por la comodidad, la funcionalidad y una atmósfera tranquila que se agradece, sobre todo después de un día de trabajo intenso. Habitaciones bien pensadas, cama cómoda y excelente servicio.',
@@ -134,7 +137,7 @@ INSERT INTO reviews (
  ARRAY['servicio','comodidad','expo'],
  now(),'claude-haiku-4-5-20251001'),
 
--- ─── TRIPADVISOR (6 reseñas, promedio ~3.5) ──────────────────────────
+-- ─── TRIPADVISOR (4 reseñas reales) ──────────────────────────
 ('garden-inn-santa-fe','tripadvisor','ta_hanskatrot_2026_02','hanskatrot',5.0,
  'Vale la pena la estancia',
  'Personal muy profesional, que hablaba muy buen inglés. El servicio Bellboy, especialmente un chico alto con el pelo más largo es muy profesional y maniobra el equipaje y maletas con cuidado. ¡También hablaba inglés! Comparte restaurante con DoubleTree — la comida es fresca y su desayuno buffet es muy diverso. Su televisor no está conectado a WiFi, lo que no tiene sentido para una marca Hilton.',
@@ -169,71 +172,11 @@ INSERT INTO reviews (
  'negative','cleanliness','high',
  'Habitación 604 con sábanas sucias, baño tapado, sin agua caliente y equipos rotos.',
  ARRAY['limpieza','sabanas','bano','agua-caliente','mantenimiento'],
- now(),'claude-haiku-4-5-20251001'),
-
-('garden-inn-santa-fe','tripadvisor','ta_mariomorales77_2025_07','mariomorales77',3.0,
- 'Cumple para estancia corta',
- 'Hotel funcional para una estancia corta de trabajo. Las habitaciones están limpias pero algo desgastadas. El desayuno es estándar, nada destacado. El internet en algunas zonas es lento.',
- 'es','2025-07-12T10:00:00Z',NULL,
- 'neutral','rooms','low',
- 'Funcional para negocios pero habitaciones desgastadas y WiFi lento.',
- ARRAY['habitaciones','desayuno','internet'],
- now(),'claude-haiku-4-5-20251001'),
-
-('garden-inn-santa-fe','tripadvisor','ta_isabel_g_2025_10','Isabel G.',4.0,
- 'Buena opción cerca de Expo Santa Fe',
- 'La ubicación es lo mejor del hotel, súper cerca de Expo Santa Fe caminando. El check-in fue rápido y eficiente. La habitación cómoda aunque un poco pequeña para el precio. Recomendable para viajes cortos de trabajo.',
- 'es','2025-10-29T15:30:00Z',NULL,
- 'positive','location','low',
- 'Excelente ubicación para Expo Santa Fe; habitaciones algo pequeñas para el precio.',
- ARRAY['ubicacion','checkin','tamano','precio'],
- now(),'claude-haiku-4-5-20251001'),
-
--- ─── BOOKING.COM (5 reseñas, escala 1-10 normalizada a /5) ────────────
-('garden-inn-santa-fe','booking','bk_maria_gonzalez_2026_02','Maria González',4.5,
- 'Excelente para negocios',
- 'Muy buena experiencia. La ubicación cerca de Expo Santa Fe es perfecta para juntas. El desayuno buffet incluido vale la pena, gran variedad. Cama súper cómoda. El estacionamiento aparte es lo único que no me gustó.',
- 'es','2026-02-14T09:00:00Z',NULL,
- 'positive','location','low',
- 'Excelente ubicación de negocios y desayuno; estacionamiento extra incomoda.',
- ARRAY['ubicacion','desayuno','cama','estacionamiento'],
- now(),'claude-haiku-4-5-20251001'),
-
-('garden-inn-santa-fe','booking','bk_carlos_martin_2026_01','Carlos Martín',4.5,
- 'Perfecto para Expo Santa Fe',
- 'Vine para un congreso en Expo Santa Fe y el hotel está a 5 minutos caminando. Las habitaciones son modernas y limpias. El gimnasio está bien equipado. El servicio de recepción 24 hrs es muy útil.',
- 'es','2026-01-30T18:00:00Z',NULL,
- 'positive','location','low',
- 'Ideal para congresos en Expo Santa Fe, habitaciones modernas y gimnasio bien equipado.',
- ARRAY['congreso','expo','gimnasio','recepcion'],
- now(),'claude-haiku-4-5-20251001'),
-
-('garden-inn-santa-fe','booking','bk_ana_fernandez_2025_11','Ana Fernández',3.0,
- 'Regular, esperaba más',
- 'Para ser un Hilton esperaba más calidad. La habitación correcta pero con detalles descuidados: una lámpara fundida, el secador de pelo no funcionaba bien. El servicio al cuarto tardó casi una hora. La ubicación sí es muy buena.',
- 'es','2025-11-18T20:15:00Z',NULL,
- 'negative','rooms','medium',
- 'Detalles descuidados en habitación y servicio al cuarto lento para una marca Hilton.',
- ARRAY['habitacion','servicio-cuarto','calidad'],
- now(),'claude-haiku-4-5-20251001'),
-
-('garden-inn-santa-fe','booking','bk_pierre_dubois_2025_10','Pierre Dubois',3.8,
- 'Bon hôtel mais service inégal',
- 'Bon emplacement près d''Expo Santa Fe. Les chambres sont propres et confortables. Cependant le service à la réception était lent à mon arrivée, et le wifi parfois instable. Le petit-déjeuner buffet est bien.',
- 'fr','2025-10-12T07:45:00Z',NULL,
- 'neutral','service','medium',
- 'Buena ubicación y limpieza pero servicio en recepción lento y WiFi inestable.',
- ARRAY['ubicacion','recepcion','wifi','desayuno'],
- now(),'claude-haiku-4-5-20251001'),
-
-('garden-inn-santa-fe','booking','bk_sarah_johnson_2025_09','Sarah Johnson',2.5,
- 'Disappointing for a Hilton',
- 'Stayed here for a business trip. The room had a strong smell of cleaning chemicals when we arrived. Front desk was slow and unhelpful when we asked about late checkout (charged extra fee). Breakfast was okay but nothing special.',
- 'en','2025-09-25T14:30:00Z',NULL,
- 'negative','service','medium',
- 'Olor químico en habitación y recepción cobró extra por late checkout sin flexibilidad.',
- ARRAY['olor','recepcion','late-checkout','desayuno'],
  now(),'claude-haiku-4-5-20251001');
+
+-- NOTA: TripAdvisor (4) y Booking.com (0). Para llenar el demo con más
+-- volumen, agregar capturas REALES adicionales de TripAdvisor y Booking
+-- y extender este INSERT. NO INVENTAR reseñas.
 
 -- 3. Verificar
 SELECT
