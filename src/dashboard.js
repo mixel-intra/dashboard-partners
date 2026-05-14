@@ -5277,16 +5277,47 @@ function renderSocialListeningPanel() {
     // AI Summary
     const analysis = analyzeReviews(all);
 
-    const fmtList = (items, getCount) => items.length
-        ? items.map(i => `<li><strong>${escapeHtml(i.topic || i.author || '')}</strong> <em>${getCount(i)}</em></li>`).join('')
-        : '<li style="color:var(--sl-text-dim);font-style:italic;">Sin datos suficientes</li>';
+    const fmtTopicList = (items, kind) => {
+        if (!items.length) return '<li class="sl-ai-empty">Sin datos suficientes</li>';
+        const labels = {
+            pos: (n) => `${n} mención${n > 1 ? 'es' : ''} positiva${n > 1 ? 's' : ''}`,
+            neg: (n) => `${n} queja${n > 1 ? 's' : ''} relacionada${n > 1 ? 's' : ''}`
+        };
+        return items.map(i => {
+            const count = kind === 'pos' ? i.pos : i.neg;
+            const total = i.total;
+            const sub = kind === 'pos'
+                ? `Mencionado ${total} veces · ${count} valoraciones positivas`
+                : `Mencionado ${total} veces · ${count} con sentimiento negativo`;
+            return `
+                <li>
+                    <div class="sl-ai-row">
+                        <strong>${escapeHtml(i.topic)}</strong>
+                        <em>${labels[kind](count)}</em>
+                    </div>
+                    <span class="sl-ai-sub">${sub}</span>
+                </li>
+            `;
+        }).join('');
+    };
 
-    setHTML('sl-ai-strengths', fmtList(analysis.strengths, i => `${i.pos} mención${i.pos > 1 ? 'es' : ''}`));
-    setHTML('sl-ai-improvements', fmtList(analysis.improvements, i => `${i.neg} queja${i.neg > 1 ? 's' : ''}`));
-    setHTML('sl-ai-urgent', analysis.urgent.length
-        ? analysis.urgent.map(r => `<li><strong>${escapeHtml(r.author || 'Anónimo')}</strong> <em>${escapeHtml((r.summary || '').slice(0, 60))}${(r.summary || '').length > 60 ? '…' : ''}</em></li>`).join('')
-        : '<li style="color:var(--sl-text-dim);font-style:italic;">Sin reseñas urgentes ✓</li>'
-    );
+    const fmtUrgentList = (items) => {
+        if (!items.length) return '<li class="sl-ai-empty">Sin reseñas urgentes ✓</li>';
+        const sourceLabels = { google: 'Google Maps', tripadvisor: 'TripAdvisor', booking: 'Booking.com' };
+        return items.map(r => `
+            <li>
+                <div class="sl-ai-row">
+                    <strong>${escapeHtml(r.author || 'Anónimo')}</strong>
+                    <em>${sourceLabels[r.source] || r.source}</em>
+                </div>
+                <span class="sl-ai-sub">${escapeHtml(r.summary || r.title || (r.body || '').slice(0, 110) + '…')}</span>
+            </li>
+        `).join('');
+    };
+
+    setHTML('sl-ai-strengths',    fmtTopicList(analysis.strengths,    'pos'));
+    setHTML('sl-ai-improvements', fmtTopicList(analysis.improvements, 'neg'));
+    setHTML('sl-ai-urgent',       fmtUrgentList(analysis.urgent));
     setText('sl-ai-recommendation', analysis.recommendation);
 
     // Top topics
