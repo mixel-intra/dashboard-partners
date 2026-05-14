@@ -1200,6 +1200,18 @@
                                             <option value="hidden">Oculto</option>
                                         </select>
                                     </div>
+                                    <div class="service-card">
+                                        <div class="service-icon">
+                                            <ion-icon name="star-outline"></ion-icon>
+                                        </div>
+                                        <span class="service-name">Reputación</span>
+                                        <select id="hotel-service-social-listening" class="fi"
+                                                style="padding:7px 28px 7px 10px;font-size:0.76rem;">
+                                            <option value="locked">Bloqueado</option>
+                                            <option value="unlocked">Habilitado</option>
+                                            <option value="hidden">Oculto</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <!-- Restaurant webhooks (hidden by default) -->
@@ -1257,6 +1269,57 @@
                                                    placeholder="Reservas Calificadas">
                                         </div>
                                     </div>
+                                </div>
+
+                                <!-- Social Listening config (visible for hotels) -->
+                                <div id="social-listening-config-section" class="hidden">
+                                    <div class="sc-divider"></div>
+                                    <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px;">
+                                        <div class="sc-icon sci-amber"
+                                             style="width:22px;height:22px;border-radius:6px;font-size:0.72rem;flex-shrink:0;">
+                                            <ion-icon name="star-outline"></ion-icon>
+                                        </div>
+                                        <span class="sc-eyebrow" style="color:var(--amber);">
+                                            Social Listening · Reseñas online (Premium)
+                                        </span>
+                                    </div>
+                                    <p class="hint" style="margin-bottom:11px;">
+                                        Pega la URL pública del hotel en cada plataforma. El sistema
+                                        scrapea las reseñas 1 vez al día y las analiza con Claude
+                                        (sentimiento, categoría, prioridad).
+                                    </p>
+                                    <div class="fg">
+                                        <div class="fg-group">
+                                            <label class="fgl">
+                                                <ion-icon name="logo-google"></ion-icon> Google Maps URL
+                                            </label>
+                                            <input type="text" id="sl-google-url" class="fi"
+                                                   placeholder="https://maps.google.com/?cid=...">
+                                        </div>
+                                        <div class="fg-group">
+                                            <label class="fgl">TripAdvisor URL</label>
+                                            <input type="text" id="sl-tripadvisor-url" class="fi"
+                                                   placeholder="https://www.tripadvisor.com.mx/Hotel_Review-...">
+                                        </div>
+                                        <div class="fg-group">
+                                            <label class="fgl">Booking.com URL</label>
+                                            <input type="text" id="sl-booking-url" class="fi"
+                                                   placeholder="https://www.booking.com/hotel/mx/...">
+                                        </div>
+                                        <div class="fg-group">
+                                            <label class="fgl">Frecuencia (horas)</label>
+                                            <input type="number" id="sl-frequency" class="fi"
+                                                   min="6" max="168" value="24"
+                                                   placeholder="24">
+                                        </div>
+                                    </div>
+                                    <div id="sl-last-scrape-info"
+                                         style="margin-top:11px;font-size:0.74rem;color:var(--text-muted);"></div>
+                                    <button type="button" id="sl-test-btn" class="btn btn-secondary"
+                                            style="margin-top:11px;font-size:0.78rem;padding:7px 14px;">
+                                        <ion-icon name="flash-outline"></ion-icon>
+                                        Ejecutar scrape ahora
+                                    </button>
                                 </div>
 
                                 <!-- Eventos Airtable config (visible for hotels) -->

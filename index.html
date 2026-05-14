@@ -243,6 +243,178 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* ===== PANEL SOCIAL LISTENING — REPUTACIÓN ===== */
+        #social-listening-panel.hidden { display: none; }
+        .sl-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px 0;
+            margin-bottom: 14px;
+            border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+        }
+        .sl-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+        }
+        .sl-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 80px;
+        }
+        .sl-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted, #9aa0a6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .sl-stat-value {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text, #fff);
+        }
+        .sl-stat-pos .sl-stat-value { color: #10B981; }
+        .sl-stat-neu .sl-stat-value { color: #F59E0B; }
+        .sl-stat-neg .sl-stat-value { color: #FF4444; }
+        .sl-stat-alert .sl-stat-value { color: #FF6B9D; }
+
+        .sl-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .sl-select {
+            background: var(--bg-card, rgba(255,255,255,0.04));
+            border: 1px solid var(--border, rgba(255,255,255,0.08));
+            color: var(--text, #fff);
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            cursor: pointer;
+        }
+
+        .sl-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted, #9aa0a6);
+        }
+        .sl-empty.hidden { display: none; }
+        .sl-empty ion-icon { font-size: 56px; opacity: 0.4; margin-bottom: 12px; }
+        .sl-empty h3 { font-size: 1.1rem; margin: 0 0 6px; color: var(--text, #fff); }
+        .sl-empty p { margin: 0; font-size: 0.86rem; }
+
+        .sl-reviews-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 14px;
+        }
+        .sl-review {
+            background: var(--bg-card, rgba(255,255,255,0.04));
+            border: 1px solid var(--border, rgba(255,255,255,0.08));
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: border-color 0.15s, transform 0.15s;
+        }
+        .sl-review:hover { border-color: rgba(255,255,255,0.2); }
+        .sl-review.sl-priority-high { border-left: 3px solid #FF4444; }
+        .sl-review-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .sl-review-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text, #fff);
+        }
+        .sl-review-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.68rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .sl-source-google      { background: rgba(66,133,244,0.15);  color: #6FA0F5; }
+        .sl-source-tripadvisor { background: rgba(0,170,108,0.15);   color: #34D399; }
+        .sl-source-booking     { background: rgba(0,53,128,0.25);    color: #6FA0F5; }
+        .sl-review-rating {
+            color: #F5C518;
+            font-size: 0.86rem;
+            letter-spacing: 1px;
+        }
+        .sl-review-date {
+            font-size: 0.7rem;
+            color: var(--text-muted, #9aa0a6);
+        }
+        .sl-review-title {
+            font-size: 0.92rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text, #fff);
+        }
+        .sl-review-body {
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: var(--text-muted, #c8cacd);
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .sl-review.expanded .sl-review-body {
+            -webkit-line-clamp: unset;
+        }
+        .sl-review-toggle {
+            background: none;
+            border: none;
+            color: var(--accent-primary, #7551FF);
+            font-size: 0.74rem;
+            cursor: pointer;
+            padding: 0;
+            text-align: left;
+            font-weight: 600;
+        }
+        .sl-review-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .sl-tag {
+            font-size: 0.68rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            color: var(--text-muted, #9aa0a6);
+        }
+        .sl-tag-sentiment-positive { background: rgba(16,185,129,0.15);  color: #34D399; }
+        .sl-tag-sentiment-neutral  { background: rgba(245,158,11,0.15);  color: #F59E0B; }
+        .sl-tag-sentiment-negative { background: rgba(255,68,68,0.15);   color: #FF6B6B; }
+        .sl-tag-priority-high      { background: rgba(255,68,68,0.18);   color: #FF6B6B; font-weight: 700; }
+        .sl-summary {
+            font-size: 0.78rem;
+            font-style: italic;
+            color: var(--text-muted, #9aa0a6);
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            border-left: 2px solid var(--accent-primary, #7551FF);
+        }
+
         /* ===== PANEL DE RESERVAS — OPS CONSOLE V2 ===== */
         #restaurant-panel {
             padding: 0 24px 16px;
@@ -3561,6 +3733,10 @@
                         <ion-icon name="restaurant-outline"></ion-icon><span>Restaurante</span> <span id="rest-new-badge"
                             class="rest-new-badge"></span>
                     </button>
+                    <button class="dash-tab" data-tab="social_listening">
+                        <ion-icon name="star-outline"></ion-icon><span>Reputación</span>
+                        <span id="sl-new-badge" class="rest-new-badge"></span>
+                    </button>
                 </div>
             </div>
 
@@ -3885,6 +4061,64 @@
             <!-- Eventos Pipeline (full-screen, toggled from dashboard) -->
             <div id="eventos-panel" class="evt-panel-full hidden" style="padding: 0 24px 24px;">
                 <!-- Content injected by renderEventosPanel() -->
+            </div>
+
+            <!-- ===== PANEL DE SOCIAL LISTENING — REPUTACIÓN ===== -->
+            <div id="social-listening-panel" class="hidden" style="padding: 0 24px 24px;">
+                <div class="sl-toolbar">
+                    <div class="sl-stats">
+                        <div class="sl-stat">
+                            <span class="sl-stat-label">Rating promedio</span>
+                            <span class="sl-stat-value" id="sl-avg-rating">—</span>
+                        </div>
+                        <div class="sl-stat">
+                            <span class="sl-stat-label">Total reviews</span>
+                            <span class="sl-stat-value" id="sl-total">0</span>
+                        </div>
+                        <div class="sl-stat sl-stat-pos">
+                            <span class="sl-stat-label">Positivas</span>
+                            <span class="sl-stat-value" id="sl-positive">0</span>
+                        </div>
+                        <div class="sl-stat sl-stat-neu">
+                            <span class="sl-stat-label">Neutras</span>
+                            <span class="sl-stat-value" id="sl-neutral">0</span>
+                        </div>
+                        <div class="sl-stat sl-stat-neg">
+                            <span class="sl-stat-label">Negativas</span>
+                            <span class="sl-stat-value" id="sl-negative">0</span>
+                        </div>
+                        <div class="sl-stat sl-stat-alert">
+                            <span class="sl-stat-label">Urgentes</span>
+                            <span class="sl-stat-value" id="sl-high">0</span>
+                        </div>
+                    </div>
+                    <div class="sl-filters">
+                        <select id="sl-filter-source" class="sl-select">
+                            <option value="">Todas las fuentes</option>
+                            <option value="google">Google Maps</option>
+                            <option value="tripadvisor">TripAdvisor</option>
+                            <option value="booking">Booking.com</option>
+                        </select>
+                        <select id="sl-filter-sentiment" class="sl-select">
+                            <option value="">Todos los sentimientos</option>
+                            <option value="positive">Positivo</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="negative">Negativo</option>
+                        </select>
+                        <select id="sl-filter-priority" class="sl-select">
+                            <option value="">Toda prioridad</option>
+                            <option value="high">Urgente</option>
+                            <option value="medium">Media</option>
+                            <option value="low">Baja</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="sl-empty" class="sl-empty hidden">
+                    <ion-icon name="star-outline"></ion-icon>
+                    <h3>Aún no hay reseñas</h3>
+                    <p>El primer scrape se ejecuta en las próximas horas. También puedes lanzarlo manualmente desde la administración.</p>
+                </div>
+                <div id="sl-reviews-list" class="sl-reviews-list"></div>
             </div>
 
             <!-- Hospedaje Detail Modal -->
