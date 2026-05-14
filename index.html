@@ -243,68 +243,502 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ===== PANEL SOCIAL LISTENING — REPUTACIÓN ===== */
+        /* ============================================================
+           SOCIAL LISTENING — Editorial Intelligence
+           Bloomberg Terminal × Apple Health. Tipografía dramática,
+           paleta restrictiva (esmeralda/ámbar/rosa para sentimientos),
+           composición asimétrica con AI Summary como hero.
+           ============================================================ */
+        #social-listening-panel {
+            --sl-pos: #10B981;
+            --sl-pos-soft: rgba(16,185,129,0.12);
+            --sl-neu: #F59E0B;
+            --sl-neu-soft: rgba(245,158,11,0.12);
+            --sl-neg: #F43F5E;
+            --sl-neg-soft: rgba(244,63,94,0.12);
+            --sl-urgent: #FF4D6D;
+            --sl-card-bg: rgba(255,255,255,0.025);
+            --sl-card-border: rgba(255,255,255,0.07);
+            --sl-card-border-hover: rgba(255,255,255,0.16);
+            --sl-text: #F5F6F8;
+            --sl-text-muted: rgba(245,246,248,0.55);
+            --sl-text-dim: rgba(245,246,248,0.35);
+            --sl-google: #6FA0F5;
+            --sl-tripadvisor: #34D399;
+            --sl-booking: #00B7E1;
+        }
+        :root[data-theme="light"] #social-listening-panel {
+            --sl-card-bg: rgba(0,0,0,0.02);
+            --sl-card-border: rgba(0,0,0,0.08);
+            --sl-card-border-hover: rgba(0,0,0,0.18);
+            --sl-text: #0B0D12;
+            --sl-text-muted: rgba(11,13,18,0.6);
+            --sl-text-dim: rgba(11,13,18,0.35);
+        }
         #social-listening-panel.hidden { display: none; }
-        .sl-toolbar {
+        #social-listening-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            animation: sl-fade-in 0.5s ease-out;
+        }
+        @keyframes sl-fade-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Editorial labels ── */
+        .sl-eyebrow {
+            font-size: 0.66rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--sl-text-dim);
+            font-weight: 600;
+        }
+        .sl-h2 {
+            font-size: 1.55rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0;
+            color: var(--sl-text);
+        }
+        .sl-h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            margin: 0;
+            color: var(--sl-text);
+        }
+
+        /* ============================================================
+           1. AI EXECUTIVE SUMMARY
+           ============================================================ */
+        .sl-ai-summary {
+            position: relative;
+            background:
+                radial-gradient(1200px 300px at 0% 0%, rgba(117,81,255,0.08), transparent 60%),
+                radial-gradient(800px 250px at 100% 100%, rgba(1,241,227,0.05), transparent 60%),
+                linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid var(--sl-card-border);
+            border-radius: 18px;
+            padding: 26px 28px 24px;
+            overflow: hidden;
+        }
+        .sl-ai-summary::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(117,81,255,0.4), transparent 30%, transparent 70%, rgba(1,241,227,0.3));
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .sl-ai-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+        .sl-ai-head-left { display: flex; align-items: center; gap: 12px; }
+        .sl-ai-spark {
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(117,81,255,0.25), rgba(1,241,227,0.18));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .sl-ai-title-block { display: flex; flex-direction: column; gap: 2px; }
+        .sl-ai-updated {
+            font-size: 0.72rem;
+            color: var(--sl-text-dim);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .sl-ai-updated::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--sl-pos);
+            box-shadow: 0 0 8px var(--sl-pos);
+            animation: sl-pulse 2s ease-in-out infinite;
+        }
+        @keyframes sl-pulse { 50% { opacity: 0.4; } }
+
+        .sl-ai-cols {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 900px) {
+            .sl-ai-cols { grid-template-columns: 1fr; }
+        }
+        .sl-ai-col {
+            background: rgba(255,255,255,0.025);
+            border: 1px solid var(--sl-card-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sl-ai-col-head {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: -0.005em;
+        }
+        .sl-ai-col-icon {
+            width: 22px; height: 22px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px;
+        }
+        .sl-ai-col-strengths   .sl-ai-col-icon { background: var(--sl-pos-soft); color: var(--sl-pos); }
+        .sl-ai-col-strengths   .sl-ai-col-head { color: var(--sl-pos); }
+        .sl-ai-col-improve     .sl-ai-col-icon { background: var(--sl-neu-soft); color: var(--sl-neu); }
+        .sl-ai-col-improve     .sl-ai-col-head { color: var(--sl-neu); }
+        .sl-ai-col-urgent      .sl-ai-col-icon { background: var(--sl-neg-soft); color: var(--sl-neg); }
+        .sl-ai-col-urgent      .sl-ai-col-head { color: var(--sl-neg); }
+        .sl-ai-list {
+            list-style: none;
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .sl-ai-list li {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            font-size: 0.82rem;
+            line-height: 1.4;
+            color: var(--sl-text);
+        }
+        .sl-ai-list li strong {
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .sl-ai-list li em {
+            margin-left: auto;
+            font-style: normal;
+            font-size: 0.7rem;
+            color: var(--sl-text-dim);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .sl-ai-recommendation {
+            background: linear-gradient(90deg, rgba(117,81,255,0.08), rgba(1,241,227,0.04));
+            border: 1px solid rgba(117,81,255,0.18);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .sl-ai-rec-icon {
+            font-size: 20px;
+            line-height: 1;
+            margin-top: 1px;
+        }
+        .sl-ai-rec-body { flex: 1; }
+        .sl-ai-rec-eyebrow {
+            font-size: 0.64rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #B5A4FF;
+            margin-bottom: 4px;
+        }
+        .sl-ai-rec-text {
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: var(--sl-text);
+            margin: 0;
+        }
+
+        /* ============================================================
+           2. HERO METRICS — Rating + Distribution + Source Breakdown
+           ============================================================ */
+        .sl-hero {
+            display: grid;
+            grid-template-columns: minmax(220px, 280px) 1fr minmax(220px, 280px);
+            gap: 24px;
+            align-items: stretch;
+        }
+        @media (max-width: 1100px) {
+            .sl-hero { grid-template-columns: 1fr; }
+        }
+        .sl-hero-card {
+            background: var(--sl-card-bg);
+            border: 1px solid var(--sl-card-border);
+            border-radius: 16px;
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .sl-hero-rating-card { align-items: flex-start; }
+        .sl-hero-number {
+            font-size: 4.5rem;
+            font-weight: 700;
+            line-height: 0.95;
+            letter-spacing: -0.04em;
+            font-variant-numeric: tabular-nums;
+            color: var(--sl-text);
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        .sl-hero-number small {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: var(--sl-text-dim);
+            letter-spacing: -0.02em;
+        }
+        .sl-hero-stars {
+            color: #F5C518;
+            font-size: 1.05rem;
+            letter-spacing: 4px;
+        }
+        .sl-hero-stars .star-empty { color: rgba(245,197,24,0.22); }
+        .sl-hero-meta {
+            font-size: 0.78rem;
+            color: var(--sl-text-muted);
+        }
+        .sl-hero-meta strong { color: var(--sl-text); font-weight: 600; }
+
+        /* Distribution bar */
+        .sl-dist-block { display: flex; flex-direction: column; gap: 10px; }
+        .sl-dist-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 0.82rem;
+            color: var(--sl-text);
+            font-weight: 500;
+        }
+        .sl-dist-title span:last-child {
+            font-size: 0.72rem;
+            color: var(--sl-text-dim);
+            font-variant-numeric: tabular-nums;
+        }
+        .sl-dist-bar {
+            display: flex;
+            height: 38px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.04);
+        }
+        .sl-dist-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: rgba(0,0,0,0.85);
+            transition: flex-grow 0.4s ease;
+            font-variant-numeric: tabular-nums;
+        }
+        .sl-dist-segment.positive { background: var(--sl-pos); }
+        .sl-dist-segment.neutral  { background: var(--sl-neu); }
+        .sl-dist-segment.negative { background: var(--sl-neg); color: #fff; }
+        .sl-dist-legend {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 0.72rem;
+        }
+        .sl-dist-legend > div { display: flex; align-items: center; gap: 6px; color: var(--sl-text-muted); }
+        .sl-dist-legend .swatch { width: 8px; height: 8px; border-radius: 2px; }
+        .sl-dist-legend .swatch.positive { background: var(--sl-pos); }
+        .sl-dist-legend .swatch.neutral  { background: var(--sl-neu); }
+        .sl-dist-legend .swatch.negative { background: var(--sl-neg); }
+
+        /* Source breakdown */
+        .sl-sources-list { display: flex; flex-direction: column; gap: 10px; }
+        .sl-source-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--sl-card-border);
+        }
+        .sl-source-row:last-child { border-bottom: 0; padding-bottom: 0; }
+        .sl-source-icon {
+            width: 28px; height: 28px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+        .sl-source-icon.google      { background: rgba(111,160,245,0.12); color: var(--sl-google); }
+        .sl-source-icon.tripadvisor { background: rgba(52,211,153,0.12);  color: var(--sl-tripadvisor); }
+        .sl-source-icon.booking     { background: rgba(0,183,225,0.12);   color: var(--sl-booking); }
+        .sl-source-info { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+        .sl-source-name { font-size: 0.82rem; font-weight: 600; color: var(--sl-text); }
+        .sl-source-count { font-size: 0.7rem; color: var(--sl-text-dim); }
+        .sl-source-rating {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--sl-text);
+            font-variant-numeric: tabular-nums;
+        }
+        .sl-source-rating small { color: var(--sl-text-dim); font-size: 0.7rem; font-weight: 500; }
+
+        /* ============================================================
+           3. TOP TOPICS
+           ============================================================ */
+        .sl-topics-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .sl-topics-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .sl-topic-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .sl-topic-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px 7px 14px;
+            border-radius: 999px;
+            background: var(--sl-card-bg);
+            border: 1px solid var(--sl-card-border);
+            font-size: 0.78rem;
+            color: var(--sl-text);
+            transition: all 0.18s;
+            position: relative;
+        }
+        .sl-topic-chip:hover { border-color: var(--sl-card-border-hover); transform: translateY(-1px); }
+        .sl-topic-chip::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--sl-text-dim);
+        }
+        .sl-topic-chip.positive::before { background: var(--sl-pos); box-shadow: 0 0 6px var(--sl-pos-soft); }
+        .sl-topic-chip.neutral::before  { background: var(--sl-neu); }
+        .sl-topic-chip.negative::before { background: var(--sl-neg); box-shadow: 0 0 6px var(--sl-neg-soft); }
+        .sl-topic-chip em {
+            font-style: normal;
+            color: var(--sl-text-dim);
+            font-size: 0.7rem;
+            font-variant-numeric: tabular-nums;
+            margin-left: 2px;
+            padding-left: 8px;
+            border-left: 1px solid var(--sl-card-border);
+        }
+
+        /* ============================================================
+           4. SENTIMENT TABS + FILTERS
+           ============================================================ */
+        .sl-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 16px;
-            padding: 16px 0;
-            margin-bottom: 14px;
-            border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+            padding-top: 4px;
+            border-top: 1px solid var(--sl-card-border);
+            padding-top: 18px;
         }
-        .sl-stats {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 18px;
-        }
-        .sl-stat {
-            display: flex;
-            flex-direction: column;
+        .sl-sentiment-tabs {
+            display: inline-flex;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--sl-card-border);
+            border-radius: 10px;
+            padding: 4px;
             gap: 2px;
-            min-width: 80px;
         }
-        .sl-stat-label {
-            font-size: 0.7rem;
-            color: var(--text-muted, #9aa0a6);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .sl-stab {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            color: var(--sl-text-muted);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+            position: relative;
         }
-        .sl-stat-value {
-            font-size: 1.4rem;
+        .sl-stab:hover { color: var(--sl-text); }
+        .sl-stab.active {
+            background: rgba(255,255,255,0.07);
+            color: var(--sl-text);
             font-weight: 600;
-            color: var(--text, #fff);
         }
-        .sl-stat-pos .sl-stat-value { color: #10B981; }
-        .sl-stat-neu .sl-stat-value { color: #F59E0B; }
-        .sl-stat-neg .sl-stat-value { color: #FF4444; }
-        .sl-stat-alert .sl-stat-value { color: #FF6B9D; }
+        .sl-stab.active.sl-stab-pos { background: var(--sl-pos-soft); color: var(--sl-pos); }
+        .sl-stab.active.sl-stab-neu { background: var(--sl-neu-soft); color: var(--sl-neu); }
+        .sl-stab.active.sl-stab-neg { background: var(--sl-neg-soft); color: var(--sl-neg); }
+        .sl-stab.active.sl-stab-urgent { background: rgba(255,77,109,0.15); color: var(--sl-urgent); }
+        .sl-stab em {
+            font-style: normal;
+            font-size: 0.7rem;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.7;
+            padding: 1px 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 999px;
+        }
+        .sl-stab.active.sl-stab-urgent::before {
+            content: '';
+            position: absolute;
+            top: -2px; right: -2px;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--sl-urgent);
+            box-shadow: 0 0 10px var(--sl-urgent);
+            animation: sl-pulse 1.6s ease-in-out infinite;
+        }
 
-        .sl-filters {
+        .sl-secondary-filters {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
         }
         .sl-select {
-            background: var(--bg-card, rgba(255,255,255,0.04));
-            border: 1px solid var(--border, rgba(255,255,255,0.08));
-            color: var(--text, #fff);
-            padding: 7px 12px;
+            background: var(--sl-card-bg);
+            border: 1px solid var(--sl-card-border);
+            color: var(--sl-text);
+            padding: 8px 32px 8px 12px;
             border-radius: 8px;
             font-size: 0.78rem;
             cursor: pointer;
+            font-family: inherit;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'><path d='M3 4.5l3 3 3-3' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px;
         }
+        .sl-select:hover { border-color: var(--sl-card-border-hover); }
 
+        /* ============================================================
+           5. REVIEWS GRID
+           ============================================================ */
         .sl-empty {
             text-align: center;
             padding: 60px 20px;
-            color: var(--text-muted, #9aa0a6);
+            color: var(--sl-text-muted);
         }
         .sl-empty.hidden { display: none; }
-        .sl-empty ion-icon { font-size: 56px; opacity: 0.4; margin-bottom: 12px; }
-        .sl-empty h3 { font-size: 1.1rem; margin: 0 0 6px; color: var(--text, #fff); }
+        .sl-empty ion-icon { font-size: 56px; opacity: 0.3; margin-bottom: 12px; }
+        .sl-empty h3 { font-size: 1.1rem; margin: 0 0 6px; color: var(--sl-text); }
         .sl-empty p { margin: 0; font-size: 0.86rem; }
 
         .sl-reviews-list {
@@ -313,68 +747,132 @@
             gap: 14px;
         }
         .sl-review {
-            background: var(--bg-card, rgba(255,255,255,0.04));
-            border: 1px solid var(--border, rgba(255,255,255,0.08));
-            border-radius: 12px;
-            padding: 14px;
+            position: relative;
+            background: var(--sl-card-bg);
+            border: 1px solid var(--sl-card-border);
+            border-radius: 14px;
+            padding: 16px 18px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            transition: border-color 0.15s, transform 0.15s;
+            gap: 12px;
+            transition: all 0.18s ease;
+            overflow: hidden;
         }
-        .sl-review:hover { border-color: rgba(255,255,255,0.2); }
-        .sl-review.sl-priority-high { border-left: 3px solid #FF4444; }
+        .sl-review::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--sl-text-dim);
+            opacity: 0.4;
+            transition: opacity 0.18s, background 0.18s;
+        }
+        .sl-review.sl-sentiment-positive::before { background: var(--sl-pos); }
+        .sl-review.sl-sentiment-neutral::before  { background: var(--sl-neu); }
+        .sl-review.sl-sentiment-negative::before { background: var(--sl-neg); }
+        .sl-review.sl-priority-high::before {
+            background: var(--sl-urgent);
+            box-shadow: 0 0 12px var(--sl-urgent);
+            opacity: 1;
+        }
+        .sl-review:hover {
+            border-color: var(--sl-card-border-hover);
+            transform: translateY(-1px);
+        }
+        .sl-review:hover::before { opacity: 1; }
+
         .sl-review-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
+            gap: 10px;
         }
-        .sl-review-author {
+        .sl-review-author-block {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 9px;
+            min-width: 0;
+        }
+        .sl-review-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(117,81,255,0.4), rgba(1,241,227,0.3));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+            letter-spacing: -0.02em;
+        }
+        .sl-review-author-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            min-width: 0;
+        }
+        .sl-review-author {
             font-size: 0.84rem;
             font-weight: 600;
-            color: var(--text, #fff);
+            color: var(--sl-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sl-review-date {
+            font-size: 0.68rem;
+            color: var(--sl-text-dim);
         }
         .sl-review-source {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            font-size: 0.68rem;
-            padding: 2px 8px;
-            border-radius: 999px;
+            gap: 5px;
+            font-size: 0.62rem;
+            padding: 3px 8px;
+            border-radius: 6px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+            flex-shrink: 0;
         }
-        .sl-source-google      { background: rgba(66,133,244,0.15);  color: #6FA0F5; }
-        .sl-source-tripadvisor { background: rgba(0,170,108,0.15);   color: #34D399; }
-        .sl-source-booking     { background: rgba(0,53,128,0.25);    color: #6FA0F5; }
+        .sl-source-google      { background: rgba(111,160,245,0.13);  color: var(--sl-google); }
+        .sl-source-tripadvisor { background: rgba(52,211,153,0.13);   color: var(--sl-tripadvisor); }
+        .sl-source-booking     { background: rgba(0,183,225,0.13);    color: var(--sl-booking); }
+
+        .sl-review-rating-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         .sl-review-rating {
             color: #F5C518;
-            font-size: 0.86rem;
-            letter-spacing: 1px;
+            font-size: 0.9rem;
+            letter-spacing: 1.5px;
         }
-        .sl-review-date {
-            font-size: 0.7rem;
-            color: var(--text-muted, #9aa0a6);
+        .sl-review-rating .star-empty { color: rgba(245,197,24,0.22); }
+        .sl-review-rating-num {
+            font-size: 0.74rem;
+            color: var(--sl-text-muted);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
         }
+
         .sl-review-title {
-            font-size: 0.92rem;
+            font-size: 0.94rem;
             font-weight: 600;
             margin: 0;
-            color: var(--text, #fff);
+            line-height: 1.35;
+            color: var(--sl-text);
+            letter-spacing: -0.01em;
         }
         .sl-review-body {
-            font-size: 0.82rem;
-            line-height: 1.5;
-            color: var(--text-muted, #c8cacd);
+            font-size: 0.83rem;
+            line-height: 1.55;
+            color: var(--sl-text-muted);
             display: -webkit-box;
             -webkit-line-clamp: 4;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            margin: 0;
         }
         .sl-review.expanded .sl-review-body {
             -webkit-line-clamp: unset;
@@ -382,38 +880,86 @@
         .sl-review-toggle {
             background: none;
             border: none;
-            color: var(--accent-primary, #7551FF);
-            font-size: 0.74rem;
+            color: var(--sl-text-muted);
+            font-size: 0.72rem;
             cursor: pointer;
             padding: 0;
             text-align: left;
             font-weight: 600;
+            font-family: inherit;
+            align-self: flex-start;
         }
+        .sl-review-toggle:hover { color: var(--sl-text); }
+
+        .sl-summary {
+            position: relative;
+            font-size: 0.8rem;
+            line-height: 1.45;
+            color: var(--sl-text);
+            padding: 10px 12px 10px 36px;
+            background: rgba(117,81,255,0.06);
+            border-radius: 10px;
+            border: 1px solid rgba(117,81,255,0.15);
+        }
+        .sl-summary::before {
+            content: '✦';
+            position: absolute;
+            top: 9px; left: 12px;
+            font-size: 14px;
+            color: #B5A4FF;
+        }
+        .sl-summary-label {
+            display: block;
+            font-size: 0.6rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #B5A4FF;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
         .sl-review-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 5px;
         }
         .sl-tag {
-            font-size: 0.68rem;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.06);
-            color: var(--text-muted, #9aa0a6);
-        }
-        .sl-tag-sentiment-positive { background: rgba(16,185,129,0.15);  color: #34D399; }
-        .sl-tag-sentiment-neutral  { background: rgba(245,158,11,0.15);  color: #F59E0B; }
-        .sl-tag-sentiment-negative { background: rgba(255,68,68,0.15);   color: #FF6B6B; }
-        .sl-tag-priority-high      { background: rgba(255,68,68,0.18);   color: #FF6B6B; font-weight: 700; }
-        .sl-summary {
-            font-size: 0.78rem;
-            font-style: italic;
-            color: var(--text-muted, #9aa0a6);
-            padding: 8px 10px;
-            background: rgba(255,255,255,0.03);
+            font-size: 0.66rem;
+            padding: 3px 9px;
             border-radius: 6px;
-            border-left: 2px solid var(--accent-primary, #7551FF);
+            background: rgba(255,255,255,0.05);
+            color: var(--sl-text-muted);
+            letter-spacing: 0.01em;
         }
+        .sl-tag.sl-tag-pos      { background: var(--sl-pos-soft); color: var(--sl-pos); font-weight: 600; }
+        .sl-tag.sl-tag-neu      { background: var(--sl-neu-soft); color: var(--sl-neu); font-weight: 600; }
+        .sl-tag.sl-tag-neg      { background: var(--sl-neg-soft); color: var(--sl-neg); font-weight: 600; }
+        .sl-tag.sl-tag-urgent   {
+            background: rgba(255,77,109,0.16);
+            color: var(--sl-urgent);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
+        }
+        .sl-tag.sl-tag-category {
+            background: transparent;
+            border: 1px solid var(--sl-card-border);
+            color: var(--sl-text-muted);
+        }
+
+        .sl-review-link {
+            font-size: 0.72rem;
+            color: var(--sl-text-muted);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+            transition: color 0.15s;
+            align-self: flex-start;
+        }
+        .sl-review-link:hover { color: var(--sl-text); }
 
         /* ===== PANEL DE RESERVAS — OPS CONSOLE V2 ===== */
         #restaurant-panel {
@@ -4063,60 +4609,118 @@
                 <!-- Content injected by renderEventosPanel() -->
             </div>
 
-            <!-- ===== PANEL DE SOCIAL LISTENING — REPUTACIÓN ===== -->
-            <div id="social-listening-panel" class="hidden" style="padding: 0 24px 24px;">
-                <div class="sl-toolbar">
-                    <div class="sl-stats">
-                        <div class="sl-stat">
-                            <span class="sl-stat-label">Rating promedio</span>
-                            <span class="sl-stat-value" id="sl-avg-rating">—</span>
+            <!-- ===== PANEL DE SOCIAL LISTENING — REPUTACIÓN (Editorial Intelligence) ===== -->
+            <div id="social-listening-panel" class="hidden" style="padding: 0 24px 28px;">
+
+                <!-- 1. AI EXECUTIVE SUMMARY -->
+                <section class="sl-ai-summary">
+                    <div class="sl-ai-head">
+                        <div class="sl-ai-head-left">
+                            <div class="sl-ai-spark">✦</div>
+                            <div class="sl-ai-title-block">
+                                <span class="sl-eyebrow">Análisis inteligente</span>
+                                <h2 class="sl-h2">Resumen ejecutivo</h2>
+                            </div>
                         </div>
-                        <div class="sl-stat">
-                            <span class="sl-stat-label">Total reviews</span>
-                            <span class="sl-stat-value" id="sl-total">0</span>
+                        <div class="sl-ai-updated" id="sl-ai-updated">Generado por IA · ahora</div>
+                    </div>
+                    <div class="sl-ai-cols">
+                        <div class="sl-ai-col sl-ai-col-strengths">
+                            <div class="sl-ai-col-head">
+                                <span class="sl-ai-col-icon">✓</span>
+                                <span>Fortalezas</span>
+                            </div>
+                            <ul class="sl-ai-list" id="sl-ai-strengths"></ul>
                         </div>
-                        <div class="sl-stat sl-stat-pos">
-                            <span class="sl-stat-label">Positivas</span>
-                            <span class="sl-stat-value" id="sl-positive">0</span>
+                        <div class="sl-ai-col sl-ai-col-improve">
+                            <div class="sl-ai-col-head">
+                                <span class="sl-ai-col-icon">⚠</span>
+                                <span>Áreas de mejora</span>
+                            </div>
+                            <ul class="sl-ai-list" id="sl-ai-improvements"></ul>
                         </div>
-                        <div class="sl-stat sl-stat-neu">
-                            <span class="sl-stat-label">Neutras</span>
-                            <span class="sl-stat-value" id="sl-neutral">0</span>
-                        </div>
-                        <div class="sl-stat sl-stat-neg">
-                            <span class="sl-stat-label">Negativas</span>
-                            <span class="sl-stat-value" id="sl-negative">0</span>
-                        </div>
-                        <div class="sl-stat sl-stat-alert">
-                            <span class="sl-stat-label">Urgentes</span>
-                            <span class="sl-stat-value" id="sl-high">0</span>
+                        <div class="sl-ai-col sl-ai-col-urgent">
+                            <div class="sl-ai-col-head">
+                                <span class="sl-ai-col-icon">!</span>
+                                <span>Atención inmediata</span>
+                            </div>
+                            <ul class="sl-ai-list" id="sl-ai-urgent"></ul>
                         </div>
                     </div>
-                    <div class="sl-filters">
+                    <div class="sl-ai-recommendation">
+                        <div class="sl-ai-rec-icon">💡</div>
+                        <div class="sl-ai-rec-body">
+                            <div class="sl-ai-rec-eyebrow">Acción recomendada</div>
+                            <p class="sl-ai-rec-text" id="sl-ai-recommendation">—</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. HERO STATS — Rating + Distribución + Fuentes -->
+                <section class="sl-hero">
+                    <div class="sl-hero-card sl-hero-rating-card">
+                        <span class="sl-eyebrow">Reputación general</span>
+                        <div class="sl-hero-number"><span id="sl-avg-rating">—</span><small>/ 5</small></div>
+                        <div class="sl-hero-stars" id="sl-hero-stars"></div>
+                        <div class="sl-hero-meta"><strong id="sl-total">0</strong> reseñas analizadas</div>
+                    </div>
+                    <div class="sl-hero-card sl-dist-block">
+                        <div class="sl-dist-title">
+                            <span class="sl-h3">Distribución de sentimiento</span>
+                            <span id="sl-dist-summary">—</span>
+                        </div>
+                        <div class="sl-dist-bar" id="sl-dist-bar"></div>
+                        <div class="sl-dist-legend">
+                            <div><span class="swatch positive"></span> Positivas · <span id="sl-positive">0</span></div>
+                            <div><span class="swatch neutral"></span> Neutras · <span id="sl-neutral">0</span></div>
+                            <div><span class="swatch negative"></span> Negativas · <span id="sl-negative">0</span></div>
+                        </div>
+                    </div>
+                    <div class="sl-hero-card">
+                        <span class="sl-eyebrow">Por plataforma</span>
+                        <div class="sl-sources-list" id="sl-sources-list"></div>
+                    </div>
+                </section>
+
+                <!-- 3. TOP TOPICS -->
+                <section class="sl-topics-section">
+                    <div class="sl-topics-row">
+                        <h3 class="sl-h3">Temas más mencionados</h3>
+                        <span class="sl-eyebrow" id="sl-topics-count">—</span>
+                    </div>
+                    <div class="sl-topic-chips" id="sl-topic-chips"></div>
+                </section>
+
+                <!-- 4. SENTIMENT TABS + FILTERS -->
+                <div class="sl-controls">
+                    <div class="sl-sentiment-tabs" id="sl-sentiment-tabs">
+                        <button class="sl-stab active" data-sentiment="">Todas <em id="sl-tab-count-all">0</em></button>
+                        <button class="sl-stab sl-stab-pos" data-sentiment="positive">Positivas <em id="sl-tab-count-pos">0</em></button>
+                        <button class="sl-stab sl-stab-neu" data-sentiment="neutral">Atención <em id="sl-tab-count-neu">0</em></button>
+                        <button class="sl-stab sl-stab-neg" data-sentiment="negative">Negativas <em id="sl-tab-count-neg">0</em></button>
+                        <button class="sl-stab sl-stab-urgent" data-priority="high">Urgentes <em id="sl-tab-count-urgent">0</em></button>
+                    </div>
+                    <div class="sl-secondary-filters">
                         <select id="sl-filter-source" class="sl-select">
                             <option value="">Todas las fuentes</option>
                             <option value="google">Google Maps</option>
                             <option value="tripadvisor">TripAdvisor</option>
                             <option value="booking">Booking.com</option>
                         </select>
-                        <select id="sl-filter-sentiment" class="sl-select">
-                            <option value="">Todos los sentimientos</option>
-                            <option value="positive">Positivo</option>
-                            <option value="neutral">Neutral</option>
-                            <option value="negative">Negativo</option>
-                        </select>
-                        <select id="sl-filter-priority" class="sl-select">
-                            <option value="">Toda prioridad</option>
-                            <option value="high">Urgente</option>
-                            <option value="medium">Media</option>
-                            <option value="low">Baja</option>
+                        <select id="sl-filter-sort" class="sl-select">
+                            <option value="recent">Más recientes</option>
+                            <option value="oldest">Más antiguas</option>
+                            <option value="worst">Peor calificadas</option>
+                            <option value="best">Mejor calificadas</option>
                         </select>
                     </div>
                 </div>
+
+                <!-- 5. REVIEWS GRID -->
                 <div id="sl-empty" class="sl-empty hidden">
                     <ion-icon name="star-outline"></ion-icon>
                     <h3>Aún no hay reseñas</h3>
-                    <p>El primer scrape se ejecuta en las próximas horas. También puedes lanzarlo manualmente desde la administración.</p>
+                    <p>El primer scrape se ejecuta en las próximas horas.</p>
                 </div>
                 <div id="sl-reviews-list" class="sl-reviews-list"></div>
             </div>

@@ -53,7 +53,7 @@ const state = {
     eventosCalendarSidebarOffset: 0,
     // Social listening (reseñas online)
     socialListeningReviews: [],
-    socialListeningFilters: { source: '', sentiment: '', priority: '' },
+    socialListeningFilters: { source: '', sentiment: '', priority: '', sort: 'recent' },
     socialListeningLoaded: false
 };
 
@@ -5048,60 +5048,271 @@ async function fetchSocialListeningReviews() {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Wiring de filtros (sentiment tabs + secondary selects)
+// ─────────────────────────────────────────────────────────────────────
 let _slFiltersWired = false;
 function wireSocialListeningFilters() {
     if (_slFiltersWired) return;
+    const tabs = document.getElementById('sl-sentiment-tabs');
     const src = document.getElementById('sl-filter-source');
-    const sen = document.getElementById('sl-filter-sentiment');
-    const pri = document.getElementById('sl-filter-priority');
-    if (!src || !sen || !pri) return;
-    const handler = () => {
-        state.socialListeningFilters = {
-            source: src.value,
-            sentiment: sen.value,
-            priority: pri.value
-        };
-        renderSocialListeningPanel();
-    };
-    src.addEventListener('change', handler);
-    sen.addEventListener('change', handler);
-    pri.addEventListener('change', handler);
+    const sort = document.getElementById('sl-filter-sort');
+    if (!tabs || !src || !sort) return;
+
+    // Sentiment tabs (sentimientos + tab especial de urgentes)
+    tabs.querySelectorAll('.sl-stab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabs.querySelectorAll('.sl-stab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const sentiment = btn.dataset.sentiment || '';
+            const priority  = btn.dataset.priority  || '';
+            state.socialListeningFilters = {
+                ...state.socialListeningFilters,
+                sentiment,
+                priority
+            };
+            renderReviewsList();
+        });
+    });
+
+    src.addEventListener('change', () => {
+        state.socialListeningFilters.source = src.value;
+        renderReviewsList();
+    });
+    sort.addEventListener('change', () => {
+        state.socialListeningFilters.sort = sort.value;
+        renderReviewsList();
+    });
+
     _slFiltersWired = true;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Análisis: extrae fortalezas / áreas de mejora / urgentes / top topics
+// desde las reviews reales (computado localmente, sin llamar a Claude
+// porque el análisis por review ya viene pre-procesado en la BD).
+// ─────────────────────────────────────────────────────────────────────
+function analyzeReviews(all) {
+    // Topic frequency by sentiment
+    const topicStats = new Map();   // topic → { total, pos, neu, neg }
+    const categoryStats = new Map(); // category → { total, neg, pos }
+
+    for (const r of all) {
+        const sentiment = r.sentiment || 'neutral';
+        (r.topics || []).forEach(t => {
+            const key = String(t).toLowerCase().trim();
+            if (!key) return;
+            const cur = topicStats.get(key) || { topic: key, total: 0, pos: 0, neu: 0, neg: 0 };
+            cur.total++;
+            if (sentiment === 'positive') cur.pos++;
+            else if (sentiment === 'negative') cur.neg++;
+            else cur.neu++;
+            topicStats.set(key, cur);
+        });
+        if (r.category) {
+            const c = categoryStats.get(r.category) || { category: r.category, total: 0, pos: 0, neg: 0 };
+            c.total++;
+            if (sentiment === 'positive') c.pos++;
+            if (sentiment === 'negative') c.neg++;
+            categoryStats.set(r.category, c);
+        }
+    }
+
+    const topics = [...topicStats.values()];
+    topics.forEach(t => {
+        t.score = (t.pos - t.neg) / Math.max(1, t.total);
+        t.sentiment = t.pos > t.neg ? 'positive' : t.neg > t.pos ? 'negative' : 'neutral';
+    });
+
+    // Strengths: topics mostly positive, sorted by absolute positive count
+    const strengths = topics
+        .filter(t => t.pos >= 2 && t.score > 0)
+        .sort((a, b) => b.pos - a.pos)
+        .slice(0, 4);
+
+    // Improvements: topics mostly negative (or with at least 2 negatives)
+    const improvements = topics
+        .filter(t => t.neg >= 2 || (t.neg >= 1 && t.score < 0))
+        .sort((a, b) => b.neg - a.neg)
+        .slice(0, 4);
+
+    // Urgent: reviews flagged high priority (use their summary)
+    const urgent = all
+        .filter(r => r.priority === 'high')
+        .sort((a, b) => new Date(b.review_date || 0) - new Date(a.review_date || 0))
+        .slice(0, 4);
+
+    // Recommendation: generate a contextual action sentence
+    const topNegativeCategory = [...categoryStats.values()]
+        .filter(c => c.neg >= 2)
+        .sort((a, b) => b.neg - a.neg)[0];
+    const urgentCount = urgent.length;
+
+    const categoryLabels = {
+        service: 'servicio al huésped',
+        cleanliness: 'limpieza y mantenimiento',
+        location: 'ubicación',
+        food: 'desayuno y alimentos',
+        price: 'política de precios y cargos extra',
+        rooms: 'estado de habitaciones',
+        amenities: 'amenidades y servicios complementarios',
+        other: 'experiencia general'
+    };
+
+    let recommendation;
+    if (urgentCount >= 3 && topNegativeCategory) {
+        recommendation = `Priorizar revisión de ${categoryLabels[topNegativeCategory.category]} — ${urgentCount} reseñas urgentes recientes señalan problemas críticos. Considerar respuesta directa a los huéspedes afectados y plan de acción a 30 días con el equipo operativo.`;
+    } else if (urgentCount >= 1 && topNegativeCategory) {
+        recommendation = `Atender prioritariamente las ${urgentCount} reseña${urgentCount > 1 ? 's' : ''} urgente${urgentCount > 1 ? 's' : ''} y reforzar protocolo de ${categoryLabels[topNegativeCategory.category]}.`;
+    } else if (topNegativeCategory) {
+        recommendation = `Revisar el área de ${categoryLabels[topNegativeCategory.category]}, donde se concentran ${topNegativeCategory.neg} comentarios negativos. Sin urgencias críticas, pero patrón claro a corregir.`;
+    } else if (strengths.length > 0) {
+        recommendation = `Reputación estable sin patrones críticos. Capitalizar las fortalezas (${strengths.slice(0, 2).map(s => s.topic).join(', ')}) en marketing y mantener consistencia operativa.`;
+    } else {
+        recommendation = 'Datos insuficientes para una recomendación específica. Aumentar volumen de reseñas para análisis más profundo.';
+    }
+
+    // Top topics for chips (all, sorted by total)
+    const topTopics = topics
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 12);
+
+    return { strengths, improvements, urgent, topTopics, recommendation };
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Filtros + orden
+// ─────────────────────────────────────────────────────────────────────
 function getFilteredSocialListeningReviews() {
     const f = state.socialListeningFilters;
-    return state.socialListeningReviews.filter(r => {
+    let arr = state.socialListeningReviews.filter(r => {
         if (f.source && r.source !== f.source) return false;
         if (f.sentiment && r.sentiment !== f.sentiment) return false;
         if (f.priority && r.priority !== f.priority) return false;
         return true;
     });
+    const sortMode = f.sort || 'recent';
+    arr = arr.slice().sort((a, b) => {
+        if (sortMode === 'recent') return new Date(b.review_date || 0) - new Date(a.review_date || 0);
+        if (sortMode === 'oldest') return new Date(a.review_date || 0) - new Date(b.review_date || 0);
+        if (sortMode === 'worst')  return (a.rating || 0) - (b.rating || 0);
+        if (sortMode === 'best')   return (b.rating || 0) - (a.rating || 0);
+        return 0;
+    });
+    return arr;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Render principal
+// ─────────────────────────────────────────────────────────────────────
 function renderSocialListeningPanel() {
+    const all = state.socialListeningReviews;
+    if (!all) return;
+
+    // Stats globales
+    const ratings = all.map(r => r.rating).filter(v => typeof v === 'number');
+    const avg = ratings.length
+        ? (ratings.reduce((a, b) => a + b, 0) / ratings.length)
+        : null;
+    const pos = all.filter(r => r.sentiment === 'positive').length;
+    const neu = all.filter(r => r.sentiment === 'neutral').length;
+    const neg = all.filter(r => r.sentiment === 'negative').length;
+    const urgent = all.filter(r => r.priority === 'high').length;
+
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const setHTML = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+
+    setText('sl-avg-rating', avg ? avg.toFixed(1) : '—');
+    setText('sl-total', all.length);
+    setText('sl-positive', pos);
+    setText('sl-neutral', neu);
+    setText('sl-negative', neg);
+    setHTML('sl-hero-stars', renderStars(avg || 0));
+
+    // Distribution bar
+    const total = Math.max(1, pos + neu + neg);
+    const distBar = document.getElementById('sl-dist-bar');
+    if (distBar) {
+        const pct = (n) => Math.round((n / total) * 100);
+        distBar.innerHTML = `
+            ${pos > 0 ? `<div class="sl-dist-segment positive" style="flex-grow:${pos};" title="${pos} positivas">${pct(pos)}%</div>` : ''}
+            ${neu > 0 ? `<div class="sl-dist-segment neutral"  style="flex-grow:${neu};" title="${neu} neutras">${pct(neu)}%</div>` : ''}
+            ${neg > 0 ? `<div class="sl-dist-segment negative" style="flex-grow:${neg};" title="${neg} negativas">${pct(neg)}%</div>` : ''}
+        `;
+    }
+    setText('sl-dist-summary', `${all.length} reseñas`);
+
+    // Sources breakdown
+    const sourcesList = document.getElementById('sl-sources-list');
+    if (sourcesList) {
+        const sourceLabels = { google: 'Google Maps', tripadvisor: 'TripAdvisor', booking: 'Booking.com' };
+        const sourceIcons  = { google: 'G', tripadvisor: 'T', booking: 'B' };
+        const bySrc = {};
+        for (const r of all) {
+            const s = r.source;
+            if (!bySrc[s]) bySrc[s] = { total: 0, sum: 0, n: 0 };
+            bySrc[s].total++;
+            if (typeof r.rating === 'number') {
+                bySrc[s].sum += r.rating;
+                bySrc[s].n++;
+            }
+        }
+        const order = ['google', 'tripadvisor', 'booking'];
+        sourcesList.innerHTML = order.filter(s => bySrc[s]).map(s => {
+            const info = bySrc[s];
+            const r = info.n ? (info.sum / info.n).toFixed(1) : '—';
+            return `
+                <div class="sl-source-row">
+                    <div class="sl-source-icon ${s}">${sourceIcons[s]}</div>
+                    <div class="sl-source-info">
+                        <div class="sl-source-name">${sourceLabels[s]}</div>
+                        <div class="sl-source-count">${info.total} reseña${info.total > 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="sl-source-rating">${r}<small> / 5</small></div>
+                </div>
+            `;
+        }).join('') || '<div style="color:var(--sl-text-dim);font-size:0.82rem;">Sin datos</div>';
+    }
+
+    // AI Summary
+    const analysis = analyzeReviews(all);
+
+    const fmtList = (items, getCount) => items.length
+        ? items.map(i => `<li><strong>${escapeHtml(i.topic || i.author || '')}</strong> <em>${getCount(i)}</em></li>`).join('')
+        : '<li style="color:var(--sl-text-dim);font-style:italic;">Sin datos suficientes</li>';
+
+    setHTML('sl-ai-strengths', fmtList(analysis.strengths, i => `${i.pos} mención${i.pos > 1 ? 'es' : ''}`));
+    setHTML('sl-ai-improvements', fmtList(analysis.improvements, i => `${i.neg} queja${i.neg > 1 ? 's' : ''}`));
+    setHTML('sl-ai-urgent', analysis.urgent.length
+        ? analysis.urgent.map(r => `<li><strong>${escapeHtml(r.author || 'Anónimo')}</strong> <em>${escapeHtml((r.summary || '').slice(0, 60))}${(r.summary || '').length > 60 ? '…' : ''}</em></li>`).join('')
+        : '<li style="color:var(--sl-text-dim);font-style:italic;">Sin reseñas urgentes ✓</li>'
+    );
+    setText('sl-ai-recommendation', analysis.recommendation);
+
+    // Top topics
+    const topicChips = document.getElementById('sl-topic-chips');
+    if (topicChips) {
+        topicChips.innerHTML = analysis.topTopics.length
+            ? analysis.topTopics.map(t => `<span class="sl-topic-chip ${t.sentiment}">${escapeHtml(t.topic)} <em>${t.total}</em></span>`).join('')
+            : '<span style="color:var(--sl-text-dim);font-size:0.82rem;">Sin temas identificados</span>';
+    }
+    setText('sl-topics-count', `${analysis.topTopics.length} temas`);
+
+    // Tab counts
+    setText('sl-tab-count-all', all.length);
+    setText('sl-tab-count-pos', pos);
+    setText('sl-tab-count-neu', neu);
+    setText('sl-tab-count-neg', neg);
+    setText('sl-tab-count-urgent', urgent);
+
+    // Reviews
+    renderReviewsList();
+}
+
+function renderReviewsList() {
     const list = document.getElementById('sl-reviews-list');
     const empty = document.getElementById('sl-empty');
     if (!list || !empty) return;
-
-    // Stats (sobre TODAS las reviews, sin filtros, para el contexto global)
-    const all = state.socialListeningReviews;
-    const ratings = all.map(r => r.rating).filter(v => typeof v === 'number');
-    const avg = ratings.length
-        ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
-        : '—';
-    const setText = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-    };
-    setText('sl-avg-rating', avg);
-    setText('sl-total', all.length);
-    setText('sl-positive', all.filter(r => r.sentiment === 'positive').length);
-    setText('sl-neutral',  all.filter(r => r.sentiment === 'neutral').length);
-    setText('sl-negative', all.filter(r => r.sentiment === 'negative').length);
-    setText('sl-high',     all.filter(r => r.priority === 'high').length);
-
-    // Render del listado filtrado
     const filtered = getFilteredSocialListeningReviews();
     if (filtered.length === 0) {
         list.innerHTML = '';
@@ -5110,7 +5321,6 @@ function renderSocialListeningPanel() {
     }
     empty.classList.add('hidden');
     list.innerHTML = filtered.map(renderSocialReviewCard).join('');
-    // Wire toggle "ver más" links
     list.querySelectorAll('.sl-review-toggle').forEach(btn => {
         btn.addEventListener('click', e => {
             const card = e.target.closest('.sl-review');
@@ -5121,56 +5331,63 @@ function renderSocialListeningPanel() {
     });
 }
 
+function renderStars(rating) {
+    const full = Math.round(rating);
+    return '★'.repeat(full) + `<span class="star-empty">${'★'.repeat(5 - full)}</span>`;
+}
+
 function renderSocialReviewCard(r) {
     const sourceLabels = { google: 'Google', tripadvisor: 'TripAdvisor', booking: 'Booking' };
-    const sourceIcons  = { google: 'logo-google', tripadvisor: 'airplane', booking: 'bed-outline' };
-    const sentimentLabels = { positive: 'Positivo', neutral: 'Neutral', negative: 'Negativo' };
-    const priorityLabels  = { high: 'Urgente', medium: 'Media', low: 'Baja' };
     const categoryLabels = {
         service: 'Servicio', cleanliness: 'Limpieza', location: 'Ubicación',
         food: 'Comida', price: 'Precio', rooms: 'Habitaciones',
         amenities: 'Amenidades', other: 'Otro'
     };
+    const sentimentLabels = { positive: 'Positivo', neutral: 'Neutral', negative: 'Negativo' };
 
     const rating = typeof r.rating === 'number'
-        ? '★'.repeat(Math.round(r.rating)) + '☆'.repeat(5 - Math.round(r.rating))
+        ? renderStars(r.rating)
         : '';
+    const ratingNum = typeof r.rating === 'number' ? r.rating.toFixed(1) : '—';
     const dateStr = r.review_date
         ? new Date(r.review_date).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
         : '';
     const body = r.body || '';
-    const needsToggle = body.length > 280;
-    const cardClass = 'sl-review' + (r.priority === 'high' ? ' sl-priority-high' : '');
+    const needsToggle = body.length > 240;
+    const initials = (r.author || '?').trim().split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
+    const cardClasses = ['sl-review'];
+    if (r.sentiment) cardClasses.push('sl-sentiment-' + r.sentiment);
+    if (r.priority === 'high') cardClasses.push('sl-priority-high');
 
     return `
-        <article class="${cardClass}">
+        <article class="${cardClasses.join(' ')}">
             <div class="sl-review-head">
-                <div class="sl-review-author">
+                <div class="sl-review-author-block">
                     ${r.author_avatar_url
-                        ? `<img src="${escapeHtml(r.author_avatar_url)}" alt="" style="width:24px;height:24px;border-radius:50%;">`
-                        : `<ion-icon name="person-circle-outline" style="font-size:24px;color:var(--text-muted);"></ion-icon>`}
-                    ${escapeHtml(r.author || 'Anónimo')}
+                        ? `<img class="sl-review-avatar" src="${escapeHtml(r.author_avatar_url)}" alt="">`
+                        : `<div class="sl-review-avatar">${escapeHtml(initials)}</div>`}
+                    <div class="sl-review-author-info">
+                        <div class="sl-review-author">${escapeHtml(r.author || 'Anónimo')}</div>
+                        <div class="sl-review-date">${dateStr}</div>
+                    </div>
                 </div>
-                <span class="sl-review-source sl-source-${r.source}">
-                    <ion-icon name="${sourceIcons[r.source] || 'globe-outline'}"></ion-icon>
-                    ${sourceLabels[r.source] || r.source}
-                </span>
+                <span class="sl-review-source sl-source-${r.source}">${sourceLabels[r.source] || r.source}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="sl-review-rating-row">
                 <span class="sl-review-rating">${rating}</span>
-                <span class="sl-review-date">${dateStr}</span>
+                <span class="sl-review-rating-num">${ratingNum}</span>
             </div>
             ${r.title ? `<h4 class="sl-review-title">${escapeHtml(r.title)}</h4>` : ''}
             <p class="sl-review-body">${escapeHtml(body)}</p>
             ${needsToggle ? '<button class="sl-review-toggle">Ver más</button>' : ''}
-            ${r.summary ? `<div class="sl-summary">${escapeHtml(r.summary)}</div>` : ''}
+            ${r.summary ? `<div class="sl-summary"><span class="sl-summary-label">Resumen IA</span>${escapeHtml(r.summary)}</div>` : ''}
             <div class="sl-review-tags">
-                ${r.sentiment ? `<span class="sl-tag sl-tag-sentiment-${r.sentiment}">${sentimentLabels[r.sentiment]}</span>` : ''}
-                ${r.category ? `<span class="sl-tag">${categoryLabels[r.category] || r.category}</span>` : ''}
-                ${r.priority === 'high' ? `<span class="sl-tag sl-tag-priority-high">Urgente</span>` : ''}
+                ${r.sentiment ? `<span class="sl-tag sl-tag-${r.sentiment === 'positive' ? 'pos' : r.sentiment === 'neutral' ? 'neu' : 'neg'}">${sentimentLabels[r.sentiment]}</span>` : ''}
+                ${r.category ? `<span class="sl-tag sl-tag-category">${categoryLabels[r.category] || r.category}</span>` : ''}
+                ${r.priority === 'high' ? `<span class="sl-tag sl-tag-urgent">Urgente</span>` : ''}
                 ${(r.topics || []).slice(0, 3).map(t => `<span class="sl-tag">${escapeHtml(t)}</span>`).join('')}
             </div>
-            ${r.review_url ? `<a href="${escapeHtml(r.review_url)}" target="_blank" rel="noopener" style="font-size:0.74rem;color:var(--accent-primary,#7551FF);text-decoration:none;">Ver en ${sourceLabels[r.source] || 'fuente'} ↗</a>` : ''}
+            ${r.review_url ? `<a class="sl-review-link" href="${escapeHtml(r.review_url)}" target="_blank" rel="noopener">Ver en ${sourceLabels[r.source] || 'fuente'} ↗</a>` : ''}
         </article>
     `;
 }
