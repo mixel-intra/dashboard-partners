@@ -76,7 +76,8 @@ const DEFAULT_CARD_LABELS = {
 
 let state = {
     clients: [],
-    currentClientId: null
+    currentClientId: null,
+    currentConfig: {}
 };
 
 // Initialize
@@ -279,6 +280,7 @@ async function selectClient(clientId) {
         investment: 0,
         sales_goal: 0
     };
+    state.currentConfig = currentConfig;
 
     elements.webhookInput.value = currentConfig.webhook_url || '';
     elements.clientNameInput.value = currentConfig.name || '';
@@ -417,6 +419,7 @@ function setupEventListeners() {
     // Add Client Flow
     elements.addClientBtn.addEventListener('click', () => {
         state.currentClientId = null;
+        state.currentConfig = {};
         renderClientList();
 
         elements.editorPlaceholder.classList.add('hidden');
@@ -590,9 +593,9 @@ function setupEventListeners() {
                     tripadvisor_url: elements.slTripadvisorUrl ? elements.slTripadvisorUrl.value.trim() : '',
                     booking_url:     elements.slBookingUrl     ? elements.slBookingUrl.value.trim()     : '',
                     scrape_frequency_hours: elements.slFrequency ? parseInt(elements.slFrequency.value, 10) || 24 : 24,
-                    last_scraped_at:      currentConfig.social_listening_config?.last_scraped_at || null,
-                    last_scrape_status:   currentConfig.social_listening_config?.last_scrape_status || null,
-                    last_scrape_error:    currentConfig.social_listening_config?.last_scrape_error || null
+                    last_scraped_at:      state.currentConfig.social_listening_config?.last_scraped_at || null,
+                    last_scrape_status:   state.currentConfig.social_listening_config?.last_scrape_status || null,
+                    last_scrape_error:    state.currentConfig.social_listening_config?.last_scrape_error || null
                 },
                 supabase_url:      elements.clientSupabaseUrl      ? (elements.clientSupabaseUrl.value.trim()      || null) : null,
                 supabase_anon_key: elements.clientSupabaseAnonKey  ? (elements.clientSupabaseAnonKey.value.trim()  || null) : null
