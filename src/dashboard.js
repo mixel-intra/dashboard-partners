@@ -887,6 +887,9 @@ async function fetchData() {
             rawData = await response.json();
         }
 
+        // DEBUG: log primer lead para identificar campos disponibles
+        if (rawData.length > 0) console.log('[CDE DEBUG] Primer lead raw:', JSON.stringify(rawData[0], null, 2));
+
         // Normalize leads — extraer tipo_servicio del campo crudo (tipo_servicio o estatus)
         state.leads = rawData.map(lead => {
             const rawSource = (lead.tipo_servicio || lead.estatus || '').toLowerCase();
