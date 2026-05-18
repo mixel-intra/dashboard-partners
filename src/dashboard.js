@@ -5274,19 +5274,65 @@ function renderSocialListeningPanel() {
         }).join('') || '<div style="color:var(--sl-text-dim);font-size:0.82rem;">Sin datos</div>';
     }
 
-    // AI Summary
+    // AI Summary — cards visuales
     const analysis = analyzeReviews(all);
 
-    const fmtList = (items, getCount) => items.length
-        ? items.map(i => `<li><strong>${escapeHtml(i.topic || i.author || '')}</strong> <em>${getCount(i)}</em></li>`).join('')
-        : '<li style="color:var(--sl-text-dim);font-style:italic;">Sin datos suficientes</li>';
+    const fmtTopicCards = (items, kind) => {
+        if (!items.length) return '<div class="sl-ai-empty-card">Sin datos suficientes</div>';
+        const maxCount = Math.max(...items.map(i => kind === 'pos' ? i.pos : i.neg));
+        return `<div class="sl-ai-grid">
+            ${items.slice(0, 4).map(i => {
+                const count = kind === 'pos' ? i.pos : i.neg;
+                const total = i.total;
+                const pctOfMax = Math.max(15, Math.round((count / maxCount) * 100));
+                const label = kind === 'pos' ? 'mención' : 'queja';
+                const sub = kind === 'pos'
+                    ? `${total} reseña${total > 1 ? 's' : ''} mencionan este tema`
+                    : `${total} reseña${total > 1 ? 's' : ''} reportan este tema`;
+                return `
+                    <div class="sl-ai-stat-card ${kind === 'pos' ? 'pos' : 'neg'}">
+                        <div class="sl-ai-stat-num">${count}<small>${count > 1 ? label + 's' : label}</small></div>
+                        <div class="sl-ai-stat-label">${escapeHtml(i.topic)}</div>
+                        <div class="sl-ai-stat-sub">${sub}</div>
+                        <div class="sl-ai-stat-bar"><span style="width:${pctOfMax}%"></span></div>
+                    </div>
+                `;
+            }).join('')}
+        </div>`;
+    };
 
-    setHTML('sl-ai-strengths', fmtList(analysis.strengths, i => `${i.pos} mención${i.pos > 1 ? 'es' : ''}`));
-    setHTML('sl-ai-improvements', fmtList(analysis.improvements, i => `${i.neg} queja${i.neg > 1 ? 's' : ''}`));
-    setHTML('sl-ai-urgent', analysis.urgent.length
-        ? analysis.urgent.map(r => `<li><strong>${escapeHtml(r.author || 'Anónimo')}</strong> <em>${escapeHtml((r.summary || '').slice(0, 60))}${(r.summary || '').length > 60 ? '…' : ''}</em></li>`).join('')
-        : '<li style="color:var(--sl-text-dim);font-style:italic;">Sin reseñas urgentes ✓</li>'
-    );
+    const fmtUrgentCards = (items) => {
+        if (!items.length) return '<div class="sl-ai-empty-card">Sin reseñas urgentes ✓</div>';
+        const sourceLabels = { google: 'Google', tripadvisor: 'TripAdvisor', booking: 'Booking' };
+        return `<div class="sl-ai-urgent-list">
+            ${items.slice(0, 4).map(r => {
+                const initials = (r.author || '?').trim().split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
+                const stars = typeof r.rating === 'number'
+                    ? '★'.repeat(Math.round(r.rating)) + `<span class="star-empty">${'★'.repeat(5 - Math.round(r.rating))}</span>`
+                    : '';
+                const summary = r.summary || r.title || (r.body || '').slice(0, 90) + '…';
+                return `
+                    <div class="sl-ai-urgent-row">
+                        <div class="sl-ai-urgent-head">
+                            <div class="sl-ai-urgent-avatar">${escapeHtml(initials)}</div>
+                            <div class="sl-ai-urgent-info">
+                                <div class="sl-ai-urgent-name">${escapeHtml(r.author || 'Anónimo')}</div>
+                                <div class="sl-ai-urgent-meta">
+                                    <span class="sl-ai-urgent-stars">${stars}</span>
+                                    <span class="sl-ai-urgent-source">${sourceLabels[r.source] || r.source}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sl-ai-urgent-summary">${escapeHtml(summary)}</div>
+                    </div>
+                `;
+            }).join('')}
+        </div>`;
+    };
+
+    setHTML('sl-ai-strengths',    fmtTopicCards(analysis.strengths,    'pos'));
+    setHTML('sl-ai-improvements', fmtTopicCards(analysis.improvements, 'neg'));
+    setHTML('sl-ai-urgent',       fmtUrgentCards(analysis.urgent));
     setText('sl-ai-recommendation', analysis.recommendation);
 
     // Top topics
