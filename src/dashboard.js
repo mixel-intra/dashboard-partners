@@ -887,13 +887,6 @@ async function fetchData() {
             rawData = await response.json();
         }
 
-        // DEBUG: log primer lead para identificar campos disponibles (solo para casa-de-empeño)
-        if (rawData.length > 0 && (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
-            const lead0 = rawData[0];
-            console.log('[CDE DEBUG] Campos del primer lead:', Object.keys(lead0));
-            console.log('[CDE DEBUG] Primer lead completo:', JSON.stringify(lead0, null, 2));
-        }
-
         // Normalize leads — extraer tipo_servicio del campo crudo (tipo_servicio o estatus)
         state.leads = rawData.map(lead => {
             const rawSource = (lead.tipo_servicio || lead.estatus || '').toLowerCase();
@@ -924,15 +917,25 @@ async function fetchData() {
             });
         }
 
-        // CEFEMEX Casa de Empeño: calificación basada en etiquetas (no en etapa del pipeline)
+        // CEFEMEX Casa de Empeño: calificación por etapa del pipeline
+        // Etapas calificadas: Lead Empeño Oro, Lead Empeño Otros, Rescate de Prenda
         if ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
             state.leads = state.leads.map(lead => {
-                const tags = getLeadTags(lead);
-                const esCalificadoIntra = tags.some(t => t.includes('calificado intra'));
+                const s = (lead.estatus || '').toLowerCase();
+                const esOro     = s.includes('oro') && (s.includes('empe') || s.includes('lead'));
+                const esOtros   = s.includes('otros') && (s.includes('empe') || s.includes('lead'));
+                const esRescate = s.includes('rescate');
+                const esCalificado = esOro || esOtros || esRescate;
+
+                let etiquetaDisplay = null;
+                if (esOro) etiquetaDisplay = 'oro';
+                else if (esOtros) etiquetaDisplay = 'otros';
+                else if (esRescate) etiquetaDisplay = 'rescate';
+
                 return {
                     ...lead,
-                    estatus: esCalificadoIntra ? 'Calificado INTRA' : lead.estatus,
-                    etiquetas_display: tags.length > 0 ? tags.join(', ') : null
+                    estatus: esCalificado ? 'Calificado INTRA' : lead.estatus,
+                    etiquetas_display: etiquetaDisplay
                 };
             });
         }
