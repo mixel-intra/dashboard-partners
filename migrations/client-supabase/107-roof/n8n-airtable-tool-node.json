@@ -1,0 +1,49 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appgKyoRhii26nFvl",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kommo_lead_id": "={{ $('new_message').last().json.body['message[add][0][element_id]'] }}",
+            "kommo_chat_id": "={{ $('new_message').last().json.body['message[add][0][chat_id]'] }}",
+            "Nombre Cliente": "={{ $fromAI('Nombre_Cliente', 'Nombre completo del cliente', 'string') }}",
+            "email": "={{ $fromAI('email', 'Email del cliente si lo dio sino vacio', 'string') }}",
+            "Telefono": "={{ $fromAI('Telefono', 'Telefono del cliente', 'string') }}",
+            "TipoEvento": "={{ $fromAI('TipoEvento', 'Tipo de reserva Mesa Cumpleanos Evento Privado etc', 'string') }}",
+            "PAX": "={{ $fromAI('PAX', 'Numero entero de personas', 'number') }}",
+            "FechaEvento": "={{ $fromAI('FechaEvento', 'Fecha del evento texto libre o ISO', 'string') }}",
+            "Detalles": "={{ $fromAI('Detalles', 'Resumen breve 1 o 2 oraciones', 'string') }}",
+            "Conversacion": "={{ $fromAI('Conversacion', 'Resumen de la conversacion', 'string') }}",
+            "Estado": "Nuevo Lead"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [672, -240],
+      "id": "registro-citas-airtable",
+      "name": "Registro citas",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REEMPLAZA_CON_TU_CREDENCIAL_AIRTABLE",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Registro citas": { "ai_tool": [[]] }
+  }
+}

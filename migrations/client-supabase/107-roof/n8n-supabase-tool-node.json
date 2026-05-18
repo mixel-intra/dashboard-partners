@@ -1,0 +1,43 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "toolDescription": "Upserts a restaurant reservation in Supabase. Use kommo_lead_id as the unique key — if the same lead writes again, the existing row updates instead of duplicating.",
+        "method": "POST",
+        "url": "https://kaybyeziadxkunlatrfh.supabase.co/rest/v1/restaurant_reservations?on_conflict=kommo_lead_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"kommo_lead_id\": {{ $('NOMBRE_DEL_TRIGGER_KOMMO').item.json.leads.add[0].id }},\n  \"kommo_chat_id\": \"{{ $('NOMBRE_DEL_TRIGGER_KOMMO').item.json.leads.add[0]._embedded.chats[0].id }}\",\n  \"nombre_cliente\": \"{{ $fromAI('nombre_cliente', 'Nombre completo del cliente.', 'string') }}\",\n  \"email\": \"{{ $fromAI('email', 'Email del cliente si lo proporcionó, sino vacío.', 'string') }}\",\n  \"telefono\": \"{{ $fromAI('telefono', 'Teléfono del cliente.', 'string') }}\",\n  \"tipo_evento\": \"{{ $fromAI('tipo_evento', 'Tipo de reserva: Reserva de Mesa, Cumpleaños, Evento Privado, etc.', 'string') }}\",\n  \"pax\": {{ $fromAI('pax', 'Número entero de personas.', 'number') }},\n  \"fecha_evento\": \"{{ $fromAI('fecha_evento', 'Fecha y hora ISO 8601 (ej. 2026-03-15T20:00:00). Si no hay hora, usar 20:00:00. Si no hay fecha, dejar vacío.', 'string') }}\",\n  \"detalles\": \"{{ $fromAI('detalles', 'Resumen breve de la solicitud (1-2 oraciones).', 'string') }}\",\n  \"conversacion\": \"{{ $fromAI('conversacion', 'Resumen de la conversación con el agente.', 'string') }}\",\n  \"estado\": \"Nuevo Lead\"\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [672, -240],
+      "id": "4dba018e-c9cf-4c30-a18f-9be3102cbcc7",
+      "name": "Inserta reserva Roof",
+      "credentials": {
+        "supabaseApi": {
+          "id": "Q1tuJVMq77mX4pjv",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Inserta reserva Roof": { "ai_tool": [[]] }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f07d437d9133007b602d7edc0dcfaf4efc660fb7d538a6d17dfd18c979c5960a"
+  }
+}

@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Intra | Selector de Entornos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --intra-accent: #7551FF;
+            --glass-bg: rgba(15, 15, 15, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: var(--bg-dark);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Mobile-first: block layout, scrollable */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Desktop: flex layout, fixed viewport */
+        @media (min-width: 769px) {
+            body {
+                height: 100vh;
+                height: 100dvh;
+                overflow: hidden;
+                display: flex;
+            }
+        }
+
+        /* ----- Background FX ----- */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            opacity: 0.03;
+        }
+
+        .glow-blob {
+            position: fixed;
+            width: 800px;
+            height: 800px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(117, 81, 255, 0.15), transparent 60%);
+            top: -200px;
+            left: -200px;
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(80px);
+            animation: pulseFloat 10s infinite alternate;
+        }
+
+        .glow-blob.blue {
+            background: radial-gradient(circle, rgba(1, 241, 227, 0.1), transparent 60%);
+            bottom: -300px;
+            right: -200px;
+            top: auto;
+            left: auto;
+            animation: pulseFloat 12s infinite alternate-reverse;
+        }
+
+        @keyframes pulseFloat {
+            0% {
+                transform: scale(1) translate(0, 0);
+            }
+
+            100% {
+                transform: scale(1.1) translate(50px, 50px);
+            }
+        }
+
+        /* ----- Left Panel (Branding) ----- */
+        /* Hidden by default (mobile-first), shown on desktop */
+        .left-panel {
+            display: none;
+            flex: 0 0 45%;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+            background-image: url('./total-solar-eclipse-close-up-of-solar-flares-2026-01-07-06-35-16-utc.jpg');
+            background-size: cover;
+            background-position: center;
+            padding: 3rem;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right,
+                    rgba(0, 0, 0, 0.25) 0%,
+                    rgba(0, 0, 0, 0.15) 50%,
+                    rgba(5, 5, 5, 0.85) 80%,
+                    rgba(5, 5, 5, 1) 100%);
+            pointer-events: none;
+        }
+
+        .left-panel>* {
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-logo {
+            width: 80px;
+            height: auto;
+            display: block;
+        }
+
+        .title-container h1 {
+            font-size: 3.8rem;
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -2.5px;
+            background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.55) 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .title-container p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.45);
+            line-height: 1.6;
+        }
+
+        /* ----- User Greeting ----- */
+        .user-greeting {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            width: 100%;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #7551FF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(117, 81, 255, 0.4);
+        }
+
+        .greeting-text h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .greeting-text p {
+            color: rgba(255, 255, 255, 0.38);
+            font-size: 0.88rem;
+        }
+
+        .session-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .sess-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .sess-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .sess-btn.danger:hover {
+            background: rgba(255, 68, 68, 0.1);
+            border-color: rgba(255, 68, 68, 0.25);
+            color: #ff5555;
+        }
+
+        /* ----- Right Panel (Selection) ----- */
+        .right-panel {
+            flex: 1;
+            padding: 4rem;
+            position: relative;
+            z-index: 10;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar */
+        .right-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .right-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .right-panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .env-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(117, 81, 255, 0.1);
+            border: 1px solid rgba(117, 81, 255, 0.3);
+            color: #b5a1ff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2rem;
+        }
+
+        /* Search */
+        .hub-search-wrap {
+            position: relative;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        .hub-search-wrap ion-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+
+        #hub-search {
+            width: 100%;
+            height: 46px;
+            background: #1c1c1e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 0 16px 0 44px;
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #hub-search:focus {
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+
+        #hub-search::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Grid */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        /* Cards */
+        .client-card {
+            position: relative;
+            height: 185px;
+            border-radius: 18px;
+            text-decoration: none;
+            color: var(--text-main);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #131315;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(18px);
+            transition:
+                opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+                transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+                border-color 0.3s,
+                box-shadow 0.3s;
+        }
+
+        .client-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(var(--brand-rgb), 0.18) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+            pointer-events: none;
+        }
+
+        .client-card:hover {
+            border-color: rgba(var(--brand-rgb), 0.35);
+            box-shadow:
+                0 0 0 1px rgba(var(--brand-rgb), 0.08),
+                0 20px 40px rgba(0, 0, 0, 0.55),
+                0 0 60px rgba(var(--brand-rgb), 0.1);
+        }
+
+        .client-card:hover::after {
+            opacity: 1;
+        }
+
+        .client-card.card-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-logo-stage {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 22px 20px 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-logo-stage img {
+            max-width: 130px;
+            max-height: 62px;
+            width: 100%;
+            object-fit: contain;
+            transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .card-letter {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.45);
+            letter-spacing: -2px;
+            transition: color 0.3s;
+        }
+
+        .client-card:hover .card-logo-stage img {
+            transform: scale(1.07);
+        }
+
+        .client-card:hover .card-letter {
+            color: rgba(var(--brand-rgb), 0.8);
+        }
+
+        .card-info {
+            padding: 0 14px 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-name {
+            display: block;
+            font-size: 0.86rem;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        .card-slug {
+            display: block;
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.25);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-arrow {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.3);
+            z-index: 2;
+            opacity: 0;
+            transform: scale(0.6);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .client-card:hover .card-arrow {
+            opacity: 1;
+            transform: scale(1);
+            background: rgb(var(--brand-rgb));
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 0 14px rgba(var(--brand-rgb), 0.55);
+        }
+
+        /* Status indicator */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ebd59;
+            margin-right: 6px;
+            box-shadow: 0 0 8px #2ebd59;
+        }
+
+        /* Loaders */
+        .loading-wrap {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--intra-accent);
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== DESKTOP — show left panel ===== */
+        @media (min-width: 769px) {
+            .left-panel {
+                display: flex;
+            }
+        }
+
+        /* ===== TABLET ===== */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .left-panel {
+                flex: 0 0 38%;
+                padding: 2.5rem;
+            }
+
+            .right-panel {
+                padding: 2.5rem;
+            }
+
+            .title-container h1 {
+                font-size: 3rem;
+            }
+        }
+
+        /* ===== MOBILE — rediseño premium ===== */
+        @media (max-width: 768px) {
+
+            body {
+                background: #0A0A0C;
+            }
+
+            .noise-overlay,
+            .glow-blob {
+                display: none;
+            }
+
+            .right-panel {
+                flex: none;
+                width: 100%;
+                padding: 0;
+                display: block;
+                overflow-y: visible;
+                min-height: 100dvh;
+            }
+
+            /* ── Header compacto — ocultar saludo y avatar en mobile ── */
+            .user-greeting {
+                display: none !important;
+            }
+
+            .session-actions {
+                gap: 6px !important;
+            }
+
+            .sess-btn {
+                width: 34px !important;
+                height: 34px !important;
+                border-radius: 50% !important;
+                background: rgba(255, 255, 255, 0.06) !important;
+                border: none !important;
+                font-size: 1rem !important;
+            }
+
+            /* ── Badge ── */
+            #admin-badge-area {
+                padding: 0 20px;
+            }
+
+            .env-badge {
+                margin: 12px 0 0 !important;
+                width: 100% !important;
+                display: flex !important;
+                justify-content: center !important;
+                padding: 7px 14px !important;
+                font-size: 0.7rem !important;
+                border-radius: 10px !important;
+                background: rgba(117, 81, 255, 0.08) !important;
+                border: none !important;
+                color: rgba(117, 81, 255, 0.7) !important;
+            }
+
+            /* ── Search bar ── */
+            .hub-search-wrap {
+                margin: 16px 20px 8px !important;
+                width: calc(100% - 40px) !important;
+                position: sticky;
+                top: 0;
+                z-index: 99;
+                padding-top: max(12px, env(safe-area-inset-top, 12px));
+            }
+
+            #hub-search {
+                height: 42px !important;
+                background: rgba(255, 255, 255, 0.06) !important;
+                border: none !important;
+                border-radius: 12px !important;
+                font-size: 0.88rem !important;
+            }
+
+            #hub-search:focus {
+                background: rgba(255, 255, 255, 0.09) !important;
+                box-shadow: 0 0 0 2px rgba(117, 81, 255, 0.25) !important;
+                border: none !important;
+            }
+
+            #hub-search::placeholder {
+                color: rgba(255, 255, 255, 0.2) !important;
+            }
+
+            /* ── Cards list ── */
+            #clients-container.grid-container {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 2px !important;
+                padding: 12px 12px 40px !important;
+                padding-bottom: calc(40px + env(safe-area-inset-bottom)) !important;
+            }
+
+            .client-card {
+                height: auto !important;
+                min-height: auto !important;
+                transform: none !important;
+                opacity: 1 !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                padding: 14px 16px !important;
+                border-radius: 14px !important;
+                background: transparent !important;
+                border: none !important;
+                gap: 14px !important;
+                transition: background 0.15s !important;
+            }
+
+            .client-card::after {
+                display: none !important;
+            }
+
+            .client-card:active {
+                background: rgba(255, 255, 255, 0.05) !important;
+            }
+
+            .client-card:hover {
+                border-color: transparent !important;
+                box-shadow: none !important;
+            }
+
+            /* Logo */
+            .card-logo-stage {
+                flex: 0 0 auto !important;
+                width: 48px !important;
+                height: 48px !important;
+                padding: 0 !important;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            .card-logo-stage img {
+                max-width: 36px !important;
+                max-height: 36px !important;
+            }
+
+            .card-letter {
+                font-size: 1.2rem !important;
+                color: rgba(255, 255, 255, 0.4) !important;
+            }
+
+            /* Info */
+            .card-info {
+                flex: 1 !important;
+                padding: 0 !important;
+                min-width: 0;
+            }
+
+            .card-name {
+                font-size: 0.9rem !important;
+                font-weight: 500 !important;
+                color: rgba(255, 255, 255, 0.9) !important;
+            }
+
+            .card-slug {
+                display: none !important;
+            }
+
+            /* Arrow */
+            .card-arrow {
+                position: static !important;
+                flex-shrink: 0 !important;
+                width: 28px !important;
+                height: 28px !important;
+                opacity: 1 !important;
+                transform: none !important;
+                background: transparent !important;
+                border: none !important;
+                color: rgba(255, 255, 255, 0.15) !important;
+                font-size: 0.9rem !important;
+                box-shadow: none !important;
+            }
+
+            .client-card:hover .card-arrow {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                color: rgba(255, 255, 255, 0.15) !important;
+            }
+
+            /* Loading state */
+            .loading-wrap {
+                min-height: 60vh;
+            }
+        }
+
+        /* --- Mejora de tabla en movil (Dashboard) --- */
+        @media (max-width: 600px) {
+            .table-card {
+                padding: 15px !important;
+            }
+
+            th,
+            td {
+                padding: 12px 10px !important;
+                font-size: 0.8rem !important;
+            }
+
+            .status-badge {
+                padding: 3px 6px !important;
+                font-size: 0.7rem !important;
+                letter-spacing: 0 !important;
+            }
+        }
+
+        /* Pantallas muy pequeñas — 1 columna */
+        @media (max-width: 380px) {
+            #clients-container.grid-container {
+                grid-template-columns: 1fr;
+            }
+
+            .client-card {
+                height: 130px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <!-- Panel Izquierdo -->
+    <aside class="left-panel">
+        <img src="src/assets/intra-logo.png" alt="Intra" class="brand-logo">
+
+        <div class="title-container">
+            <h1>Sistemas<br>Inteligentes.</h1>
+            <p>Accede a resultados en tiempo real.</p>
+        </div>
+
+        <footer style="font-size:0.72rem; color:rgba(255,255,255,0.25); line-height:1.5;">
+            &copy; 2026 Dashboard Partners.<br>Todos los derechos reservados.
+        </footer>
+    </aside>
+
+    <!-- Panel Derecho -->
+    <main class="right-panel">
+        <div class="user-greeting">
+            <div class="avatar" id="user-avatar">?</div>
+            <div class="greeting-text">
+                <h2>Hola, <span id="hub-user-name">...</span></h2>
+                <p>Selecciona tu entorno de trabajo</p>
+            </div>
+            <div class="session-actions">
+                <a id="admin-panel-btn" href="admin.html" class="sess-btn" style="display:none;" title="Base de Datos">
+                    <ion-icon name="server-outline"></ion-icon>
+                </a>
+                <button class="sess-btn" onclick="openChangePasswordModal()" title="Cambiar contraseña">
+                    <ion-icon name="key-outline"></ion-icon>
+                </button>
+                <button class="sess-btn danger" onclick="logout()" title="Cerrar sesión">
+                    <ion-icon name="power-outline"></ion-icon>
+                </button>
+            </div>
+        </div>
+
+        <div id="admin-badge-area"></div>
+
+        <div class="hub-search-wrap">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" id="hub-search" placeholder="Buscar cliente..." autocomplete="off"
+                oninput="filterHubClients(this.value)">
+        </div>
+
+        <div id="clients-container" class="grid-container">
+            <div class="loading-wrap">
+                <ion-icon name="scan-outline" class="spin"></ion-icon>
+                <p>Estableciendo conexión segura...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="src/config.js"></script>
+    <script src="src/auth.js"></script>
+    <script>
+        function hexToRgb(hex) {
+            let r = 117, g = 81, b = 255;
+            if (hex && hex.match(/^#[0-9a-fA-F]{6}$/)) {
+                r = parseInt(hex.substring(1, 3), 16);
+                g = parseInt(hex.substring(3, 5), 16);
+                b = parseInt(hex.substring(5, 7), 16);
+            }
+            return `${r}, ${g}, ${b}`;
+        }
+
+        async function loadHub() {
+            const session = getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+
+            const userName = session.name || session.email;
+            document.getElementById('hub-user-name').textContent = userName;
+            document.getElementById('user-avatar').textContent = userName.charAt(0).toUpperCase();
+
+            if (session.role === 'admin') {
+                document.getElementById('admin-panel-btn').style.display = 'inline-flex';
+                document.getElementById('admin-badge-area').innerHTML = `
+                    <div class="env-badge">
+                        <ion-icon name="shield-half-outline"></ion-icon> Acceso Total (Admin)
+                    </div>
+                `;
+            } else {
+                document.getElementById('admin-badge-area').innerHTML = `
+                    <div class="env-badge">
+                        <ion-icon name="cube-outline"></ion-icon> Propiedades Disponibles
+                    </div>
+                `;
+            }
+
+            const { data: clients, error } = await supabase
+                .from('clients_config')
+                .select('id_slug, name, logo_url, theme_primary')
+                .in('id_slug', session.clients);
+
+            const container = document.getElementById('clients-container');
+
+            if (error || !clients || clients.length === 0) {
+                container.innerHTML = `
+                    <div class="loading-wrap" style="color:#ff5555;">
+                        <ion-icon name="warning-outline" style="font-size:3rem; margin-bottom:1rem;"></ion-icon>
+                        <p>No tienes acceso a ningún entorno.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = clients.map(client => {
+                const rgb = hexToRgb(client.theme_primary);
+                const init = client.name ? client.name.charAt(0).toUpperCase() : '?';
+                const logo = client.logo_url
+                    ? `<img src="${client.logo_url}" alt="${client.name}">`
+                    : `<span class="card-letter">${init}</span>`;
+
+                return `
+                    <a class="client-card" href="index.html?client=${client.id_slug}"
+                       style="--brand-rgb: ${rgb};"
+                       data-name="${client.name.toLowerCase()}"
+                       data-slug="${client.id_slug.toLowerCase()}">
+                        <div class="card-logo-stage">${logo}</div>
+                        <div class="card-info">
+                            <span class="card-name">${client.name}</span>
+                        </div>
+                        <div class="card-arrow">
+                            <ion-icon name="arrow-forward-outline"></ion-icon>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+
+            // Entrada animada + tilt 3D
+            const cards = container.querySelectorAll('.client-card');
+            cards.forEach((card, i) => {
+                setTimeout(() => card.classList.add('card-visible'), 60 + i * 80);
+                card.addEventListener('mousemove', (e) => {
+                    const r = card.getBoundingClientRect();
+                    const x = (e.clientX - r.left) / r.width - 0.5;
+                    const y = (e.clientY - r.top) / r.height - 0.5;
+                    card.style.transition = 'opacity 0.5s, border-color 0.3s, box-shadow 0.3s';
+                    card.style.transform = `translateY(-5px) perspective(600px) rotateX(${-y * 9}deg) rotateY(${x * 9}deg)`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transition = '';
+                    card.style.transform = '';
+                });
+            });
+        }
+
+        function filterHubClients(query) {
+            const q = query.toLowerCase().trim();
+            const container = document.getElementById('clients-container');
+            const cards = [...container.querySelectorAll('.client-card')];
+
+            if (!q) {
+                // Sin búsqueda: mostrar todos normalmente
+                cards.forEach(card => {
+                    card.style.display = '';
+                    card.style.order = '';
+                });
+                return;
+            }
+
+            // Separar matches y no-matches, reordenar
+            cards.forEach(card => {
+                const name = card.dataset.name || '';
+                const slug = card.dataset.slug || '';
+                const match = name.includes(q) || slug.includes(q);
+                card.style.display = match ? '' : 'none';
+            });
+        }
+
+        loadHub();
+    </script>
+    <!-- ===== MODAL CAMBIAR CONTRASEÑA ===== -->
+    <div id="change-pass-modal" class="modal-overlay"
+        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center;">
+        <div class="modal-content"
+            style="background: #0A0A0A; border: 1px solid rgba(255,255,255,0.08); padding: 32px; border-radius: 24px; width: 100%; max-width: 400px; position: relative;">
+            <button onclick="closeChangePasswordModal()"
+                style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; cursor: pointer; font-size: 1.5rem;">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+
+            <h2 style="font-size: 1.5rem; margin-bottom: 8px; color: #fff;">Cambiar Contraseña</h2>
+            <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-bottom: 24px;">Actualiza tu clave de
+                acceso al portal.</p>
+
+            <form id="change-pass-form">
+                <div style="margin-bottom: 20px;">
+                    <label
+                        style="display: block; font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Nueva
+                        Contraseña</label>
+                    <input type="password" id="new-password" required placeholder="••••••••"
+                        style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; outline: none; transition: border-color 0.3s; font-size: 1rem;">
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label
+                        style="display: block; font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Confirmar
+                        Contraseña</label>
+                    <input type="password" id="confirm-password" required placeholder="••••••••"
+                        style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; outline: none; transition: border-color 0.3s; font-size: 1rem;">
+                </div>
+                <div id="change-pass-error"
+                    style="color: #ff4444; font-size: 0.85rem; margin-bottom: 16px; display: none;"></div>
+                <div id="change-pass-success"
+                    style="color: #01F1E3; font-size: 0.85rem; margin-bottom: 16px; display: none;">Contraseña
+                    actualizada correctamente</div>
+
+                <button type="submit" id="submit-change-pass"
+                    style="width: 100%; padding: 14px; background: #7551FF; border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                    Actualizar Clave
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

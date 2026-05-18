@@ -1,0 +1,143 @@
+{
+  "name": "Respuesta confirmación dashboard - Roof 107",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "respuesta_confirmacion",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger-dashboard-confirm",
+      "name": "Webhook Dashboard",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-7152, 384],
+      "webhookId": "respuesta-confirmacion-roof107"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appgKyoRhii26nFvl",
+          "mode": "list",
+          "cachedResultName": "Base Roof Leads"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblYNpWfZW42iRMN9",
+          "mode": "list",
+          "cachedResultName": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kommo_lead_id": "={{ $json.body.kommo_lead_id }}",
+            "Estado": "={{ $json.body.nuevoEstado }}",
+            "Conversacion": "={{ ($json.body.detalles || '') + '\\n\\n--- ' + $now.toFormat('yyyy-MM-dd HH:mm') + ' Operador ---\\n' + $json.body.mensajeCliente }}"
+          },
+          "matchingColumns": ["kommo_lead_id"],
+          "schema": [
+            { "id": "kommo_lead_id", "displayName": "kommo_lead_id", "type": "number", "canBeUsedToMatch": true, "display": true, "removed": false },
+            { "id": "Estado", "displayName": "Estado", "type": "string", "display": true, "removed": false },
+            { "id": "Conversacion", "displayName": "Conversacion", "type": "string", "display": true, "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "update-airtable",
+      "name": "Update Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [-6944, 384],
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "lMYXpaq2sezoY7bh",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://holaroof107.kommo.com/api/v4/leads/{{ $('Webhook Dashboard').item.json.body.kommo_lead_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"custom_fields_values\": [\n    {\n      \"field_id\": 3333968,\n      \"values\": [\n        { \"value\": {{ JSON.stringify($('Webhook Dashboard').item.json.body.mensajeCliente) }} }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "patch-kommo-field",
+      "name": "Escribe respuesta en Kommo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-6736, 384],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "IDreRhqfW9GdPU90",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://holaroof107.kommo.com/api/v2/salesbot/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=[\n  {\n    \"entity_id\": {{ $('Webhook Dashboard').item.json.body.kommo_lead_id }},\n    \"entity_type\": 2,\n    \"bot_id\": 41094\n  }\n]",
+        "options": {}
+      },
+      "id": "trigger-salesbot",
+      "name": "Dispara Salesbot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-6512, 384],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "IDreRhqfW9GdPU90",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": {}
+      },
+      "id": "respond-ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-6288, 384]
+    }
+  ],
+  "connections": {
+    "Webhook Dashboard": {
+      "main": [[{ "node": "Update Airtable", "type": "main", "index": 0 }]]
+    },
+    "Update Airtable": {
+      "main": [[{ "node": "Escribe respuesta en Kommo", "type": "main", "index": 0 }]]
+    },
+    "Escribe respuesta en Kommo": {
+      "main": [[{ "node": "Dispara Salesbot", "type": "main", "index": 0 }]]
+    },
+    "Dispara Salesbot": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
