@@ -1102,8 +1102,6 @@ function renderLogRow(lead, index) {
         badgeStyle = `color: ${qualified ? state.config.themeSecondary : '#ef4444'}; background: rgba(255,255,255,0.05);`;
     }
 
-    const phone = formatPhone(lead.telefono);
-
     const tagLine = ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') && lead.etiquetas_display)
         ? `<div style="font-size:0.6rem;opacity:0.55;margin-top:3px;text-transform:lowercase;letter-spacing:0.2px;">${lead.etiquetas_display}</div>`
         : '';
@@ -1111,7 +1109,6 @@ function renderLogRow(lead, index) {
     return `
         <tr>
             <td style="font-weight: 600;">${lead.nombre || 'Sin nombre'}</td>
-            <td style="color: var(--text-secondary); font-size: 0.82rem; font-variant-numeric: tabular-nums;">${phone}</td>
             <td style="color: var(--text-secondary);">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td>
             <td>
                 <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
