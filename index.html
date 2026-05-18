@@ -408,50 +408,181 @@
         .sl-ai-col-improve     .sl-ai-col-head { color: var(--sl-neu); }
         .sl-ai-col-urgent      .sl-ai-col-icon { background: var(--sl-neg-soft); color: var(--sl-neg); }
         .sl-ai-col-urgent      .sl-ai-col-head { color: var(--sl-neg); }
+        /* Lista compacta (interna a las 3 columnas) */
         .sl-ai-list {
             list-style: none;
             margin: 0; padding: 0;
-            display: flex; flex-direction: column; gap: 12px;
         }
-        .sl-ai-list li {
+
+        /* Grid de "stat cards" gráficas — números grandes + label */
+        .sl-ai-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .sl-ai-stat-card {
+            position: relative;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--sl-card-border);
+            border-radius: 10px;
+            padding: 14px 14px 12px;
             display: flex;
             flex-direction: column;
-            gap: 3px;
-            color: var(--sl-text);
+            gap: 2px;
+            overflow: hidden;
+            transition: transform 0.18s, border-color 0.18s;
         }
-        .sl-ai-list li > .sl-ai-row {
+        .sl-ai-stat-card:hover { transform: translateY(-1px); border-color: var(--sl-card-border-hover); }
+        .sl-ai-stat-card::after {
+            content: '';
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 3px;
+            opacity: 0.35;
+        }
+        .sl-ai-stat-card.pos::after { background: var(--sl-pos); }
+        .sl-ai-stat-card.neg::after { background: var(--sl-neg); }
+        .sl-ai-stat-num {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.04em;
             display: flex;
             align-items: baseline;
-            justify-content: space-between;
-            gap: 12px;
+            gap: 4px;
         }
-        .sl-ai-list li strong {
-            font-size: 1rem;
+        .sl-ai-stat-num small {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0;
+            text-transform: uppercase;
+            opacity: 0.55;
+        }
+        .sl-ai-stat-card.pos .sl-ai-stat-num { color: var(--sl-pos); }
+        .sl-ai-stat-card.neg .sl-ai-stat-num { color: var(--sl-neg); }
+        .sl-ai-stat-label {
+            font-size: 0.92rem;
+            color: var(--sl-text);
             font-weight: 600;
             text-transform: capitalize;
-            letter-spacing: -0.01em;
-            line-height: 1.25;
+            letter-spacing: -0.005em;
+            margin-top: 4px;
         }
-        .sl-ai-list li em {
-            font-style: normal;
+        .sl-ai-stat-sub {
             font-size: 0.72rem;
-            color: var(--sl-text-dim);
-            font-variant-numeric: tabular-nums;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .sl-ai-list li .sl-ai-sub {
-            font-size: 0.82rem;
             color: var(--sl-text-muted);
-            line-height: 1.45;
+            line-height: 1.35;
+            margin-top: 2px;
         }
-        .sl-ai-list li.sl-ai-empty {
+        .sl-ai-stat-bar {
+            margin-top: 10px;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            overflow: hidden;
+        }
+        .sl-ai-stat-bar > span {
+            display: block;
+            height: 100%;
+            border-radius: 999px;
+            transition: width 0.5s ease;
+        }
+        .sl-ai-stat-card.pos .sl-ai-stat-bar > span { background: var(--sl-pos); }
+        .sl-ai-stat-card.neg .sl-ai-stat-bar > span { background: var(--sl-neg); }
+
+        /* Urgentes: avatar + nombre + estrellas */
+        .sl-ai-urgent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sl-ai-urgent-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(244,63,94,0.06);
+            border: 1px solid rgba(244,63,94,0.14);
+            transition: all 0.15s;
+        }
+        .sl-ai-urgent-row:hover {
+            background: rgba(244,63,94,0.1);
+            transform: translateY(-1px);
+        }
+        .sl-ai-urgent-head {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+        .sl-ai-urgent-summary {
+            font-size: 0.78rem;
+            line-height: 1.4;
+            color: var(--sl-text-muted);
+            padding-left: 47px;
+        }
+        .sl-ai-urgent-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--sl-neg), #B23254);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            letter-spacing: -0.02em;
+            box-shadow: 0 4px 12px rgba(244,63,94,0.18);
+        }
+        .sl-ai-urgent-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .sl-ai-urgent-name {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--sl-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sl-ai-urgent-meta {
+            font-size: 0.72rem;
+            color: var(--sl-text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sl-ai-urgent-stars {
+            color: #F5C518;
+            letter-spacing: 1px;
+            font-size: 0.78rem;
+        }
+        .sl-ai-urgent-stars .star-empty { color: rgba(245,197,24,0.22); }
+        .sl-ai-urgent-source {
+            font-size: 0.62rem;
+            padding: 2px 7px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.06);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+        }
+
+        /* Empty state */
+        .sl-ai-empty-card {
+            padding: 22px 14px;
+            border: 1px dashed var(--sl-card-border);
+            border-radius: 10px;
             color: var(--sl-text-dim);
             font-style: italic;
             font-size: 0.86rem;
+            text-align: center;
         }
 
         .sl-ai-recommendation {
