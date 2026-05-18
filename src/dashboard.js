@@ -917,6 +917,19 @@ async function fetchData() {
             });
         }
 
+        // CEFEMEX Casa de Empeño: calificación basada en etiquetas (no en etapa del pipeline)
+        if ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
+            state.leads = state.leads.map(lead => {
+                const tags = getLeadTags(lead);
+                const esCalificadoIntra = tags.some(t => t.includes('calificado intra'));
+                return {
+                    ...lead,
+                    estatus: esCalificadoIntra ? 'Calificado INTRA' : lead.estatus,
+                    etiquetas_display: tags.length > 0 ? tags.join(', ') : null
+                };
+            });
+        }
+
         state.filteredLeads = [...state.leads];
         console.log(`Leads Processing Complete. Total: ${state.leads.length}` + (isDemoMode ? ' (DEMO)' : ''));
     } catch (error) {
@@ -1081,6 +1094,10 @@ function renderLogRow(lead, index) {
 
     const phone = formatPhone(lead.telefono);
 
+    const tagLine = ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') && lead.etiquetas_display)
+        ? `<div style="font-size:0.6rem;opacity:0.55;margin-top:3px;text-transform:lowercase;letter-spacing:0.2px;">${lead.etiquetas_display}</div>`
+        : '';
+
     return `
         <tr>
             <td style="font-weight: 600;">${lead.nombre || 'Sin nombre'}</td>
@@ -1090,6 +1107,7 @@ function renderLogRow(lead, index) {
                 <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
                     ${lead.estatus}
                 </span>
+                ${tagLine}
             </td>
         </tr>
     `;
@@ -1377,6 +1395,17 @@ function normalizeStatus(status) {
     if (s.includes('rechazado')) return 'Rechazado';
 
     return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getLeadTags(lead) {
+    const raw = lead.tags || lead.etiquetas || lead.contact_tags || lead.tag || lead.labels || '';
+    if (Array.isArray(raw)) {
+        return raw.map(t => (typeof t === 'object' ? (t.name || t.label || '') : String(t)).toLowerCase().trim()).filter(Boolean);
+    }
+    if (typeof raw === 'string' && raw.trim()) {
+        return raw.toLowerCase().split(/[,;|\n]/).map(t => t.trim()).filter(Boolean);
+    }
+    return [];
 }
 
 function isQualified(status) {
