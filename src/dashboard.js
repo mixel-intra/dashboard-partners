@@ -887,8 +887,12 @@ async function fetchData() {
             rawData = await response.json();
         }
 
-        // DEBUG: log primer lead para identificar campos disponibles
-        if (rawData.length > 0) console.log('[CDE DEBUG] Primer lead raw:', JSON.stringify(rawData[0], null, 2));
+        // DEBUG: log primer lead para identificar campos disponibles (solo para casa-de-empeño)
+        if (rawData.length > 0 && (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
+            const lead0 = rawData[0];
+            console.log('[CDE DEBUG] Campos del primer lead:', Object.keys(lead0));
+            console.log('[CDE DEBUG] Primer lead completo:', JSON.stringify(lead0, null, 2));
+        }
 
         // Normalize leads — extraer tipo_servicio del campo crudo (tipo_servicio o estatus)
         state.leads = rawData.map(lead => {
@@ -1400,14 +1404,45 @@ function normalizeStatus(status) {
     return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function _extractTagNames(val) {
+    if (Array.isArray(val)) {
+        return val.map(t => (typeof t === 'object' ? (t.name || t.label || t.tag || '') : String(t)).toLowerCase().trim()).filter(Boolean);
+    }
+    if (typeof val === 'string' && val.trim()) {
+        return val.toLowerCase().split(/[,;|\n]/).map(t => t.trim()).filter(Boolean);
+    }
+    return [];
+}
+
 function getLeadTags(lead) {
-    const raw = lead.tags || lead.etiquetas || lead.contact_tags || lead.tag || lead.labels || '';
-    if (Array.isArray(raw)) {
-        return raw.map(t => (typeof t === 'object' ? (t.name || t.label || '') : String(t)).toLowerCase().trim()).filter(Boolean);
+    // Campos conocidos (top-level)
+    const knownFields = ['tags', 'etiquetas', 'contact_tags', 'tag', 'labels', 'tag_names', 'etiqueta'];
+    for (const field of knownFields) {
+        if (lead[field]) {
+            const found = _extractTagNames(lead[field]);
+            if (found.length > 0) return found;
+        }
     }
-    if (typeof raw === 'string' && raw.trim()) {
-        return raw.toLowerCase().split(/[,;|\n]/).map(t => t.trim()).filter(Boolean);
+
+    // Kommo API nativa: _embedded.tags
+    if (lead._embedded && lead._embedded.tags) {
+        const found = _extractTagNames(lead._embedded.tags);
+        if (found.length > 0) return found;
     }
+
+    // Fallback: escanea todos los campos array buscando objetos con .name que parezcan etiquetas
+    const cdeKeywords = ['calificado', 'intra', 'oro', 'rescate', 'otros', 'condicionado'];
+    for (const [key, val] of Object.entries(lead)) {
+        if (['estatus', 'nombre', 'fecha_creacion', 'telefono', 'tipo_servicio', 'etiquetas_display'].includes(key)) continue;
+        if (Array.isArray(val) && val.length > 0) {
+            const items = _extractTagNames(val);
+            if (items.some(s => cdeKeywords.some(kw => s.includes(kw)))) {
+                console.log('[CDE DEBUG] Etiquetas encontradas en campo:', key, items);
+                return items;
+            }
+        }
+    }
+
     return [];
 }
 
