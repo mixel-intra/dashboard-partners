@@ -932,7 +932,7 @@ async function fetchData() {
                             s === 'empeñado' || s === 'empenado';
                 if (esC) calificadasDebug[l.estatus] = (calificadasDebug[l.estatus] || 0) + 1;
             });
-            console.log('[CDE] Etapas calificadas detectadas:', calificadasDebug);
+            console.log('[CDE] Etapas calificadas detectadas: ' + JSON.stringify(calificadasDebug));
 
             state.leads = state.leads.map(lead => {
                 const s = (lead.estatus || '').toLowerCase();
