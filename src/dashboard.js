@@ -922,16 +922,19 @@ async function fetchData() {
         if ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
             state.leads = state.leads.map(lead => {
                 const s = (lead.estatus || '').toLowerCase();
-                const esOro      = s.includes('oro')   && (s.includes('empe') || s.includes('lead'));
-                const esOtros    = s.includes('otros')  && (s.includes('empe') || s.includes('lead'));
-                const esRescate  = s.includes('rescate');
-                const esCita     = s.includes('cita');
-                const esReagendar = s.includes('reagendar');
-                const esEmpenado = s.includes('empe') && !s.includes('lead') && !s.includes('oro') && !s.includes('otros');
+                // Condiciones específicas por nombre exacto de etapa Kommo
+                const esOro       = s.includes('empe') && s.includes('oro');
+                const esOtros     = s.includes('empe') && s.includes('otros');
+                const esRescate   = s.includes('rescate de prenda') || s === 'rescate de prenda';
+                const esCita      = s.includes('cita agendada');
+                const esReagendar = s === 'reagendar' || s.includes('reagendar');
+                const esEmpenado  = s === 'empeñado' || s === 'empenado';
                 const esCalificado = esOro || esOtros || esRescate || esCita || esReagendar || esEmpenado;
 
                 return {
                     ...lead,
+                    // Guardamos estatus original para mostrarlo en badge
+                    estatus_original: lead.estatus,
                     estatus: esCalificado ? 'Calificado INTRA' : lead.estatus,
                     etiquetas_display: esCalificado ? lead.estatus : null
                 };
@@ -1100,9 +1103,9 @@ function renderLogRow(lead, index) {
         badgeStyle = `color: ${qualified ? state.config.themeSecondary : '#ef4444'}; background: rgba(255,255,255,0.05);`;
     }
 
-    const tagLine = ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') && lead.etiquetas_display)
-        ? `<div style="font-size:0.6rem;opacity:0.55;margin-top:3px;text-transform:lowercase;letter-spacing:0.2px;">${lead.etiquetas_display}</div>`
-        : '';
+    // Para CDE: mostrar etapa original como badge (verde si calificado)
+    const isCDE = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño');
+    const badgeText = (isCDE && lead.etiquetas_display) ? lead.etiquetas_display : lead.estatus;
 
     return `
         <tr>
@@ -1110,9 +1113,8 @@ function renderLogRow(lead, index) {
             <td style="color: var(--text-secondary);">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td>
             <td>
                 <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
-                    ${lead.estatus}
+                    ${badgeText}
                 </span>
-                ${tagLine}
             </td>
         </tr>
     `;
