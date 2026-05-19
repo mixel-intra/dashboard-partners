@@ -920,6 +920,20 @@ async function fetchData() {
         // CEFEMEX Casa de Empeño: calificación por etapa del pipeline
         // Etapas con calificado_intra: Empeño Oro, Empeño Otros, Rescate, Cita Agendada, Reagendar, Empeñado
         if ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
+            // DEBUG: ver qué etapas se están marcando como calificadas
+            const calificadasDebug = {};
+            state.leads.forEach(l => {
+                const s = (l.estatus || '').toLowerCase();
+                const esC = (s.includes('empe') && s.includes('oro')) ||
+                            (s.includes('empe') && s.includes('otros')) ||
+                            s.includes('rescate de prenda') ||
+                            s.includes('cita agendada') ||
+                            s === 'reagendar' || s.includes('reagendar') ||
+                            s === 'empeñado' || s === 'empenado';
+                if (esC) calificadasDebug[l.estatus] = (calificadasDebug[l.estatus] || 0) + 1;
+            });
+            console.log('[CDE] Etapas calificadas detectadas:', calificadasDebug);
+
             state.leads = state.leads.map(lead => {
                 const s = (lead.estatus || '').toLowerCase();
                 // Condiciones específicas por nombre exacto de etapa Kommo
