@@ -930,18 +930,10 @@ async function fetchData() {
                 const esEmpenado = s.includes('empe') && !s.includes('lead') && !s.includes('oro') && !s.includes('otros');
                 const esCalificado = esOro || esOtros || esRescate || esCita || esReagendar || esEmpenado;
 
-                let etiquetaDisplay = null;
-                if (esOro) etiquetaDisplay = 'oro';
-                else if (esOtros) etiquetaDisplay = 'otros';
-                else if (esRescate) etiquetaDisplay = 'rescate';
-                else if (esCita) etiquetaDisplay = 'cita agendada';
-                else if (esReagendar) etiquetaDisplay = 'reagendar';
-                else if (esEmpenado) etiquetaDisplay = 'empeñado';
-
                 return {
                     ...lead,
                     estatus: esCalificado ? 'Calificado INTRA' : lead.estatus,
-                    etiquetas_display: etiquetaDisplay
+                    etiquetas_display: esCalificado ? lead.estatus : null
                 };
             });
         }
