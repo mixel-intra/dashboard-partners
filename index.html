@@ -4660,9 +4660,24 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="table-wrapper" style="border:none; padding:0; background:none;">
+                        <!-- Filter bar -->
+                        <div id="table-filter-bar" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label style="font-size:0.75rem; color:var(--text-secondary); white-space:nowrap;">Desde</label>
+                                <input type="date" id="filter-fecha-desde" style="font-size:0.75rem; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-primary); outline:none; cursor:pointer;" oninput="applyTableFilters()">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label style="font-size:0.75rem; color:var(--text-secondary); white-space:nowrap;">Hasta</label>
+                                <input type="date" id="filter-fecha-hasta" style="font-size:0.75rem; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-primary); outline:none; cursor:pointer;" oninput="applyTableFilters()">
+                            </div>
+                            <select id="filter-estado" style="font-size:0.75rem; padding:4px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-primary); outline:none; cursor:pointer;" onchange="applyTableFilters()">
+                                <option value="">Todos los estados</option>
+                            </select>
+                            <button onclick="clearTableFilters()" style="font-size:0.72rem; padding:4px 10px; border-radius:8px; border:1px solid var(--border-color); background:transparent; color:var(--text-secondary); cursor:pointer;">Limpiar</button>
+                        </div>
+                        <div class="table-wrapper" style="border:none; padding:0; background:none; max-height:420px; overflow-y:auto;">
                             <table>
-                                <thead>
+                                <thead style="position:sticky; top:0; z-index:1; background:var(--card-bg);">
                                     <tr>
                                         <th>Nombre</th>
                                         <th>Fecha</th>
@@ -5366,7 +5381,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260518-debug3"></script>
+    <script src="src/dashboard.js?v=20260518-scroll1"></script>
 
     <!-- Client Switcher Drawer -->
     <style>

@@ -1077,7 +1077,6 @@ function formatPhone(phone) {
 }
 
 function renderTable() {
-    console.log('--- renderTable START ---');
     const tableBody = document.getElementById('leads-table-body');
     const modalTableBody = document.getElementById('modal-table-body');
     if (!tableBody) return;
@@ -1091,17 +1090,62 @@ function renderTable() {
     // Ordenar del más reciente al más antiguo
     leadsToShow = [...leadsToShow].sort((a, b) => (b.fecha_parsed || 0) - (a.fecha_parsed || 0));
 
-    // Main Dashboard Table (Clean fixed view - 8 leads)
-    const mainTableHTML = leadsToShow.slice(0, 8).map((lead, index) => renderLogRow(lead, index)).join('');
-    tableBody.innerHTML = mainTableHTML;
+    // Populate estado dropdown once (without resetting active selection)
+    populateEstadoDropdown(leadsToShow);
 
-    // Modal Table (Full view - All leads)
+    // Apply local table filters (date range + estado)
+    const desdeEl = document.getElementById('filter-fecha-desde');
+    const hastaEl = document.getElementById('filter-fecha-hasta');
+    const estadoEl = document.getElementById('filter-estado');
+    const desde = desdeEl && desdeEl.value ? new Date(desdeEl.value + 'T00:00:00') : null;
+    const hasta = hastaEl && hastaEl.value ? new Date(hastaEl.value + 'T23:59:59') : null;
+    const estadoFiltro = estadoEl ? estadoEl.value : '';
+
+    let mainLeads = leadsToShow;
+    if (desde) mainLeads = mainLeads.filter(l => l.fecha_parsed && l.fecha_parsed >= desde);
+    if (hasta) mainLeads = mainLeads.filter(l => l.fecha_parsed && l.fecha_parsed <= hasta);
+    if (estadoFiltro) {
+        mainLeads = mainLeads.filter(l => {
+            const badge = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')
+                ? (l.etiquetas_display || l.estatus)
+                : l.estatus;
+            return badge === estadoFiltro;
+        });
+    }
+
+    // Main table — all filtered leads, scrollable
+    tableBody.innerHTML = mainLeads.map((lead, index) => renderLogRow(lead, index)).join('');
+
+    // Modal Table (Full view - All leads, no extra filter)
     if (modalTableBody) {
-        const fullTableHTML = leadsToShow.map((lead, index) => renderLogRow(lead, index)).join('');
-        modalTableBody.innerHTML = fullTableHTML;
+        modalTableBody.innerHTML = leadsToShow.map((lead, index) => renderLogRow(lead, index)).join('');
     }
 
     setupModalEvents();
+}
+
+function populateEstadoDropdown(leads) {
+    const el = document.getElementById('filter-estado');
+    if (!el) return;
+    const current = el.value;
+    const isCDE = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño');
+    const unique = [...new Set(leads.map(l => (isCDE && l.etiquetas_display) ? l.etiquetas_display : l.estatus).filter(Boolean))].sort();
+    el.innerHTML = '<option value="">Todos los estados</option>' +
+        unique.map(s => `<option value="${s}"${s === current ? ' selected' : ''}>${s}</option>`).join('');
+}
+
+function applyTableFilters() {
+    renderTable();
+}
+
+function clearTableFilters() {
+    const d = document.getElementById('filter-fecha-desde');
+    const h = document.getElementById('filter-fecha-hasta');
+    const e = document.getElementById('filter-estado');
+    if (d) d.value = '';
+    if (h) h.value = '';
+    if (e) e.value = '';
+    renderTable();
 }
 
 function renderLogRow(lead, index) {
