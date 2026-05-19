@@ -1130,8 +1130,14 @@ function populateEstadoDropdown(leads) {
     const current = el.value;
     const isCDE = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño');
     const unique = [...new Set(leads.map(l => (isCDE && l.etiquetas_display) ? l.etiquetas_display : l.estatus).filter(Boolean))].sort();
-    el.innerHTML = '<option value="">Todos los estados</option>' +
-        unique.map(s => `<option value="${s}"${s === current ? ' selected' : ''}>${s}</option>`).join('');
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const optBg = isLight ? '#ffffff' : '#1e293b';
+    const optColor = isLight ? '#1e293b' : '#e2e8f0';
+    const optStyle = `background:${optBg}; color:${optColor};`;
+    el.style.background = optBg;
+    el.style.color = optColor;
+    el.innerHTML = `<option value="" style="${optStyle}">Todos los estados</option>` +
+        unique.map(s => `<option value="${s}"${s === current ? ' selected' : ''} style="${optStyle}">${s}</option>`).join('');
 }
 
 function applyTableFilters() {
