@@ -918,23 +918,25 @@ async function fetchData() {
         }
 
         // CEFEMEX Casa de Empeño: calificación por etapa del pipeline
-        // Etapas calificadas: Lead Empeño Oro, Lead Empeño Otros, Rescate de Prenda
+        // Etapas con calificado_intra: Empeño Oro, Empeño Otros, Rescate, Cita Agendada, Reagendar, Empeñado
         if ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
-            // DEBUG: conteo por estatus único
-            const conteo = {};
-            state.leads.forEach(l => { conteo[l.estatus] = (conteo[l.estatus] || 0) + 1; });
-            console.log('[CDE] Etapas únicas y conteo:', conteo);
             state.leads = state.leads.map(lead => {
                 const s = (lead.estatus || '').toLowerCase();
-                const esOro     = s.includes('oro') && (s.includes('empe') || s.includes('lead'));
-                const esOtros   = s.includes('otros') && (s.includes('empe') || s.includes('lead'));
-                const esRescate = s.includes('rescate');
-                const esCalificado = esOro || esOtros || esRescate;
+                const esOro      = s.includes('oro')   && (s.includes('empe') || s.includes('lead'));
+                const esOtros    = s.includes('otros')  && (s.includes('empe') || s.includes('lead'));
+                const esRescate  = s.includes('rescate');
+                const esCita     = s.includes('cita');
+                const esReagendar = s.includes('reagendar');
+                const esEmpenado = s.includes('empe') && !s.includes('lead') && !s.includes('oro') && !s.includes('otros');
+                const esCalificado = esOro || esOtros || esRescate || esCita || esReagendar || esEmpenado;
 
                 let etiquetaDisplay = null;
                 if (esOro) etiquetaDisplay = 'oro';
                 else if (esOtros) etiquetaDisplay = 'otros';
                 else if (esRescate) etiquetaDisplay = 'rescate';
+                else if (esCita) etiquetaDisplay = 'cita agendada';
+                else if (esReagendar) etiquetaDisplay = 'reagendar';
+                else if (esEmpenado) etiquetaDisplay = 'empeñado';
 
                 return {
                     ...lead,
