@@ -920,6 +920,10 @@ async function fetchData() {
         // CEFEMEX Casa de Empeño: calificación por etapa del pipeline
         // Etapas calificadas: Lead Empeño Oro, Lead Empeño Otros, Rescate de Prenda
         if ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
+            // DEBUG: conteo por estatus único
+            const conteo = {};
+            state.leads.forEach(l => { conteo[l.estatus] = (conteo[l.estatus] || 0) + 1; });
+            console.log('[CDE] Etapas únicas y conteo:', conteo);
             state.leads = state.leads.map(lead => {
                 const s = (lead.estatus || '').toLowerCase();
                 const esOro     = s.includes('oro') && (s.includes('empe') || s.includes('lead'));
