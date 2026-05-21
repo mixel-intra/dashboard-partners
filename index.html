@@ -4493,6 +4493,23 @@
                     </h1>
                 </div>
 
+                <div class="header-controls" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <style>
+                .etq-segmented { display:inline-flex; align-items:center; gap:2px; padding:3px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px; }
+                .etq-seg-icon { color:var(--text-secondary); font-size:1rem; margin:0 4px 0 7px; }
+                .etq-seg { padding:6px 13px; border:none; background:transparent; color:var(--text-secondary); font-size:0.78rem; font-weight:600; border-radius:7px; cursor:pointer; transition:background .15s ease, color .15s ease; white-space:nowrap; }
+                .etq-seg:hover:not(.active) { color:var(--text-primary); }
+                .etq-seg.active { background:var(--accent-purple-glow); color:var(--accent-purple); }
+                /* Sticky header de la tabla de leads — fondo OPACO (var(--bg-card) es translucido en oscuro y no tapa el scroll) */
+                .leads-thead th { background:#1B1836; }
+                [data-theme="light"] .leads-thead th { background:#FFFFFF; }
+                </style>
+                <div class="etq-segmented" id="filter-etiqueta-global" style="display:none;" title="Filtrar por etiqueta">
+                    <ion-icon name="pricetags-outline" class="etq-seg-icon"></ion-icon>
+                    <button type="button" class="etq-seg active" data-etq="" onclick="onEtiquetaSeg(this)">Todas</button>
+                    <button type="button" class="etq-seg" data-etq="intra" onclick="onEtiquetaSeg(this)">Intra</button>
+                    <button type="button" class="etq-seg" data-etq="organico" onclick="onEtiquetaSeg(this)">Orgánico</button>
+                </div>
                 <!-- Global Range Selector -->
                 <div class="global-range-selector">
                     <div class="range-display" id="range-picker-toggle">
@@ -4517,6 +4534,7 @@
                         <button class="range-opt" data-range="last-month">Mes pasado</button>
                         <button class="range-opt" data-range="all">Todo el tiempo</button>
                     </div>
+                </div>
                 </div>
             </div>
 
@@ -4669,7 +4687,7 @@
                         </div>
                         <div class="table-wrapper" style="border:none; padding:0; background:none; max-height:420px; overflow-y:auto;">
                             <table>
-                                <thead style="position:sticky; top:0; z-index:1; background:var(--card-bg);">
+                                <thead class="leads-thead" style="position:sticky; top:0; z-index:10;">
                                     <tr>
                                         <th>Nombre</th>
                                         <th>Fecha</th>

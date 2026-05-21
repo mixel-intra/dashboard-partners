@@ -28,7 +28,8 @@ const state = {
     charts: {},
     filters: {
         start: null,
-        end: null
+        end: null,
+        etiqueta: ''
     },
     flatpickr: null,
     // Restaurant reservations
@@ -340,6 +341,12 @@ function setupEventListeners() {
     const exportBtn = document.getElementById('export-pdf-btn');
     if (exportBtn) {
         exportBtn.addEventListener('click', exportToPDF);
+    }
+
+    // Filtro de etiqueta global — visible solo para CEFEMEX Capital
+    const etiquetaFilter = document.getElementById('filter-etiqueta-global');
+    if (etiquetaFilter && state.clientId === 'cefemex') {
+        etiquetaFilter.style.display = '';
     }
 }
 
@@ -668,6 +675,15 @@ function switchDashTab(tab) {
     }
 }
 
+// Handler del segmented control de etiqueta (CEFEMEX Capital) — filtra en cliente, sin re-fetch.
+function onEtiquetaSeg(btn) {
+    const cont = document.getElementById('filter-etiqueta-global');
+    if (cont) cont.querySelectorAll('.etq-seg').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.filters.etiqueta = btn.dataset.etq || '';
+    applyGlobalFilters();
+}
+
 function applyGlobalFilters() {
     console.log('=== applyGlobalFilters ===',
         '| leads:', state.leads.length,
@@ -707,6 +723,16 @@ function applyGlobalFilters() {
                         match = true;
                     }
                 }
+            }
+        }
+
+        // Filtro global de etiqueta — solo CEFEMEX Capital
+        if (match && state.clientId === 'cefemex' && state.filters.etiqueta) {
+            const etq = etiquetaIntra(lead);
+            if (state.filters.etiqueta === 'intra') {
+                match = (etq === 'Calificado Intra' || etq === 'Condicionado Intra');
+            } else if (state.filters.etiqueta === 'organico') {
+                match = (etq === 'Orgánico');
             }
         }
 
