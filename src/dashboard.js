@@ -135,6 +135,11 @@ async function init() {
             return;
         }
 
+        // CEFEMEX Capital: arranca consultando solo el mes en curso (data server-side por rango)
+        if (usaRangoServidor()) {
+            setRangoMesEnCurso();
+        }
+
         await fetchData();
         setLoaderProgress(75);
 
@@ -325,7 +330,7 @@ function setupEventListeners() {
                     state.filters.end.setHours(23, 59, 59, 999);
 
                     document.getElementById('current-range-label').textContent = 'Rango personalizado';
-                    applyGlobalFilters();
+                    aplicarRangoFechas();
                 }
             }
         });
@@ -385,7 +390,55 @@ function setPredefinedRange(range) {
         }
     }
 
+    aplicarRangoFechas();
+}
+
+// CEFEMEX Capital consulta los leads por rango de fechas en el servidor;
+// los demás clientes traen todo una vez y filtran en memoria.
+function usaRangoServidor() {
+    return state.clientId === 'cefemex';
+}
+
+// Fija el rango global al mes en curso (sin re-render).
+function setRangoMesEnCurso() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    state.filters.start = start;
+    state.filters.end = end;
+    const label = document.getElementById('current-range-label');
+    if (label) label.textContent = 'Este mes';
+    if (state.flatpickr) state.flatpickr.setDate([start, end]);
+}
+
+// Aplica el rango activo: CEFEMEX re-consulta el webhook; los demás filtran en memoria.
+async function aplicarRangoFechas() {
+    if (usaRangoServidor()) {
+        showFetchingOverlay();
+        try {
+            await fetchData();
+        } catch (e) {
+            console.error('Error al re-consultar leads por rango:', e);
+        }
+        hideFetchingOverlay();
+    }
     applyGlobalFilters();
+}
+
+function showFetchingOverlay() {
+    if (document.getElementById('fetching-overlay')) return;
+    const ov = document.createElement('div');
+    ov.id = 'fetching-overlay';
+    ov.style.cssText = 'position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45);';
+    ov.innerHTML = '<div style="background:var(--card-bg,#1e293b); color:var(--text-primary,#e2e8f0); padding:16px 26px; border-radius:12px; font-size:0.9rem; font-weight:600; box-shadow:0 8px 30px rgba(0,0,0,0.4);">Actualizando datos…</div>';
+    document.body.appendChild(ov);
+}
+
+function hideFetchingOverlay() {
+    const ov = document.getElementById('fetching-overlay');
+    if (ov) ov.remove();
 }
 
 // --- Hotel Tabs ---
@@ -646,7 +699,7 @@ function applyGlobalFilters() {
                     // Para otros hoteles: 
                     // Un lead calificado aparece SOLO en su pestaña correspondiente.
                     // Un lead general (no calificado) cuenta para TODAS las pestañas para sumar al total global e ingresos.
-                    const isQual = isQualified(lead.estatus);
+                    const isQual = isQualified(lead);
                     if (isQual) {
                         match = match && lead.tipo_servicio === expectedType;
                     } else {
@@ -661,7 +714,7 @@ function applyGlobalFilters() {
     });
 
     console.log('filteredLeads after filter:', state.filteredLeads.length,
-        '| qualified:', state.filteredLeads.filter(l => isQualified(l.estatus)).length);
+        '| qualified:', state.filteredLeads.filter(l => isQualified(l)).length);
     renderDashboard();
 
     // Re-render restaurant panel if active (uses global date filter)
@@ -714,7 +767,7 @@ async function exportToPDF() {
 }
 
 function exportLeadsToExcel() {
-    const leads = state.filteredLeads.filter(l => isQualified(l.estatus));
+    const leads = state.filteredLeads.filter(l => isQualified(l));
     if (!leads || leads.length === 0) {
         alert('No hay leads calificados para exportar.');
         return;
@@ -881,7 +934,14 @@ async function fetchData() {
         if (isDemoMode) {
             rawData = generateFakeHotelLeads();
         } else {
-            const proxyUrl = `/api/proxy?url=${encodeURIComponent(state.config.webhookUrl)}`;
+            let leadsUrl = state.config.webhookUrl;
+            // CEFEMEX Capital: el webhook filtra los leads por rango de fechas en el servidor
+            if (usaRangoServidor() && state.filters.start && state.filters.end) {
+                const desde = Math.floor(state.filters.start.getTime() / 1000);
+                const hasta = Math.floor(state.filters.end.getTime() / 1000);
+                leadsUrl += (leadsUrl.includes('?') ? '&' : '?') + `desde=${desde}&hasta=${hasta}`;
+            }
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(leadsUrl)}`;
             const response = await fetch(proxyUrl);
             if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
             rawData = await response.json();
@@ -974,7 +1034,7 @@ function renderDashboard() {
 
 function calculateMetrics() {
     const total = state.filteredLeads.length;
-    const qualifiedLeads = state.filteredLeads.filter(l => isQualified(l.estatus));
+    const qualifiedLeads = state.filteredLeads.filter(l => isQualified(l));
     const qualified = qualifiedLeads.length;
 
     const investment = parseFloat(state.config.investment) || 0;
@@ -1081,7 +1141,12 @@ function renderTable() {
     const modalTableBody = document.getElementById('modal-table-body');
     if (!tableBody) return;
 
-    let leadsToShow = state.filteredLeads.filter(l => isQualified(l.estatus));
+    // Columna "Etiqueta" (calificado/condicionado intra) — solo CEFEMEX Capital
+    document.querySelectorAll('.th-etiqueta').forEach(th => {
+        th.style.display = (state.clientId === 'cefemex') ? '' : 'none';
+    });
+
+    let leadsToShow = state.filteredLeads.filter(l => isQualified(l));
 
     if (leadsToShow.length === 0 && state.leads.length > 0) {
         leadsToShow = state.filteredLeads;
@@ -1093,17 +1158,11 @@ function renderTable() {
     // Populate estado dropdown once (without resetting active selection)
     populateEstadoDropdown(leadsToShow);
 
-    // Apply local table filters (date range + estado)
-    const desdeEl = document.getElementById('filter-fecha-desde');
-    const hastaEl = document.getElementById('filter-fecha-hasta');
+    // Apply local table filter (estado)
     const estadoEl = document.getElementById('filter-estado');
-    const desde = desdeEl && desdeEl.value ? new Date(desdeEl.value + 'T00:00:00') : null;
-    const hasta = hastaEl && hastaEl.value ? new Date(hastaEl.value + 'T23:59:59') : null;
     const estadoFiltro = estadoEl ? estadoEl.value : '';
 
     let mainLeads = leadsToShow;
-    if (desde) mainLeads = mainLeads.filter(l => l.fecha_parsed && l.fecha_parsed >= desde);
-    if (hasta) mainLeads = mainLeads.filter(l => l.fecha_parsed && l.fecha_parsed <= hasta);
     if (estadoFiltro) {
         mainLeads = mainLeads.filter(l => {
             const badge = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')
@@ -1145,18 +1204,28 @@ function applyTableFilters() {
 }
 
 function clearTableFilters() {
-    const d = document.getElementById('filter-fecha-desde');
-    const h = document.getElementById('filter-fecha-hasta');
     const e = document.getElementById('filter-estado');
-    if (d) d.value = '';
-    if (h) h.value = '';
     if (e) e.value = '';
     renderTable();
 }
 
+// Etiqueta de origen del lead (CEFEMEX Capital) según tags de Kommo.
+function etiquetaIntra(lead) {
+    const tags = getLeadTags(lead);
+    if (tags.includes('calificado_intra')) return 'Calificado Intra';
+    if (tags.includes('condicionado_intra')) return 'Condicionado Intra';
+    return 'Orgánico'; // no trae ninguno de los dos tags intra
+}
+
+const ETIQUETA_INTRA_STYLE = {
+    'Calificado Intra':   'color:#059669; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35);',
+    'Condicionado Intra': 'color:#d97706; background:rgba(245,158,11,0.13); border:1px solid rgba(245,158,11,0.35);',
+    'Orgánico':           'color:#64748b; background:rgba(100,116,139,0.14); border:1px solid rgba(100,116,139,0.35);'
+};
+
 function renderLogRow(lead, index) {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    const qualified = isQualified(lead.estatus);
+    const qualified = isQualified(lead);
 
     let badgeStyle = '';
     if (isLight) {
@@ -1171,6 +1240,18 @@ function renderLogRow(lead, index) {
     const isCDE = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño');
     const badgeText = (isCDE && lead.etiquetas_display) ? lead.etiquetas_display : lead.estatus;
 
+    // Columna "Etiqueta" — solo CEFEMEX Capital
+    let etiquetaCell = '';
+    if (state.clientId === 'cefemex') {
+        const etiqueta = etiquetaIntra(lead);
+        etiquetaCell = `
+            <td>
+                <span class="status-badge" style="${ETIQUETA_INTRA_STYLE[etiqueta]} padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
+                    ${etiqueta}
+                </span>
+            </td>`;
+    }
+
     return `
         <tr>
             <td style="font-weight: 600;">${lead.nombre || 'Sin nombre'}</td>
@@ -1179,7 +1260,7 @@ function renderLogRow(lead, index) {
                 <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
                     ${badgeText}
                 </span>
-            </td>
+            </td>${etiquetaCell}
         </tr>
     `;
 }
@@ -1350,7 +1431,7 @@ function createMainChart() {
     // Grouping by Date
     const dailyData = {};
     const sourceLeads = state.chartMode === 'calificados'
-        ? state.filteredLeads.filter(l => isQualified(l.estatus))
+        ? state.filteredLeads.filter(l => isQualified(l))
         : state.filteredLeads;
     const sorted = [...sourceLeads].sort((a, b) => a.fecha_parsed - b.fecha_parsed);
 
@@ -1510,9 +1591,52 @@ function getLeadTags(lead) {
     return [];
 }
 
-function isQualified(status) {
-    if (!status) return false;
-    const s = status.toLowerCase();
+// =============================================
+// CEFEMEX CAPITAL (clientId 'cefemex') — Oportunidad calificada por
+// ID de etapa del pipeline de Kommo. El webhook (workflow "DASHBOARD"
+// en n8n) entrega la etapa en lead.estatus_id y los tags en lead.tags.
+// Casa de Empeño ('casa-de-empeno') usa otra lógica — ver fetchData.
+// =============================================
+const CEFEMEX_ETAPAS_CALIFICADAS = new Set([
+    // #8 Rechazado (100538408) NO cuenta — un lead rechazado no es una oportunidad calificada
+    100538404, // #9  Condicionado
+    100458628, // #10 Lead Calificado
+    100538416, // #11 Atención personalizada
+    101647764, // #12 Contacto inicial
+    94994543,  // #13 Integración de expediente E1
+    104432180, // #14 Preanálisis
+    94994547,  // #15 Integración de expediente E2 / Investigación
+    104432184, // #16 Análisis
+    94994551,  // #17 Comité / Autorización
+    104432704  // #18 Formalización
+    // #19 LEADS HILLFLARE (94994555) se ignora por completo — filtrado en el workflow "DASHBOARD" de n8n
+]);
+const CEFEMEX_ETAPA_GANADO = 142;
+const CEFEMEX_ETAPA_PERDIDO = 143;
+const CEFEMEX_TAGS_CALIFICAN = ['calificado_intra', 'condicionado_intra'];
+
+function isQualified(lead) {
+    if (!lead) return false;
+
+    // --- CEFEMEX CAPITAL: se evalúa por ID de etapa del pipeline ---
+    if (state.clientId === 'cefemex') {
+        const etapa = Number(lead.estatus_id);
+
+        // Etapas #8 a #19 del pipeline → calificado directo.
+        if (CEFEMEX_ETAPAS_CALIFICADAS.has(etapa)) return true;
+
+        // Ganado: cuentan todos.
+        if (etapa === CEFEMEX_ETAPA_GANADO) return true;
+
+        // Perdido: solo si trae tag calificado_intra / condicionado_intra.
+        if (etapa === CEFEMEX_ETAPA_PERDIDO) {
+            return getLeadTags(lead).some(t => CEFEMEX_TAGS_CALIFICAN.includes(String(t).toLowerCase()));
+        }
+
+        return false;
+    }
+
+    const s = (lead.estatus || '').toLowerCase();
 
     // --- HOTELES (excepto CEFEMEX) ---
     if (state.clientType === 'hotel' && state.clientId !== 'cefemex') {
@@ -1525,7 +1649,7 @@ function isQualified(status) {
         return s.includes('calificado cita');
     }
 
-    // --- POLÍTICA GENERAL / CEFEMEX ---
+    // --- POLÍTICA GENERAL (incluye CEFEMEX Casa de Empeño) ---
     return [
         'calificado',
         'condicionado',
@@ -4270,7 +4394,7 @@ function renderMobileDashboard() {
     // Leads list (show last 6 qualified)
     const leadsList = document.getElementById('mob-leads-list');
     if (leadsList) {
-        const qualified = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l.estatus) : true);
+        const qualified = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l) : true);
         const recent = qualified.slice(-6).reverse();
         if (recent.length === 0) {
             const emptyColor = document.documentElement.getAttribute('data-theme') === 'light' ? 'rgba(15,23,42,0.3)' : 'rgba(255,255,255,0.3)';
@@ -4300,7 +4424,7 @@ function _renderMobileChart() {
     if (_mobChartInstance) { _mobChartInstance.destroy(); _mobChartInstance = null; }
 
     // Build daily data same way as main chart
-    const sourceLeads = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l.estatus) : true);
+    const sourceLeads = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l) : true);
     const dailyData = {};
     sourceLeads.forEach(l => {
         if (!l.fecha_parsed || isNaN(l.fecha_parsed.getTime())) return;

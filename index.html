@@ -4662,14 +4662,6 @@
                         </div>
                         <!-- Filter bar -->
                         <div id="table-filter-bar" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <label style="font-size:0.75rem; color:var(--text-secondary); white-space:nowrap;">Desde</label>
-                                <input type="date" id="filter-fecha-desde" style="font-size:0.75rem; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-primary); outline:none; cursor:pointer;" oninput="applyTableFilters()">
-                            </div>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <label style="font-size:0.75rem; color:var(--text-secondary); white-space:nowrap;">Hasta</label>
-                                <input type="date" id="filter-fecha-hasta" style="font-size:0.75rem; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-primary); outline:none; cursor:pointer;" oninput="applyTableFilters()">
-                            </div>
                             <select id="filter-estado" style="font-size:0.75rem; padding:4px 10px; border-radius:8px; border:1px solid var(--border-color); background:#1e293b; color:#e2e8f0; outline:none; cursor:pointer;" onchange="applyTableFilters()">
                                 <option value="">Todos los estados</option>
                             </select>
@@ -4682,6 +4674,7 @@
                                         <th>Nombre</th>
                                         <th>Fecha</th>
                                         <th>Estado</th>
+                                        <th class="th-etiqueta" style="display:none;">Etiqueta</th>
                                     </tr>
                                 </thead>
                                 <tbody id="leads-table-body">
@@ -4711,6 +4704,7 @@
                                         <th>Nombre</th>
                                         <th>Fecha</th>
                                         <th>Estado</th>
+                                        <th class="th-etiqueta" style="display:none;">Etiqueta</th>
                                     </tr>
                                 </thead>
                                 <tbody id="modal-table-body">
