@@ -1431,6 +1431,10 @@
         .rest-card-btn.icon { width: 28px; padding: 0; }
         .rest-card-btn.whatsapp { color: #25D366; }
         .rest-card-btn.whatsapp:hover { background: rgba(37,211,102,0.15); }
+        /* Archivar: neutro slate (no compite con success/danger). is-archived: estado "ya archivada" más sólido. */
+        .rest-card-btn.archive { color: #94A3B8; background: rgba(148,163,184,0.10); border-color: rgba(148,163,184,0.22); }
+        .rest-card-btn.archive:hover { background: rgba(148,163,184,0.20); color: #CBD5E1; }
+        .rest-card-btn.archive.is-archived { color: #CBD5E1; background: rgba(148,163,184,0.22); border-color: rgba(148,163,184,0.38); }
 
         .rest-card-notes-flag {
             position: absolute; top: 8px; right: 8px;
@@ -2071,6 +2075,26 @@
             width: 36px;
             padding: 8px 0;
             justify-content: center;
+        }
+        .rest-action.archive {
+            background: rgba(148,163,184,0.10);
+            border-color: rgba(148,163,184,0.22);
+            color: #CBD5E1;
+        }
+        .rest-action.archive:hover {
+            background: rgba(148,163,184,0.20);
+            border-color: rgba(148,163,184,0.38);
+            color: #fff;
+        }
+        [data-theme="light"] .rest-action.archive {
+            background: rgba(100,116,139,0.08);
+            border-color: rgba(100,116,139,0.22);
+            color: #475569;
+        }
+        [data-theme="light"] .rest-action.archive:hover {
+            background: rgba(100,116,139,0.16);
+            border-color: rgba(100,116,139,0.40);
+            color: #1E293B;
         }
         .rest-action ion-icon { font-size: 1rem; }
 
@@ -3819,6 +3843,9 @@
         }
         [data-theme="light"] .rest-card-btn.danger:hover { background: #FEE2E2; border-color: rgba(239,68,68,0.5); }
         [data-theme="light"] .rest-card-btn.whatsapp { color: #128C7E; }
+        [data-theme="light"] .rest-card-btn.archive { background: #F1F5F9; color: #64748B; border-color: rgba(15,23,42,0.12); }
+        [data-theme="light"] .rest-card-btn.archive:hover { background: #E2E8F0; color: #334155; }
+        [data-theme="light"] .rest-card-btn.archive.is-archived { background: #E2E8F0; color: #334155; border-color: rgba(15,23,42,0.20); }
         [data-theme="light"] .rest-card-btn.icon { background: #F8FAFC; }
 
         [data-theme="light"] .rest-board-empty-title { color: #475569; }
@@ -5014,6 +5041,9 @@
                         <button class="rest-chip" data-status="rechazadas" onclick="filterRestaurantByStatus('rechazadas')" title="Reservas rechazadas">
                             Rechazadas <span class="rest-chip-count" id="rest-count-rechazadas">0</span>
                         </button>
+                        <button class="rest-chip" id="rest-chip-archivadas" data-status="archivadas" onclick="filterRestaurantByStatus('archivadas')" title="Reservas archivadas (ocultas del board)" style="display:none;">
+                            Archivadas <span class="rest-chip-count" id="rest-count-archivadas">0</span>
+                        </button>
                     </div>
                     <div class="rest-board-search">
                         <ion-icon name="search-outline"></ion-icon>
@@ -5263,6 +5293,27 @@
                                                border-radius:12px; color:white; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">
                                 Confirmar Reserva
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Desarchivar reserva (solo 107 Rooftop) -->
+            <div id="unarchive-confirm-modal" class="hidden"
+                style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;"
+                onclick="if(event.target===this) closeUnarchiveModal();">
+                <div style="background:rgba(15,13,30,0.92); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px); border:1px solid rgba(255,255,255,0.10); border-radius:24px; max-width:400px; width:90%; overflow:hidden;">
+                    <div style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="font-size:1.1rem; font-weight:700; margin:0;">Desarchivar</h3>
+                        <button onclick="closeUnarchiveModal()" style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div style="padding:24px;">
+                        <p style="margin:0; color:var(--text-dim, rgba(255,255,255,0.75)); font-size:0.95rem; line-height:1.45;">
+                            ¿Mover la reserva archivada de <span id="unarchive-modal-name" style="color:white; font-weight:600;">—</span> de nuevo a pendientes?
+                        </p>
+                        <div style="display:flex; gap:12px; margin-top:24px;">
+                            <button onclick="closeUnarchiveModal()" style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1); background:transparent; border-radius:12px; color:white; cursor:pointer; font-family:'Inter',sans-serif;">No</button>
+                            <button id="unarchive-confirm-btn" style="flex:1; padding:12px; border:none; background:#94A3B8; border-radius:12px; color:#0F172A; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">Sí</button>
                         </div>
                     </div>
                 </div>

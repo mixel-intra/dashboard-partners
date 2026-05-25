@@ -40,6 +40,8 @@ const state = {
     restaurantDatePicker: null,
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '', crmLeadUrlTemplate: '' },
     restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: 80 },
+    // Reservas archivadas (solo clientes con feature activado, ej: roof-107)
+    archivedReservationIds: new Set(),
     // Hospedaje reservations (Airtable)
     hospedajeReservas: [],
     hospedajeFilters: { status: 'all', search: '' },
@@ -1914,6 +1916,99 @@ async function saveEditedReservation() {
     saveBtn.textContent = originalText;
 }
 
+// --- Archivado de reservas (feature por cliente) ---
+// El estado 'archivado' es independiente del flujo de Airtable: vive en una
+// tabla dedicada en el Supabase del cliente (archived_reservations). Una
+// reserva archivada simplemente se oculta del board hasta que el operador
+// active el chip "Archivadas".
+function clientHasArchiveFeature() {
+    return state.clientId === 'roof-107';
+}
+
+async function fetchArchivedReservationIds() {
+    if (!clientHasArchiveFeature()) return;
+    if (!window.clientSupabase) return;
+    try {
+        const { data, error } = await window.clientSupabase
+            .from('archived_reservations')
+            .select('reservation_id');
+        if (error) {
+            console.warn('No se pudieron cargar IDs archivados:', error.message);
+            return;
+        }
+        state.archivedReservationIds = new Set((data || []).map(r => r.reservation_id));
+    } catch (e) {
+        console.warn('Error consultando archived_reservations:', e);
+    }
+}
+
+async function archiveReservation(index) {
+    const r = state.restaurantReservations[index];
+    if (!r || !r.id) return;
+    if (!window.clientSupabase) {
+        showToast('No se pudo archivar: cliente no inicializado', 'error');
+        return;
+    }
+    try {
+        const { error } = await window.clientSupabase
+            .from('archived_reservations')
+            .upsert({ reservation_id: r.id }, { onConflict: 'reservation_id' });
+        if (error) throw error;
+        state.archivedReservationIds.add(r.id);
+        showToast('Reserva archivada', 'success');
+        renderRestaurantReservations();
+    } catch (e) {
+        console.error('Error archivando reserva:', e);
+        showToast('Error al archivar: ' + (e.message || e), 'error');
+    }
+}
+
+function unarchiveReservation(index) {
+    const r = state.restaurantReservations[index];
+    if (!r || !r.id) return;
+    const modal = document.getElementById('unarchive-confirm-modal');
+    const nameEl = document.getElementById('unarchive-modal-name');
+    const btn = document.getElementById('unarchive-confirm-btn');
+    if (!modal || !nameEl || !btn) return;
+    nameEl.textContent = r.nombre || 'esta reserva';
+    btn.onclick = () => executeUnarchive(index);
+    modal.classList.remove('hidden');
+}
+
+function closeUnarchiveModal() {
+    const modal = document.getElementById('unarchive-confirm-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function executeUnarchive(index) {
+    const r = state.restaurantReservations[index];
+    if (!r || !r.id) return;
+    if (!window.clientSupabase) {
+        showToast('No se pudo desarchivar: cliente no inicializado', 'error');
+        closeUnarchiveModal();
+        return;
+    }
+    const btn = document.getElementById('unarchive-confirm-btn');
+    const originalText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Trayendo…'; }
+    try {
+        const { error } = await window.clientSupabase
+            .from('archived_reservations')
+            .delete()
+            .eq('reservation_id', r.id);
+        if (error) throw error;
+        state.archivedReservationIds.delete(r.id);
+        showToast(`${r.nombre || 'La reserva'} volvió a pendientes`, 'success');
+        closeUnarchiveModal();
+        renderRestaurantReservations();
+    } catch (e) {
+        console.error('Error desarchivando reserva:', e);
+        showToast('Error al desarchivar: ' + (e.message || e), 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    }
+}
+
 async function fetchRestaurantReservations() {
     const webhookUrl = state.restaurantConfig.airtableWebhookUrl;
     if (!webhookUrl) {
@@ -1998,6 +2093,9 @@ async function fetchRestaurantReservations() {
             }
         });
 
+        // Cargar IDs archivados (solo si el cliente tiene la feature)
+        await fetchArchivedReservationIds();
+
         renderRestaurantReservations();
         updateNewReservationsBadge();
         refreshDatePickerDots();
@@ -2023,11 +2121,19 @@ async function fetchRestaurantReservations() {
     }
 }
 
-// Returns true if reservation r matches the given view key (nuevos/confirmadas/todas/rechazadas)
+// Returns true if reservation r matches the given view key (nuevos/confirmadas/todas/rechazadas/archivadas)
 function matchesRestaurantView(r, viewKey) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const d = r.fecha_parsed ? (() => { const x = new Date(r.fecha_parsed); x.setHours(0,0,0,0); return x; })() : null;
     const isUpcomingOrUndated = !d || d >= today;
+    const isArchived = state.archivedReservationIds.has(r.id);
+
+    // Vista "archivadas": solo las archivadas, sin otros filtros.
+    if (viewKey === 'archivadas') return isArchived;
+
+    // En el resto de vistas, las archivadas no aparecen.
+    if (isArchived) return false;
+
     switch (viewKey) {
         case 'nuevos':
             // Solo los que aún son accionables (futuros o sin fecha). Los pasados sin responder son ruido histórico.
@@ -2095,6 +2201,11 @@ function renderRestaurantReservations() {
     setEl('rest-count-confirmadas', all.filter(r => matchesRestaurantView(r, 'confirmadas')).length);
     setEl('rest-count-rechazadas', all.filter(r => matchesRestaurantView(r, 'rechazadas')).length);
     setEl('rest-count-todas', all.length);
+    if (clientHasArchiveFeature()) {
+        setEl('rest-count-archivadas', all.filter(r => matchesRestaurantView(r, 'archivadas')).length);
+        const chipArch = document.getElementById('rest-chip-archivadas');
+        if (chipArch) chipArch.style.display = '';
+    }
 
     // Apply global date filter if set (header-level range)
     if (state.filters.start || state.filters.end) {
@@ -2262,6 +2373,15 @@ function buildReservationCard(r, isNew, isPast) {
     }
     if (cleanPhone) {
         actions += `<a class="rest-card-btn icon whatsapp" href="https://wa.me/${cleanPhone}" target="_blank" rel="noopener" onclick="${stop}" title="WhatsApp"><ion-icon name="logo-whatsapp"></ion-icon></a>`;
+    }
+    // Botón Archivar — solo roof-107, visible en todos los estados
+    if (clientHasArchiveFeature()) {
+        const isArchived = state.archivedReservationIds.has(r.id);
+        if (isArchived) {
+            actions += `<button class="rest-card-btn icon archive is-archived" onclick="${stop} unarchiveReservation(${idx})" title="Desarchivar"><ion-icon name="archive-outline"></ion-icon></button>`;
+        } else {
+            actions += `<button class="rest-card-btn icon archive" onclick="${stop} archiveReservation(${idx})" title="Archivar — quitar del board"><ion-icon name="archive-outline"></ion-icon></button>`;
+        }
     }
 
     const cardCls = ['rest-card'];
@@ -2440,6 +2560,8 @@ function populateDrawer(r, index) {
 
     // Action buttons (status + contact)
     const showStatusActions = r.estado === 'Nuevo Lead';
+    const showArchiveAction = clientHasArchiveFeature();
+    const isArchived = showArchiveAction && state.archivedReservationIds.has(r.id);
     const actions = document.getElementById('rdm-actions');
     if (actions) {
         actions.innerHTML = `
@@ -2462,6 +2584,15 @@ function populateDrawer(r, index) {
                 <ion-icon name="call-outline"></ion-icon>
             </a>
             ` : ''}
+            ${showArchiveAction ? (
+                isArchived
+                    ? `<button onclick="unarchiveReservation(${index})" class="rest-action archive">
+                        <ion-icon name="archive-outline"></ion-icon> Desarchivar
+                    </button>`
+                    : `<button onclick="archiveReservation(${index})" class="rest-action archive">
+                        <ion-icon name="archive-outline"></ion-icon> Archivar
+                    </button>`
+            ) : ''}
         `;
     }
 
@@ -2495,11 +2626,13 @@ function closeDrawer() {
     populateContextForToday();
 }
 
-// Esc key closes the drawer overlay
+// Esc key closes the drawer overlay y modales de confirmación
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const drawer = document.getElementById('rest-drawer');
         if (drawer && drawer.classList.contains('is-open')) closeDrawer();
+        const unarchModal = document.getElementById('unarchive-confirm-modal');
+        if (unarchModal && !unarchModal.classList.contains('hidden')) closeUnarchiveModal();
     }
 });
 
@@ -3145,6 +3278,9 @@ function updateAvailabilityButton() {
 // Expose restaurant functions globally
 window.confirmReservation = confirmReservation;
 window.rejectReservation = rejectReservation;
+window.archiveReservation = archiveReservation;
+window.unarchiveReservation = unarchiveReservation;
+window.closeUnarchiveModal = closeUnarchiveModal;
 window.viewConversation = viewConversation;
 window.filterRestaurantByStatus = filterRestaurantByStatus;
 window.closeConfirmModal = closeConfirmModal;
@@ -5010,6 +5146,15 @@ function openRestMobileSheet(idx) {
                 <ion-icon name="checkmark-outline"></ion-icon> Confirmar
             </button>
         </div>
+        ${clientHasArchiveFeature() ? (
+            state.archivedReservationIds.has(r.id)
+                ? `<button class="restm-action-btn archive" style="margin-top:8px; width:100%;" onclick="closeRestMobileSheet(); unarchiveReservation(${idx});">
+                    <ion-icon name="archive-outline"></ion-icon> Desarchivar
+                </button>`
+                : `<button class="restm-action-btn archive" style="margin-top:8px; width:100%;" onclick="closeRestMobileSheet(); archiveReservation(${idx});">
+                    <ion-icon name="archive-outline"></ion-icon> Archivar
+                </button>`
+        ) : ''}
     `;
 
     const sheet = document.getElementById('restm-sheet');

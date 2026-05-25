@@ -2066,6 +2066,8 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 .restm-action-btn.confirm { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFF; box-shadow: 0 4px 16px rgba(16,185,129,0.3); }
 .restm-action-btn.reject { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #FCA5A5; }
 [data-theme="light"] .restm-action-btn.reject { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #DC2626; }
+.restm-action-btn.archive { background: rgba(148,163,184,0.10); border: 1px solid rgba(148,163,184,0.22); color: #CBD5E1; }
+[data-theme="light"] .restm-action-btn.archive { background: rgba(100,116,139,0.08); border-color: rgba(100,116,139,0.22); color: #475569; }
 .restm-action-btn[disabled] { opacity: 0.45; pointer-events: none; }
 
 /* Sheet: menu items */
