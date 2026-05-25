@@ -1732,7 +1732,15 @@ function parseFechaEvento(dateStr) {
     if (!dateStr) return null;
     const str = dateStr.trim();
 
-    // Intentar parseo nativo ISO / standard
+    // ISO date-only "YYYY-MM-DD": la spec ECMAScript lo parsea como medianoche UTC,
+    // lo que causa un desfase de un día en zonas UTC-4 / UTC-6. Parseamos como
+    // medianoche local para que la fecha coincida con lo que el cliente dijo.
+    const isoDateOnly = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoDateOnly) {
+        return new Date(parseInt(isoDateOnly[1]), parseInt(isoDateOnly[2]) - 1, parseInt(isoDateOnly[3]));
+    }
+
+    // Intentar parseo nativo ISO / standard (timestamps con hora ya se parsean correctamente)
     const native = new Date(str);
     if (!isNaN(native.getTime()) && native.getFullYear() > 2000) return native;
 
@@ -1976,9 +1984,18 @@ async function fetchRestaurantReservations() {
             conversacion: r.Conversacion || r.conversacion || ''
         }));
 
-        // Parsear fechas
+        // Parsear fechas y extraer hora si no viene separada
         state.restaurantReservations.forEach(r => {
             r.fecha_parsed = parseFechaEvento(r.fechaEvento);
+            // Fallback: si horaEvento está vacío pero FechaEvento traía hora (ISO datetime),
+            // extraerla de fecha_parsed para que el dashboard la muestre.
+            if (!r.horaEvento && r.fecha_parsed) {
+                const h = r.fecha_parsed.getHours();
+                const m = r.fecha_parsed.getMinutes();
+                if (h !== 0 || m !== 0) {
+                    r.horaEvento = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                }
+            }
         });
 
         renderRestaurantReservations();
