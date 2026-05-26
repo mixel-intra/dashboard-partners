@@ -1354,6 +1354,7 @@
         .rest-card.is-pending { border-left-color: var(--rest-status-pending); }
         .rest-card.is-confirmed { border-left-color: var(--rest-status-confirmed); }
         .rest-card.is-rejected { border-left-color: var(--rest-status-rejected); opacity: 0.6; }
+        .rest-card.is-released { border-left-color: #14B8A6; opacity: 0.65; }
         .rest-card.is-past { opacity: 0.55; }
         .rest-card.is-active { background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.32); }
 
@@ -1386,6 +1387,7 @@
         .rest-card-pill.s-pending { background: rgba(245,158,11,0.14); color: #FBBF24; border: 1px solid rgba(245,158,11,0.28); }
         .rest-card-pill.s-confirmed { background: rgba(34,197,94,0.12); color: #4ADE80; border: 1px solid rgba(34,197,94,0.25); }
         .rest-card-pill.s-rejected { background: rgba(239,68,68,0.12); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.25); }
+        .rest-card-pill.s-served { background: rgba(20,184,166,0.13); color: #5EEAD4; border: 1px solid rgba(20,184,166,0.28); }
         .rest-card-pill .pdot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
 
         .rest-card-detail {
@@ -1966,6 +1968,10 @@
             background: rgba(255,68,68,0.15);
             color: var(--rest-status-rejected);
         }
+        .rest-drawer-status-pill.s-served {
+            background: rgba(20,184,166,0.15);
+            color: #5EEAD4;
+        }
         .rest-drawer-status-pill .dot {
             width: 6px; height: 6px; border-radius: 50%; background: currentColor;
         }
@@ -2085,6 +2091,36 @@
             background: rgba(148,163,184,0.20);
             border-color: rgba(148,163,184,0.38);
             color: #fff;
+        }
+        /* Liberar mesa: teal — operacional, no compite con verde/rojo/slate/morado */
+        .rest-action.release {
+            background: rgba(20,184,166,0.12);
+            border-color: rgba(20,184,166,0.30);
+            color: #5EEAD4;
+        }
+        .rest-action.release:hover {
+            background: rgba(20,184,166,0.22);
+            border-color: rgba(20,184,166,0.50);
+            color: #fff;
+        }
+        .rest-action.release.is-released {
+            background: rgba(148,163,184,0.10);
+            border-color: rgba(148,163,184,0.22);
+            color: #94A3B8;
+        }
+        .rest-action.release.is-released:hover {
+            background: rgba(148,163,184,0.20);
+            color: #CBD5E1;
+        }
+        [data-theme="light"] .rest-action.release {
+            background: rgba(13,148,136,0.10);
+            border-color: rgba(13,148,136,0.28);
+            color: #0F766E;
+        }
+        [data-theme="light"] .rest-action.release:hover {
+            background: rgba(13,148,136,0.20);
+            border-color: rgba(13,148,136,0.50);
+            color: #134E4A;
         }
         [data-theme="light"] .rest-action.archive {
             background: rgba(100,116,139,0.08);
@@ -2481,6 +2517,8 @@
         .rest-ctx-cap-meta strong { color: rgba(255,255,255,0.85); font-weight: 700; }
         .rest-ctx-cap-meta .rest-ctx-meta-rejected { color: rgba(255,107,107,0.75); }
         .rest-ctx-cap-meta .rest-ctx-meta-rejected strong { color: #FF8A8A; }
+        .rest-ctx-cap-meta .rest-ctx-meta-released { color: rgba(94,234,212,0.85); }
+        .rest-ctx-cap-meta .rest-ctx-meta-released strong { color: #5EEAD4; }
         .rest-ctx-dot { color: rgba(255,255,255,0.25); }
 
         /* Same day list */
@@ -3220,6 +3258,14 @@
         .toast.warning {
             background: rgba(245, 158, 11, 0.15);
             border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .toast.has-undo {
+            max-width: 460px;
+            min-width: 320px;
+        }
+        .toast .toast-undo-btn:hover {
+            background: rgba(255,255,255,0.22) !important;
         }
 
         .toast.fade-out {

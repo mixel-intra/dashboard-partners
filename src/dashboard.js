@@ -42,6 +42,8 @@ const state = {
     restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: 80 },
     // Reservas archivadas (solo clientes con feature activado, ej: roof-107)
     archivedReservationIds: new Set(),
+    // Reservas "liberadas" (mesa disponible nuevamente, sale del aforo del día)
+    releasedReservationIds: new Set(),
     // Hospedaje reservations (Airtable)
     hospedajeReservas: [],
     hospedajeFilters: { status: 'all', search: '' },
@@ -1715,6 +1717,35 @@ function showToast(message, type = 'success', duration = 3500) {
     }, duration);
 }
 
+// Toast con botón "Deshacer" para acciones reversibles (patrón Gmail/Material).
+// Si el usuario hace click en Deshacer, se ejecuta onUndo() y desaparece.
+// Si no hace nada, se cierra solo tras `duration` ms.
+function showUndoToast(message, onUndo, duration = 6000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast success has-undo';
+    toast.innerHTML = `
+        <ion-icon name="checkmark-circle-outline"></ion-icon>
+        <span style="flex:1;">${message}</span>
+        <button class="toast-undo-btn" style="background:rgba(255,255,255,0.12); border:none; color:#fff; font-weight:600; padding:5px 12px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.78rem;">Deshacer</button>
+    `;
+    container.appendChild(toast);
+    let dismissed = false;
+    const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
+    };
+    const btn = toast.querySelector('.toast-undo-btn');
+    btn.addEventListener('click', () => {
+        dismiss();
+        try { onUndo(); } catch (e) { console.error('Undo handler error:', e); }
+    });
+    setTimeout(dismiss, duration);
+}
+
 // --- Parsing de fechas en español ---
 const MESES_MAP = {
     enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11,
@@ -2009,6 +2040,72 @@ async function executeUnarchive(index) {
     }
 }
 
+// --- Liberar mesa (release): saca a la reserva del aforo del día ---
+// Cuando el cliente vino y se fue, la mesa vuelve a estar disponible.
+// La reserva sigue visible en el board (con badge "Servida") para auditoría.
+async function fetchReleasedReservationIds() {
+    if (!clientHasArchiveFeature()) return; // mismo gating que archivar (roof-107)
+    if (!window.clientSupabase) return;
+    try {
+        const { data, error } = await window.clientSupabase
+            .from('released_reservations')
+            .select('reservation_id');
+        if (error) {
+            console.warn('No se pudieron cargar IDs liberados:', error.message);
+            return;
+        }
+        state.releasedReservationIds = new Set((data || []).map(r => r.reservation_id));
+    } catch (e) {
+        console.warn('Error consultando released_reservations:', e);
+    }
+}
+
+async function releaseReservation(index) {
+    const r = state.restaurantReservations[index];
+    if (!r || !r.id) return;
+    if (!window.clientSupabase) {
+        showToast('No se pudo liberar: cliente no inicializado', 'error');
+        return;
+    }
+    try {
+        const { error } = await window.clientSupabase
+            .from('released_reservations')
+            .upsert({ reservation_id: r.id }, { onConflict: 'reservation_id' });
+        if (error) throw error;
+        state.releasedReservationIds.add(r.id);
+        renderRestaurantReservations();
+        // Refrescar el drawer si está abierto sobre esta reserva
+        if (state.restaurantSelectedIndex === index) openReservationDetail(index);
+        showUndoToast(`Mesa liberada · ${r.pax || 0} pax disponibles`, () => restoreReservation(index, { silent: false }));
+    } catch (e) {
+        console.error('Error liberando reserva:', e);
+        showToast('Error al liberar: ' + (e.message || e), 'error');
+    }
+}
+
+async function restoreReservation(index, opts = {}) {
+    const r = state.restaurantReservations[index];
+    if (!r || !r.id) return;
+    if (!window.clientSupabase) {
+        showToast('No se pudo restaurar: cliente no inicializado', 'error');
+        return;
+    }
+    try {
+        const { error } = await window.clientSupabase
+            .from('released_reservations')
+            .delete()
+            .eq('reservation_id', r.id);
+        if (error) throw error;
+        state.releasedReservationIds.delete(r.id);
+        renderRestaurantReservations();
+        if (state.restaurantSelectedIndex === index) openReservationDetail(index);
+        if (opts.silent !== true) showToast('Mesa restaurada — vuelve a contar en aforo', 'success');
+    } catch (e) {
+        console.error('Error restaurando reserva:', e);
+        showToast('Error al restaurar: ' + (e.message || e), 'error');
+    }
+}
+
 async function fetchRestaurantReservations() {
     const webhookUrl = state.restaurantConfig.airtableWebhookUrl;
     if (!webhookUrl) {
@@ -2093,8 +2190,11 @@ async function fetchRestaurantReservations() {
             }
         });
 
-        // Cargar IDs archivados (solo si el cliente tiene la feature)
-        await fetchArchivedReservationIds();
+        // Cargar IDs archivados y liberados (solo si el cliente tiene la feature)
+        await Promise.all([
+            fetchArchivedReservationIds(),
+            fetchReleasedReservationIds()
+        ]);
 
         renderRestaurantReservations();
         updateNewReservationsBadge();
@@ -2351,8 +2451,9 @@ function buildReservationCard(r, isNew, isPast) {
     const isPending = r.estado === 'Nuevo Lead';
     const isConfirmed = r.estado === 'Confirmado';
     const isRejected = r.estado === 'Rechazado';
-    const statusKey = isPending ? 's-pending' : isConfirmed ? 's-confirmed' : 's-rejected';
-    const statusLabel = isPending ? 'Nuevo lead' : isConfirmed ? 'Confirmada' : 'Rechazada';
+    const isReleased = state.releasedReservationIds.has(r.id);
+    const statusKey = isReleased ? 's-served' : (isPending ? 's-pending' : isConfirmed ? 's-confirmed' : 's-rejected');
+    const statusLabel = isReleased ? 'Servida' : (isPending ? 'Nuevo lead' : isConfirmed ? 'Confirmada' : 'Rechazada');
 
     const t = r.horaEvento ? formatTime(r.horaEvento) : null;
     const tipo = escapeHtml(r.tipoEvento || 'Reserva');
@@ -2389,6 +2490,7 @@ function buildReservationCard(r, isNew, isPast) {
     else if (isConfirmed) cardCls.push('is-confirmed');
     else if (isRejected) cardCls.push('is-rejected');
     if (isPast) cardCls.push('is-past');
+    if (isReleased) cardCls.push('is-released');
 
     return `<div class="${cardCls.join(' ')}" data-index="${idx}" onclick="selectReservation(${idx})">
         ${notesFlag}
@@ -2528,15 +2630,17 @@ function populateDrawer(r, index) {
         if (sourceDivider) sourceDivider.style.display = 'none';
     }
 
-    // Status pill
-    const statusKey = r.estado === 'Confirmado' ? 's-confirmed'
+    // Status pill (released wins visually para señalar mesa servida)
+    const isReleasedR = state.releasedReservationIds.has(r.id);
+    const statusKey = isReleasedR ? 's-served'
+                    : r.estado === 'Confirmado' ? 's-confirmed'
                     : r.estado === 'Rechazado' ? 's-rejected'
                     : 's-pending';
     const pill = document.getElementById('rdm-status-pill');
     if (pill) {
         pill.className = 'rest-drawer-status-pill ' + statusKey;
         const txt = document.getElementById('rdm-status-text');
-        if (txt) txt.textContent = r.estado === 'Nuevo Lead' ? 'Nuevo Lead' : r.estado;
+        if (txt) txt.textContent = isReleasedR ? 'Servida' : (r.estado === 'Nuevo Lead' ? 'Nuevo Lead' : r.estado);
     }
 
     // Info cells
@@ -2562,6 +2666,9 @@ function populateDrawer(r, index) {
     const showStatusActions = r.estado === 'Nuevo Lead';
     const showArchiveAction = clientHasArchiveFeature();
     const isArchived = showArchiveAction && state.archivedReservationIds.has(r.id);
+    // Liberar mesa: solo en Confirmadas (mesa ya tiene compromiso real)
+    const showReleaseAction = clientHasArchiveFeature() && r.estado === 'Confirmado';
+    const isReleased = showReleaseAction && state.releasedReservationIds.has(r.id);
     const actions = document.getElementById('rdm-actions');
     if (actions) {
         actions.innerHTML = `
@@ -2584,6 +2691,15 @@ function populateDrawer(r, index) {
                 <ion-icon name="call-outline"></ion-icon>
             </a>
             ` : ''}
+            ${showReleaseAction ? (
+                isReleased
+                    ? `<button onclick="restoreReservation(${index})" class="rest-action release is-released" title="La mesa vuelve a contar en el aforo">
+                        <ion-icon name="refresh-outline"></ion-icon> Restaurar mesa
+                    </button>`
+                    : `<button onclick="releaseReservation(${index})" class="rest-action release" title="Liberar mesa — saca a esta reserva del aforo del día">
+                        <ion-icon name="exit-outline"></ion-icon> Liberar mesa
+                    </button>`
+            ) : ''}
             ${showArchiveAction ? (
                 isArchived
                     ? `<button onclick="unarchiveReservation(${index})" class="rest-action archive">
@@ -2712,11 +2828,14 @@ function populateContextPanel(r, index) {
             return d && dateKey(d) === targetKey;
         });
 
-    // Capacity numbers — count all non-rejected (confirmed + pending)
-    const active = sameDay.filter(({ res }) => res.estado !== 'Rechazado');
+    // Capacity numbers — count all non-rejected and non-released (mesa ya liberada no ocupa aforo)
+    const active = sameDay.filter(({ res }) =>
+        res.estado !== 'Rechazado' && !state.releasedReservationIds.has(res.id)
+    );
     const confirmedCount = sameDay.filter(({ res }) => res.estado === 'Confirmado').length;
     const pendingCount = sameDay.filter(({ res }) => res.estado === 'Nuevo Lead').length;
     const rejectedCount = sameDay.filter(({ res }) => res.estado === 'Rechazado').length;
+    const releasedCount = sameDay.filter(({ res }) => state.releasedReservationIds.has(res.id)).length;
     const otherCount = sameDay.length - confirmedCount - pendingCount - rejectedCount;
     const paxUsed = active.reduce((sum, { res }) => sum + (parseInt(res.pax) || 0), 0);
     const dailyCap = state.restaurantAvailability && state.restaurantAvailability.dailyCapacity
@@ -2732,6 +2851,7 @@ function populateContextPanel(r, index) {
         parts.push(`<span><strong>${confirmedCount}</strong> confirmadas</span>`);
         parts.push(`<span><strong>${pendingCount}</strong> pendientes</span>`);
         if (rejectedCount > 0) parts.push(`<span class="rest-ctx-meta-rejected"><strong>${rejectedCount}</strong> rechazadas</span>`);
+        if (releasedCount > 0) parts.push(`<span class="rest-ctx-meta-released"><strong>${releasedCount}</strong> servidas</span>`);
         if (otherCount > 0) parts.push(`<span><strong>${otherCount}</strong> otras</span>`);
         metaEl.innerHTML = parts.join('<span class="rest-ctx-dot">·</span>');
     }
@@ -3281,6 +3401,8 @@ window.rejectReservation = rejectReservation;
 window.archiveReservation = archiveReservation;
 window.unarchiveReservation = unarchiveReservation;
 window.closeUnarchiveModal = closeUnarchiveModal;
+window.releaseReservation = releaseReservation;
+window.restoreReservation = restoreReservation;
 window.viewConversation = viewConversation;
 window.filterRestaurantByStatus = filterRestaurantByStatus;
 window.closeConfirmModal = closeConfirmModal;
