@@ -13,3 +13,7 @@ restaurant-ops-v2-*.png
 dashboard-replica.html
 dashboard-replica.css
 src/assets/big-bang-*.mp4
+.claude/
+AVANCES.md
+leads.json
+reservas.json

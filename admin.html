@@ -142,6 +142,7 @@
     ================================================================ */
     .body-row {
         display: flex; flex: 1; overflow: hidden;
+        min-height: 0;
     }
 
     /* ================================================================
@@ -156,6 +157,7 @@
         -webkit-backdrop-filter: blur(28px);
         border-right: 1px solid rgba(255,255,255,0.050);
         overflow: hidden;
+        min-height: 0;
         box-shadow: 2px 0 24px rgba(0,0,0,0.35);
     }
 
@@ -182,6 +184,7 @@
     /* Panel body */
     .sb-panel {
         display: flex; flex-direction: column; flex: 1; overflow: hidden; padding: 9px 9px 0;
+        min-height: 0;
     }
 
     /* Search */
@@ -301,6 +304,7 @@
     ================================================================ */
     .workspace {
         flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;
+        min-height: 0;
     }
 
     /* ── Empty state ── */
@@ -325,7 +329,17 @@
 
     /* ── Editor wrapper ── */
     .editor-wrap {
-        flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;
+        flex: 1; display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr);
+        overflow: hidden; position: relative;
+        min-height: 0;
+    }
+
+    /* Form wrapper: contenedor grid de la fila 3 (1fr) — su .editor-body llena el espacio */
+    #admin-form, #user-form {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr);
+        min-height: 0; overflow: hidden;
     }
 
     /* ── Editor top bar ── */
@@ -389,6 +403,7 @@
     .editor-body {
         flex: 1; overflow-y: auto; padding: 24px 28px 100px;
         display: flex; flex-direction: column; gap: 18px;
+        min-height: 0;
     }
 
     /* Shared success message */
@@ -796,6 +811,293 @@
     .sc-divider {
         height: 1px; background: var(--glass-b-sub); margin: 14px 0;
     }
+
+    /* ================================================================
+       RESPONSIVE — evita overflow horizontal y permite scroll vertical
+       cuando el viewport se reduce (zoom alto, monitores pequeños)
+    ================================================================ */
+
+    /* CRITICAL FIX — las .sc dentro de .editor-body (flex column) tienen
+       flex-shrink:1 por default → flex las comprime para caber en el
+       contenedor. Como .sc tiene overflow:hidden, el contenido interno
+       se RECORTA y .editor-body nunca desborda → el scroll vertical
+       nunca se activa. */
+    .editor-body > * { flex-shrink: 0; }
+
+    /* Cadena flex/grid: items deben poder encoger por debajo de su min-content */
+    .body-row > *,
+    .workspace,
+    .editor-wrap,
+    #admin-form,
+    #user-form,
+    .editor-body { min-width: 0; }
+
+    /* Grids internos: permitir que los hijos se encojan */
+    .fg, .fg-3, .fg-1,
+    .nodes-grid,
+    .services-row,
+    .checkbox-grid,
+    .color-engine { min-width: 0; }
+
+    .fg > *,
+    .fg-3 > *,
+    .nodes-grid > *,
+    .services-row > *,
+    .color-engine > * { min-width: 0; }
+
+    /* Inputs: nunca empujar el contenedor */
+    .fi, .node-input, .hex-input { min-width: 0; max-width: 100%; }
+
+    /* Topbar: permitir que el lado derecho se encoja */
+    .editor-topbar { flex-wrap: wrap; row-gap: 8px; }
+    .editor-topbar-left { flex: 1 1 220px; }
+    .editor-topbar-right { flex-wrap: wrap; justify-content: flex-end; }
+
+    /* ── ≤ 1400px : grids 4-col → auto-fit; preview a 2ª fila ── */
+    @media (max-width: 1400px) {
+        .services-row     { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+        .nodes-grid       { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+        .color-engine     { grid-template-columns: 1fr 1fr; }
+        .color-engine .preview-panel { grid-column: 1 / -1; position: static; }
+    }
+
+    /* ── ≤ 1200px : sidebar más estrecho, padding reducido ── */
+    @media (max-width: 1200px) {
+        :root { --sidebar: 220px; }
+        .editor-body  { padding: 20px 22px 96px; }
+        .sc-body      { padding: 20px 20px 20px 22px; }
+        .sc-head      { padding: 15px 18px 15px 22px; }
+        .editor-topbar { padding: 12px 18px; }
+        .snav         { padding: 0 18px; }
+        .actions-footer { padding: 10px 18px; }
+    }
+
+    /* ── ≤ 980px : grids 2-col → 1 columna ── */
+    @media (max-width: 980px) {
+        :root { --sidebar: 200px; --hdr: 48px; }
+        .fg, .fg-3                       { grid-template-columns: 1fr; }
+        .span2, .span3                   { grid-column: auto; }
+        .color-engine                    { grid-template-columns: 1fr; }
+        .editor-title                    { font-size: 1.20rem; }
+        .url-pill                        { max-width: 160px; }
+    }
+
+    /* ── ≤ 720px : compacta para tablets pequeñas ── */
+    @media (max-width: 720px) {
+        :root { --sidebar: 180px; }
+        .nodes-grid     { grid-template-columns: 1fr; }
+        .services-row   { grid-template-columns: 1fr 1fr; }
+        .checkbox-grid  { grid-template-columns: 1fr; }
+        .editor-body    { padding: 16px 14px 92px; }
+        .sc-body        { padding: 16px 14px 16px 18px; }
+        .editor-topbar  { padding: 10px 14px; }
+        .snav           { padding: 0 14px; }
+        .actions-footer { padding: 9px 12px; }
+        .url-pill       { display: none; }
+        .btn            { padding: 8px 14px; font-size: 0.78rem; }
+    }
+
+    /* ================================================================
+       LEAD TEMPLATE EDITOR (HTML libre) + DIRECTORY
+    ================================================================ */
+    .tpl-tag {
+        font-family: 'Inter', monospace;
+        font-size: 0.76rem;
+        background: rgba(129,140,248,0.10);
+        color: var(--purple);
+        padding: 1px 6px; border-radius: 4px;
+        border: 1px solid rgba(129,140,248,0.20);
+    }
+    .tpl-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 460px);
+        gap: 18px;
+        align-items: start;
+    }
+    .tpl-editor { display: flex; flex-direction: column; gap: 13px; min-width: 0; }
+
+    .tpl-block {
+        background: rgba(255,255,255,0.030);
+        border: 1px solid rgba(255,255,255,0.060);
+        border-radius: 12px;
+        padding: 14px 14px 13px;
+    }
+    .tpl-block-head {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em;
+        text-transform: uppercase; color: var(--tx2);
+        margin-bottom: 12px;
+    }
+    .tpl-block-head ion-icon { font-size: 0.90rem; color: var(--purple); }
+
+    .tpl-icon-btn {
+        background: transparent; border: 1px solid rgba(255,255,255,0.10);
+        color: var(--tx2); border-radius: 6px;
+        padding: 5px 10px; font-size: 0.72rem; font-weight: 600;
+        cursor: pointer; font-family: inherit;
+        display: inline-flex; align-items: center; gap: 5px;
+        transition: all 0.15s;
+    }
+    .tpl-icon-btn:hover { color: var(--tx); background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); }
+    .tpl-icon-btn.danger:hover { color: var(--red); background: var(--red-bg); border-color: rgba(240,112,112,0.36); }
+    .tpl-icon-btn ion-icon { font-size: 0.85rem; }
+
+    .tpl-html-textarea {
+        width: 100%; min-height: 360px;
+        background: rgba(0,0,0,0.30);
+        border: 1px solid rgba(255,255,255,0.080);
+        border-radius: 8px;
+        padding: 12px 14px;
+        color: rgba(255,255,255,0.92);
+        font-family: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+        font-size: 0.80rem;
+        line-height: 1.55;
+        outline: none;
+        resize: vertical;
+        tab-size: 2;
+    }
+    .tpl-html-textarea:focus { border-color: rgba(129,140,248,0.50); background: rgba(0,0,0,0.34); }
+    .tpl-html-textarea::placeholder { color: rgba(255,255,255,0.18); }
+
+    .tpl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tpl-chip {
+        background: rgba(129,140,248,0.12);
+        border: 1px solid rgba(129,140,248,0.26);
+        color: var(--purple);
+        padding: 3px 9px;
+        border-radius: 99px;
+        font-size: 0.72rem; font-weight: 600;
+        cursor: pointer; font-family: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+        transition: all 0.15s;
+        user-select: none;
+    }
+    .tpl-chip:hover { background: rgba(129,140,248,0.24); transform: translateY(-1px); }
+    .tpl-chip-static { cursor: default; }
+    .tpl-chip-static:hover { transform: none; }
+    .tpl-chip-flash { outline: 2px solid var(--green); }
+    .tpl-hint-inline {
+        font-size: 0.78rem; color: var(--tx3);
+    }
+    .tpl-hint-inline code {
+        font-family: 'Cascadia Code', monospace;
+        font-size: 0.74rem; color: var(--purple);
+        background: rgba(129,140,248,0.10);
+        padding: 1px 5px; border-radius: 4px;
+    }
+
+    /* ── Preview pane ── */
+    .tpl-preview-col {
+        position: sticky; top: 0;
+        display: flex; flex-direction: column; gap: 9px;
+        min-width: 0;
+    }
+    .tpl-preview-head {
+        display: flex; align-items: center; gap: 7px;
+        font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+        color: var(--tx2);
+    }
+    .tpl-preview-head ion-icon { font-size: 0.90rem; color: var(--green); }
+    .tpl-preview-iframe {
+        width: 100%;
+        height: 640px;
+        background: #F2F2F7;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.30), inset 0 0 0 1px rgba(0,0,0,0.06);
+    }
+
+    /* ================================================================
+       LEAD DIRECTORY
+    ================================================================ */
+    .dir-controls {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1.5fr) minmax(0, 1fr);
+        gap: 10px; align-items: center;
+        margin-bottom: 12px;
+    }
+    .dir-controls .fi { padding: 9px 12px; font-size: 0.82rem; }
+    .dir-controls .btn { white-space: nowrap; }
+
+    .dir-stats {
+        font-size: 0.74rem; font-weight: 600;
+        color: var(--tx2);
+        margin-bottom: 10px;
+    }
+
+    .dir-table {
+        border: 1px solid rgba(255,255,255,0.060);
+        border-radius: 10px;
+        overflow: hidden;
+        background: rgba(0,0,0,0.18);
+    }
+    .dir-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+        gap: 12px;
+        padding: 10px 14px;
+        align-items: center;
+        border-top: 1px solid rgba(255,255,255,0.050);
+        font-size: 0.80rem;
+    }
+    .dir-row:first-child { border-top: none; }
+    .dir-row.dir-header {
+        background: rgba(255,255,255,0.045);
+        font-size: 0.60rem; font-weight: 700; letter-spacing: 0.10em;
+        text-transform: uppercase; color: var(--tx3);
+        padding: 9px 14px;
+    }
+    .dir-cell {
+        min-width: 0;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .dir-cell strong { color: var(--tx); font-weight: 600; display: block; }
+    .dir-id-line {
+        display: block;
+        color: var(--tx3); font-size: 0.68rem;
+        font-family: 'Inter', monospace;
+        margin-top: 2px;
+    }
+    .dir-cell.muted { color: var(--tx3); }
+    .dir-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .dir-actions button, .dir-actions a {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.090);
+        color: var(--tx2);
+        border-radius: 6px;
+        padding: 5px 8px;
+        cursor: pointer;
+        font-size: 0.74rem;
+        text-decoration: none;
+        display: inline-flex; align-items: center; gap: 4px;
+        transition: all 0.15s;
+        font-family: inherit;
+    }
+    .dir-actions button:hover, .dir-actions a:hover {
+        border-color: rgba(129,140,248,0.42);
+        color: var(--purple);
+        background: var(--purple-bg);
+    }
+    .dir-actions ion-icon { font-size: 0.95rem; }
+    .dir-empty {
+        text-align: center; color: var(--tx3);
+        padding: 24px; font-size: 0.80rem;
+    }
+
+    /* ── Responsive del editor ── */
+    @media (max-width: 1200px) {
+        .tpl-grid { grid-template-columns: 1fr; }
+        .tpl-preview-col { position: static; }
+        .tpl-preview-frame { max-height: 520px; }
+    }
+    @media (max-width: 760px) {
+        .tpl-row-edit { grid-template-columns: 1fr; }
+        .tpl-amount-grid { grid-template-columns: 1fr; }
+        .tpl-colors-grid { grid-column: auto; }
+        .dir-controls { grid-template-columns: 1fr; }
+        .dir-row { grid-template-columns: 1fr; gap: 6px; padding: 12px 14px; }
+        .dir-row.dir-header { display: none; }
+        .dir-cell { white-space: normal; }
+    }
     </style>
 </head>
 <body>
@@ -834,7 +1136,7 @@
             </div>
 
             <!-- Clients panel -->
-            <div id="sidebar-clients-panel" style="display:flex;flex-direction:column;flex:1;overflow:hidden;padding:9px 9px 0;">
+            <div id="sidebar-clients-panel" style="display:flex;flex-direction:column;flex:1;overflow:hidden;padding:9px 9px 0;min-height:0;">
                 <!-- Search -->
                 <div class="sb-search" style="margin-bottom:7px;">
                     <ion-icon name="search-outline"></ion-icon>
@@ -850,7 +1152,7 @@
             </div>
 
             <!-- Users panel (hidden by default) -->
-            <div id="sidebar-users-panel" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden;padding:9px 9px 0;">
+            <div id="sidebar-users-panel" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden;padding:9px 9px 0;min-height:0;">
                 <button id="add-user-btn" class="sb-add-btn" onclick="showNewUserForm()">
                     <ion-icon name="person-add-outline"></ion-icon> Registrar Acceso
                 </button>
@@ -906,7 +1208,7 @@
                 </nav>
 
                 <!-- Scrollable form body -->
-                <form id="admin-form" style="display:contents;">
+                <form id="admin-form">
                     <div class="editor-body">
 
                         <p id="save-status" class="success-msg" style="align-self:flex-start;">
@@ -1389,6 +1691,165 @@
                             </div>
                         </div>
 
+                        <!-- ── SECCIÓN 6: Plantilla HTML del Lead ── -->
+                        <div class="sc sc-accent-amber" id="sec-lead-template">
+                            <div class="sc-head">
+                                <div class="sc-icon sci-amber">
+                                    <ion-icon name="code-slash-outline"></ion-icon>
+                                </div>
+                                <div class="sc-labels">
+                                    <span class="sc-eyebrow">Compartible</span>
+                                    <span class="sc-title">Plantilla HTML del Lead</span>
+                                </div>
+                            </div>
+                            <div class="sc-body">
+                                <p class="hint" style="margin-bottom:16px;">
+                                    Pega o sube tu HTML completo. Donde quieras inyectar un valor del lead, usa
+                                    <code class="tpl-tag">{{campo}}</code>. Para fallback: <code class="tpl-tag">{{campo|—}}</code>.
+                                    Para HTML sin escapar (links): <code class="tpl-tag">{{campo|raw}}</code>.
+                                    El link público que mandas por WhatsApp es
+                                    <code class="tpl-tag">/lead?id=&lt;lead_id&gt;</code>.
+                                </p>
+
+                                <div class="tpl-grid">
+                                    <!-- ===== LEFT: HTML editor ===== -->
+                                    <div class="tpl-editor">
+
+                                        <!-- HTML body -->
+                                        <div class="tpl-block">
+                                            <div class="tpl-block-head">
+                                                <ion-icon name="code-slash-outline"></ion-icon>
+                                                <span>HTML del template</span>
+                                                <div style="margin-left:auto;display:flex;gap:6px;">
+                                                    <label class="tpl-icon-btn" title="Subir archivo .html">
+                                                        <ion-icon name="cloud-upload-outline"></ion-icon> Subir
+                                                        <input type="file" id="tpl-file" accept=".html,.htm,text/html" hidden>
+                                                    </label>
+                                                    <button type="button" id="tpl-clear-btn" class="tpl-icon-btn danger" title="Vaciar">
+                                                        <ion-icon name="trash-outline"></ion-icon>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <textarea id="tpl-html" class="tpl-html-textarea" spellcheck="false"
+                                                      placeholder="<!DOCTYPE html>&#10;<html>&#10;  <body>&#10;    <h1>{{nombre}}</h1>&#10;    <p>Sucursal: {{sucursal_sugerida}}</p>&#10;  </body>&#10;</html>"></textarea>
+                                        </div>
+
+                                        <!-- Placeholders detected -->
+                                        <div class="tpl-block">
+                                            <div class="tpl-block-head">
+                                                <ion-icon name="bookmarks-outline"></ion-icon>
+                                                <span>Placeholders usados en tu HTML</span>
+                                            </div>
+                                            <div id="tpl-placeholders-chips" class="tpl-chips">
+                                                <span class="tpl-hint-inline">Pega tu HTML y los <code>{{placeholders}}</code> aparecerán aquí.</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Identifiers + qualified stages -->
+                                        <div class="tpl-block">
+                                            <div class="tpl-block-head">
+                                                <ion-icon name="finger-print-outline"></ion-icon>
+                                                <span>Mapeo del webhook</span>
+                                            </div>
+                                            <div class="fg">
+                                                <div class="fg-group">
+                                                    <label class="fgl" for="tpl-lead-id-field">Campo del ID único</label>
+                                                    <input type="text" id="tpl-lead-id-field" class="fi" placeholder="id">
+                                                </div>
+                                                <div class="fg-group">
+                                                    <label class="fgl" for="tpl-sucursal-field">Campo de sucursal</label>
+                                                    <input type="text" id="tpl-sucursal-field" class="fi" placeholder="sucursal_sugerida">
+                                                </div>
+                                                <div class="fg-group">
+                                                    <label class="fgl" for="tpl-estatus-field">Campo de estatus / etapa</label>
+                                                    <input type="text" id="tpl-estatus-field" class="fi" placeholder="estatus">
+                                                </div>
+                                                <div class="fg-group">
+                                                    <label class="fgl" for="tpl-qualified-stages">Etapas calificadas (separadas por coma)</label>
+                                                    <input type="text" id="tpl-qualified-stages" class="fi"
+                                                           placeholder="empeño oro, empeño otros, rescate de prenda, cita agendada, reagendar, empeñado">
+                                                </div>
+                                            </div>
+                                            <p class="hint" style="margin-top:9px;">
+                                                Solo los leads cuyo <em>estatus</em> contenga alguno de estos valores (case-insensitive) se sincronizan a la base.
+                                            </p>
+                                        </div>
+
+                                        <!-- Webhook field detector -->
+                                        <div class="tpl-block">
+                                            <div class="tpl-block-head">
+                                                <ion-icon name="cloud-download-outline"></ion-icon>
+                                                <span>Campos del webhook</span>
+                                                <button type="button" id="tpl-detect-fields" class="tpl-icon-btn"
+                                                        title="Consultar webhook y detectar campos"
+                                                        style="margin-left:auto;">
+                                                    <ion-icon name="refresh-outline"></ion-icon> Detectar
+                                                </button>
+                                            </div>
+                                            <p class="hint" id="tpl-fields-hint">
+                                                Click en "Detectar" para listar los campos disponibles del webhook actual (luego click en un chip para copiarlo).
+                                            </p>
+                                            <div id="tpl-fields-chips" class="tpl-chips"></div>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- ===== RIGHT: live preview ===== -->
+                                    <div class="tpl-preview-col">
+                                        <div class="tpl-preview-head">
+                                            <ion-icon name="eye-outline"></ion-icon>
+                                            <span>Vista previa con datos de ejemplo</span>
+                                            <div style="margin-left:auto;display:flex;gap:5px;">
+                                                <button type="button" id="tpl-preview-refresh" class="tpl-icon-btn" title="Refrescar preview">
+                                                    <ion-icon name="refresh-outline"></ion-icon>
+                                                </button>
+                                                <button type="button" id="tpl-preview-open" class="tpl-icon-btn" title="Abrir en pestaña">
+                                                    <ion-icon name="open-outline"></ion-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <iframe id="tpl-preview-iframe" class="tpl-preview-iframe"
+                                                sandbox="allow-same-origin"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── SECCIÓN 7: Directorio de Leads Calificados ── -->
+                        <div class="sc sc-accent-green" id="sec-lead-directory">
+                            <div class="sc-head">
+                                <div class="sc-icon sci-green">
+                                    <ion-icon name="link-outline"></ion-icon>
+                                </div>
+                                <div class="sc-labels">
+                                    <span class="sc-eyebrow">WhatsApp Automation</span>
+                                    <span class="sc-title">Leads Calificados Almacenados</span>
+                                </div>
+                            </div>
+                            <div class="sc-body">
+                                <p class="hint" style="margin-bottom:14px;">
+                                    Lista persistida de leads calificados (tabla <code class="tpl-tag">qualified_leads</code>).
+                                    Cada uno tiene su URL única <code class="tpl-tag">/lead?id=&lt;lead_id&gt;</code> lista para enviar por WhatsApp.
+                                    Sincroniza desde el webhook para que la URL siga funcionando aunque el webhook esté offline.
+                                </p>
+                                <div class="dir-controls">
+                                    <button type="button" id="dir-sync" class="btn btn-primary">
+                                        <ion-icon name="cloud-download-outline"></ion-icon> Sincronizar desde webhook
+                                    </button>
+                                    <button type="button" id="dir-refresh" class="btn btn-ghost">
+                                        <ion-icon name="refresh-outline"></ion-icon> Recargar
+                                    </button>
+                                    <input type="text" id="dir-search" class="fi"
+                                           placeholder="Buscar por nombre, teléfono, ID…">
+                                    <select id="dir-sucursal" class="fi">
+                                        <option value="">Todas las sucursales</option>
+                                    </select>
+                                </div>
+                                <div id="dir-stats" class="dir-stats">Aún no se han cargado leads.</div>
+                                <div id="dir-table" class="dir-table"></div>
+                            </div>
+                        </div>
+
                     </div><!-- /editor-body -->
                 </form>
 
@@ -1423,7 +1884,7 @@
                 </div>
 
                 <!-- Scrollable form body -->
-                <form id="user-form" style="display:contents;">
+                <form id="user-form">
                     <input type="hidden" id="user-id">
                     <div class="editor-body">
 
@@ -1568,6 +2029,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="src/config.js"></script>
 <script src="src/auth.js"></script>
+<script src="src/lead-template-render.js"></script>
+<script src="src/lead-template-editor.js"></script>
 <script src="./src/backoffice.js?v=20260227b"></script>
 </body>
 </html>

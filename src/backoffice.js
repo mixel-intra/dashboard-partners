@@ -80,6 +80,9 @@ let state = {
     currentConfig: {}
 };
 
+// Expuesto para módulos auxiliares (lead-template-editor.js, etc.)
+window.adminBackofficeState = state;
+
 // Initialize
 async function init() {
     try {
@@ -280,7 +283,16 @@ async function selectClient(clientId) {
         investment: 0,
         sales_goal: 0
     };
+    // El editor de plantilla necesita el id_slug del cliente seleccionado
+    // para generar URLs aunque la config sea nueva.
+    if (!currentConfig.id_slug) currentConfig.id_slug = clientId;
     state.currentConfig = currentConfig;
+    window.adminBackofficeState = state;
+
+    // Cargar plantilla de lead en el editor (si el módulo está disponible)
+    if (window.LeadTemplateEditor) {
+        window.LeadTemplateEditor.load(currentConfig.lead_template || {});
+    }
 
     elements.webhookInput.value = currentConfig.webhook_url || '';
     elements.clientNameInput.value = currentConfig.name || '';
@@ -416,10 +428,16 @@ function updatePreviewLink(clientId) {
 }
 
 function setupEventListeners() {
+    // Inicializa módulo de plantilla de lead + directorio de links
+    if (window.LeadTemplateEditor) window.LeadTemplateEditor.init();
+    if (window.LeadDirectory)      window.LeadDirectory.init();
+
     // Add Client Flow
     elements.addClientBtn.addEventListener('click', () => {
         state.currentClientId = null;
         state.currentConfig = {};
+        window.adminBackofficeState = state;
+        if (window.LeadTemplateEditor) window.LeadTemplateEditor.reset();
         renderClientList();
 
         elements.editorPlaceholder.classList.add('hidden');
@@ -598,7 +616,8 @@ function setupEventListeners() {
                     last_scrape_error:    state.currentConfig.social_listening_config?.last_scrape_error || null
                 },
                 supabase_url:      elements.clientSupabaseUrl      ? (elements.clientSupabaseUrl.value.trim()      || null) : null,
-                supabase_anon_key: elements.clientSupabaseAnonKey  ? (elements.clientSupabaseAnonKey.value.trim()  || null) : null
+                supabase_anon_key: elements.clientSupabaseAnonKey  ? (elements.clientSupabaseAnonKey.value.trim()  || null) : null,
+                lead_template:     window.LeadTemplateEditor ? window.LeadTemplateEditor.serialize() : {}
             };
 
             const { error } = await supabase

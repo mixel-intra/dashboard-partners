@@ -21,7 +21,8 @@ const MIME = {
     '.ttf':  'font/ttf',
 };
 
-const proxyHandler = require('./api/proxy');
+const proxyHandler        = require('./api/proxy');
+const leadsIngestHandler  = require('./api/leads/ingest');
 
 // Adapta el res de Node.js nativo a la API de Vercel (res.status().json())
 function vercelRes(res) {
@@ -33,28 +34,42 @@ function vercelRes(res) {
     return res;
 }
 
+// Routea un endpoint /api/* a su handler tipo-Vercel, parseando query y body.
+async function callApi(handler, req, res) {
+    const urlObj = new URL(req.url, `http://localhost:${PORT}`);
+    req.query = Object.fromEntries(urlObj.searchParams);
+
+    if (['POST', 'PATCH', 'PUT'].includes(req.method)) {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        try { req.body = JSON.parse(Buffer.concat(chunks).toString()); }
+        catch { req.body = {}; }
+    }
+    return handler(req, vercelRes(res));
+}
+
 const server = http.createServer(async (req, res) => {
     // ── /api/proxy ────────────────────────────────────────────
     if (req.url.startsWith('/api/proxy')) {
-        const urlObj = new URL(req.url, `http://localhost:${PORT}`);
-        req.query = Object.fromEntries(urlObj.searchParams);
+        return callApi(proxyHandler, req, res);
+    }
 
-        // Parse JSON body for POST/PATCH/PUT
-        if (['POST', 'PATCH', 'PUT'].includes(req.method)) {
-            const chunks = [];
-            for await (const chunk of req) chunks.push(chunk);
-            try { req.body = JSON.parse(Buffer.concat(chunks).toString()); }
-            catch { req.body = {}; }
-        }
-
-        return proxyHandler(req, vercelRes(res));
+    // ── /api/leads/ingest ────────────────────────────────────
+    if (req.url.startsWith('/api/leads/ingest')) {
+        return callApi(leadsIngestHandler, req, res);
     }
 
     // ── Static files ──────────────────────────────────────────
     let urlPath = req.url.split('?')[0];
     if (urlPath === '/') urlPath = '/index.html';
 
-    const filePath = path.join(ROOT, urlPath);
+    // Clean URLs: equivalente a vercel.json { cleanUrls: true }
+    // /lead → /lead.html si no existe el archivo sin extensión.
+    let filePath = path.join(ROOT, urlPath);
+    if (!path.extname(filePath) && !fs.existsSync(filePath)) {
+        const withHtml = filePath + '.html';
+        if (fs.existsSync(withHtml)) filePath = withHtml;
+    }
     const ext = path.extname(filePath);
 
     fs.readFile(filePath, (err, data) => {
