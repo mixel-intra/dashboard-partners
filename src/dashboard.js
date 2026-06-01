@@ -5546,6 +5546,15 @@ window.__restMobileBootstrapped = window.__restMobileBootstrapped || false;
 function bootstrapRestMobile() {
     if (window.__restMobileBootstrapped) return;
     window.__restMobileBootstrapped = true;
+    // Mobile-restaurant mode hides #app-wrapper (display:none). The reservation
+    // overlays live inside that wrapper, so on mobile removing their .hidden class
+    // does nothing — a position:fixed node inside a display:none ancestor is never
+    // painted. Relocate them to <body> so they render in both layouts. Mirrors the
+    // existing "drawer injected outside #app-wrapper" convention.
+    ['restaurant-confirm-modal', 'unarchive-confirm-modal', 'conversation-modal', 'restaurant-edit-modal'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.parentElement !== document.body) document.body.appendChild(el);
+    });
     const orig = window.fetchRestaurantReservations;
     window.fetchRestaurantReservations = async function(...args) {
         const res = await orig.apply(this, args);
