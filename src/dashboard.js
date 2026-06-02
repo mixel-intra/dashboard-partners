@@ -1752,84 +1752,124 @@ const MESES_MAP = {
     ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, sept: 8, oct: 9, nov: 10, dic: 11
 };
 
-function applyTime(date, match) {
-    let h = parseInt(match[1]);
-    const m = parseInt(match[2] || '0');
-    const ampm = (match[3] || '').toLowerCase();
-    if (ampm === 'pm' && h < 12) h += 12;
-    if (ampm === 'am' && h === 12) h = 0;
-    date.setHours(h, m, 0, 0);
+const DIAS_MAP = { domingo: 0, lunes: 1, martes: 2, 'miercoles': 3, 'miércoles': 3, jueves: 4, viernes: 5, sabado: 6, 'sábado': 6 };
+
+function applyTime(date, t) {
+    if (t) date.setHours(t.h, t.m, 0, 0);
+    else date.setHours(0, 0, 0, 0);
 }
 
-function parseFechaEvento(dateStr) {
+// Extrae la hora de cualquier parte del texto. Soporta: "8pm", "8 pm", "8p",
+// "8:30pm", "8:30 p.m.", "20:30", "9:45 PM", "a las 8", "a las 8:30".
+function extractTime(s) {
+    let m;
+    // hh:mm con am/pm opcional (incluye "p.m." / "a. m.")
+    m = s.match(/(\d{1,2}):(\d{2})\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/i);
+    if (m) {
+        let h = parseInt(m[1]); const min = parseInt(m[2]);
+        const ap = (m[3] || '').replace(/[.\s]/g, '').toLowerCase();
+        if (ap.startsWith('p') && h < 12) h += 12;
+        if (ap.startsWith('a') && h === 12) h = 0;
+        return { h, m: min };
+    }
+    // "8pm" / "8 p.m." / "8p" / "a las 8 pm" (sin minutos, requiere marcador)
+    m = s.match(/(?:a\s+las\s+)?(\d{1,2})\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm|p|a)\b/i);
+    if (m) {
+        let h = parseInt(m[1]);
+        const ap = (m[2] || '').replace(/[.\s]/g, '').toLowerCase();
+        if (ap.startsWith('p') && h < 12) h += 12;
+        if (ap.startsWith('a') && h === 12) h = 0;
+        return { h, m: 0 };
+    }
+    // "a las 8" sin am/pm → reservas de restaurante = tarde/noche, asumimos PM
+    m = s.match(/a\s+las\s+(\d{1,2})(?::(\d{2}))?/i);
+    if (m) {
+        let h = parseInt(m[1]); const min = parseInt(m[2] || '0');
+        if (h < 12 && h >= 1) h += 12;
+        return { h, m: min };
+    }
+    return null;
+}
+
+// Ajusta el año cuando el texto no lo trae, eligiendo el más cercano a la fecha
+// de referencia (maneja el rollover dic→ene).
+function inferYear(month, day, ref) {
+    const refY = ref.getFullYear();
+    let cand = new Date(refY, month, day);
+    const diffDays = (cand - ref) / 86400000;
+    if (diffDays < -120) cand = new Date(refY + 1, month, day);
+    else if (diffDays > 300) cand = new Date(refY - 1, month, day);
+    return cand;
+}
+
+// Parsea el texto libre de FechaEvento (lo escribe el agente con lo que dijo el
+// cliente: "29 de mayo 9pm", "lunes 18, 6:40 pm", "hoy 8pm", "2026-05-25 14:30",
+// "24/5/2026 8:30pm"…). refDate (createdTime de la reserva) ancla los relativos
+// "hoy"/"mañana"/día-de-semana al momento en que se creó, no a la fecha actual.
+function parseFechaEvento(dateStr, refDate) {
     if (!dateStr) return null;
-    const str = dateStr.trim();
-
-    // ISO date-only "YYYY-MM-DD": la spec ECMAScript lo parsea como medianoche UTC,
-    // lo que causa un desfase de un día en zonas UTC-4 / UTC-6. Parseamos como
-    // medianoche local para que la fecha coincida con lo que el cliente dijo.
-    const isoDateOnly = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (isoDateOnly) {
-        return new Date(parseInt(isoDateOnly[1]), parseInt(isoDateOnly[2]) - 1, parseInt(isoDateOnly[3]));
-    }
-
-    // Intentar parseo nativo ISO / standard (timestamps con hora ya se parsean correctamente)
-    const native = new Date(str);
-    if (!isNaN(native.getTime()) && native.getFullYear() > 2000) return native;
-
+    const str = String(dateStr).trim();
+    const ref = refDate ? new Date(refDate) : new Date();
+    if (isNaN(ref.getTime())) ref.setTime(Date.now());
     const lower = str.toLowerCase();
-    const now = new Date();
-    const currentYear = now.getFullYear();
+    const time = extractTime(lower);
 
-    // "mañana" / "manana" + hora opcional
-    if (/^ma[nñ]ana/.test(lower)) {
-        const d = new Date(now); d.setDate(d.getDate() + 1);
-        const timeMatch = lower.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
-        if (timeMatch) applyTime(d, timeMatch);
-        return d;
+    // ISO date-only "YYYY-MM-DD" → medianoche LOCAL (evita desfase de día en UTC-6).
+    let m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) { const d = new Date(+m[1], +m[2] - 1, +m[3]); applyTime(d, time); return d; }
+
+    // "YYYY-MM-DD HH:mm" o ISO con T
+    m = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+
+    // "DD/MM/YYYY" o "DD-MM-YYYY" (año 2 o 4 dígitos)
+    m = lower.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/);
+    if (m) {
+        let y = parseInt(m[3]); if (y < 100) y += 2000;
+        const d = new Date(y, parseInt(m[2]) - 1, parseInt(m[1])); applyTime(d, time); return d;
     }
 
-    // "hoy" + hora opcional
-    if (/^hoy/.test(lower)) {
-        const d = new Date(now);
-        const timeMatch = lower.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
-        if (timeMatch) applyTime(d, timeMatch);
-        return d;
+    // Relativos anclados a la fecha de creación de la reserva
+    if (/\bhoy\b/.test(lower) && !/\d{1,2}\s+de\s+/.test(lower)) {
+        const d = new Date(ref); applyTime(d, time); return d;
+    }
+    if (/\bma[nñ]ana\b/.test(lower) && !/\d{1,2}\s+de\s+/.test(lower)) {
+        const d = new Date(ref); d.setDate(d.getDate() + 1); applyTime(d, time); return d;
     }
 
-    // "DD de MONTH [de YYYY]" — "14 de marzo", "27 de junio de 2026"
-    const p1 = lower.match(/(\d{1,2})\s+de\s+(\w+)(?:\s+(?:de\s+)?(\d{4}))?/);
-    if (p1) {
-        const day = parseInt(p1[1]);
-        const mes = MESES_MAP[p1[2]];
-        if (mes !== undefined) return new Date(p1[3] ? parseInt(p1[3]) : currentYear, mes, day);
+    // "DD de MES [de YYYY]" (también "viernes 8 de mayo")
+    m = lower.match(/(\d{1,2})\s+de\s+([a-záéíóú]+)(?:\s+(?:de\s+)?(\d{4}))?/);
+    if (m && MESES_MAP[m[2]] !== undefined) {
+        const day = parseInt(m[1]); const mes = MESES_MAP[m[2]];
+        const d = m[3] ? new Date(parseInt(m[3]), mes, day) : inferYear(mes, day, ref);
+        applyTime(d, time); return d;
     }
 
-    // "Día, DD de MONTH" — "Miércoles, 14 de marzo"
-    const p2 = lower.match(/\w+,?\s+(\d{1,2})\s+de\s+(\w+)/);
-    if (p2) {
-        const day = parseInt(p2[1]);
-        const mes = MESES_MAP[p2[2]];
-        if (mes !== undefined) return new Date(currentYear, mes, day);
+    // "DD MES [YYYY]" sin "de" — "16 mayo 2026", "28 feb"
+    m = lower.match(/\b(\d{1,2})\s+([a-záéíóú]{3,})(?:\s+(\d{4}))?/);
+    if (m && MESES_MAP[m[2]] !== undefined) {
+        const day = parseInt(m[1]); const mes = MESES_MAP[m[2]];
+        const d = m[3] ? new Date(parseInt(m[3]), mes, day) : inferYear(mes, day, ref);
+        applyTime(d, time); return d;
     }
 
-    // "DD MON YYYY" — "05 mar 2026", "28 feb 2024"
-    const p3 = lower.match(/(\d{1,2})\s+(\w{3,})\s+(\d{4})/);
-    if (p3) {
-        const day = parseInt(p3[1]);
-        const mes = MESES_MAP[p3[2]];
-        const year = parseInt(p3[3]);
-        if (mes !== undefined) return new Date(year, mes, day);
+    // Día de la semana ("lunes 18", "este viernes", "Sábado a las 8") → próxima
+    // ocurrencia en/después de la fecha de referencia.
+    for (const name in DIAS_MAP) {
+        if (new RegExp('\\b' + name + '\\b').test(lower)) {
+            const d = new Date(ref); d.setHours(0, 0, 0, 0);
+            let add = (DIAS_MAP[name] - d.getDay() + 7) % 7;
+            if (/pr[oó]ximo|siguiente/.test(lower) && add === 0) add = 7;
+            d.setDate(d.getDate() + add); applyTime(d, time); return d;
+        }
     }
 
-    // "DD MON" sin año — "28 feb"
-    const p4 = lower.match(/^(\d{1,2})\s+(\w{3,})$/);
-    if (p4) {
-        const day = parseInt(p4[1]);
-        const mes = MESES_MAP[p4[2]];
-        if (mes !== undefined) return new Date(currentYear, mes, day);
-    }
+    // Sólo hora ("mañana 9:20pm" ya cubierto; "8:30 pm" suelto) → ref + hora
+    if (time) { const d = new Date(ref); applyTime(d, time); return d; }
 
+    // Fallback nativo
+    const nat = new Date(str);
+    if (!isNaN(nat.getTime()) && nat.getFullYear() > 2000) return nat;
     return null;
 }
 
@@ -2173,12 +2213,15 @@ async function fetchRestaurantReservations() {
             horaEvento: r['HoraEvento'] || r.hora_evento || r.horaEvento || '',
             estado: r.Estado || r.estado || 'Nuevo Lead',
             detalles: r.Detalles || r.detalles || '',
-            conversacion: r.Conversacion || r.conversacion || ''
+            conversacion: r.Conversacion || r.conversacion || '',
+            // Momento en que se creó el registro: ancla los relativos ("hoy",
+            // "mañana", "lunes 18") al día en que el cliente lo dijo, no a hoy.
+            createdTime: r.createdTime || r.created_time || r.created_at || ''
         }));
 
         // Parsear fechas y extraer hora si no viene separada
         state.restaurantReservations.forEach(r => {
-            r.fecha_parsed = parseFechaEvento(r.fechaEvento);
+            r.fecha_parsed = parseFechaEvento(r.fechaEvento, r.createdTime);
             // Fallback: si horaEvento está vacío pero FechaEvento traía hora (ISO datetime),
             // extraerla de fecha_parsed para que el dashboard la muestre.
             if (!r.horaEvento && r.fecha_parsed) {
