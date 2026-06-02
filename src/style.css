@@ -1783,6 +1783,68 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 [data-theme="light"] .restm-tab-count { background: rgba(15,23,42,0.06); }
 [data-theme="light"] .restm-tab.active .restm-tab-count { background: rgba(255,255,255,0.25); }
 
+/* Buscador */
+.restm-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+}
+.restm-search-icon {
+    position: absolute;
+    left: 13px;
+    font-size: 17px;
+    color: rgba(255,255,255,0.4);
+    pointer-events: none;
+}
+[data-theme="light"] .restm-search-icon { color: #94A3B8; }
+.restm-search-input {
+    width: 100%;
+    /* 16px evita el zoom automático de iOS Safari al enfocar el input */
+    font-size: 16px;
+    font-family: inherit;
+    padding: 10px 38px 10px 40px;
+    border-radius: 13px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    color: rgba(255,255,255,0.92);
+    outline: none;
+    -webkit-appearance: none;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+.restm-search-input::placeholder { color: rgba(255,255,255,0.38); }
+.restm-search-input:focus {
+    border-color: rgba(167,139,250,0.5);
+    background: rgba(167,139,250,0.07);
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.12);
+}
+[data-theme="light"] .restm-search-input {
+    background: rgba(255,255,255,0.9);
+    border-color: rgba(15,23,42,0.08);
+    color: #0F172A;
+}
+[data-theme="light"] .restm-search-input::placeholder { color: #94A3B8; }
+[data-theme="light"] .restm-search-input:focus {
+    border-color: #6366F1;
+    background: #FFF;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+.restm-search-clear {
+    position: absolute;
+    right: 8px;
+    width: 28px; height: 28px;
+    display: none;
+    align-items: center; justify-content: center;
+    background: none; border: none; padding: 0;
+    color: rgba(255,255,255,0.4);
+    font-size: 18px; cursor: pointer;
+    transition: transform 0.15s, color 0.15s;
+}
+.restm-search-clear.show { display: flex; }
+.restm-search-clear:active { transform: scale(0.88); }
+.restm-search-clear:hover { color: rgba(255,255,255,0.7); }
+[data-theme="light"] .restm-search-clear { color: #94A3B8; }
+
 /* List wrap */
 .restm-list-wrap {
     flex: 1;

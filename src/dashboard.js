@@ -4804,7 +4804,8 @@ state.restMobile = state.restMobile || {
     activeTab: 'pendientes',
     monthAnchor: null,
     selectedIdx: null,
-    dateFilter: null
+    dateFilter: null,
+    search: ''
 };
 
 function isRestMobileActive() {
@@ -4938,6 +4939,19 @@ function getRestMobileFilteredReservations() {
     const tab = state.restMobile.activeTab;
     const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
     const dateFilter = state.restMobile.dateFilter;
+    const q = (state.restMobile.search || '').trim().toLowerCase();
+
+    // Búsqueda global: si hay texto, busca en TODAS las reservas (ignora tab y
+    // filtro de fecha), igual que el buscador de desktop. Encontrar a alguien no
+    // debe depender del tab activo. Busca por nombre, teléfono, email y tipo.
+    if (q) {
+        return all.filter(r =>
+            (r.nombre || '').toLowerCase().includes(q) ||
+            (r.telefono || '').toLowerCase().includes(q) ||
+            (r.email || '').toLowerCase().includes(q) ||
+            (r.tipoEvento || '').toLowerCase().includes(q)
+        );
+    }
 
     // Cuando hay filtro de fecha activo, ignoramos los tabs y mostramos solo
     // las reservas de ese día (todos los estados).
@@ -4986,6 +5000,15 @@ function renderRestMobileTabs() {
 function restMobileSetTab(tab) {
     state.restMobile.activeTab = tab;
     state.restMobile.dateFilter = null;
+    // La búsqueda anula los tabs; al elegir un tab, reseteamos la búsqueda para
+    // que el cambio de tab tenga efecto visible.
+    if (state.restMobile.search) {
+        state.restMobile.search = '';
+        const input = document.getElementById('restm-search-input');
+        if (input) input.value = '';
+        const clearBtn = document.getElementById('restm-search-clear');
+        if (clearBtn) clearBtn.classList.remove('show');
+    }
     renderRestMobileTabs();
     renderRestMobileList();
 }
@@ -4993,6 +5016,23 @@ function restMobileSetTab(tab) {
 function restMobileClearDateFilter() {
     state.restMobile.dateFilter = null;
     renderRestMobile();
+}
+
+function searchRestMobile(value) {
+    state.restMobile.search = value;
+    const clearBtn = document.getElementById('restm-search-clear');
+    if (clearBtn) clearBtn.classList.toggle('show', !!value);
+    renderRestMobileList();
+}
+
+function clearRestMobileSearch() {
+    const input = document.getElementById('restm-search-input');
+    if (input) input.value = '';
+    state.restMobile.search = '';
+    const clearBtn = document.getElementById('restm-search-clear');
+    if (clearBtn) clearBtn.classList.remove('show');
+    renderRestMobileList();
+    if (input) input.focus();
 }
 
 function renderRestMobileList() {
@@ -5017,8 +5057,11 @@ function renderRestMobileList() {
 
     if (filtered.length === 0) {
         const tab = state.restMobile.activeTab;
+        const q = (state.restMobile.search || '').trim();
         let empty;
-        if (dateFilter) {
+        if (q) {
+            empty = { icon: 'search-outline', title: 'Sin resultados', sub: `No encontramos reservas para «${q}».` };
+        } else if (dateFilter) {
             const fDate = new Date(dateFilter + 'T00:00:00');
             const fLabel = fDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
             empty = { icon: 'calendar-clear-outline', title: 'Sin reservas este día', sub: `No hay reservas para ${fLabel}.` };
@@ -5579,6 +5622,8 @@ document.addEventListener('click', e => {
 // Expose
 window.restMobileSetTab = restMobileSetTab;
 window.restMobileClearDateFilter = restMobileClearDateFilter;
+window.searchRestMobile = searchRestMobile;
+window.clearRestMobileSearch = clearRestMobileSearch;
 window.restMobileBottomNav = restMobileBottomNav;
 window.restMobileRefresh = restMobileRefresh;
 window.openRestMobileSheet = openRestMobileSheet;

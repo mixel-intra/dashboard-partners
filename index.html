@@ -8287,6 +8287,20 @@
                 <span class="restm-tab-count" id="restm-count-proximas">0</span>
             </button>
         </div>
+
+        <!-- Buscador (busca en todas las reservas por nombre, teléfono o tipo) -->
+        <div class="restm-search">
+            <ion-icon name="search-outline" class="restm-search-icon"></ion-icon>
+            <input type="text" id="restm-search-input" class="restm-search-input"
+                placeholder="Buscar por nombre, teléfono o tipo…"
+                autocomplete="off" autocorrect="off" autocapitalize="off"
+                spellcheck="false" enterkeyhint="search"
+                oninput="searchRestMobile(this.value)">
+            <button type="button" class="restm-search-clear" id="restm-search-clear"
+                aria-label="Limpiar búsqueda" onclick="clearRestMobileSearch()">
+                <ion-icon name="close-circle"></ion-icon>
+            </button>
+        </div>
     </header>
 
     <!-- Lista de reservas (scrollable) -->
