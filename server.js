@@ -23,6 +23,7 @@ const MIME = {
 
 const proxyHandler        = require('./api/proxy');
 const leadsIngestHandler  = require('./api/leads/ingest');
+const reservationsCreateHandler = require('./api/reservations/create');
 
 // Adapta el res de Node.js nativo a la API de Vercel (res.status().json())
 function vercelRes(res) {
@@ -57,6 +58,11 @@ const server = http.createServer(async (req, res) => {
     // ── /api/leads/ingest ────────────────────────────────────
     if (req.url.startsWith('/api/leads/ingest')) {
         return callApi(leadsIngestHandler, req, res);
+    }
+
+    // ── /api/reservations/create ─────────────────────────────
+    if (req.url.startsWith('/api/reservations/create')) {
+        return callApi(reservationsCreateHandler, req, res);
     }
 
     // ── Static files ──────────────────────────────────────────

@@ -3110,6 +3110,81 @@ function searchRestaurantReservations(value) {
     renderRestaurantReservations();
 }
 
+// ── Nueva reserva (alta manual) ─────────────────────────────────────────────
+// Modal único compartido por desktop y móvil. Crea el registro en Airtable vía
+// /api/reservations/create. El modal vive dentro de #app-wrapper pero se reubica
+// a <body> en bootstrapRestMobile para que también funcione en la UI móvil.
+function openNewReservationModal() {
+    const modal = document.getElementById('restaurant-create-modal');
+    if (!modal) return;
+    ['create-nombre', 'create-telefono', 'create-email', 'create-tipo', 'create-hora', 'create-detalles', 'create-pax']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const fechaEl = document.getElementById('create-fecha');
+    if (fechaEl) fechaEl.value = todayKeyMx();
+    const errEl = document.getElementById('create-modal-error');
+    if (errEl) errEl.classList.add('hidden');
+    if (typeof closeRestMobileMenuSheet === 'function') closeRestMobileMenuSheet();
+    modal.classList.remove('hidden');
+    setTimeout(() => { const n = document.getElementById('create-nombre'); if (n) n.focus(); }, 60);
+}
+
+function closeNewReservationModal() {
+    const modal = document.getElementById('restaurant-create-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function submitNewReservation() {
+    const val = (id) => (document.getElementById(id)?.value || '').trim();
+    const errEl = document.getElementById('create-modal-error');
+    const errText = document.getElementById('create-modal-error-text');
+    const showErr = (msg) => {
+        if (errText) errText.textContent = msg;
+        if (errEl) errEl.classList.remove('hidden');
+    };
+
+    const nombre = val('create-nombre');
+    const pax = parseInt(document.getElementById('create-pax')?.value, 10);
+    const fecha = val('create-fecha');
+
+    if (!nombre) return showErr('El nombre del cliente es obligatorio.');
+    if (!Number.isFinite(pax) || pax < 1) return showErr('Indica cuántas personas (PAX).');
+    if (!fecha) return showErr('Selecciona la fecha de la reserva.');
+    if (errEl) errEl.classList.add('hidden');
+
+    const btn = document.getElementById('create-submit-btn');
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<ion-icon name="sync-outline" class="spin"></ion-icon> Creando…'; }
+
+    try {
+        const resp = await fetch('/api/reservations/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                clientSlug: state.clientId,
+                nombre,
+                telefono: val('create-telefono'),
+                email: val('create-email'),
+                tipoEvento: val('create-tipo'),
+                pax,
+                fechaEvento: fecha,
+                horaEvento: val('create-hora'),
+                detalles: val('create-detalles'),
+                estado: 'Nuevo Lead'
+            })
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data.error || ('Error del servidor: ' + resp.status));
+
+        closeNewReservationModal();
+        if (typeof showToast === 'function') showToast('Reserva creada exitosamente', 'success');
+        await fetchRestaurantReservations();
+    } catch (e) {
+        showErr('No se pudo crear la reserva: ' + (e.message || e));
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+    }
+}
+
 function confirmReservation(index) {
     const reservation = state.restaurantReservations[index];
     if (!reservation) return;
@@ -5594,7 +5669,7 @@ function bootstrapRestMobile() {
     // does nothing — a position:fixed node inside a display:none ancestor is never
     // painted. Relocate them to <body> so they render in both layouts. Mirrors the
     // existing "drawer injected outside #app-wrapper" convention.
-    ['restaurant-confirm-modal', 'unarchive-confirm-modal', 'conversation-modal', 'restaurant-edit-modal'].forEach(id => {
+    ['restaurant-confirm-modal', 'unarchive-confirm-modal', 'conversation-modal', 'restaurant-edit-modal', 'restaurant-create-modal'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.parentElement !== document.body) document.body.appendChild(el);
     });
@@ -5624,6 +5699,9 @@ window.restMobileSetTab = restMobileSetTab;
 window.restMobileClearDateFilter = restMobileClearDateFilter;
 window.searchRestMobile = searchRestMobile;
 window.clearRestMobileSearch = clearRestMobileSearch;
+window.openNewReservationModal = openNewReservationModal;
+window.closeNewReservationModal = closeNewReservationModal;
+window.submitNewReservation = submitNewReservation;
 window.restMobileBottomNav = restMobileBottomNav;
 window.restMobileRefresh = restMobileRefresh;
 window.openRestMobileSheet = openRestMobileSheet;

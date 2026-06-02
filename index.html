@@ -1215,6 +1215,17 @@
             border-color: rgba(255,68,68,0.20);
             color: #FF6B6B;
         }
+        .rest-tool-btn.primary {
+            background: #7551FF;
+            border-color: #7551FF;
+            color: #fff;
+            font-weight: 600;
+        }
+        .rest-tool-btn.primary:hover {
+            background: #6541f0;
+            border-color: #6541f0;
+            color: #fff;
+        }
         .rest-tool-btn ion-icon { font-size: 1rem; }
         .rest-tool-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .rest-tool-btn.loading ion-icon { animation: spin 0.9s linear infinite; }
@@ -5018,6 +5029,10 @@
                         </div>
                     </div>
                     <div class="rest-toolbar-actions">
+                        <button id="rest-new-btn" class="rest-tool-btn primary" onclick="openNewReservationModal()" title="Crear una nueva reserva">
+                            <ion-icon name="add-outline"></ion-icon>
+                            <span>Nueva reserva</span>
+                        </button>
                         <button id="avail-toggle-btn" class="rest-tool-btn success" onclick="toggleAvailabilityPanel()" title="Panel de disponibilidad">
                             <ion-icon name="shield-checkmark-outline"></ion-icon>
                             <span id="avail-btn-label">Disponibilidad</span>
@@ -5433,6 +5448,75 @@
                                 style="flex:1; padding:12px; border:none; background:#7551FF;
                                                border-radius:12px; color:white; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">
                                 Guardar Cambios
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Nueva reserva (sirve desktop y móvil; reubicado a <body> en runtime) -->
+            <div id="restaurant-create-modal" class="hidden"
+                style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px;"
+                onclick="if(event.target===this) closeNewReservationModal();">
+                <div
+                    style="background:rgba(15,13,30,0.92); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px); border:1px solid rgba(255,255,255,0.10); border-radius:24px; max-width:480px; width:100%; max-height:90vh; display:flex; flex-direction:column; overflow:hidden;">
+                    <div
+                        style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                        <h3 style="font-size:1.1rem; font-weight:700; margin:0; display:flex; align-items:center; gap:8px;">
+                            <ion-icon name="add-circle-outline"></ion-icon> Nueva reserva
+                        </h3>
+                        <button onclick="closeNewReservationModal()"
+                            style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div style="padding:24px; display:grid; gap:14px; overflow-y:auto;">
+                        <div class="rest-edit-field">
+                            <span class="rest-edit-label">Nombre del cliente *</span>
+                            <input type="text" id="create-nombre" class="rest-edit-input" placeholder="Ej. Juan Pérez" autocomplete="off">
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                            <div class="rest-edit-field">
+                                <span class="rest-edit-label">Teléfono</span>
+                                <input type="tel" id="create-telefono" class="rest-edit-input" placeholder="+52…" autocomplete="off">
+                            </div>
+                            <div class="rest-edit-field">
+                                <span class="rest-edit-label">Personas (PAX) *</span>
+                                <input type="number" id="create-pax" class="rest-edit-input" min="1" placeholder="2">
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                            <div class="rest-edit-field">
+                                <span class="rest-edit-label">Fecha *</span>
+                                <input type="date" id="create-fecha" class="rest-edit-input">
+                            </div>
+                            <div class="rest-edit-field">
+                                <span class="rest-edit-label">Hora</span>
+                                <input type="time" id="create-hora" class="rest-edit-input">
+                            </div>
+                        </div>
+                        <div class="rest-edit-field">
+                            <span class="rest-edit-label">Tipo de evento</span>
+                            <input type="text" id="create-tipo" class="rest-edit-input" placeholder="Reserva de Mesa Regular" autocomplete="off">
+                        </div>
+                        <div class="rest-edit-field">
+                            <span class="rest-edit-label">Email</span>
+                            <input type="email" id="create-email" class="rest-edit-input" placeholder="cliente@correo.com" autocomplete="off">
+                        </div>
+                        <div class="rest-edit-field">
+                            <span class="rest-edit-label">Detalles</span>
+                            <textarea id="create-detalles" class="rest-confirm-message" placeholder="Notas, peticiones especiales, ubicación preferida…"></textarea>
+                        </div>
+                        <div id="create-modal-error" class="rest-warning-inline hidden">
+                            <ion-icon name="alert-circle-outline"></ion-icon>
+                            <span id="create-modal-error-text">Revisa los campos.</span>
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <button onclick="closeNewReservationModal()"
+                                style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1); background:transparent; border-radius:12px; color:white; cursor:pointer; font-family:'Inter',sans-serif;">
+                                Cancelar
+                            </button>
+                            <button id="create-submit-btn" onclick="submitNewReservation()"
+                                style="flex:1.4; padding:12px; border:none; background:#7551FF; border-radius:12px; color:white; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                <ion-icon name="checkmark-outline"></ion-icon> Crear reserva
                             </button>
                         </div>
                     </div>
@@ -8309,6 +8393,11 @@
             <!-- Populated by renderRestMobileList() -->
         </div>
     </main>
+
+    <!-- FAB: nueva reserva -->
+    <button class="restm-fab" id="restm-fab" onclick="openNewReservationModal()" aria-label="Nueva reserva">
+        <ion-icon name="add-outline"></ion-icon>
+    </button>
 
     <!-- Bottom tab bar -->
     <nav class="restm-bottombar">

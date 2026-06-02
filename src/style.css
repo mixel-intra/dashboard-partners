@@ -1845,6 +1845,28 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 .restm-search-clear:hover { color: rgba(255,255,255,0.7); }
 [data-theme="light"] .restm-search-clear { color: #94A3B8; }
 
+/* FAB — Nueva reserva */
+.restm-fab {
+    position: fixed;
+    right: 18px;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    z-index: 60;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #8B5CF6 0%, #7551FF 100%);
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(117,81,255,0.45), 0 2px 8px rgba(0,0,0,0.3);
+    transition: transform 0.18s, box-shadow 0.18s;
+}
+.restm-fab:active { transform: scale(0.9); box-shadow: 0 4px 14px rgba(117,81,255,0.4); }
+.restm-fab ion-icon { pointer-events: none; }
+/* Solo visible dentro de la UI móvil de restaurante */
+.rest-mobile .restm-fab { display: flex; }
+
 /* List wrap */
 .restm-list-wrap {
     flex: 1;
