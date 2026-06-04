@@ -1061,6 +1061,7 @@ function renderDashboard() {
     renderAllCharts(metrics);
     renderTable();
     renderMobileDashboard();
+    if (typeof renderCdeExtra === 'function') renderCdeExtra(); // CEFEMEX Casa de Empeño (solo ese cliente)
 }
 
 function calculateMetrics() {
@@ -6304,4 +6305,170 @@ async function chhToggle(canal, currentlyOn) {
         if (typeof showToast === 'function') showToast(`${CHH_LABEL[canal]} ${on ? 'activado' : 'apagado'}`, 'success');
         fetchChannelHealth();
     } catch (e) { console.error('[chh] toggle', e); }
+}
+
+// ============================================================
+// CEFEMEX CASA DE EMPEÑO — Funnel + ROAS + Motivos de venta perdida
+// SOLO para clientId === 'casa-de-empeño'. No afecta a otras cuentas.
+// ============================================================
+const CDE_SLUG = 'casa-de-empeño';
+const CDE_STAGES = [
+    { key: 'oro',       label: 'Empeño Oro',      color: '#f59e0b' },
+    { key: 'otros',     label: 'Rescate / Otros', color: '#8b5cf6' },
+    { key: 'cita',      label: 'Cita agendada',   color: '#3b82f6' },
+    { key: 'reagendar', label: 'Reagendar',       color: '#06b6d4' },
+    { key: 'empenado',  label: 'Empeñado',        color: '#22c55e' },
+    { key: 'perdido',   label: 'Venta perdida',   color: '#ef4444' }
+];
+// Motivos de venta perdida (catálogo). norm = clave normalizada para matchear tags.
+const CDE_MOTIVOS = [
+    { norm: 'monto insuficiente',        label: 'Monto insuficiente',   anchor: 'monto' },
+    { norm: 'articulo fuera de catalogo',label: 'Fuera de catálogo',    anchor: 'catalogo' },
+    { norm: 'acepto oferta de otra casa',label: 'Aceptó otra casa',     anchor: 'oferta' },
+    { norm: 'no era joyeria de oro',     label: 'No era oro',           anchor: 'joyeria' },
+    { norm: 'no cumple lineamientos',    label: 'No cumple lineamientos',anchor: 'lineamient' },
+    { norm: 'usuario dejo de contestar', label: 'Dejó de contestar',    anchor: 'contestar' },
+    { norm: 'no se presento a las citas',label: 'No se presentó',       anchor: 'presento' },
+    { norm: 'otros',                     label: 'Otros',                anchor: 'otros' }
+];
+let cdePieChart = null;
+
+function cdeNorm(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+
+function cdeStage(lead) {
+    const s = cdeNorm(lead.estatus_original || lead.estatus);
+    if (s.includes('oro') && s.includes('empe')) return 'oro';
+    if (s.includes('rescate') || s.includes('otros')) return 'otros';
+    if (s.includes('cita')) return 'cita';
+    if (s.includes('reagendar')) return 'reagendar';
+    if (s.includes('empenad')) return 'empenado';
+    if (s.includes('perdid')) return 'perdido';
+    return null;
+}
+
+function cdeIsIntra() {
+    const ses = (typeof getSession === 'function') ? getSession() : null;
+    return !!(ses && ses.role === 'admin');
+}
+
+function renderCdeExtra() {
+    const sec = document.getElementById('cde-extra');
+    if (!sec) return;
+    if (state.clientId !== CDE_SLUG) { sec.classList.add('hidden'); return; }
+    sec.classList.remove('hidden');
+
+    const leads = state.filteredLeads || [];
+    const counts = {}; CDE_STAGES.forEach(s => counts[s.key] = 0);
+    const perdidos = [];
+    leads.forEach(l => {
+        const k = cdeStage(l);
+        if (k) counts[k]++;
+        if (k === 'perdido') perdidos.push(l);
+    });
+    const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
+    const empenados = counts.empenado;
+
+    // Punto 1: Oportunidades calificadas = total del funnel INCLUYENDO venta perdida
+    const c1 = document.getElementById('card-1-value'); if (c1) c1.textContent = totalFunnel;
+    // Punto 2: "Ventas" -> "Empeños cerrados" (conteo de empeñados)
+    const lbl3 = document.getElementById('label-main-3'); if (lbl3) lbl3.textContent = 'Empeños cerrados';
+    const sub3 = document.getElementById('label-sub-3'); if (sub3) sub3.textContent = 'EMPEÑADOS';
+    const c3 = document.getElementById('card-3-value'); if (c3) c3.textContent = empenados;
+
+    // Punto 4: fichas del funnel
+    const grid = document.getElementById('cde-funnel');
+    if (grid) grid.innerHTML = CDE_STAGES.map(s => {
+        const n = counts[s.key]; const pct = totalFunnel ? Math.round(n / totalFunnel * 100) : 0;
+        return `<div class="cde-fich">
+            <div class="n" style="color:${s.color}">${n}</div>
+            <div class="t">${s.label}</div>
+            <div class="b"><i style="width:${pct}%;background:${s.color}"></i></div>
+        </div>`;
+    }).join('');
+
+    cdeRenderPie(perdidos);
+    cdeRenderRoas(empenados);
+}
+
+function cdeRenderPie(perdidos) {
+    const counts = {}; CDE_MOTIVOS.forEach(m => counts[m.norm] = 0);
+    perdidos.forEach(l => {
+        const tags = (typeof getLeadTags === 'function' ? getLeadTags(l) : [])
+            .map(cdeNorm).filter(t => t && !t.includes('venta_perdida') && t !== 'venta perdida');
+        let matched = false;
+        for (const m of CDE_MOTIVOS) {
+            if (m.norm === 'otros') continue;
+            if (tags.some(t => t.includes(m.anchor) || m.norm.includes(t))) { counts[m.norm]++; matched = true; break; }
+        }
+        if (!matched) counts['otros']++;
+    });
+
+    const entries = CDE_MOTIVOS.map(m => [m.label, counts[m.norm]]).filter(e => e[1] > 0);
+    const empty = document.getElementById('cde-pie-empty');
+    const canvas = document.getElementById('cde-pie');
+    if (!entries.length) {
+        if (empty) empty.style.display = 'block';
+        if (canvas) canvas.style.display = 'none';
+        if (cdePieChart) { cdePieChart.destroy(); cdePieChart = null; }
+        return;
+    }
+    if (empty) empty.style.display = 'none';
+    if (canvas) canvas.style.display = 'block';
+    const data = {
+        labels: entries.map(e => e[0]),
+        datasets: [{ data: entries.map(e => e[1]),
+            backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#06b6d4', '#ec4899', '#10b981', '#9ca3af'] }]
+    };
+    if (cdePieChart) { cdePieChart.data = data; cdePieChart.update(); }
+    else if (window.Chart && canvas) {
+        cdePieChart = new Chart(canvas.getContext('2d'), {
+            type: 'doughnut', data,
+            options: { responsive: true, plugins: { legend: { position: 'right',
+                labels: { color: getComputedStyle(document.body).color, font: { size: 11 }, boxWidth: 12 } } } }
+        });
+    }
+}
+
+async function cdeRenderRoas(empenados) {
+    const periodo = new Date().toISOString().slice(0, 7); // YYYY-MM
+    let monto = 0;
+    try {
+        if (window.adminSupabase) {
+            const { data } = await window.adminSupabase.from('ad_spend')
+                .select('monto').eq('account_slug', CDE_SLUG).eq('periodo', periodo).maybeSingle();
+            monto = data ? (Number(data.monto) || 0) : 0;
+        }
+    } catch (e) { console.error('[cde] ad_spend', e); }
+
+    const roas = monto > 0 ? (empenados / monto) : 0;
+    const cpe = empenados > 0 ? (monto / empenados) : 0;
+    const valEl = document.getElementById('cde-roas-val');
+    const subEl = document.getElementById('cde-roas-sub');
+    if (valEl) valEl.textContent = monto > 0 ? roas.toFixed(4) : '—';
+    if (subEl) subEl.textContent = monto > 0
+        ? `${empenados} empeños ÷ $${monto.toLocaleString('en-US')} · costo/empeño $${cpe.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+        : 'Falta capturar el gasto de publicidad del mes';
+
+    const isIntra = cdeIsIntra();
+    const badge = document.getElementById('cde-roas-intra');
+    const spend = document.getElementById('cde-spend');
+    if (badge) badge.style.display = isIntra ? 'inline-block' : 'none';
+    if (spend) spend.style.display = isIntra ? 'flex' : 'none';
+    const mes = document.getElementById('cde-spend-mes'); if (mes) mes.textContent = periodo;
+    const inp = document.getElementById('cde-spend-input'); if (inp && monto > 0 && !inp.value) inp.value = monto;
+}
+
+async function cdeSaveSpend(btn) {
+    const periodo = new Date().toISOString().slice(0, 7);
+    const monto = Math.max(0, parseFloat(document.getElementById('cde-spend-input').value) || 0);
+    try {
+        await window.adminSupabase.from('ad_spend').upsert(
+            { account_slug: CDE_SLUG, periodo, monto, updated_at: new Date().toISOString() },
+            { onConflict: 'account_slug,periodo' });
+        if (btn) { const t = btn.textContent; btn.textContent = '✓ Guardado'; setTimeout(() => btn.textContent = t, 1400); }
+        renderCdeExtra();
+        if (typeof showToast === 'function') showToast('Gasto guardado (' + periodo + ')', 'success');
+    } catch (e) { console.error('[cde] save spend', e); alert('Error: ' + e.message); }
 }
