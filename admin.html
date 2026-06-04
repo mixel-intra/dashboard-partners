@@ -1205,6 +1205,10 @@
                     <button class="snav-btn" data-target="sec-vars">
                         <ion-icon name="git-network-outline"></ion-icon> Variables
                     </button>
+
+                    <button class="snav-btn" data-target="sec-kommo">
+                        <ion-icon name="pulse-outline"></ion-icon> Salud de Canales
+                    </button>
                 </nav>
 
                 <!-- Scrollable form body -->
@@ -1850,6 +1854,66 @@
                             </div>
                         </div>
 
+                        <!-- ── SECCIÓN: Salud de Canales (Kommo) — INTERNO Intra ── -->
+                        <div class="sc sc-accent-amber" id="sec-kommo" style="display:none;">
+                            <style>
+                                .akh-summary{display:flex;gap:8px;flex-wrap:wrap;}
+                                .akh-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(127,127,127,.12);}
+                                .akh-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+                                .akh-dot.ok{background:#22c55e;}.akh-dot.down{background:#ef4444;}.akh-dot.idle{background:#f59e0b;}.akh-dot.off{background:#9ca3af;}
+                                .akh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+                                .akh-ch{border:1px solid var(--border,rgba(127,127,127,.25));border-radius:13px;padding:13px 14px;display:flex;flex-direction:column;gap:9px;}
+                                .akh-ch-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+                                .akh-ch-name{display:flex;align-items:center;gap:8px;font-weight:650;font-size:13.5px;}
+                                .akh-ch-name ion-icon{font-size:17px;}
+                                .akh-status{font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+                                .akh-status.ok{color:#16a34a;}.akh-status.down{color:#dc2626;}.akh-status.idle{color:#d97706;}.akh-status.off{color:#9ca3af;}
+                                .akh-ago{font-size:12px;opacity:.7;}
+                                .akh-ctrls{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border,rgba(127,127,127,.2));padding-top:9px;}
+                                .akh-umbral{display:flex;align-items:center;gap:5px;font-size:11.5px;opacity:.8;}
+                                .akh-umbral input{width:50px;padding:3px 6px;border:1px solid var(--border,rgba(127,127,127,.3));border-radius:7px;background:transparent;color:inherit;font-size:12px;}
+                                .akh-toggle{cursor:pointer;font-size:11.5px;font-weight:650;padding:4px 9px;border-radius:8px;border:1px solid var(--border,rgba(127,127,127,.3));background:transparent;color:inherit;}
+                                .akh-toggle.on{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.45);color:#16a34a;}
+                                .akh-mini{cursor:pointer;font-size:12px;font-weight:600;padding:7px 12px;border-radius:9px;border:1px solid var(--border,rgba(127,127,127,.3));background:transparent;color:inherit;white-space:nowrap;}
+                            </style>
+                            <div class="sc-head">
+                                <div class="sc-icon sci-amber"><ion-icon name="pulse-outline"></ion-icon></div>
+                                <div class="sc-labels">
+                                    <span class="sc-eyebrow">Monitoreo interno · solo Intra</span>
+                                    <span class="sc-title">Salud de Canales (Kommo)</span>
+                                </div>
+                            </div>
+                            <div class="sc-body">
+                                <p class="hint" style="margin-bottom:12px;">
+                                    Estado en vivo de los canales de Kommo de este entorno. Un canal “esperado” sin señal
+                                    dentro de su umbral pasa a 🔴 y dispara alerta en Slack. <b>El cliente final no ve esto.</b>
+                                </p>
+                                <div id="akh-summary" class="akh-summary" style="margin-bottom:12px;"></div>
+                                <div id="akh-grid" class="akh-grid"></div>
+
+                                <div class="fg-group" style="margin-top:18px;">
+                                    <label class="fgl" for="akh-slack">Slack Incoming Webhook de este entorno (opcional)</label>
+                                    <div style="display:flex;gap:8px;align-items:center;">
+                                        <input type="text" id="akh-slack" class="fi" placeholder="https://hooks.slack.com/services/…  (vacío = canal de respaldo)">
+                                        <button type="button" class="akh-mini" onclick="akhSaveSlack(this)">Guardar Slack</button>
+                                    </div>
+                                </div>
+
+                                <div class="fg-group" style="margin-top:14px;">
+                                    <label class="fgl" for="akh-hook">URL del webhook receptor (pégala en n8n/Kommo)</label>
+                                    <div style="display:flex;gap:8px;align-items:center;">
+                                        <input type="text" id="akh-hook" class="fi" readonly>
+                                        <button type="button" class="akh-mini" onclick="akhCopyHook()">Copiar</button>
+                                        <button type="button" class="akh-mini" onclick="akhLoad()">Actualizar</button>
+                                    </div>
+                                    <p class="hint" style="margin-top:8px;">
+                                        Header <b>X-Webhook-Secret</b> · body <code>{"canal":"{{ origin }}"}</code>
+                                        (el endpoint mapea <code>waba</code>→whatsapp, <code>instagram_business</code>→instagram).
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div><!-- /editor-body -->
                 </form>
 
@@ -1991,7 +2055,7 @@
 
 <script>
 /* Section nav — tab behaviour */
-const SNAV_SECTIONS = ['sec-identity', 'sec-vars'];
+const SNAV_SECTIONS = ['sec-identity', 'sec-vars', 'sec-kommo'];
 
 function snavShow(targetId) {
     SNAV_SECTIONS.forEach(id => {
@@ -2032,5 +2096,127 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="src/lead-template-render.js"></script>
 <script src="src/lead-template-editor.js"></script>
 <script src="./src/backoffice.js?v=20260227b"></script>
+<script>
+/* ── Salud de Canales (Kommo) — backoffice INTERNO (solo Intra) ── */
+(function () {
+    const CANALES = ['whatsapp', 'instagram', 'facebook', 'telegram', 'email', 'livechat', 'telefonia'];
+    const LABEL = { whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Facebook', telegram: 'Telegram', email: 'Email', livechat: 'Live Chat', telefonia: 'Telefonía' };
+    const ICON = { whatsapp: 'logo-whatsapp', instagram: 'logo-instagram', facebook: 'logo-facebook', telegram: 'paper-plane-outline', email: 'mail-outline', livechat: 'chatbubbles-outline', telefonia: 'call-outline' };
+
+    function clientId() { return (window.adminBackofficeState && window.adminBackofficeState.currentClientId) || null; }
+    function db() { return window.adminSupabase || window.supabase; }
+
+    async function akhLoad() {
+        const slug = clientId();
+        if (!slug || !db()) return;
+        const hook = document.getElementById('akh-hook');
+        if (hook) hook.value = `${location.origin}/api/kommo/heartbeat?client=${slug}`;
+        try {
+            const [cfgRes, hbRes, accRes] = await Promise.all([
+                db().from('kommo_channel_config').select('canal,esperado,umbral_horas').eq('account_slug', slug),
+                db().from('kommo_channel_heartbeats').select('canal,ultima_senal,en_alerta').eq('account_slug', slug),
+                db().from('clients_config').select('kommo_slack_webhook_url').eq('id_slug', slug).single()
+            ]);
+            const cfgMap = new Map((cfgRes.data || []).map(r => [r.canal, r]));
+            const hbMap = new Map((hbRes.data || []).map(r => [r.canal, r]));
+            const slackEl = document.getElementById('akh-slack');
+            if (slackEl && accRes.data) slackEl.value = accRes.data.kommo_slack_webhook_url || '';
+            akhRender(cfgMap, hbMap);
+        } catch (e) { console.error('[akh] load', e); }
+    }
+
+    function ago(iso) {
+        if (!iso) return '—';
+        const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+        if (m < 1) return 'hace <1 min';
+        if (m < 60) return `hace ${m} min`;
+        const h = Math.floor(m / 60);
+        if (h < 48) return `hace ${h} h`;
+        return `hace ${Math.floor(h / 24)} d`;
+    }
+    function status(cfg, hb) {
+        if (!cfg || !cfg.esperado) return { key: 'off', label: 'Apagado', dot: 'off' };
+        const last = hb && hb.ultima_senal ? new Date(hb.ultima_senal).getTime() : null;
+        if (last === null) return { key: 'idle', label: 'Sin señal aún', dot: 'idle' };
+        const ageH = (Date.now() - last) / 3600000;
+        if (ageH <= (cfg.umbral_horas || 6)) return { key: 'ok', label: 'Conectado', dot: 'ok' };
+        return { key: 'down', label: 'Caído', dot: 'down' };
+    }
+    function akhRender(cfgMap, hbMap) {
+        const grid = document.getElementById('akh-grid'), sum = document.getElementById('akh-summary');
+        if (!grid) return;
+        let ok = 0, down = 0, idle = 0, off = 0;
+        grid.innerHTML = CANALES.map(canal => {
+            const cfg = cfgMap.get(canal), hb = hbMap.get(canal), st = status(cfg, hb);
+            if (st.key === 'ok') ok++; else if (st.key === 'down') down++; else if (st.key === 'idle') idle++; else off++;
+            const esperado = !!(cfg && cfg.esperado);
+            const umbral = (cfg && cfg.umbral_horas != null) ? cfg.umbral_horas : 6;
+            const a = hb && hb.ultima_senal ? ago(hb.ultima_senal) : '—';
+            return `<div class="akh-ch">
+                <div class="akh-ch-top">
+                    <div class="akh-ch-name"><ion-icon name="${ICON[canal]}"></ion-icon>${LABEL[canal]}</div>
+                    <span class="akh-status ${st.key}"><span class="akh-dot ${st.dot}"></span>${st.label}</span>
+                </div>
+                <div class="akh-ago">Última señal: ${a}</div>
+                <div class="akh-ctrls">
+                    <label class="akh-umbral">Umbral <input type="number" min="1" value="${umbral}" ${esperado ? '' : 'disabled'} onchange="akhUmbral('${canal}',this.value)"> h</label>
+                    <button type="button" class="akh-toggle ${esperado ? 'on' : ''}" onclick="akhToggle('${canal}',${esperado})">${esperado ? 'Esperado' : 'Apagado'}</button>
+                </div>
+            </div>`;
+        }).join('');
+        if (sum) sum.innerHTML =
+            `<span class="akh-chip"><span class="akh-dot ok"></span>${ok} OK</span>` +
+            `<span class="akh-chip"><span class="akh-dot down"></span>${down} caídos</span>` +
+            (idle ? `<span class="akh-chip"><span class="akh-dot idle"></span>${idle} sin señal</span>` : '') +
+            `<span class="akh-chip"><span class="akh-dot off"></span>${off} apagados</span>`;
+    }
+
+    async function akhToggle(canal, currentlyOn) {
+        const slug = clientId(); if (!slug) return;
+        const on = !(currentlyOn === true || currentlyOn === 'true');
+        try {
+            await db().from('kommo_channel_config').upsert(
+                { account_slug: slug, canal, esperado: on, updated_at: new Date().toISOString() },
+                { onConflict: 'account_slug,canal' });
+            akhLoad();
+        } catch (e) { console.error('[akh] toggle', e); alert('Error: ' + e.message); }
+    }
+    async function akhUmbral(canal, val) {
+        const slug = clientId(); if (!slug) return;
+        const umbral = Math.max(1, parseInt(val, 10) || 6);
+        try {
+            await db().from('kommo_channel_config').upsert(
+                { account_slug: slug, canal, umbral_horas: umbral, esperado: true, updated_at: new Date().toISOString() },
+                { onConflict: 'account_slug,canal' });
+            akhLoad();
+        } catch (e) { console.error('[akh] umbral', e); }
+    }
+    async function akhSaveSlack(btn) {
+        const slug = clientId(); if (!slug) return;
+        const url = (document.getElementById('akh-slack').value || '').trim();
+        try {
+            await db().from('clients_config').update({ kommo_slack_webhook_url: url || null }).eq('id_slug', slug);
+            if (btn) { const t = btn.textContent; btn.textContent = '✓ Guardado'; setTimeout(() => btn.textContent = t, 1500); }
+        } catch (e) { console.error('[akh] slack', e); alert('Error: ' + e.message); }
+    }
+    function akhCopyHook() {
+        const el = document.getElementById('akh-hook');
+        if (el && navigator.clipboard) navigator.clipboard.writeText(el.value);
+    }
+
+    // Cargar datos al abrir la pestaña "Salud de Canales"
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.snav-btn');
+        if (btn && btn.getAttribute('data-target') === 'sec-kommo') setTimeout(akhLoad, 30);
+    });
+
+    // Exponer para los onclick inline del markup
+    window.akhLoad = akhLoad;
+    window.akhToggle = akhToggle;
+    window.akhUmbral = akhUmbral;
+    window.akhSaveSlack = akhSaveSlack;
+    window.akhCopyHook = akhCopyHook;
+})();
+</script>
 </body>
 </html>

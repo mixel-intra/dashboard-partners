@@ -24,6 +24,8 @@ const MIME = {
 const proxyHandler        = require('./api/proxy');
 const leadsIngestHandler  = require('./api/leads/ingest');
 const reservationsCreateHandler = require('./api/reservations/create');
+const kommoHeartbeatHandler = require('./api/kommo/heartbeat');
+const kommoSweepHandler     = require('./api/kommo/sweep');
 
 // Adapta el res de Node.js nativo a la API de Vercel (res.status().json())
 function vercelRes(res) {
@@ -63,6 +65,16 @@ const server = http.createServer(async (req, res) => {
     // ── /api/reservations/create ─────────────────────────────
     if (req.url.startsWith('/api/reservations/create')) {
         return callApi(reservationsCreateHandler, req, res);
+    }
+
+    // ── /api/kommo/heartbeat (receptor de latidos) ───────────
+    if (req.url.startsWith('/api/kommo/heartbeat')) {
+        return callApi(kommoHeartbeatHandler, req, res);
+    }
+
+    // ── /api/kommo/sweep (job de vencimiento; GET=cron) ──────
+    if (req.url.startsWith('/api/kommo/sweep')) {
+        return callApi(kommoSweepHandler, req, res);
     }
 
     // ── Static files ──────────────────────────────────────────

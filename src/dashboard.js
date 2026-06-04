@@ -257,6 +257,7 @@ async function loadConfig() {
         };
 
         initHotelTabs();
+        initChannelHealth();
 
         applyCardLabels(config.card_labels || {});
         setupEventListeners();
@@ -6176,4 +6177,131 @@ function renderSocialReviewCard(r) {
             ${r.review_url ? `<a class="sl-review-link" href="${escapeHtml(r.review_url)}" target="_blank" rel="noopener">Ver en ${sourceLabels[r.source] || 'fuente'} ↗</a>` : ''}
         </article>
     `;
+}
+
+// ============================================================
+// SALUD DE CANALES (Kommo) — bloque INTERNO dentro del dashboard.
+// Solo visible para usuarios de Intra (session.role === 'admin').
+// El cliente final (role 'partner') NUNCA lo ve.
+// Lee/escribe en el Supabase admin (window.adminSupabase) — RLS abierta.
+// ============================================================
+const CHH_CANALES = ['whatsapp', 'instagram', 'facebook', 'telegram', 'email', 'livechat', 'telefonia'];
+const CHH_LABEL = { whatsapp: 'WhatsApp', instagram: 'Instagram', facebook: 'Facebook', telegram: 'Telegram', email: 'Email', livechat: 'Live Chat', telefonia: 'Telefonía' };
+const CHH_ICON = { whatsapp: 'logo-whatsapp', instagram: 'logo-instagram', facebook: 'logo-facebook', telegram: 'paper-plane-outline', email: 'mail-outline', livechat: 'chatbubbles-outline', telefonia: 'call-outline' };
+let chhTimer = null;
+
+function initChannelHealth() {
+    const panel = document.getElementById('channel-health-panel');
+    if (!panel) return;
+    // Candado por ROL: solo Intra (admin). El cliente no lo ve.
+    const session = (typeof getSession === 'function') ? getSession() : null;
+    const isIntra = !!(session && session.role === 'admin');
+    if (!isIntra) { panel.classList.add('hidden'); return; }
+
+    panel.classList.remove('hidden');
+    fetchChannelHealth();
+    if (chhTimer) clearInterval(chhTimer);
+    chhTimer = setInterval(fetchChannelHealth, 60000);
+}
+
+async function fetchChannelHealth() {
+    if (!state.clientId || !window.adminSupabase) return;
+    try {
+        const [cfgRes, hbRes] = await Promise.all([
+            window.adminSupabase.from('kommo_channel_config')
+                .select('canal, esperado, umbral_horas').eq('account_slug', state.clientId),
+            window.adminSupabase.from('kommo_channel_heartbeats')
+                .select('canal, ultima_senal, en_alerta').eq('account_slug', state.clientId)
+        ]);
+        const cfgMap = new Map((cfgRes.data || []).map(r => [r.canal, r]));
+        const hbMap = new Map((hbRes.data || []).map(r => [r.canal, r]));
+        renderChannelHealth(cfgMap, hbMap);
+    } catch (e) {
+        console.error('[chh] fetch error:', e);
+    }
+}
+
+function chhStatus(cfg, hb) {
+    if (!cfg || !cfg.esperado) return { key: 'off', label: 'Apagado', dot: 'off' };
+    const last = hb?.ultima_senal ? new Date(hb.ultima_senal).getTime() : null;
+    if (last === null) return { key: 'idle', label: 'Sin señal aún', dot: 'idle' };
+    const ageH = (Date.now() - last) / 3600000;
+    if (ageH <= (cfg.umbral_horas || 6)) return { key: 'ok', label: 'Conectado', dot: 'ok' };
+    return { key: 'down', label: 'Caído', dot: 'down' };
+}
+
+function chhAgo(iso) {
+    if (!iso) return '—';
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return 'hace <1 min';
+    if (m < 60) return `hace ${m} min`;
+    const h = Math.floor(m / 60);
+    if (h < 48) return `hace ${h} h`;
+    return `hace ${Math.floor(h / 24)} d`;
+}
+
+function renderChannelHealth(cfgMap, hbMap) {
+    const grid = document.getElementById('chh-grid');
+    const sum = document.getElementById('chh-summary');
+    if (!grid) return;
+
+    let ok = 0, down = 0, idle = 0, off = 0;
+    grid.innerHTML = CHH_CANALES.map(canal => {
+        const cfg = cfgMap.get(canal);
+        const hb = hbMap.get(canal);
+        const st = chhStatus(cfg, hb);
+        if (st.key === 'ok') ok++; else if (st.key === 'down') down++; else if (st.key === 'idle') idle++; else off++;
+        const esperado = !!(cfg && cfg.esperado);
+        const umbral = (cfg && cfg.umbral_horas != null) ? cfg.umbral_horas : 6;
+        const ago = hb?.ultima_senal ? chhAgo(hb.ultima_senal) : '—';
+        return `
+        <div class="chh-ch">
+            <div class="chh-ch-top">
+                <div class="chh-ch-name"><ion-icon name="${CHH_ICON[canal]}"></ion-icon>${CHH_LABEL[canal]}</div>
+                <span class="chh-status ${st.key}"><span class="chh-dot ${st.dot}"></span>${st.label}</span>
+            </div>
+            <div class="chh-ago">Última señal: ${ago}</div>
+            <div class="chh-ch-ctrls">
+                <label class="chh-umbral">Umbral
+                    <input type="number" min="1" value="${umbral}" ${esperado ? '' : 'disabled'}
+                        onchange="chhSetUmbral('${canal}', this.value)"> h
+                </label>
+                <button class="chh-toggle ${esperado ? 'on' : ''}" onclick="chhToggle('${canal}', ${esperado})">
+                    ${esperado ? 'Esperado' : 'Apagado'}
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+
+    if (sum) {
+        sum.innerHTML =
+            `<span class="chh-chip"><span class="chh-dot ok"></span>${ok} OK</span>` +
+            `<span class="chh-chip"><span class="chh-dot down"></span>${down} caídos</span>` +
+            (idle ? `<span class="chh-chip"><span class="chh-dot idle"></span>${idle} sin señal</span>` : '') +
+            `<span class="chh-chip"><span class="chh-dot off"></span>${off} apagados</span>`;
+    }
+}
+
+async function chhSetUmbral(canal, val) {
+    const umbral = Math.max(1, parseInt(val, 10) || 6);
+    try {
+        await window.adminSupabase.from('kommo_channel_config').upsert({
+            account_slug: state.clientId, canal, umbral_horas: umbral, esperado: true,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'account_slug,canal' });
+        if (typeof showToast === 'function') showToast(`Umbral de ${CHH_LABEL[canal]}: ${umbral}h`, 'success');
+        fetchChannelHealth();
+    } catch (e) { console.error('[chh] umbral', e); }
+}
+
+async function chhToggle(canal, currentlyOn) {
+    const on = !(currentlyOn === true || currentlyOn === 'true');
+    try {
+        await window.adminSupabase.from('kommo_channel_config').upsert({
+            account_slug: state.clientId, canal, esperado: on,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'account_slug,canal' });
+        if (typeof showToast === 'function') showToast(`${CHH_LABEL[canal]} ${on ? 'activado' : 'apagado'}`, 'success');
+        fetchChannelHealth();
+    } catch (e) { console.error('[chh] toggle', e); }
 }
