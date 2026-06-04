@@ -1189,7 +1189,15 @@ function populateEstadoDropdown(leads) {
     if (!el) return;
     const current = el.value;
     const isCDE = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño');
-    const unique = [...new Set(leads.map(l => (isCDE && l.etiquetas_display) ? l.etiquetas_display : l.estatus).filter(Boolean))].sort();
+    let unique;
+    if (isCDE) {
+        // Siempre mostrar las 6 etapas del funnel (aunque tengan 0 leads) + cualquier otra presente
+        const fijas = ['Lead Empeño Oro', 'Rescate / Empeño Otros', 'Cita agendada', 'Reagendar', 'Empeñado', 'Venta perdida'];
+        const presentes = [...new Set(leads.map(l => l.estatus).filter(Boolean))];
+        unique = [...fijas, ...presentes.filter(p => !fijas.includes(p))];
+    } else {
+        unique = [...new Set(leads.map(l => l.estatus).filter(Boolean))].sort();
+    }
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const optBg = isLight ? '#ffffff' : '#1e293b';
     const optColor = isLight ? '#1e293b' : '#e2e8f0';
