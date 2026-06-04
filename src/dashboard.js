@@ -1008,42 +1008,11 @@ async function fetchData() {
             });
         }
 
-        // CEFEMEX Casa de Empeño: calificación por etapa del pipeline
-        // Etapas con calificado_intra: Empeño Oro, Empeño Otros, Rescate, Cita Agendada, Reagendar, Empeñado
-        if ((state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño')) {
-            // DEBUG: ver qué etapas se están marcando como calificadas
-            const calificadasDebug = {};
-            state.leads.forEach(l => {
-                const s = (l.estatus || '').toLowerCase();
-                const esC = (s.includes('empe') && s.includes('oro')) ||
-                            (s.includes('empe') && s.includes('otros')) ||
-                            s.includes('rescate de prenda') ||
-                            s.includes('cita agendada') ||
-                            s === 'reagendar' || s.includes('reagendar') ||
-                            s === 'empeñado' || s === 'empenado';
-                if (esC) calificadasDebug[l.estatus] = (calificadasDebug[l.estatus] || 0) + 1;
-            });
-            console.log('[CDE] Etapas calificadas detectadas: ' + JSON.stringify(calificadasDebug));
-
-            state.leads = state.leads.map(lead => {
-                const s = (lead.estatus || '').toLowerCase();
-                // Condiciones específicas por nombre exacto de etapa Kommo
-                const esOro       = s.includes('empe') && s.includes('oro');
-                const esOtros     = s.includes('empe') && s.includes('otros');
-                const esRescate   = s.includes('rescate de prenda') || s === 'rescate de prenda';
-                const esCita      = s.includes('cita agendada');
-                const esReagendar = s === 'reagendar' || s.includes('reagendar');
-                const esEmpenado  = s === 'empeñado' || s === 'empenado';
-                const esCalificado = esOro || esOtros || esRescate || esCita || esReagendar || esEmpenado;
-
-                return {
-                    ...lead,
-                    // Guardamos estatus original para mostrarlo en badge
-                    estatus_original: lead.estatus,
-                    estatus: esCalificado ? 'Calificado INTRA' : lead.estatus,
-                    etiquetas_display: esCalificado ? lead.estatus : null
-                };
-            });
+        // CEFEMEX Casa de Empeño: conservar la ETAPA REAL de cada lead (sin reescribir).
+        // Así cada lead se muestra en su etapa y el dropdown lista todas las etapas del funnel.
+        // estatus_original se usa para clasificar el funnel (cdeStage).
+        if (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') {
+            state.leads = state.leads.map(lead => ({ ...lead, estatus_original: lead.estatus }));
         }
 
         state.filteredLeads = [...state.leads];
@@ -1552,6 +1521,17 @@ function normalizeStatus(status) {
     if (!status) return 'Desconocido';
     const s = status.toLowerCase().trim();
 
+    // --- CEFEMEX CASA DE EMPEÑO: nombres legibles por etapa del funnel ---
+    if (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') {
+        if (s.includes('perdid')) return 'Venta perdida';
+        if (s.includes('rescate') || (s.includes('empe') && s.includes('otros'))) return 'Rescate / Empeño Otros';
+        if (s.includes('oro') && s.includes('empe')) return 'Lead Empeño Oro';
+        if (s.includes('cita')) return 'Cita agendada';
+        if (s.includes('reagendar')) return 'Reagendar';
+        if (s.includes('empeñad') || s.includes('empenad')) return 'Empeñado';
+        // resto de etapas (contacto inicial, seguimiento, etc.): passthrough capitalizado
+    }
+
     // --- NORMALIZACIÓN PARA HOTELES (EXCEPTO CEFEMEX) ---
     // Soporta tanto singular ("CALIFICADO RESERVA") como plural ("CALIFICADO RESERVAS")
     const isHotel = state.clientType === 'hotel' && state.clientId !== 'cefemex';
@@ -1681,7 +1661,12 @@ function isQualified(lead) {
         return s.includes('calificado cita');
     }
 
-    // --- POLÍTICA GENERAL (incluye CEFEMEX Casa de Empeño) ---
+    // --- CEFEMEX CASA DE EMPEÑO: califican las 6 etapas del funnel (incl. venta perdida) ---
+    if (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') {
+        return typeof cdeStage === 'function' && cdeStage(lead) !== null;
+    }
+
+    // --- POLÍTICA GENERAL ---
     return [
         'calificado',
         'condicionado',
