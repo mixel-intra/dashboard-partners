@@ -6369,6 +6369,8 @@ function renderCdeExtra() {
     const lbl3 = document.getElementById('label-main-3'); if (lbl3) lbl3.textContent = 'Empeños cerrados';
     const sub3 = document.getElementById('label-sub-3'); if (sub3) sub3.textContent = 'EMPEÑADOS';
     const c3 = document.getElementById('card-3-value'); if (c3) c3.textContent = empenados;
+    // Ocultar "Costo por oportunidad calificada" (card-7) — no aplica para CDE
+    const c7w = document.getElementById('card-7-wrapper'); if (c7w) c7w.style.setProperty('display', 'none', 'important');
 
     // Punto 4: fichas del funnel
     const grid = document.getElementById('cde-funnel');
