@@ -6429,18 +6429,20 @@ function renderCdeExtra() {
     const p7 = document.querySelector('#card-7-wrapper .pill-change');
     if (p7) p7.textContent = adInvestment > 0 ? `${fmtMoney(montoEmpenado)} ÷ ${fmtMoney(adInvestment)}` : 'Captura inversión pub.';
 
-    // Las 7 tarjetas en UNA fila: 5(Total) · 1(Oport.) · 2(Conv.) · 3(Empeños) · 7(ROAS) · 4(ROI) · 6(Inversión)
+    // Las 6 tarjetas en UNA fila: 5(Total) · 1(Oport.) · 2(Conv.) · 3(Empeños) · 7(ROAS) · 6(Inversión)
+    // ROI (card-4) oculto por ahora; solo se muestra ROAS.
     const topRow = document.getElementById('top-cards-row');
     const bottomRow = document.getElementById('bottom-cards-row');
     const c4w = document.getElementById('card-4-wrapper');
     const c5w = document.getElementById('card-5-wrapper');
     const c6w = document.getElementById('card-6-wrapper');
     const c7w = document.getElementById('card-7-wrapper');
+    if (c4w) c4w.style.setProperty('display', 'none', 'important');   // ocultar ROI
     if (topRow && c5w && c6w) {
         topRow.insertBefore(c5w, topRow.firstChild);     // Total de Registros PRIMERO
-        if (c7w && c4w) topRow.insertBefore(c7w, c4w);   // ROAS justo antes de ROI
+        if (c7w && c4w) topRow.insertBefore(c7w, c4w);   // ROAS donde estaba ROI (antes de card-4)
         topRow.appendChild(c6w);                          // Inversión al final
-        topRow.style.setProperty('grid-template-columns', 'repeat(7, minmax(0, 1fr))', 'important');
+        topRow.style.setProperty('grid-template-columns', 'repeat(6, minmax(0, 1fr))', 'important');
         [c5w, c6w, c7w].forEach(el => el && el.style.setProperty('display', 'flex', 'important'));
     }
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
