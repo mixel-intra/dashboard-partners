@@ -6485,13 +6485,16 @@ const cdePctLabels = {
         const data = chart.data.datasets[0].data || [];
         const total = data.reduce((a, b) => a + (Number(b) || 0), 0) || 1;
         ctx.save();
-        ctx.font = '700 13px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
         meta.data.forEach((arc, i) => {
             const pct = Math.round((data[i] / total) * 100);
             if (pct < 6 || !arc.tooltipPosition) return;   // rebanadas muy chicas no se etiquetan
+            // El tamaño del % escala con el radio del doughnut (chica vs modal grande)
+            const r = arc.outerRadius || 90;
+            const fs = Math.max(12, Math.min(24, Math.round(r * 0.14)));
+            ctx.font = `700 ${fs}px Inter, system-ui, sans-serif`;
             const pos = arc.tooltipPosition();
             ctx.fillText(pct + '%', pos.x, pos.y);
         });
