@@ -6360,6 +6360,8 @@ const CDE_MOTIVOS = [
     { norm: 'otros',                     label: 'Otros',                 anchor: 'otros',        id: '36957723' }
 ];
 let cdePieChart = null;
+let cdePieModalChart = null;
+let cdePieData = { entries: [], total: 0 };   // último dataset del pie (para el modal de detalle)
 
 function cdeNorm(s) {
     return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
@@ -6505,6 +6507,7 @@ function cdeRenderPie(perdidos) {
     // Mayor a menor (rebanada más grande primero) y sin ceros.
     const entries = CDE_MOTIVOS.map(m => ({ label: m.label, n: counts[m.norm] }))
         .filter(e => e.n > 0).sort((a, b) => b.n - a.n);
+    cdePieData = { entries, total };   // guardar para el modal de detalle
 
     // El total de pérdidas se muestra en el eyebrow de la tarjeta del pie.
     const eyebrow = document.querySelector('#cde-pie-card .label-sub');
@@ -6555,6 +6558,78 @@ function cdeRenderPie(perdidos) {
         cdePieChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts, plugins: [cdePctLabels] });
     }
 }
+
+// ── Modal de detalle del pie (vista ampliada + desglose con barras) ──
+function cdeOpenPieModal() {
+    const modal = document.getElementById('cde-pie-modal');
+    if (!modal) return;
+    const { entries, total } = cdePieData;
+    if (!entries.length) { if (typeof showToast === 'function') showToast('Sin motivos registrados en el periodo.', 'info'); return; }
+
+    // Título con total
+    const title = document.getElementById('cde-modal-title');
+    if (title) title.textContent = `Razones de venta perdida · ${total} en total`;
+
+    // Desglose: dot + nombre + n (%) + barra proporcional
+    const detail = document.getElementById('cde-modal-detail');
+    if (detail) {
+        const max = Math.max(...entries.map(e => e.n)) || 1;
+        detail.innerHTML = entries.map((e, i) => {
+            const color = CDE_PIE_COLORS[i % CDE_PIE_COLORS.length];
+            const pct = total ? Math.round(e.n / total * 100) : 0;
+            const w = Math.round(e.n / max * 100);
+            return `<div class="cde-detail-row">
+                <span class="cde-dot" style="background:${color}"></span>
+                <span class="cde-detail-name">${e.label}</span>
+                <span class="cde-detail-num">${e.n}<span class="cde-detail-pct">${pct}%</span></span>
+                <span class="cde-bar"><i style="width:${w}%;background:${color}"></i></span>
+            </div>`;
+        }).join('');
+    }
+
+    // Mostrar modal y montar la gráfica grande
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => modal.classList.add('open'));
+    document.addEventListener('keydown', cdePieModalEsc);
+
+    const canvas = document.getElementById('cde-pie-modal-canvas');
+    if (canvas && window.Chart) {
+        const data = {
+            labels: entries.map(e => `${e.label} · ${e.n} (${total ? Math.round(e.n / total * 100) : 0}%)`),
+            datasets: [{
+                data: entries.map(e => e.n),
+                backgroundColor: CDE_PIE_COLORS,
+                borderColor: 'rgba(15,18,35,0.55)',
+                borderWidth: 2,
+                hoverOffset: 8
+            }]
+        };
+        const opts = {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '56%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (c) => ` ${c.label} de ${total}` } }
+            }
+        };
+        if (cdePieModalChart) cdePieModalChart.destroy();
+        cdePieModalChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts, plugins: [cdePctLabels] });
+    }
+}
+
+function cdeClosePieModal() {
+    const modal = document.getElementById('cde-pie-modal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    document.removeEventListener('keydown', cdePieModalEsc);
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        if (cdePieModalChart) { cdePieModalChart.destroy(); cdePieModalChart = null; }
+    }, 180);
+}
+
+function cdePieModalEsc(e) { if (e.key === 'Escape') cdeClosePieModal(); }
 
 // (Eliminado) "Gasto de publicidad (ROAS)" + captura mensual de gasto.
 // El cliente pidió retirar esa tarjeta y sus funciones; la tarjeta card-4 vuelve a ser ROI
