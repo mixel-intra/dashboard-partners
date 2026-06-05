@@ -6315,7 +6315,7 @@ const CDE_STAGES = [
 ];
 // Motivos de venta perdida (catálogo). norm = clave normalizada para matchear tags.
 const CDE_MOTIVOS = [
-    { norm: 'monto insuficiente',        label: 'Monto insuficiente',   anchor: 'monto' },
+    { norm: 'monto insuficiente',        label: 'Monto insuficiente',   anchor: 'insuficiente' },
     { norm: 'articulo fuera de catalogo',label: 'Fuera de catálogo',    anchor: 'catalogo' },
     { norm: 'acepto oferta de otra casa',label: 'Aceptó otra casa',     anchor: 'oferta' },
     { norm: 'no era joyeria de oro',     label: 'No era oro',           anchor: 'joyeria' },
@@ -6385,20 +6385,37 @@ function renderCdeExtra() {
     cdeRenderRoas(empenados);
 }
 
-function cdeRenderPie(perdidos) {
-    const counts = {}; CDE_MOTIVOS.forEach(m => counts[m.norm] = 0);
-    perdidos.forEach(l => {
-        const tags = (typeof getLeadTags === 'function' ? getLeadTags(l) : [])
-            .map(cdeNorm).filter(t => t && !t.includes('venta_perdida') && t !== 'venta perdida');
-        let matched = false;
-        for (const m of CDE_MOTIVOS) {
-            if (m.norm === 'otros') continue;
-            if (tags.some(t => t.includes(m.anchor) || m.norm.includes(t))) { counts[m.norm]++; matched = true; break; }
-        }
-        if (!matched) counts['otros']++;
-    });
+// Junta TODOS los valores string del lead (incluye campos personalizados anidados),
+// para buscar el motivo donde sea que Kommo lo mande (tags, custom fields, etc.).
+function cdeValues(obj, out) {
+    out = out || [];
+    if (obj == null) return out;
+    const t = typeof obj;
+    if (t === 'string') { out.push(obj); return out; }
+    if (t === 'number' || t === 'boolean') return out;
+    if (Array.isArray(obj)) { obj.forEach(v => cdeValues(v, out)); return out; }
+    if (t === 'object') { Object.values(obj).forEach(v => cdeValues(v, out)); return out; }
+    return out;
+}
 
-    const entries = CDE_MOTIVOS.map(m => [m.label, counts[m.norm]]).filter(e => e[1] > 0);
+function cdeMotivo(lead) {
+    const hay = cdeNorm(cdeValues(lead).join('  '));
+    for (const m of CDE_MOTIVOS) {
+        if (m.norm === 'otros') continue;
+        if (hay.includes(m.anchor)) return m;
+    }
+    return CDE_MOTIVOS.find(m => m.norm === 'otros');
+}
+
+function cdeRenderPie(perdidos) {
+    // DEBUG: imprime un lead perdido para confirmar DÓNDE viene el motivo (campo personalizado).
+    if (perdidos.length) console.log('[CDE] ejemplo lead perdido →', perdidos[0], '\n[CDE] valores string →', cdeValues(perdidos[0]));
+
+    const counts = {}; CDE_MOTIVOS.forEach(m => counts[m.norm] = 0);
+    perdidos.forEach(l => { counts[cdeMotivo(l).norm]++; });
+
+    const total = perdidos.length;
+    const entries = CDE_MOTIVOS.map(m => ({ label: m.label, n: counts[m.norm] })).filter(e => e.n > 0);
     const empty = document.getElementById('cde-pie-empty');
     const canvas = document.getElementById('cde-pie');
     if (!entries.length) {
@@ -6409,18 +6426,24 @@ function cdeRenderPie(perdidos) {
     }
     if (empty) empty.style.display = 'none';
     if (canvas) canvas.style.display = 'block';
+
     const data = {
-        labels: entries.map(e => e[0]),
-        datasets: [{ data: entries.map(e => e[1]),
+        labels: entries.map(e => `${e.label}: ${e.n} de ${total} (${Math.round(e.n / total * 100)}%)`),
+        datasets: [{ data: entries.map(e => e.n),
             backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#06b6d4', '#ec4899', '#10b981', '#9ca3af'] }]
     };
-    if (cdePieChart) { cdePieChart.data = data; cdePieChart.update(); }
+    const txtColor = getComputedStyle(document.body).color;
+    const opts = {
+        responsive: true,
+        plugins: {
+            title: { display: true, text: `Total venta perdida: ${total}`, color: txtColor, font: { size: 13, weight: 'bold' } },
+            legend: { position: 'right', labels: { color: txtColor, font: { size: 11 }, boxWidth: 12 } },
+            tooltip: { callbacks: { label: (c) => ` ${c.label}` } }
+        }
+    };
+    if (cdePieChart) { cdePieChart.data = data; cdePieChart.options = opts; cdePieChart.update(); }
     else if (window.Chart && canvas) {
-        cdePieChart = new Chart(canvas.getContext('2d'), {
-            type: 'doughnut', data,
-            options: { responsive: true, plugins: { legend: { position: 'right',
-                labels: { color: getComputedStyle(document.body).color, font: { size: 11 }, boxWidth: 12 } } } }
-        });
+        cdePieChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts });
     }
 }
 
