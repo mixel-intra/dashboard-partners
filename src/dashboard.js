@@ -6400,7 +6400,8 @@ function renderCdeExtra() {
         const sg = document.getElementById('split-row-grid');
         const lc = document.getElementById('leads-table-card');
         const pc = document.getElementById('cde-pie-card');
-        if (sg && lc && lc.parentElement === sec) { sg.appendChild(lc); sg.classList.remove('cde-2col'); }
+        if (sg && lc && lc.parentElement !== sg) { sg.appendChild(lc); lc.style.removeProperty('margin-top'); }
+        if (sg) sg.classList.remove('cde-2col');
         if (pc && pc.parentElement !== sec) sec.appendChild(pc);
         return;
     }
@@ -6449,7 +6450,8 @@ function renderCdeExtra() {
     cdeRenderInvestment();   // tarjeta "Inversión en Publicidad" (mensual) + ROAS por mes
 
     // Layout CDE: el pie sube junto a "Comportamiento" (grid 2-col) y la tabla de leads
-    // baja a todo el ancho, debajo de las gráficas. Idempotente (no re-mueve si ya está).
+    // baja JUSTO debajo de las gráficas, en el MISMO contenedor (.dashboard-grid) para que
+    // queden exactamente del mismo ancho/alineadas. Idempotente (no re-mueve si ya está).
     const splitGrid = document.getElementById('split-row-grid');
     const pieCard = document.getElementById('cde-pie-card');
     const leadsCard = document.getElementById('leads-table-card');
@@ -6457,7 +6459,13 @@ function renderCdeExtra() {
         splitGrid.appendChild(pieCard);
         splitGrid.classList.add('cde-2col');
     }
-    if (leadsCard && leadsCard.parentElement !== sec) sec.appendChild(leadsCard);
+    const dashGrid = splitGrid ? splitGrid.parentElement : null;   // .dashboard-grid (mismo ancho que las gráficas)
+    if (leadsCard && dashGrid && leadsCard.parentElement !== dashGrid) {
+        dashGrid.insertBefore(leadsCard, splitGrid.nextSibling);   // justo después de la fila de gráficas
+        leadsCard.style.setProperty('margin-top', '24px', 'important');
+    }
+    // Ocultar "Ver todo" (cada lead ya abre su detalle al hacer clic)
+    const viewAll = document.getElementById('view-all-btn'); if (viewAll) viewAll.style.display = 'none';
 
     // Mejorar el título del bloque de leads (se elimina "Últimas cotizaciones a ventas")
     const tTitle = document.getElementById('table-title');
