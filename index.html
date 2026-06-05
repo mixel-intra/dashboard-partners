@@ -5626,6 +5626,21 @@
                     #cde-lead-modal .cde-lead-item .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);}
                     #cde-lead-modal .cde-lead-item .v{font-size:15.5px;font-weight:700;color:var(--text-primary);margin-top:5px;word-break:break-word;}
                     #cde-lead-modal .cde-lead-sub{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);margin:20px 0 10px;}
+
+                    /* Panel/sección de captura de Inversión en Publicidad */
+                    #cde-invest-modal .cde-modal-box{width:min(560px,94vw);}
+                    #cde-invest-modal .cde-inv-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin:14px 0 6px;}
+                    #cde-invest-modal #cde-inv-mes,#cde-invest-modal #cde-inv-monto{width:100%;padding:11px 13px;border:1px solid var(--border-subtle);border-radius:11px;background:#1e293b;color:#e2e8f0;font-size:14px;}
+                    #cde-invest-modal #cde-inv-monto{background:transparent;color:inherit;}
+                    #cde-invest-modal #cde-inv-save{width:100%;margin-top:16px;border:none;background:#7551FF;color:#fff;border-radius:11px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:filter .15s ease;}
+                    #cde-invest-modal #cde-inv-save:hover{filter:brightness(1.08);}
+                    #cde-invest-modal .cde-inv-sub{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);margin:22px 0 6px;}
+                    #cde-invest-modal .cde-inv-row{display:flex;justify-content:space-between;align-items:center;padding:12px 6px;border-bottom:1px solid var(--border-subtle);cursor:pointer;border-radius:8px;transition:background .12s ease;}
+                    #cde-invest-modal .cde-inv-row:hover{background:rgba(124,135,176,.10);}
+                    #cde-invest-modal .cde-inv-row.active{background:rgba(117,81,255,.14);}
+                    #cde-invest-modal .cde-inv-row .m{font-size:14px;font-weight:600;color:var(--text-primary);}
+                    #cde-invest-modal .cde-inv-row.active .m{color:#a78bfa;}
+                    #cde-invest-modal .cde-inv-row .a{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-primary);}
                 </style>
 
                 <!-- Pie "Razones de venta perdida": JS (renderCdeExtra) lo reubica junto a "Comportamiento" -->
@@ -5674,6 +5689,26 @@
                         <button type="button" class="cde-modal-close" onclick="cdeCloseLeadModal()" aria-label="Cerrar">&times;</button>
                     </div>
                     <div id="cde-lead-body"></div>
+                </div>
+            </div>
+
+            <!-- Panel de captura de Inversión en Publicidad (CDE) -->
+            <div id="cde-invest-modal" class="cde-ovl hidden" onclick="if(event.target===this&&typeof cdeCloseInvestmentPanel==='function')cdeCloseInvestmentPanel()">
+                <div class="cde-modal-box">
+                    <div class="cde-modal-head">
+                        <div>
+                            <span class="label-sub">REGISTRO DE INVERSIÓN</span>
+                            <h3 class="section-headline" style="font-size:1.6rem; margin:4px 0 0;">Inversión en Publicidad</h3>
+                        </div>
+                        <button type="button" class="cde-modal-close" onclick="cdeCloseInvestmentPanel()" aria-label="Cerrar">&times;</button>
+                    </div>
+                    <label class="cde-inv-label" for="cde-inv-mes">Mes</label>
+                    <select id="cde-inv-mes" onchange="cdeInvestPickMonth()"></select>
+                    <label class="cde-inv-label" for="cde-inv-monto">Monto invertido ($)</label>
+                    <input type="number" id="cde-inv-monto" min="0" placeholder="0">
+                    <button type="button" id="cde-inv-save" onclick="cdeInvestSave(this)">Guardar inversión</button>
+                    <div class="cde-inv-sub">Inversión registrada por mes</div>
+                    <div id="cde-inv-list"></div>
                 </div>
             </div>
 
@@ -5728,7 +5763,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde22"></script>
+    <script src="src/dashboard.js?v=20260605-cde23"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
