@@ -6483,28 +6483,53 @@ function cdeMotivo(lead) {
 // Paleta sobria (tonos apagados) para el doughnut — coherente con el dashboard oscuro.
 const CDE_PIE_COLORS = ['#6C8EBF', '#C9A66B', '#9988C9', '#6BA89C', '#C98B8B', '#7E8AA0', '#B5896A', '#9AA0AA'];
 
-// Plugin: dibuja el % DENTRO de cada rebanada (sin librería externa).
-const cdePctLabels = {
-    id: 'cdePctLabels',
-    afterDatasetsDraw(chart) {
-        const { ctx } = chart;
+// Plugin: muestra EN EL CENTRO el detalle de la sección activa (al pasar el cursor).
+// Sin hover → muestra el total. Con hover → %, motivo y "N de total" de esa sección.
+const cdeCenterLabel = {
+    id: 'cdeCenterLabel',
+    afterDraw(chart) {
         const meta = chart.getDatasetMeta(0);
-        const data = chart.data.datasets[0].data || [];
+        if (!meta || !meta.data || !meta.data.length) return;
+        const ctx = chart.ctx;
+        const arc0 = meta.data[0];
+        const cx = arc0.x, cy = arc0.y;
+        const inner = arc0.innerRadius || 60;
+        const ds = chart.data.datasets[0];
+        const data = ds.data || [];
         const total = data.reduce((a, b) => a + (Number(b) || 0), 0) || 1;
+        const names = chart.$cdeNames || [];
+        const active = (typeof chart.getActiveElements === 'function') ? chart.getActiveElements() : [];
+
+        let big, name, sub, accent;
+        if (active.length) {
+            const i = active[0].index;
+            big = Math.round((data[i] / total) * 100) + '%';
+            name = names[i] || '';
+            sub = data[i] + ' de ' + total;
+            accent = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : '#cbd5e1';
+        } else {
+            big = String(total);
+            name = 'Ventas perdidas';
+            sub = 'pasa el cursor por una sección';
+            accent = '#cbd5e1';
+        }
+        const bigSize = Math.max(22, Math.round(inner * 0.5));
+        const nameSize = Math.max(12, Math.round(inner * 0.17));
+        const subSize = Math.max(10, Math.round(inner * 0.12));
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
-        meta.data.forEach((arc, i) => {
-            const pct = Math.round((data[i] / total) * 100);
-            if (pct < 6 || !arc.tooltipPosition) return;   // rebanadas muy chicas no se etiquetan
-            // El tamaño del % escala con el radio del doughnut (chica vs modal grande)
-            const r = arc.outerRadius || 90;
-            const fs = Math.max(12, Math.min(24, Math.round(r * 0.14)));
-            ctx.font = `700 ${fs}px Inter, system-ui, sans-serif`;
-            const pos = arc.tooltipPosition();
-            ctx.fillText(pct + '%', pos.x, pos.y);
-        });
+        ctx.font = `800 ${bigSize}px Inter, system-ui, sans-serif`;
+        ctx.fillText(big, cx, cy - nameSize * 0.8);
+        ctx.fillStyle = accent;
+        ctx.font = `700 ${nameSize}px Inter, system-ui, sans-serif`;
+        ctx.fillText(name, cx, cy + nameSize * 0.7);
+        if (sub) {
+            ctx.fillStyle = 'rgba(148,163,184,0.95)';
+            ctx.font = `500 ${subSize}px Inter, system-ui, sans-serif`;
+            ctx.fillText(sub, cx, cy + nameSize * 0.7 + subSize * 1.5);
+        }
         ctx.restore();
     }
 };
@@ -6535,6 +6560,7 @@ function cdeRenderPie(perdidos) {
     if (canvas) canvas.style.display = 'block';
 
     const txtColor = getComputedStyle(document.body).color;
+    const names = entries.map(e => e.label);
     const data = {
         labels: entries.map(e => `${e.label} · ${e.n} (${Math.round(e.n / total * 100)}%)`),
         datasets: [{
@@ -6542,14 +6568,16 @@ function cdeRenderPie(perdidos) {
             backgroundColor: CDE_PIE_COLORS,
             borderColor: 'rgba(15,18,35,0.55)',
             borderWidth: 2,
-            hoverOffset: 6
+            hoverOffset: 18,          // la sección se separa al pasar el cursor
+            hoverBorderColor: 'rgba(255,255,255,0.35)'
         }]
     };
     const opts = {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '58%',
-        layout: { padding: { top: 4, bottom: 4 } },
+        cutout: '62%',
+        layout: { padding: { top: 6, bottom: 6 } },
+        interaction: { mode: 'nearest', intersect: true },
         plugins: {
             legend: {
                 position: 'bottom',
@@ -6560,12 +6588,14 @@ function cdeRenderPie(perdidos) {
                     usePointStyle: true, pointStyle: 'circle'
                 }
             },
-            tooltip: { callbacks: { label: (c) => ` ${c.label} de ${total}` } }
+            tooltip: { enabled: false }   // el detalle se ve en el centro
         }
     };
-    if (cdePieChart) { cdePieChart.data = data; cdePieChart.options = opts; cdePieChart.update(); }
-    else if (window.Chart && canvas) {
-        cdePieChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts, plugins: [cdePctLabels] });
+    if (cdePieChart) {
+        cdePieChart.data = data; cdePieChart.options = opts; cdePieChart.$cdeNames = names; cdePieChart.update();
+    } else if (window.Chart && canvas) {
+        cdePieChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts, plugins: [cdeCenterLabel] });
+        cdePieChart.$cdeNames = names;
     }
 }
 
@@ -6611,20 +6641,23 @@ function cdeOpenPieModal() {
                 backgroundColor: CDE_PIE_COLORS,
                 borderColor: 'rgba(15,18,35,0.55)',
                 borderWidth: 2,
-                hoverOffset: 8
+                hoverOffset: 22,
+                hoverBorderColor: 'rgba(255,255,255,0.35)'
             }]
         };
         const opts = {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '56%',
+            cutout: '60%',
+            interaction: { mode: 'nearest', intersect: true },
             plugins: {
                 legend: { display: false },
-                tooltip: { callbacks: { label: (c) => ` ${c.label} de ${total}` } }
+                tooltip: { enabled: false }
             }
         };
         if (cdePieModalChart) cdePieModalChart.destroy();
-        cdePieModalChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts, plugins: [cdePctLabels] });
+        cdePieModalChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts, plugins: [cdeCenterLabel] });
+        cdePieModalChart.$cdeNames = entries.map(e => e.label);
     }
 }
 
