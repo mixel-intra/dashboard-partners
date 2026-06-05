@@ -6396,8 +6396,8 @@ function renderCdeExtra() {
     const c5w = document.getElementById('card-5-wrapper');
     const c6w = document.getElementById('card-6-wrapper');
     if (topRow && c5w && c6w) {
-        topRow.appendChild(c5w);  // mover bajo card-4 → orden 1,2,3,4,5,6
-        topRow.appendChild(c6w);
+        topRow.insertBefore(c5w, topRow.firstChild);  // Total de Registros PRIMERO
+        topRow.appendChild(c6w);                        // Inversión al final → orden 5,1,2,3,4,6
         topRow.style.setProperty('grid-template-columns', 'repeat(6, minmax(0, 1fr))', 'important');
         [c5w, c6w].forEach(el => el.style.setProperty('display', 'flex', 'important'));
     }
