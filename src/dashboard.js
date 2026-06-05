@@ -6372,6 +6372,19 @@ function renderCdeExtra() {
     // Ocultar "Costo por oportunidad calificada" (card-7) — no aplica para CDE
     const c7w = document.getElementById('card-7-wrapper'); if (c7w) c7w.style.setProperty('display', 'none', 'important');
 
+    // Las 6 tarjetas (1-6) en UNA sola fila arriba, bien distribuidas
+    const topRow = document.getElementById('top-cards-row');
+    const bottomRow = document.getElementById('bottom-cards-row');
+    const c5w = document.getElementById('card-5-wrapper');
+    const c6w = document.getElementById('card-6-wrapper');
+    if (topRow && c5w && c6w) {
+        topRow.appendChild(c5w);  // mover bajo card-4 → orden 1,2,3,4,5,6
+        topRow.appendChild(c6w);
+        topRow.style.setProperty('grid-template-columns', 'repeat(6, minmax(0, 1fr))', 'important');
+        [c5w, c6w].forEach(el => el.style.setProperty('display', 'flex', 'important'));
+    }
+    if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
+
     // Punto 4: fichas del funnel
     const grid = document.getElementById('cde-funnel');
     if (grid) grid.innerHTML = CDE_STAGES.map(s => {
