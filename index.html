@@ -5584,12 +5584,12 @@
                     #top-cards-row.cde-kpis .card-quantix{justify-content:space-between;}
                     #top-cards-row.cde-kpis .card-quantix .pill-change{margin-top:0;}
 
-                    /* Quitar la barra de scroll fea de la tabla de leads (CDE) — sigue scrolleando */
-                    #cde-extra .table-wrapper{scrollbar-width:none;-ms-overflow-style:none;}
-                    #cde-extra .table-wrapper::-webkit-scrollbar{width:0;height:0;display:none;}
+                    /* Quitar la barra de scroll fea de la tabla de leads — sigue scrolleando (donde sea que viva la tarjeta) */
+                    #leads-table-card .table-wrapper{scrollbar-width:none !important;-ms-overflow-style:none !important;}
+                    #leads-table-card .table-wrapper::-webkit-scrollbar{width:0 !important;height:0 !important;display:none !important;}
                     /* Filas de leads clickeables */
-                    #cde-extra #leads-table-body tr{transition:background .12s ease;}
-                    #cde-extra #leads-table-body tr:hover{background:rgba(124,135,176,.10);}
+                    #leads-table-body tr{transition:background .12s ease;}
+                    #leads-table-body tr:hover{background:rgba(124,135,176,.10);}
 
                     /* Mini-tarjetas de estatus (reemplazan el dropdown) */
                     #cde-status-chips{display:flex;gap:8px;flex-wrap:wrap;width:100%;}
@@ -5766,7 +5766,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde24"></script>
+    <script src="src/dashboard.js?v=20260605-cde25"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
