@@ -6401,12 +6401,10 @@ function renderCdeExtra() {
     const leads = state.filteredLeads || [];
     const counts = {}; CDE_STAGES.forEach(s => counts[s.key] = 0);
     const perdidos = [];
-    let montoEmpenado = 0;   // suma del Presupuesto (precio) de los empeñados, por fecha
     leads.forEach(l => {
         const k = cdeStage(l);
         if (k) counts[k]++;
         if (k === 'perdido') perdidos.push(l);
-        if (k === 'empenado') montoEmpenado += Number(l.precio || l.price || 0);
     });
     const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
     const empenados = counts.empenado;
@@ -6440,7 +6438,7 @@ function renderCdeExtra() {
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
 
     cdeRenderPie(perdidos);
-    cdeRenderInvestment(montoEmpenado);   // tarjeta "Inversión en Publicidad" (mensual) + ROAS
+    cdeRenderInvestment();   // tarjeta "Inversión en Publicidad" (mensual) + ROAS por mes
 
     // Layout CDE: el pie sube junto a "Comportamiento" (grid 2-col) y la tabla de leads
     // baja a todo el ancho, debajo de las gráficas. Idempotente (no re-mueve si ya está).
@@ -6652,12 +6650,8 @@ const CDE_MES_LABEL = {
     '2026-09': 'Septiembre 2026', '2026-10': 'Octubre 2026', '2026-11': 'Noviembre 2026', '2026-12': 'Diciembre 2026'
 };
 let cdeSpendMap = {};
-let cdeMontoEmpenado = 0;   // se guarda en renderCdeExtra para recalcular ROAS tras guardar
 
-async function cdeRenderInvestment(montoEmpenado) {
-    cdeMontoEmpenado = Number(montoEmpenado) || 0;
-    const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
-
+async function cdeRenderInvestment() {
     // Cargar gasto mensual de la tabla ad_spend
     let rows = [];
     try {
@@ -6669,21 +6663,10 @@ async function cdeRenderInvestment(montoEmpenado) {
     } catch (e) { console.error('[cde] ad_spend', e); }
     cdeSpendMap = {};
     rows.forEach(r => { cdeSpendMap[r.periodo] = Number(r.monto) || 0; });
-    const totalSpend = CDE_MESES.reduce((a, m) => a + (cdeSpendMap[m] || 0), 0);
-    // Fallback al campo de admin (Inversión en publicidad) si aún no hay captura mensual
-    const adInvestment = Number((state.rawConfig && state.rawConfig.ad_investment) || 0);
-    const denom = totalSpend > 0 ? totalSpend : adInvestment;
-
-    // Tarjeta ROAS (card-7) = monto empeñado (por fecha) ÷ inversión publicidad
-    const roas = denom > 0 ? (cdeMontoEmpenado / denom) : 0;
-    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = denom > 0 ? roas.toFixed(2) + 'x' : '—';
-    const p7 = document.querySelector('#card-7-wrapper .pill-change');
-    if (p7) p7.textContent = denom > 0 ? `${fmt(cdeMontoEmpenado)} ÷ ${fmt(denom)}` : 'Captura inversión pub.';
 
     // Tarjeta "Inversión en Publicidad" (card-6) — editor mensual editable por el cliente
     const lbl6 = document.getElementById('label-main-6'); if (lbl6) lbl6.textContent = 'Inversión en Publicidad';
     const sub6 = document.getElementById('label-sub-6'); if (sub6) sub6.textContent = 'Captura mensual';
-    const date6 = document.getElementById('card-6-date'); if (date6) date6.textContent = `Total capturado: ${fmt(totalSpend)}`;
 
     // Construir el editor (select de mes + input + Guardar) una sola vez, dentro de la tarjeta
     const wrap = document.getElementById('card-6-wrapper');
@@ -6706,22 +6689,45 @@ async function cdeRenderInvestment(montoEmpenado) {
         sel.innerHTML = CDE_MESES.map(m => `<option value="${m}"${m === def ? ' selected' : ''}>${CDE_MES_LABEL[m]}</option>`).join('');
         sel.dataset.filled = '1';
     }
-    cdeLoadSpendMonth();
+    cdeLoadSpendMonth();   // setea card-6 + ROAS del mes seleccionado (POR MES, no acumulativo)
 }
 
-// Refleja en card-6-value y en el input el gasto del mes seleccionado
+// Monto empeñado (Presupuesto) de los empeñados cuya fecha cae en el mes 'YYYY-MM'
+function cdeMontoEmpenadoMes(periodo) {
+    const leads = state.leads || [];
+    let monto = 0;
+    leads.forEach(l => {
+        if (cdeStage(l) !== 'empenado') return;
+        const d = l.fecha_parsed;
+        if (!d || typeof d.getFullYear !== 'function') return;
+        const ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        if (ym === periodo) monto += Number(l.precio || l.price || 0);
+    });
+    return monto;
+}
+
+// Actualiza card-6 (gasto del mes) y card-7 (ROAS del mes) — cada mes es independiente
 function cdeLoadSpendMonth() {
     const sel = document.getElementById('cde-spend-mes-sel');
-    const inp = document.getElementById('cde-spend-input');
-    const val = document.getElementById('card-6-value');
     if (!sel) return;
     const m = sel.value;
-    const monto = (cdeSpendMap[m] != null) ? cdeSpendMap[m] : 0;
+    const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
+    const spend = (cdeSpendMap[m] != null) ? cdeSpendMap[m] : 0;
+
+    const inp = document.getElementById('cde-spend-input');
     if (inp) inp.value = (cdeSpendMap[m] != null) ? cdeSpendMap[m] : '';
-    if (val) val.textContent = '$' + Number(monto).toLocaleString('en-US');
+    const val = document.getElementById('card-6-value'); if (val) val.textContent = fmt(spend);
+    const date6 = document.getElementById('card-6-date'); if (date6) date6.textContent = CDE_MES_LABEL[m] || m;
+
+    // ROAS del mes = monto empeñado del mes ÷ gasto del mes (no acumulativo)
+    const monto = cdeMontoEmpenadoMes(m);
+    const roas = spend > 0 ? (monto / spend) : 0;
+    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = spend > 0 ? roas.toFixed(2) + 'x' : '—';
+    const p7 = document.querySelector('#card-7-wrapper .pill-change');
+    if (p7) p7.textContent = spend > 0 ? `${fmt(monto)} ÷ ${fmt(spend)}` : 'Captura inversión pub.';
 }
 
-// Guarda el gasto del mes (cliente o Intra) y recalcula ROAS
+// Guarda el gasto del mes (cliente o Intra) y recalcula SOLO ese mes
 async function cdeSaveSpend(btn) {
     const sel = document.getElementById('cde-spend-mes-sel');
     const periodo = sel ? sel.value : new Date().toISOString().slice(0, 7);
@@ -6732,7 +6738,7 @@ async function cdeSaveSpend(btn) {
             { onConflict: 'account_slug,periodo' });
         if (btn) { const t = btn.textContent; btn.textContent = '✓'; setTimeout(() => btn.textContent = t, 1400); }
         cdeSpendMap[periodo] = monto;
-        await cdeRenderInvestment(cdeMontoEmpenado);   // refresca card-6 + ROAS
+        cdeLoadSpendMonth();   // refresca solo el mes guardado
         if (typeof showToast === 'function') showToast('Inversión guardada (' + (CDE_MES_LABEL[periodo] || periodo) + ')', 'success');
     } catch (e) { console.error('[cde] save spend', e); alert('Error: ' + e.message); }
 }
