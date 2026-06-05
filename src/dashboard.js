@@ -6411,11 +6411,6 @@ function renderCdeExtra() {
     const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
     const empenados = counts.empenado;
 
-    // ROAS = monto empeñado (por fecha) ÷ Inversión en publicidad (campo de admin/Identidad)
-    const adInvestment = Number((state.rawConfig && state.rawConfig.ad_investment) || 0);
-    const roas = adInvestment > 0 ? (montoEmpenado / adInvestment) : 0;
-    const fmtMoney = (n) => '$' + Number(n).toLocaleString('en-US');
-
     // Punto 1: Oportunidades calificadas = total del funnel INCLUYENDO venta perdida
     const c1 = document.getElementById('card-1-value'); if (c1) c1.textContent = totalFunnel;
     // Punto 2: "Ventas" -> "Empeños cerrados" (conteo de empeñados)
@@ -6425,9 +6420,6 @@ function renderCdeExtra() {
     // Reutilizar card-7 como tarjeta "ROAS" (antes "Costo por oportunidad calificada")
     const lbl7 = document.getElementById('label-main-7'); if (lbl7) lbl7.textContent = 'ROAS';
     const sub7 = document.getElementById('label-sub-7'); if (sub7) sub7.textContent = 'MONTO EMPEÑADO / INVERSIÓN PUB.';
-    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = adInvestment > 0 ? roas.toFixed(2) + 'x' : '—';
-    const p7 = document.querySelector('#card-7-wrapper .pill-change');
-    if (p7) p7.textContent = adInvestment > 0 ? `${fmtMoney(montoEmpenado)} ÷ ${fmtMoney(adInvestment)}` : 'Captura inversión pub.';
 
     // Las 6 tarjetas en UNA fila: 5(Total) · 1(Oport.) · 2(Conv.) · 3(Empeños) · 7(ROAS) · 6(Inversión)
     // ROI (card-4) oculto por ahora; solo se muestra ROAS.
@@ -6448,6 +6440,7 @@ function renderCdeExtra() {
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
 
     cdeRenderPie(perdidos);
+    cdeRenderInvestment(montoEmpenado);   // tarjeta "Inversión en Publicidad" (mensual) + ROAS
 
     // Layout CDE: el pie sube junto a "Comportamiento" (grid 2-col) y la tabla de leads
     // baja a todo el ancho, debajo de las gráficas. Idempotente (no re-mueve si ya está).
@@ -6650,6 +6643,96 @@ function cdeClosePieModal() {
 
 function cdePieModalEsc(e) { if (e.key === 'Escape') cdeClosePieModal(); }
 
-// (Eliminado) "Gasto de publicidad (ROAS)" + captura mensual de gasto.
-// El cliente pidió retirar esa tarjeta y sus funciones; la tarjeta card-4 vuelve a ser ROI
-// con su comportamiento por defecto (no se sobreescribe desde el módulo CDE).
+// ── Inversión en Publicidad (captura mensual, editable por el CLIENTE) ──
+// Reemplaza la tarjeta "Inversión" (card-6). El gasto vive en la tabla ad_spend
+// (por mes, Mayo–Diciembre 2026). El ROAS (card-7) = monto empeñado ÷ gasto total.
+const CDE_MESES = ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12'];
+const CDE_MES_LABEL = {
+    '2026-05': 'Mayo 2026', '2026-06': 'Junio 2026', '2026-07': 'Julio 2026', '2026-08': 'Agosto 2026',
+    '2026-09': 'Septiembre 2026', '2026-10': 'Octubre 2026', '2026-11': 'Noviembre 2026', '2026-12': 'Diciembre 2026'
+};
+let cdeSpendMap = {};
+let cdeMontoEmpenado = 0;   // se guarda en renderCdeExtra para recalcular ROAS tras guardar
+
+async function cdeRenderInvestment(montoEmpenado) {
+    cdeMontoEmpenado = Number(montoEmpenado) || 0;
+    const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
+
+    // Cargar gasto mensual de la tabla ad_spend
+    let rows = [];
+    try {
+        if (window.adminSupabase) {
+            const { data } = await window.adminSupabase.from('ad_spend')
+                .select('periodo, monto').eq('account_slug', CDE_SLUG);
+            rows = data || [];
+        }
+    } catch (e) { console.error('[cde] ad_spend', e); }
+    cdeSpendMap = {};
+    rows.forEach(r => { cdeSpendMap[r.periodo] = Number(r.monto) || 0; });
+    const totalSpend = CDE_MESES.reduce((a, m) => a + (cdeSpendMap[m] || 0), 0);
+    // Fallback al campo de admin (Inversión en publicidad) si aún no hay captura mensual
+    const adInvestment = Number((state.rawConfig && state.rawConfig.ad_investment) || 0);
+    const denom = totalSpend > 0 ? totalSpend : adInvestment;
+
+    // Tarjeta ROAS (card-7) = monto empeñado (por fecha) ÷ inversión publicidad
+    const roas = denom > 0 ? (cdeMontoEmpenado / denom) : 0;
+    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = denom > 0 ? roas.toFixed(2) + 'x' : '—';
+    const p7 = document.querySelector('#card-7-wrapper .pill-change');
+    if (p7) p7.textContent = denom > 0 ? `${fmt(cdeMontoEmpenado)} ÷ ${fmt(denom)}` : 'Captura inversión pub.';
+
+    // Tarjeta "Inversión en Publicidad" (card-6) — editor mensual editable por el cliente
+    const lbl6 = document.getElementById('label-main-6'); if (lbl6) lbl6.textContent = 'Inversión en Publicidad';
+    const sub6 = document.getElementById('label-sub-6'); if (sub6) sub6.textContent = 'Captura mensual';
+    const date6 = document.getElementById('card-6-date'); if (date6) date6.textContent = `Total capturado: ${fmt(totalSpend)}`;
+
+    // Construir el editor (select de mes + input + Guardar) una sola vez, dentro de la tarjeta
+    const wrap = document.getElementById('card-6-wrapper');
+    if (wrap && !document.getElementById('cde-spend-editor')) {
+        const ed = document.createElement('div');
+        ed.id = 'cde-spend-editor';
+        ed.style.cssText = 'display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:10px;';
+        ed.innerHTML =
+            `<select id="cde-spend-mes-sel" onchange="cdeLoadSpendMonth()" style="flex:1 1 100%; padding:6px 8px; border:1px solid var(--border-subtle); border-radius:8px; background:#1e293b; color:#e2e8f0; font-size:12px; cursor:pointer;"></select>` +
+            `<input type="number" id="cde-spend-input" placeholder="0" min="0" style="flex:1 1 90px; padding:6px 8px; border:1px solid var(--border-subtle); border-radius:8px; background:transparent; color:inherit; font-size:12px; width:90px;">` +
+            `<button type="button" onclick="cdeSaveSpend(this)" style="flex:0 0 auto; cursor:pointer; border:none; background:#7551FF; color:#fff; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600;">Guardar</button>`;
+        wrap.appendChild(ed);
+    }
+
+    // Poblar el selector de meses (una sola vez) — default: mes actual si está en rango, si no Mayo
+    const sel = document.getElementById('cde-spend-mes-sel');
+    if (sel && !sel.dataset.filled) {
+        const now = new Date().toISOString().slice(0, 7);
+        const def = CDE_MESES.includes(now) ? now : '2026-05';
+        sel.innerHTML = CDE_MESES.map(m => `<option value="${m}"${m === def ? ' selected' : ''}>${CDE_MES_LABEL[m]}</option>`).join('');
+        sel.dataset.filled = '1';
+    }
+    cdeLoadSpendMonth();
+}
+
+// Refleja en card-6-value y en el input el gasto del mes seleccionado
+function cdeLoadSpendMonth() {
+    const sel = document.getElementById('cde-spend-mes-sel');
+    const inp = document.getElementById('cde-spend-input');
+    const val = document.getElementById('card-6-value');
+    if (!sel) return;
+    const m = sel.value;
+    const monto = (cdeSpendMap[m] != null) ? cdeSpendMap[m] : 0;
+    if (inp) inp.value = (cdeSpendMap[m] != null) ? cdeSpendMap[m] : '';
+    if (val) val.textContent = '$' + Number(monto).toLocaleString('en-US');
+}
+
+// Guarda el gasto del mes (cliente o Intra) y recalcula ROAS
+async function cdeSaveSpend(btn) {
+    const sel = document.getElementById('cde-spend-mes-sel');
+    const periodo = sel ? sel.value : new Date().toISOString().slice(0, 7);
+    const monto = Math.max(0, parseFloat(document.getElementById('cde-spend-input').value) || 0);
+    try {
+        await window.adminSupabase.from('ad_spend').upsert(
+            { account_slug: CDE_SLUG, periodo, monto, updated_at: new Date().toISOString() },
+            { onConflict: 'account_slug,periodo' });
+        if (btn) { const t = btn.textContent; btn.textContent = '✓'; setTimeout(() => btn.textContent = t, 1400); }
+        cdeSpendMap[periodo] = monto;
+        await cdeRenderInvestment(cdeMontoEmpenado);   // refresca card-6 + ROAS
+        if (typeof showToast === 'function') showToast('Inversión guardada (' + (CDE_MES_LABEL[periodo] || periodo) + ')', 'success');
+    } catch (e) { console.error('[cde] save spend', e); alert('Error: ' + e.message); }
+}
