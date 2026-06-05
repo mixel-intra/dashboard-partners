@@ -6373,10 +6373,12 @@ function renderCdeExtra() {
     const leads = state.filteredLeads || [];
     const counts = {}; CDE_STAGES.forEach(s => counts[s.key] = 0);
     const perdidos = [];
+    let montoEmpenado = 0;   // suma del Presupuesto (precio) de los empeñados → "monto de empeño"
     leads.forEach(l => {
         const k = cdeStage(l);
         if (k) counts[k]++;
         if (k === 'perdido') perdidos.push(l);
+        if (k === 'empenado') montoEmpenado += Number(l.precio || l.price || 0);
     });
     const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
     const empenados = counts.empenado;
@@ -6415,7 +6417,7 @@ function renderCdeExtra() {
     }).join('');
 
     cdeRenderPie(perdidos);
-    cdeRenderRoas(empenados);
+    cdeRenderRoas(empenados, montoEmpenado);
 }
 
 // Junta TODOS los valores string del lead (incluye campos personalizados anidados),
@@ -6490,7 +6492,8 @@ const CDE_MES_LABEL = {
 };
 let cdeSpendMap = {};
 
-async function cdeRenderRoas(empenados) {
+async function cdeRenderRoas(empenados, montoEmpenado) {
+    montoEmpenado = Number(montoEmpenado) || 0;
     let rows = [];
     try {
         if (window.adminSupabase) {
@@ -6503,20 +6506,23 @@ async function cdeRenderRoas(empenados) {
     rows.forEach(r => { cdeSpendMap[r.periodo] = Number(r.monto) || 0; });
     const totalSpend = CDE_MESES.reduce((a, m) => a + (cdeSpendMap[m] || 0), 0);
 
-    const roas = totalSpend > 0 ? (empenados / totalSpend) : 0;
-    const cpe = empenados > 0 ? (totalSpend / empenados) : 0;
+    // ROAS = monto total empeñado (Presupuesto en Kommo) ÷ inversión publicidad
+    const roas = totalSpend > 0 ? (montoEmpenado / totalSpend) : 0;
+    const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
+
+    // Tarjeta superior "ROAS" (card-4, sustituye ROI) — solo CDE
+    const lbl4 = document.getElementById('label-main-4'); if (lbl4) lbl4.textContent = 'ROAS';
+    const sub4 = document.getElementById('label-sub-4'); if (sub4) sub4.textContent = 'MONTO EMPEÑADO ÷ GASTO';
+    const c4 = document.getElementById('card-4-value'); if (c4) c4.textContent = totalSpend > 0 ? roas.toFixed(2) + 'x' : '—';
+    const p4 = document.getElementById('pill-4-text'); if (p4) p4.textContent = totalSpend > 0 ? `${fmt(montoEmpenado)} empeñado` : 'Captura gasto';
+
+    // Tarjeta inferior = solo editor de gasto (sin duplicar el número ROAS)
     const valEl = document.getElementById('cde-roas-val');
     const subEl = document.getElementById('cde-roas-sub');
-    if (valEl) valEl.textContent = totalSpend > 0 ? roas.toFixed(4) : '—';
+    if (valEl) valEl.style.display = 'none';   // quita el ROAS duplicado
     if (subEl) subEl.textContent = totalSpend > 0
-        ? `${empenados} empeños ÷ $${totalSpend.toLocaleString('en-US')} (gasto total) · costo/empeño $${cpe.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-        : 'Falta capturar el gasto de publicidad';
-
-    // Sustituir la tarjeta superior "ROI" por "ROAS" (card-4) — solo CDE
-    const lbl4 = document.getElementById('label-main-4'); if (lbl4) lbl4.textContent = 'ROAS';
-    const sub4 = document.getElementById('label-sub-4'); if (sub4) sub4.textContent = 'EMPEÑOS ÷ GASTO PUB.';
-    const c4 = document.getElementById('card-4-value'); if (c4) c4.textContent = totalSpend > 0 ? roas.toFixed(4) : '—';
-    const p4 = document.getElementById('pill-4-text'); if (p4) p4.textContent = totalSpend > 0 ? `$${cpe.toLocaleString('en-US', { maximumFractionDigits: 0 })} / empeño` : 'Captura gasto';
+        ? `ROAS ${roas.toFixed(2)}x  ·  ${fmt(montoEmpenado)} empeñado ÷ ${fmt(totalSpend)} gasto`
+        : 'Captura el gasto mensual para calcular el ROAS';
 
     const isIntra = cdeIsIntra();
     const badge = document.getElementById('cde-roas-intra');
