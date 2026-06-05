@@ -6401,13 +6401,20 @@ function renderCdeExtra() {
     const leads = state.filteredLeads || [];
     const counts = {}; CDE_STAGES.forEach(s => counts[s.key] = 0);
     const perdidos = [];
+    let montoEmpenado = 0;   // suma del Presupuesto (precio) de los empeñados, por fecha
     leads.forEach(l => {
         const k = cdeStage(l);
         if (k) counts[k]++;
         if (k === 'perdido') perdidos.push(l);
+        if (k === 'empenado') montoEmpenado += Number(l.precio || l.price || 0);
     });
     const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
     const empenados = counts.empenado;
+
+    // ROAS = monto empeñado (por fecha) ÷ Inversión en publicidad (campo de admin/Identidad)
+    const adInvestment = Number((state.rawConfig && state.rawConfig.ad_investment) || 0);
+    const roas = adInvestment > 0 ? (montoEmpenado / adInvestment) : 0;
+    const fmtMoney = (n) => '$' + Number(n).toLocaleString('en-US');
 
     // Punto 1: Oportunidades calificadas = total del funnel INCLUYENDO venta perdida
     const c1 = document.getElementById('card-1-value'); if (c1) c1.textContent = totalFunnel;
@@ -6415,19 +6422,26 @@ function renderCdeExtra() {
     const lbl3 = document.getElementById('label-main-3'); if (lbl3) lbl3.textContent = 'Empeños cerrados';
     const sub3 = document.getElementById('label-sub-3'); if (sub3) sub3.textContent = 'EMPEÑADOS';
     const c3 = document.getElementById('card-3-value'); if (c3) c3.textContent = empenados;
-    // Ocultar "Costo por oportunidad calificada" (card-7) — no aplica para CDE
-    const c7w = document.getElementById('card-7-wrapper'); if (c7w) c7w.style.setProperty('display', 'none', 'important');
+    // Reutilizar card-7 como tarjeta "ROAS" (antes "Costo por oportunidad calificada")
+    const lbl7 = document.getElementById('label-main-7'); if (lbl7) lbl7.textContent = 'ROAS';
+    const sub7 = document.getElementById('label-sub-7'); if (sub7) sub7.textContent = 'MONTO EMPEÑADO / INVERSIÓN PUB.';
+    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = adInvestment > 0 ? roas.toFixed(2) + 'x' : '—';
+    const p7 = document.querySelector('#card-7-wrapper .pill-change');
+    if (p7) p7.textContent = adInvestment > 0 ? `${fmtMoney(montoEmpenado)} ÷ ${fmtMoney(adInvestment)}` : 'Captura inversión pub.';
 
-    // Las 6 tarjetas (1-6) en UNA sola fila arriba, bien distribuidas
+    // Las 7 tarjetas en UNA fila: 5(Total) · 1(Oport.) · 2(Conv.) · 3(Empeños) · 7(ROAS) · 4(ROI) · 6(Inversión)
     const topRow = document.getElementById('top-cards-row');
     const bottomRow = document.getElementById('bottom-cards-row');
+    const c4w = document.getElementById('card-4-wrapper');
     const c5w = document.getElementById('card-5-wrapper');
     const c6w = document.getElementById('card-6-wrapper');
+    const c7w = document.getElementById('card-7-wrapper');
     if (topRow && c5w && c6w) {
-        topRow.insertBefore(c5w, topRow.firstChild);  // Total de Registros PRIMERO
-        topRow.appendChild(c6w);                        // Inversión al final → orden 5,1,2,3,4,6
-        topRow.style.setProperty('grid-template-columns', 'repeat(6, minmax(0, 1fr))', 'important');
-        [c5w, c6w].forEach(el => el.style.setProperty('display', 'flex', 'important'));
+        topRow.insertBefore(c5w, topRow.firstChild);     // Total de Registros PRIMERO
+        if (c7w && c4w) topRow.insertBefore(c7w, c4w);   // ROAS justo antes de ROI
+        topRow.appendChild(c6w);                          // Inversión al final
+        topRow.style.setProperty('grid-template-columns', 'repeat(7, minmax(0, 1fr))', 'important');
+        [c5w, c6w, c7w].forEach(el => el && el.style.setProperty('display', 'flex', 'important'));
     }
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
 

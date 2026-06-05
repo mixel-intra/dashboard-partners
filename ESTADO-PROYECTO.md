@@ -65,9 +65,12 @@ Viven en `index.html` + `src/dashboard.js` (funciones `cde*` / `renderCdeExtra`)
 ### Cambios implementados
 1. **Oportunidades calificadas** = total del funnel **incluyendo "Venta perdida"** (antes la excluía).
 2. **"Ventas" → "Empeños cerrados"** = conteo de leads en estado `EMPEÑADO` (antes mostraba $0 de ingresos).
-3. **Tarjeta ROI** (card-4) con su función por defecto. *(Se retiró la tarjeta "Gasto de publicidad
-   (ROAS)" y la captura mensual de gasto — `cdeRenderRoas`/`cdeSaveSpend` eliminadas; la tabla
-   `ad_spend` queda sin uso por ahora.)*
+3. **Tarjeta ROI** (card-4) + **tarjeta ROAS** (reutiliza card-7) ubicada **entre "Empeños cerrados"
+   y "ROI"**. **ROAS = monto empeñado (Presupuesto Kommo, por fecha) ÷ Inversión en publicidad.**
+   La "Inversión en publicidad" es un **campo nuevo en admin → Identidad** (columna
+   `clients_config.ad_investment`, migración `010_ad_investment.sql`), lo captura SOLO Intra.
+   *(Se retiró la captura mensual de gasto anterior — `cdeRenderRoas`/`cdeSaveSpend` eliminadas;
+   la tabla `ad_spend` queda sin uso.)*
 4. **Pie "Razones de venta perdida"** rediseñado: paleta sobria, **% dentro de cada rebanada**,
    leyenda abajo con "Motivo · N (%)", total en el eyebrow, tipografía igual a "Comportamiento".
    El motivo se saca del campo `EstatusLead` (texto libre) en el webhook `dashbord_cde` y se

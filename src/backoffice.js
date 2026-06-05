@@ -19,6 +19,7 @@ const elements = {
     webhookInput: document.getElementById('webhook-url'),
     investmentInput: document.getElementById('investment'),
     salesInput: document.getElementById('sales'),
+    adInvestmentInput: document.getElementById('ad-investment'),
     clientLogoInput: document.getElementById('client-logo-url'),
     clientLogoFile: document.getElementById('client-logo-file'),
     clientLogoLightInput: document.getElementById('client-logo-light-url'),
@@ -281,7 +282,8 @@ async function selectClient(clientId) {
     const currentConfig = config || {
         webhook_url: '',
         investment: 0,
-        sales_goal: 0
+        sales_goal: 0,
+        ad_investment: 0
     };
     // El editor de plantilla necesita el id_slug del cliente seleccionado
     // para generar URLs aunque la config sea nueva.
@@ -298,6 +300,7 @@ async function selectClient(clientId) {
     elements.clientNameInput.value = currentConfig.name || '';
     elements.investmentInput.value = currentConfig.investment || 0;
     elements.salesInput.value = currentConfig.sales_goal || 0;
+    if (elements.adInvestmentInput) elements.adInvestmentInput.value = currentConfig.ad_investment || 0;
     elements.clientLogoInput.value = currentConfig.logo_url || '';
     if (elements.clientLogoLightInput) elements.clientLogoLightInput.value = currentConfig.logo_url_light || '';
     elements.clientTypeInput.value = currentConfig.client_type || 'otro';
@@ -578,6 +581,7 @@ function setupEventListeners() {
                 investment: parseFloat(elements.investmentInput.value) || 0,
                 investment_updated_at: new Date().toISOString().split('T')[0],
                 sales_goal: parseFloat(elements.salesInput.value) || 0,
+                ad_investment: elements.adInvestmentInput ? (parseFloat(elements.adInvestmentInput.value) || 0) : 0,
                 logo_url: logoUrl,
                 logo_url_light: logoUrlLight || null,
                 theme_primary: elements.themePrimaryInput.value,
