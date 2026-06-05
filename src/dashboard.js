@@ -6512,6 +6512,12 @@ async function cdeRenderRoas(empenados) {
         ? `${empenados} empeños ÷ $${totalSpend.toLocaleString('en-US')} (gasto total) · costo/empeño $${cpe.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
         : 'Falta capturar el gasto de publicidad';
 
+    // Sustituir la tarjeta superior "ROI" por "ROAS" (card-4) — solo CDE
+    const lbl4 = document.getElementById('label-main-4'); if (lbl4) lbl4.textContent = 'ROAS';
+    const sub4 = document.getElementById('label-sub-4'); if (sub4) sub4.textContent = 'EMPEÑOS ÷ GASTO PUB.';
+    const c4 = document.getElementById('card-4-value'); if (c4) c4.textContent = totalSpend > 0 ? roas.toFixed(4) : '—';
+    const p4 = document.getElementById('pill-4-text'); if (p4) p4.textContent = totalSpend > 0 ? `$${cpe.toLocaleString('en-US', { maximumFractionDigits: 0 })} / empeño` : 'Captura gasto';
+
     const isIntra = cdeIsIntra();
     const badge = document.getElementById('cde-roas-intra');
     const spend = document.getElementById('cde-spend');
