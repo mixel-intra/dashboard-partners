@@ -1181,6 +1181,24 @@ function renderTable() {
         modalTableBody.innerHTML = leadsToShow.map((lead, index) => renderLogRow(lead, index)).join('');
     }
 
+    // CDE: número grande con el total del estado filtrado, dentro del recuadro
+    if (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') {
+        const bar = document.getElementById('table-filter-bar');
+        if (bar) {
+            let badge = document.getElementById('cde-leads-count');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.id = 'cde-leads-count';
+                badge.style.cssText = 'margin-left:auto; display:flex; align-items:baseline; gap:8px; padding:2px 4px;';
+                bar.appendChild(badge);
+            }
+            const etiqueta = estadoFiltro || 'Total';
+            badge.innerHTML =
+                `<span style="font-size:30px; font-weight:800; line-height:1; color:var(--text-primary,#fff);">${mainLeads.length}</span>` +
+                `<span style="font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-muted,#94a3b8);">${etiqueta}</span>`;
+        }
+    }
+
     setupModalEvents();
 }
 
