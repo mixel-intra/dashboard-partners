@@ -1179,15 +1179,22 @@ function renderTable() {
     }
 
     // Main table — all filtered leads, scrollable
-    tableBody.innerHTML = mainLeads.map((lead, index) => renderLogRow(lead, index)).join('');
+    const isCDETable2 = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño');
+    if (isCDETable2) cdeTableLeads = mainLeads;   // para abrir el detalle por índice
+    tableBody.innerHTML = mainLeads.map((lead, index) => renderLogRow(lead, index, isCDETable2)).join('');
 
     // Modal Table (Full view - All leads, no extra filter)
     if (modalTableBody) {
         modalTableBody.innerHTML = leadsToShow.map((lead, index) => renderLogRow(lead, index)).join('');
     }
 
-    // CDE: número grande con el total del estado filtrado, dentro del recuadro
-    if (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') {
+    // CDE: mini-tarjetas de estatus + número grande del total filtrado
+    if (isCDETable2) {
+        // Ocultar el dropdown y "Limpiar" (los reemplazan las mini-tarjetas)
+        const selEl = document.getElementById('filter-estado'); if (selEl) selEl.style.display = 'none';
+        const clrBtn = document.querySelector('#table-filter-bar button[onclick*="clearTableFilters"]'); if (clrBtn) clrBtn.style.display = 'none';
+        cdeRenderStatusChips(leadsToShow, estadoFiltro);
+
         const bar = document.getElementById('table-filter-bar');
         if (bar) {
             let badge = document.getElementById('cde-leads-count');
@@ -1255,7 +1262,7 @@ const ETIQUETA_INTRA_STYLE = {
     'Orgánico':           'color:#64748b; background:rgba(100,116,139,0.14); border:1px solid rgba(100,116,139,0.35);'
 };
 
-function renderLogRow(lead, index) {
+function renderLogRow(lead, index, clickable) {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const qualified = isQualified(lead);
 
@@ -1296,8 +1303,9 @@ function renderLogRow(lead, index) {
             </td>`;
     }
 
+    const rowAttrs = (clickable && isCDE) ? ` onclick="cdeOpenLeadModal(${index})" style="cursor:pointer;"` : '';
     return `
-        <tr>
+        <tr${rowAttrs}>
             <td style="font-weight: 600;">${lead.nombre || 'Sin nombre'}</td>
             <td style="color: var(--text-secondary);">${lead.fecha_parsed ? lead.fecha_parsed.toLocaleDateString('es-MX') : 'N/A'}</td>
             <td>
@@ -6673,6 +6681,95 @@ function cdeClosePieModal() {
 }
 
 function cdePieModalEsc(e) { if (e.key === 'Escape') cdeClosePieModal(); }
+
+// ── Mini-tarjetas de estatus (reemplazan el dropdown) + detalle de lead ──
+let cdeTableLeads = [];   // leads actualmente mostrados en la tabla (para abrir el detalle por índice)
+const CDE_CHIP_ESTADOS = ['Lead Empeño Oro', 'Rescate / Empeño Otros', 'Cita agendada', 'Reagendar', 'Empeñado', 'Venta perdida'];
+
+function cdeRenderStatusChips(leadsToShow, current) {
+    const bar = document.getElementById('table-filter-bar');
+    if (!bar) return;
+    let cont = document.getElementById('cde-status-chips');
+    if (!cont) {
+        cont = document.createElement('div');
+        cont.id = 'cde-status-chips';
+        bar.insertBefore(cont, bar.firstChild);
+    }
+    const counts = {}; CDE_CHIP_ESTADOS.forEach(f => counts[f] = 0);
+    (leadsToShow || []).forEach(l => {
+        const b = l.etiquetas_display || l.estatus;
+        if (counts[b] != null) counts[b]++;
+    });
+    const chip = (label, count, value) => {
+        const active = (current || '') === value;
+        return `<button type="button" class="cde-chip${active ? ' active' : ''}" onclick="cdeSetEstado(this.dataset.v)" data-v="${value.replace(/"/g, '&quot;')}">`
+            + `<span class="cde-chip-n">${count}</span><span class="cde-chip-l">${label}</span></button>`;
+    };
+    cont.innerHTML = chip('Todos', (leadsToShow || []).length, '')
+        + CDE_CHIP_ESTADOS.map(f => chip(f, counts[f], f)).join('');
+}
+
+function cdeSetEstado(v) {
+    const sel = document.getElementById('filter-estado');
+    if (sel) sel.value = v || '';
+    if (typeof applyTableFilters === 'function') applyTableFilters();
+}
+
+// Modal de detalle de un lead (se abre al pulsar una fila)
+function cdeOpenLeadModal(i) {
+    const lead = cdeTableLeads[i];
+    const modal = document.getElementById('cde-lead-modal');
+    if (!lead || !modal) return;
+
+    const title = document.getElementById('cde-lead-title');
+    if (title) title.textContent = lead.nombre || 'Lead';
+
+    const body = document.getElementById('cde-lead-body');
+    if (body) {
+        const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
+        const stage = (typeof cdeStage === 'function') ? cdeStage(lead) : null;
+        const estado = lead.etiquetas_display || lead.estatus || '—';
+        const fecha = (lead.fecha_parsed && typeof lead.fecha_parsed.toLocaleDateString === 'function')
+            ? lead.fecha_parsed.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+        const monto = Number(lead.precio || lead.price || 0);
+        const motivo = (stage === 'perdido' && typeof cdeMotivo === 'function') ? cdeMotivo(lead).label : '—';
+        const cell = (k, v) => `<div class="cde-lead-item"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+        const main = [
+            ['Estado', estado],
+            ['Fecha', fecha],
+            ['Monto empeñado', monto > 0 ? fmt(monto) : '—'],
+            ['Motivo (si perdido)', motivo]
+        ];
+        // Datos extra: campos primitivos no internos
+        const skip = new Set(['nombre', 'estatus', 'estatus_original', 'etiquetas_display', 'fecha_parsed', 'precio', 'price', 'motivo_perdida']);
+        const extra = [];
+        Object.keys(lead).forEach(k => {
+            if (skip.has(k)) return;
+            const v = lead[k];
+            if (v == null || typeof v === 'object') return;
+            const s = String(v).trim();
+            if (!s || s.length > 90) return;
+            extra.push([k, s]);
+        });
+        body.innerHTML =
+            `<div class="cde-lead-grid">${main.map(([k, v]) => cell(k, v)).join('')}</div>` +
+            (extra.length ? `<div class="cde-lead-sub">Más datos</div><div class="cde-lead-grid">${extra.slice(0, 8).map(([k, v]) => cell(k, v)).join('')}</div>` : '');
+    }
+
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => modal.classList.add('open'));
+    document.addEventListener('keydown', cdeLeadModalEsc);
+}
+
+function cdeCloseLeadModal() {
+    const modal = document.getElementById('cde-lead-modal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    document.removeEventListener('keydown', cdeLeadModalEsc);
+    setTimeout(() => modal.classList.add('hidden'), 180);
+}
+
+function cdeLeadModalEsc(e) { if (e.key === 'Escape') cdeCloseLeadModal(); }
 
 // ── Inversión en Publicidad (captura mensual, editable por el CLIENTE) ──
 // Reemplaza la tarjeta "Inversión" (card-6). El gasto vive en la tabla ad_spend
