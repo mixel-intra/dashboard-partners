@@ -6402,6 +6402,7 @@ function renderCdeExtra() {
         const pc = document.getElementById('cde-pie-card');
         if (sg && lc && lc.parentElement !== sg) { sg.appendChild(lc); lc.style.removeProperty('margin-top'); }
         if (sg) sg.classList.remove('cde-2col');
+        const tr = document.getElementById('top-cards-row'); if (tr) tr.classList.remove('cde-kpis');
         if (pc && pc.parentElement !== sec) sec.appendChild(pc);
         return;
     }
@@ -6442,6 +6443,7 @@ function renderCdeExtra() {
         if (c7w && c4w) topRow.insertBefore(c7w, c4w);   // ROAS donde estaba ROI (antes de card-4)
         topRow.appendChild(c6w);                          // Inversión al final
         topRow.style.setProperty('grid-template-columns', 'repeat(6, minmax(0, 1fr))', 'important');
+        topRow.classList.add('cde-kpis');   // reparte el contenido para llenar la tarjeta
         [c5w, c6w, c7w].forEach(el => el && el.style.setProperty('display', 'flex', 'important'));
     }
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');

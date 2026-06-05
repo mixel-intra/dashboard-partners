@@ -5580,6 +5580,9 @@
                     #cde-pie-card .cde-expand-btn{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text-muted);background:rgba(127,127,127,.10);border:1px solid var(--border-subtle);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease, color .15s ease;}
                     #cde-pie-card:hover .cde-expand-btn{color:var(--text-primary);background:rgba(124,135,176,.18);}
                     #cde-extra #leads-table-card{margin-top:20px;width:100%;}
+                    /* KPIs CDE: el contenido se reparte para llenar la tarjeta (sin espacio sobrante abajo) */
+                    #top-cards-row.cde-kpis .card-quantix{justify-content:space-between;}
+                    #top-cards-row.cde-kpis .card-quantix .pill-change{margin-top:0;}
 
                     /* Quitar la barra de scroll fea de la tabla de leads (CDE) — sigue scrolleando */
                     #cde-extra .table-wrapper{scrollbar-width:none;-ms-overflow-style:none;}
@@ -5763,7 +5766,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde23"></script>
+    <script src="src/dashboard.js?v=20260605-cde24"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
