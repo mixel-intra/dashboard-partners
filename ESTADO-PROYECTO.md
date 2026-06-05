@@ -65,16 +65,22 @@ Viven en `index.html` + `src/dashboard.js` (funciones `cde*` / `renderCdeExtra`)
 ### Cambios implementados
 1. **Oportunidades calificadas** = total del funnel **incluyendo "Venta perdida"** (antes la excluía).
 2. **"Ventas" → "Empeños cerrados"** = conteo de leads en estado `EMPEÑADO` (antes mostraba $0 de ingresos).
-3. **ROAS** (`empeños ÷ gasto total`) + **costo/empeño**. El **gasto lo captura SOLO Intra** (rol admin)
-   con **selector de mes (Mayo–Diciembre 2026)**; el cliente VE el ROAS pero no edita.
-4. **Pie "Motivos de venta perdida"** — el motivo se saca del campo `EstatusLead` (texto libre) en el
-   webhook `dashbord_cde` de n8n y se **categoriza** en los 8 motivos. Muestra "X de N (%)" + total.
+3. **Tarjeta ROI** (card-4) con su función por defecto. *(Se retiró la tarjeta "Gasto de publicidad
+   (ROAS)" y la captura mensual de gasto — `cdeRenderRoas`/`cdeSaveSpend` eliminadas; la tabla
+   `ad_spend` queda sin uso por ahora.)*
+4. **Pie "Razones de venta perdida"** rediseñado: paleta sobria, **% dentro de cada rebanada**,
+   leyenda abajo con "Motivo · N (%)", total en el eyebrow, tipografía igual a "Comportamiento".
+   El motivo se saca del campo `EstatusLead` (texto libre) en el webhook `dashbord_cde` y se
+   **categoriza** en los 8 motivos.
 5. **Cada lead se muestra en su etapa real** + dropdown con las 6 etapas del funnel siempre visibles
    (Lead Empeño Oro, Rescate/Empeño Otros, Cita agendada, Reagendar, Empeñado, Venta perdida).
 6. **Número grande** del total por estado filtrado dentro del recuadro de "Registro de leads".
 7. **6 KPIs en una sola fila** (Total de Registros primero · Oportunidades · Conversión · Empeños
    cerrados · ROI · Inversión). Se ocultó "Costo por oportunidad calificada".
-8. Se **eliminó** la sección "Funnel completo" (las 6 fichas) por ahora.
+8. **Reorganización del layout**: el pie sube y se **alinea junto a "Comportamiento"** (grid 2-col)
+   y el bloque **"Registro de leads" baja a todo el ancho, debajo de las gráficas**. El título cambió
+   a "Detalle de leads por etapa" (sin el subtítulo "Últimas cotizaciones a ventas") y la tabla suma
+   columnas **Monto** y **Motivo**. Todo gateado a `casa-de-empeño`.
 
 ### Datos / Kommo
 - Webhook de leads del dashboard: `https://n8n.srv1436923.hstgr.cloud/webhook/dashbord_cde`

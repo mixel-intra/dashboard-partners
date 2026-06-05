@@ -1146,6 +1146,11 @@ function renderTable() {
     document.querySelectorAll('.th-etiqueta').forEach(th => {
         th.style.display = (state.clientId === 'cefemex') ? '' : 'none';
     });
+    // Columnas "Monto" y "Motivo" — solo Casa de Empeño
+    const isCDETable = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño');
+    document.querySelectorAll('.th-cde').forEach(th => {
+        th.style.display = isCDETable ? '' : 'none';
+    });
 
     let leadsToShow = state.filteredLeads.filter(l => isQualified(l));
 
@@ -1267,6 +1272,18 @@ function renderLogRow(lead, index) {
     const isCDE = (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño');
     const badgeText = (isCDE && lead.etiquetas_display) ? lead.etiquetas_display : lead.estatus;
 
+    // Columnas "Monto" y "Motivo" — solo Casa de Empeño
+    let cdeCells = '';
+    if (isCDE) {
+        const monto = Number(lead.precio || lead.price || 0);
+        const montoTxt = monto > 0 ? '$' + monto.toLocaleString('en-US') : '—';
+        const stage = (typeof cdeStage === 'function') ? cdeStage(lead) : null;
+        const motivoTxt = (stage === 'perdido' && typeof cdeMotivo === 'function') ? cdeMotivo(lead).label : '—';
+        cdeCells = `
+            <td class="td-cde" style="font-weight:600; color:var(--text-primary); font-variant-numeric:tabular-nums;">${montoTxt}</td>
+            <td class="td-cde" style="color:var(--text-secondary); font-size:0.8rem;">${motivoTxt}</td>`;
+    }
+
     // Columna "Etiqueta" — solo CEFEMEX Capital
     let etiquetaCell = '';
     if (state.clientId === 'cefemex') {
@@ -1287,7 +1304,7 @@ function renderLogRow(lead, index) {
                 <span class="status-badge" style="${badgeStyle} padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
                     ${badgeText}
                 </span>
-            </td>${etiquetaCell}
+            </td>${cdeCells}${etiquetaCell}
         </tr>
     `;
 }
@@ -6367,18 +6384,25 @@ function cdeIsIntra() {
 function renderCdeExtra() {
     const sec = document.getElementById('cde-extra');
     if (!sec) return;
-    if (state.clientId !== CDE_SLUG) { sec.classList.add('hidden'); return; }
+    if (state.clientId !== CDE_SLUG) {
+        sec.classList.add('hidden');
+        // Restaurar layout original si se cambió de cliente sin recargar (SPA)
+        const sg = document.getElementById('split-row-grid');
+        const lc = document.getElementById('leads-table-card');
+        const pc = document.getElementById('cde-pie-card');
+        if (sg && lc && lc.parentElement === sec) { sg.appendChild(lc); sg.classList.remove('cde-2col'); }
+        if (pc && pc.parentElement !== sec) sec.appendChild(pc);
+        return;
+    }
     sec.classList.remove('hidden');
 
     const leads = state.filteredLeads || [];
     const counts = {}; CDE_STAGES.forEach(s => counts[s.key] = 0);
     const perdidos = [];
-    let montoEmpenado = 0;   // suma del Presupuesto (precio) de los empeñados → "monto de empeño"
     leads.forEach(l => {
         const k = cdeStage(l);
         if (k) counts[k]++;
         if (k === 'perdido') perdidos.push(l);
-        if (k === 'empenado') montoEmpenado += Number(l.precio || l.price || 0);
     });
     const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
     const empenados = counts.empenado;
@@ -6405,19 +6429,22 @@ function renderCdeExtra() {
     }
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
 
-    // Punto 4: fichas del funnel
-    const grid = document.getElementById('cde-funnel');
-    if (grid) grid.innerHTML = CDE_STAGES.map(s => {
-        const n = counts[s.key]; const pct = totalFunnel ? Math.round(n / totalFunnel * 100) : 0;
-        return `<div class="cde-fich">
-            <div class="n" style="color:${s.color}">${n}</div>
-            <div class="t">${s.label}</div>
-            <div class="b"><i style="width:${pct}%;background:${s.color}"></i></div>
-        </div>`;
-    }).join('');
-
     cdeRenderPie(perdidos);
-    cdeRenderRoas(empenados, montoEmpenado);
+
+    // Layout CDE: el pie sube junto a "Comportamiento" (grid 2-col) y la tabla de leads
+    // baja a todo el ancho, debajo de las gráficas. Idempotente (no re-mueve si ya está).
+    const splitGrid = document.getElementById('split-row-grid');
+    const pieCard = document.getElementById('cde-pie-card');
+    const leadsCard = document.getElementById('leads-table-card');
+    if (splitGrid && pieCard && pieCard.parentElement !== splitGrid) {
+        splitGrid.appendChild(pieCard);
+        splitGrid.classList.add('cde-2col');
+    }
+    if (leadsCard && leadsCard.parentElement !== sec) sec.appendChild(leadsCard);
+
+    // Mejorar el título del bloque de leads (se elimina "Últimas cotizaciones a ventas")
+    const tTitle = document.getElementById('table-title');
+    if (tTitle) tTitle.textContent = 'Detalle de leads por etapa';
 }
 
 // Junta TODOS los valores string del lead (incluye campos personalizados anidados),
@@ -6444,15 +6471,45 @@ function cdeMotivo(lead) {
     return CDE_MOTIVOS.find(m => m.norm === 'otros');
 }
 
-function cdeRenderPie(perdidos) {
-    // DEBUG: imprime un lead perdido para confirmar DÓNDE viene el motivo (campo personalizado).
-    if (perdidos.length) console.log('[CDE] ejemplo lead perdido →', perdidos[0], '\n[CDE] valores string →', cdeValues(perdidos[0]));
+// Paleta sobria (tonos apagados) para el doughnut — coherente con el dashboard oscuro.
+const CDE_PIE_COLORS = ['#6C8EBF', '#C9A66B', '#9988C9', '#6BA89C', '#C98B8B', '#7E8AA0', '#B5896A', '#9AA0AA'];
 
+// Plugin: dibuja el % DENTRO de cada rebanada (sin librería externa).
+const cdePctLabels = {
+    id: 'cdePctLabels',
+    afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        const data = chart.data.datasets[0].data || [];
+        const total = data.reduce((a, b) => a + (Number(b) || 0), 0) || 1;
+        ctx.save();
+        ctx.font = '700 13px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        meta.data.forEach((arc, i) => {
+            const pct = Math.round((data[i] / total) * 100);
+            if (pct < 6 || !arc.tooltipPosition) return;   // rebanadas muy chicas no se etiquetan
+            const pos = arc.tooltipPosition();
+            ctx.fillText(pct + '%', pos.x, pos.y);
+        });
+        ctx.restore();
+    }
+};
+
+function cdeRenderPie(perdidos) {
     const counts = {}; CDE_MOTIVOS.forEach(m => counts[m.norm] = 0);
     perdidos.forEach(l => { counts[cdeMotivo(l).norm]++; });
 
     const total = perdidos.length;
-    const entries = CDE_MOTIVOS.map(m => ({ label: m.label, n: counts[m.norm] })).filter(e => e.n > 0);
+    // Mayor a menor (rebanada más grande primero) y sin ceros.
+    const entries = CDE_MOTIVOS.map(m => ({ label: m.label, n: counts[m.norm] }))
+        .filter(e => e.n > 0).sort((a, b) => b.n - a.n);
+
+    // El total de pérdidas se muestra en el eyebrow de la tarjeta del pie.
+    const eyebrow = document.querySelector('#cde-pie-card .label-sub');
+    if (eyebrow) eyebrow.textContent = `MOTIVOS · ${total} VENTAS PERDIDAS`;
+
     const empty = document.getElementById('cde-pie-empty');
     const canvas = document.getElementById('cde-pie');
     if (!entries.length) {
@@ -6464,103 +6521,41 @@ function cdeRenderPie(perdidos) {
     if (empty) empty.style.display = 'none';
     if (canvas) canvas.style.display = 'block';
 
-    const data = {
-        labels: entries.map(e => `${e.label}: ${e.n} de ${total} (${Math.round(e.n / total * 100)}%)`),
-        datasets: [{ data: entries.map(e => e.n),
-            backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#06b6d4', '#ec4899', '#10b981', '#9ca3af'] }]
-    };
     const txtColor = getComputedStyle(document.body).color;
+    const data = {
+        labels: entries.map(e => `${e.label} · ${e.n} (${Math.round(e.n / total * 100)}%)`),
+        datasets: [{
+            data: entries.map(e => e.n),
+            backgroundColor: CDE_PIE_COLORS,
+            borderColor: 'rgba(15,18,35,0.55)',
+            borderWidth: 2,
+            hoverOffset: 6
+        }]
+    };
     const opts = {
         responsive: true,
+        maintainAspectRatio: false,
+        cutout: '58%',
+        layout: { padding: { top: 4, bottom: 4 } },
         plugins: {
-            title: { display: true, text: `Total venta perdida: ${total}`, color: txtColor, font: { size: 13, weight: 'bold' } },
-            legend: { position: 'right', labels: { color: txtColor, font: { size: 11 }, boxWidth: 12 } },
-            tooltip: { callbacks: { label: (c) => ` ${c.label}` } }
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: txtColor,
+                    font: { size: 12, family: 'Inter, system-ui, sans-serif' },
+                    boxWidth: 12, boxHeight: 12, padding: 14,
+                    usePointStyle: true, pointStyle: 'circle'
+                }
+            },
+            tooltip: { callbacks: { label: (c) => ` ${c.label} de ${total}` } }
         }
     };
     if (cdePieChart) { cdePieChart.data = data; cdePieChart.options = opts; cdePieChart.update(); }
     else if (window.Chart && canvas) {
-        cdePieChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts });
+        cdePieChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts, plugins: [cdePctLabels] });
     }
 }
 
-// Meses capturables (Intra) — Mayo a Diciembre 2026
-const CDE_MESES = ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12'];
-const CDE_MES_LABEL = {
-    '2026-05': 'Mayo 2026', '2026-06': 'Junio 2026', '2026-07': 'Julio 2026', '2026-08': 'Agosto 2026',
-    '2026-09': 'Septiembre 2026', '2026-10': 'Octubre 2026', '2026-11': 'Noviembre 2026', '2026-12': 'Diciembre 2026'
-};
-let cdeSpendMap = {};
-
-async function cdeRenderRoas(empenados, montoEmpenado) {
-    montoEmpenado = Number(montoEmpenado) || 0;
-    let rows = [];
-    try {
-        if (window.adminSupabase) {
-            const { data } = await window.adminSupabase.from('ad_spend')
-                .select('periodo, monto').eq('account_slug', CDE_SLUG);
-            rows = data || [];
-        }
-    } catch (e) { console.error('[cde] ad_spend', e); }
-    cdeSpendMap = {};
-    rows.forEach(r => { cdeSpendMap[r.periodo] = Number(r.monto) || 0; });
-    const totalSpend = CDE_MESES.reduce((a, m) => a + (cdeSpendMap[m] || 0), 0);
-
-    // ROAS = monto total empeñado (Presupuesto en Kommo) ÷ inversión publicidad
-    const roas = totalSpend > 0 ? (montoEmpenado / totalSpend) : 0;
-    const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
-
-    // Tarjeta superior "ROAS" (card-4, sustituye ROI) — solo CDE
-    const lbl4 = document.getElementById('label-main-4'); if (lbl4) lbl4.textContent = 'ROAS';
-    const sub4 = document.getElementById('label-sub-4'); if (sub4) sub4.textContent = 'MONTO EMPEÑADO ÷ GASTO';
-    const c4 = document.getElementById('card-4-value'); if (c4) c4.textContent = totalSpend > 0 ? roas.toFixed(2) + 'x' : '—';
-    const p4 = document.getElementById('pill-4-text'); if (p4) p4.textContent = totalSpend > 0 ? `${fmt(montoEmpenado)} empeñado` : 'Captura gasto';
-
-    // Tarjeta inferior = solo editor de gasto (sin duplicar el número ROAS)
-    const valEl = document.getElementById('cde-roas-val');
-    const subEl = document.getElementById('cde-roas-sub');
-    if (valEl) valEl.style.display = 'none';   // quita el ROAS duplicado
-    if (subEl) subEl.textContent = totalSpend > 0
-        ? `ROAS ${roas.toFixed(2)}x  ·  ${fmt(montoEmpenado)} empeñado ÷ ${fmt(totalSpend)} gasto`
-        : 'Captura el gasto mensual para calcular el ROAS';
-
-    const isIntra = cdeIsIntra();
-    const badge = document.getElementById('cde-roas-intra');
-    const spend = document.getElementById('cde-spend');
-    if (badge) badge.style.display = isIntra ? 'inline-block' : 'none';
-    if (spend) spend.style.display = isIntra ? 'flex' : 'none';
-
-    // Poblar el selector de meses una sola vez
-    const sel = document.getElementById('cde-spend-mes-sel');
-    if (sel && !sel.dataset.filled) {
-        const now = new Date().toISOString().slice(0, 7);
-        const def = CDE_MESES.includes(now) ? now : '2026-05';
-        sel.innerHTML = CDE_MESES.map(m => `<option value="${m}"${m === def ? ' selected' : ''}>${CDE_MES_LABEL[m]}</option>`).join('');
-        sel.dataset.filled = '1';
-    }
-    cdeLoadSpendMonth();
-}
-
-function cdeLoadSpendMonth() {
-    const sel = document.getElementById('cde-spend-mes-sel');
-    const inp = document.getElementById('cde-spend-input');
-    if (sel && inp) {
-        const m = sel.value;
-        inp.value = (cdeSpendMap[m] != null) ? cdeSpendMap[m] : '';
-    }
-}
-
-async function cdeSaveSpend(btn) {
-    const sel = document.getElementById('cde-spend-mes-sel');
-    const periodo = sel ? sel.value : new Date().toISOString().slice(0, 7);
-    const monto = Math.max(0, parseFloat(document.getElementById('cde-spend-input').value) || 0);
-    try {
-        await window.adminSupabase.from('ad_spend').upsert(
-            { account_slug: CDE_SLUG, periodo, monto, updated_at: new Date().toISOString() },
-            { onConflict: 'account_slug,periodo' });
-        if (btn) { const t = btn.textContent; btn.textContent = '✓ Guardado'; setTimeout(() => btn.textContent = t, 1400); }
-        cdeSpendMap[periodo] = monto;
-        renderCdeExtra();
-        if (typeof showToast === 'function') showToast('Gasto guardado (' + (CDE_MES_LABEL[periodo] || periodo) + ')', 'success');
-    } catch (e) { console.error('[cde] save spend', e); alert('Error: ' + e.message); }
-}
+// (Eliminado) "Gasto de publicidad (ROAS)" + captura mensual de gasto.
+// El cliente pidió retirar esa tarjeta y sus funciones; la tarjeta card-4 vuelve a ser ROI
+// con su comportamiento por defecto (no se sobreescribe desde el módulo CDE).

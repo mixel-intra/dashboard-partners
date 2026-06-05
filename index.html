@@ -4818,6 +4818,8 @@
                                         <th>Nombre</th>
                                         <th>Fecha</th>
                                         <th>Estado</th>
+                                        <th class="th-cde" style="display:none;">Monto</th>
+                                        <th class="th-cde" style="display:none;">Motivo</th>
                                         <th class="th-etiqueta" style="display:none;">Etiqueta</th>
                                     </tr>
                                 </thead>
@@ -4848,6 +4850,8 @@
                                         <th>Nombre</th>
                                         <th>Fecha</th>
                                         <th>Estado</th>
+                                        <th class="th-cde" style="display:none;">Monto</th>
+                                        <th class="th-cde" style="display:none;">Motivo</th>
                                         <th class="th-etiqueta" style="display:none;">Etiqueta</th>
                                     </tr>
                                 </thead>
@@ -5565,49 +5569,28 @@
                 </div>
             </div>
 
-            <!-- ── CEFEMEX Casa de Empeño: Funnel + ROAS + Motivos (solo este cliente, gateado en JS) ── -->
+            <!-- ── CEFEMEX Casa de Empeño: pie "Razones de venta perdida" (solo este cliente, gateado en JS) ── -->
             <section id="cde-extra" class="hidden" style="padding:0 24px 28px;">
                 <style>
-                    #cde-extra .cde-h{font-size:14px;font-weight:700;color:var(--text-primary);margin:6px 0 12px;display:flex;align-items:center;gap:8px;}
-                    #cde-extra .cde-funnel{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;}
-                    #cde-extra .cde-fich{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:14px;padding:14px 16px;}
-                    #cde-extra .cde-fich .n{font-size:26px;font-weight:800;line-height:1;}
-                    #cde-extra .cde-fich .t{font-size:11px;color:var(--text-muted);margin-top:6px;text-transform:uppercase;letter-spacing:.03em;}
-                    #cde-extra .cde-fich .b{height:4px;border-radius:3px;margin-top:10px;background:rgba(127,127,127,.15);overflow:hidden;}
-                    #cde-extra .cde-fich .b > i{display:block;height:100%;border-radius:3px;}
-                    #cde-extra .cde-row2{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-top:18px;}
-                    @media(max-width:900px){#cde-extra .cde-row2{grid-template-columns:1fr;}}
-                    #cde-extra .cde-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:16px;padding:18px 20px;}
-                    #cde-extra .cde-roas .val{font-size:30px;font-weight:800;color:var(--text-primary);}
-                    #cde-extra .cde-roas .sub{font-size:12px;color:var(--text-muted);margin-top:4px;}
-                    #cde-extra .cde-intra{font-size:10px;font-weight:700;text-transform:uppercase;color:#b45309;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);border-radius:999px;padding:2px 8px;}
-                    #cde-extra .cde-spend{display:none;margin-top:14px;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border-subtle);padding-top:12px;}
-                    #cde-extra .cde-spend input{padding:7px 10px;border:1px solid var(--border-subtle);border-radius:9px;background:transparent;color:inherit;font-size:13px;width:120px;}
-                    #cde-extra .cde-spend button{cursor:pointer;border:none;background:#7551FF;color:#fff;border-radius:9px;padding:7px 14px;font-size:13px;font-weight:600;}
-                    #cde-extra .cde-sub{font-size:12px;color:var(--text-muted);}
+                    /* Pie reubicado junto a "Comportamiento" (grid 2-col); tabla de leads a todo el ancho debajo */
+                    #split-row-grid.cde-2col{display:grid !important;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) !important;gap:20px !important;align-items:stretch !important;}
+                    @media(max-width:900px){#split-row-grid.cde-2col{grid-template-columns:1fr !important;}}
+                    #cde-pie-card{min-height:340px;}
+                    #cde-extra #leads-table-card{margin-top:20px;width:100%;}
                 </style>
 
-                <div class="cde-row2">
-                    <div class="cde-card">
-                        <div class="cde-h" style="margin-top:0;"><ion-icon name="pie-chart-outline"></ion-icon> Motivos de venta perdida</div>
-                        <canvas id="cde-pie" height="200"></canvas>
-                        <div id="cde-pie-empty" class="cde-sub" style="display:none;">Sin motivos registrados en el periodo.</div>
+                <!-- Pie "Razones de venta perdida": JS (renderCdeExtra) lo reubica junto a "Comportamiento" -->
+                <div class="card-quantix big-chart-card" id="cde-pie-card" style="display:flex; flex-direction:column;">
+                    <div class="card-header" style="margin-bottom:18px;">
+                        <span class="label-sub">MOTIVOS DE PÉRDIDA</span>
+                        <h3 class="section-headline" style="font-size:1.5rem; margin:0;">Razones de venta perdida</h3>
                     </div>
-                    <div class="cde-card">
-                        <div class="cde-h" style="margin-top:0;"><ion-icon name="rocket-outline"></ion-icon> Gasto de publicidad (ROAS)
-                            <span class="cde-intra" id="cde-roas-intra" style="display:none;">solo Intra edita el gasto</span></div>
-                        <div class="cde-roas">
-                            <div class="val" id="cde-roas-val">—</div>
-                            <div class="sub" id="cde-roas-sub"></div>
-                        </div>
-                        <div class="cde-spend" id="cde-spend">
-                            <span class="cde-sub">Gasto pub.:</span>
-                            <select id="cde-spend-mes-sel" onchange="cdeLoadSpendMonth()" style="padding:7px 10px;border:1px solid var(--border-subtle);border-radius:9px;background:#1e293b;color:#e2e8f0;font-size:13px;cursor:pointer;"></select>
-                            <input type="number" id="cde-spend-input" placeholder="0" min="0">
-                            <button type="button" onclick="cdeSaveSpend(this)">Guardar</button>
-                        </div>
+                    <div style="flex:1; position:relative; width:100%; min-height:250px;">
+                        <canvas id="cde-pie"></canvas>
                     </div>
+                    <div id="cde-pie-empty" style="display:none; font-size:12px; color:var(--text-muted); margin-top:10px;">Sin motivos registrados en el periodo.</div>
                 </div>
+                <!-- La tabla "Registro de leads" (#leads-table-card) se mueve aquí (debajo de las gráficas) por JS -->
             </section>
 
         </main>
@@ -5661,7 +5644,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260604-cde12"></script>
+    <script src="src/dashboard.js?v=20260605-cde13"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
