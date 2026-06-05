@@ -6313,16 +6313,16 @@ const CDE_STAGES = [
     { key: 'empenado',  label: 'Empeñado',        color: '#22c55e' },
     { key: 'perdido',   label: 'Venta perdida',   color: '#ef4444' }
 ];
-// Motivos de venta perdida (catálogo). norm = clave normalizada para matchear tags.
+// Motivos de venta perdida (catálogo). Se matchea por TEXTO (anchor) o por ID de Kommo.
 const CDE_MOTIVOS = [
-    { norm: 'monto insuficiente',        label: 'Monto insuficiente',   anchor: 'insuficiente' },
-    { norm: 'articulo fuera de catalogo',label: 'Fuera de catálogo',    anchor: 'catalogo' },
-    { norm: 'acepto oferta de otra casa',label: 'Aceptó otra casa',     anchor: 'oferta' },
-    { norm: 'no era joyeria de oro',     label: 'No era oro',           anchor: 'joyeria' },
-    { norm: 'no cumple lineamientos',    label: 'No cumple lineamientos',anchor: 'lineamient' },
-    { norm: 'usuario dejo de contestar', label: 'Dejó de contestar',    anchor: 'contestar' },
-    { norm: 'no se presento a las citas',label: 'No se presentó',       anchor: 'presento' },
-    { norm: 'otros',                     label: 'Otros',                anchor: 'otros' }
+    { norm: 'monto insuficiente',        label: 'Monto insuficiente',    anchor: 'insuficiente', id: '36957695' },
+    { norm: 'articulo fuera de catalogo',label: 'Fuera de catálogo',     anchor: 'catalogo',     id: '36957699' },
+    { norm: 'acepto oferta de otra casa',label: 'Aceptó otra casa',      anchor: 'oferta',       id: '36957703' },
+    { norm: 'no era joyeria de oro',     label: 'No era oro',            anchor: 'joyeria',      id: '36957707' },
+    { norm: 'no cumple lineamientos',    label: 'No cumple lineamientos', anchor: 'lineamient',  id: '36957711' },
+    { norm: 'usuario dejo de contestar', label: 'Dejó de contestar',     anchor: 'contestar',    id: '36957715' },
+    { norm: 'no se presento a las citas',label: 'No se presentó',        anchor: 'presento',     id: '36957719' },
+    { norm: 'otros',                     label: 'Otros',                 anchor: 'otros',        id: '36957723' }
 ];
 let cdePieChart = null;
 
@@ -6392,17 +6392,19 @@ function cdeValues(obj, out) {
     if (obj == null) return out;
     const t = typeof obj;
     if (t === 'string') { out.push(obj); return out; }
-    if (t === 'number' || t === 'boolean') return out;
+    if (t === 'number') { out.push(String(obj)); return out; }   // incluye IDs numéricos
+    if (t === 'boolean') return out;
     if (Array.isArray(obj)) { obj.forEach(v => cdeValues(v, out)); return out; }
     if (t === 'object') { Object.values(obj).forEach(v => cdeValues(v, out)); return out; }
     return out;
 }
 
 function cdeMotivo(lead) {
-    const hay = cdeNorm(cdeValues(lead).join('  '));
+    const raw = cdeValues(lead).join('  ');      // crudo (para IDs numéricos)
+    const hay = cdeNorm(raw);                     // normalizado (para texto)
     for (const m of CDE_MOTIVOS) {
         if (m.norm === 'otros') continue;
-        if (hay.includes(m.anchor)) return m;
+        if (hay.includes(m.anchor) || raw.includes(m.id)) return m;
     }
     return CDE_MOTIVOS.find(m => m.norm === 'otros');
 }
