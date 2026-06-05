@@ -6482,44 +6482,73 @@ function cdeRenderPie(perdidos) {
     }
 }
 
+// Meses capturables (Intra) — Mayo a Diciembre 2026
+const CDE_MESES = ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12'];
+const CDE_MES_LABEL = {
+    '2026-05': 'Mayo 2026', '2026-06': 'Junio 2026', '2026-07': 'Julio 2026', '2026-08': 'Agosto 2026',
+    '2026-09': 'Septiembre 2026', '2026-10': 'Octubre 2026', '2026-11': 'Noviembre 2026', '2026-12': 'Diciembre 2026'
+};
+let cdeSpendMap = {};
+
 async function cdeRenderRoas(empenados) {
-    const periodo = new Date().toISOString().slice(0, 7); // YYYY-MM
-    let monto = 0;
+    let rows = [];
     try {
         if (window.adminSupabase) {
             const { data } = await window.adminSupabase.from('ad_spend')
-                .select('monto').eq('account_slug', CDE_SLUG).eq('periodo', periodo).maybeSingle();
-            monto = data ? (Number(data.monto) || 0) : 0;
+                .select('periodo, monto').eq('account_slug', CDE_SLUG);
+            rows = data || [];
         }
     } catch (e) { console.error('[cde] ad_spend', e); }
+    cdeSpendMap = {};
+    rows.forEach(r => { cdeSpendMap[r.periodo] = Number(r.monto) || 0; });
+    const totalSpend = CDE_MESES.reduce((a, m) => a + (cdeSpendMap[m] || 0), 0);
 
-    const roas = monto > 0 ? (empenados / monto) : 0;
-    const cpe = empenados > 0 ? (monto / empenados) : 0;
+    const roas = totalSpend > 0 ? (empenados / totalSpend) : 0;
+    const cpe = empenados > 0 ? (totalSpend / empenados) : 0;
     const valEl = document.getElementById('cde-roas-val');
     const subEl = document.getElementById('cde-roas-sub');
-    if (valEl) valEl.textContent = monto > 0 ? roas.toFixed(4) : '—';
-    if (subEl) subEl.textContent = monto > 0
-        ? `${empenados} empeños ÷ $${monto.toLocaleString('en-US')} · costo/empeño $${cpe.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-        : 'Falta capturar el gasto de publicidad del mes';
+    if (valEl) valEl.textContent = totalSpend > 0 ? roas.toFixed(4) : '—';
+    if (subEl) subEl.textContent = totalSpend > 0
+        ? `${empenados} empeños ÷ $${totalSpend.toLocaleString('en-US')} (gasto total) · costo/empeño $${cpe.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+        : 'Falta capturar el gasto de publicidad';
 
     const isIntra = cdeIsIntra();
     const badge = document.getElementById('cde-roas-intra');
     const spend = document.getElementById('cde-spend');
     if (badge) badge.style.display = isIntra ? 'inline-block' : 'none';
     if (spend) spend.style.display = isIntra ? 'flex' : 'none';
-    const mes = document.getElementById('cde-spend-mes'); if (mes) mes.textContent = periodo;
-    const inp = document.getElementById('cde-spend-input'); if (inp && monto > 0 && !inp.value) inp.value = monto;
+
+    // Poblar el selector de meses una sola vez
+    const sel = document.getElementById('cde-spend-mes-sel');
+    if (sel && !sel.dataset.filled) {
+        const now = new Date().toISOString().slice(0, 7);
+        const def = CDE_MESES.includes(now) ? now : '2026-05';
+        sel.innerHTML = CDE_MESES.map(m => `<option value="${m}"${m === def ? ' selected' : ''}>${CDE_MES_LABEL[m]}</option>`).join('');
+        sel.dataset.filled = '1';
+    }
+    cdeLoadSpendMonth();
+}
+
+function cdeLoadSpendMonth() {
+    const sel = document.getElementById('cde-spend-mes-sel');
+    const inp = document.getElementById('cde-spend-input');
+    if (sel && inp) {
+        const m = sel.value;
+        inp.value = (cdeSpendMap[m] != null) ? cdeSpendMap[m] : '';
+    }
 }
 
 async function cdeSaveSpend(btn) {
-    const periodo = new Date().toISOString().slice(0, 7);
+    const sel = document.getElementById('cde-spend-mes-sel');
+    const periodo = sel ? sel.value : new Date().toISOString().slice(0, 7);
     const monto = Math.max(0, parseFloat(document.getElementById('cde-spend-input').value) || 0);
     try {
         await window.adminSupabase.from('ad_spend').upsert(
             { account_slug: CDE_SLUG, periodo, monto, updated_at: new Date().toISOString() },
             { onConflict: 'account_slug,periodo' });
         if (btn) { const t = btn.textContent; btn.textContent = '✓ Guardado'; setTimeout(() => btn.textContent = t, 1400); }
+        cdeSpendMap[periodo] = monto;
         renderCdeExtra();
-        if (typeof showToast === 'function') showToast('Gasto guardado (' + periodo + ')', 'success');
+        if (typeof showToast === 'function') showToast('Gasto guardado (' + (CDE_MES_LABEL[periodo] || periodo) + ')', 'success');
     } catch (e) { console.error('[cde] save spend', e); alert('Error: ' + e.message); }
 }
