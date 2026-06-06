@@ -6836,33 +6836,32 @@ async function cdeRenderInvestment() {
     cdeUpdateMonthView();   // refleja el mes activo en card-6 + ROAS
 }
 
-// Monto empeñado (Presupuesto) de los empeñados cuya fecha cae en el mes 'YYYY-MM'
-function cdeMontoEmpenadoMes(periodo) {
-    const leads = state.leads || [];
+// Monto TOTAL empeñado (suma del Presupuesto de TODOS los empeñados del periodo filtrado)
+function cdeTotalMontoEmpenado() {
+    const leads = state.filteredLeads || [];
     let monto = 0;
-    leads.forEach(l => {
-        if (cdeStage(l) !== 'empenado') return;
-        const d = l.fecha_parsed;
-        if (!d || typeof d.getFullYear !== 'function') return;
-        const ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-        if (ym === periodo) monto += Number(l.precio || l.price || 0);
-    });
+    leads.forEach(l => { if (cdeStage(l) === 'empenado') monto += Number(l.precio || l.price || 0); });
     return monto;
 }
 
-// Refleja el mes activo (cdeSelMonth) en la tarjeta de Inversión y en el ROAS — por mes
+// Refleja el mes activo en la tarjeta de Inversión (gasto del mes) y recalcula el ROAS.
+// ROAS = monto TOTAL empeñado ÷ inversión TOTAL capturada (suma de los meses).
 function cdeUpdateMonthView() {
     const m = cdeSelMonth || cdeDefaultMonth();
     const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
+
+    // Tarjeta "Inversión en Publicidad" = gasto del mes seleccionado
     const spend = cdeSpendMap[m] || 0;
     const val = document.getElementById('card-6-value'); if (val) val.textContent = fmt(spend);
     const date6 = document.getElementById('card-6-date'); if (date6) date6.textContent = CDE_MES_LABEL[m] || m;
 
-    const monto = cdeMontoEmpenadoMes(m);
-    const roas = spend > 0 ? (monto / spend) : 0;
-    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = spend > 0 ? roas.toFixed(2) + 'x' : '—';
+    // ROAS = monto total empeñado ÷ inversión total (suma de todos los meses capturados)
+    const totalSpend = CDE_MESES.reduce((a, mm) => a + (cdeSpendMap[mm] || 0), 0);
+    const totalMonto = cdeTotalMontoEmpenado();
+    const roas = totalSpend > 0 ? (totalMonto / totalSpend) : 0;
+    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = totalSpend > 0 ? roas.toFixed(2) + 'x' : '—';
     const p7 = document.querySelector('#card-7-wrapper .pill-change');
-    if (p7) p7.textContent = spend > 0 ? `${fmt(monto)} ÷ ${fmt(spend)}` : 'Captura inversión pub.';
+    if (p7) p7.textContent = totalSpend > 0 ? `${fmt(totalMonto)} ÷ ${fmt(totalSpend)}` : 'Captura inversión pub.';
 }
 
 // ── Cajón lateral de captura de Inversión en Publicidad ──
