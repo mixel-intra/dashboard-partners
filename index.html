@@ -5609,9 +5609,10 @@
                     .cde-ovl #cde-modal-title{font-size:1.9rem;}
                     .cde-ovl .cde-modal-close{flex:none;width:38px;height:38px;border-radius:11px;border:1px solid var(--border-subtle);background:rgba(127,127,127,.10);color:var(--text-primary);font-size:22px;line-height:1;cursor:pointer;transition:background .15s ease;}
                     .cde-ovl .cde-modal-close:hover{background:rgba(239,68,68,.18);}
-                    #cde-pie-modal .cde-modal-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:40px;align-items:center;}
-                    @media(max-width:760px){#cde-pie-modal .cde-modal-grid{grid-template-columns:1fr;}}
-                    #cde-pie-modal .cde-modal-canvas-wrap{position:relative;width:100%;height:480px;}
+                    /* Modal "Ampliar": dona centrada arriba + desglose abajo (mismo formato que inline) */
+                    #cde-pie-modal .cde-modal-box{width:min(900px,94vw);}
+                    #cde-pie-modal .cde-modal-grid{display:flex;flex-direction:column;gap:28px;align-items:stretch;}
+                    #cde-pie-modal .cde-modal-canvas-wrap{position:relative;width:100%;max-width:400px;height:320px;margin:0 auto;}
                     /* Desglose con barras (compartido: pie inline y modal) */
                     .cde-detail{display:flex;flex-direction:column;justify-content:center;min-width:0;}
                     .cde-detail .cde-detail-row{display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-subtle);}
@@ -5627,9 +5628,12 @@
                     #cde-pie-modal .cde-detail .cde-detail-name{font-size:15px;}
                     #cde-pie-modal .cde-detail .cde-detail-num{font-size:16px;}
                     #cde-pie-modal .cde-detail .cde-dot{width:14px;height:14px;}
-                    /* Pie inline: desglose DEBAJO de la dona, en varias columnas para aprovechar el ancho */
+                    /* Desglose DEBAJO de la dona, en varias columnas para aprovechar el ancho */
                     .cde-detail.cde-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:2px 32px;justify-content:center;}
                     .cde-detail.cde-detail-grid .cde-detail-row{border-bottom:none;padding:7px 0;}
+                    /* Modal: 3 columnas fijas para una distribución armónica */
+                    #cde-pie-modal .cde-detail.cde-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 44px;}
+                    @media(max-width:720px){#cde-pie-modal .cde-detail.cde-detail-grid{grid-template-columns:1fr;}}
 
                     /* Modal de detalle de un lead */
                     #cde-lead-modal .cde-modal-box{width:min(720px,94vw);}
@@ -5686,7 +5690,7 @@
                     </div>
                     <div class="cde-modal-grid">
                         <div class="cde-modal-canvas-wrap"><canvas id="cde-pie-modal-canvas"></canvas></div>
-                        <div id="cde-modal-detail" class="cde-detail"></div>
+                        <div id="cde-modal-detail" class="cde-detail cde-detail-grid"></div>
                     </div>
                 </div>
             </div>
@@ -5787,7 +5791,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde29"></script>
+    <script src="src/dashboard.js?v=20260605-cde30"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
