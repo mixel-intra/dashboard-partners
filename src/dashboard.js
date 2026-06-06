@@ -6528,7 +6528,7 @@ const cdeCenterLabel = {
         } else {
             big = String(total);
             name = 'Ventas perdidas';
-            sub = 'pasa el cursor por una sección';
+            sub = inner > 90 ? 'pasa el cursor por una sección' : '';   // solo en dona grande (modal)
             accent = '#cbd5e1';
         }
         const bigSize = Math.max(22, Math.round(inner * 0.5));

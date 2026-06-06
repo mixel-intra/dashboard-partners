@@ -5578,9 +5578,11 @@
                     /* Altura tope de AMBAS gráficas (Comportamiento y pie) para que no crezcan a pantalla completa */
                     #split-row-grid.cde-2col > .big-chart-card{height:520px !important;min-height:0 !important;}
                     @media(max-width:900px){#split-row-grid.cde-2col > .big-chart-card{height:auto !important;}}
-                    /* Pie inline: dona con alto fijo arriba, desglose ocupa el resto debajo */
-                    #cde-pie-card .cde-pie-body > div:first-child{flex:0 0 200px;min-height:0;}
-                    #cde-pie-card .cde-pie-body{min-height:0;overflow:hidden;}
+                    /* Pie inline: dona compacta arriba, el desglose (6 razones) ocupa el resto debajo */
+                    #cde-pie-card .cde-pie-body{min-height:0;overflow:hidden;gap:10px;}
+                    #cde-pie-card .cde-pie-body > div:first-child{flex:0 0 150px;min-height:0;}
+                    #cde-pie-card .cde-detail.cde-detail-grid .cde-detail-row{padding:6px 0;}
+                    #cde-pie-card .cde-detail.cde-detail-grid .cde-bar{margin-top:4px;height:5px;}
                     #cde-pie-card{cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
                     #cde-pie-card:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.28);border-color:rgba(124,135,176,.45);}
                     #cde-pie-card .cde-expand-btn{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text-muted);background:rgba(127,127,127,.10);border:1px solid var(--border-subtle);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease, color .15s ease;}
@@ -5798,7 +5800,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde33"></script>
+    <script src="src/dashboard.js?v=20260605-cde34"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
