@@ -6577,7 +6577,6 @@ function cdeRenderPie(perdidos) {
     if (empty) empty.style.display = 'none';
     if (canvas) canvas.style.display = 'block';
 
-    const txtColor = getComputedStyle(document.body).color;
     const names = entries.map(e => e.label);
     const data = {
         labels: entries.map(e => `${e.label} · ${e.n} (${Math.round(e.n / total * 100)}%)`),
@@ -6593,20 +6592,12 @@ function cdeRenderPie(perdidos) {
     const opts = {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '62%',
+        cutout: '70%',                 // anillo más delgado (más estético)
         layout: { padding: { top: 6, bottom: 6 } },
         interaction: { mode: 'nearest', intersect: true },
         plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    color: txtColor,
-                    font: { size: 12, family: 'Inter, system-ui, sans-serif' },
-                    boxWidth: 12, boxHeight: 12, padding: 14,
-                    usePointStyle: true, pointStyle: 'circle'
-                }
-            },
-            tooltip: { enabled: false }   // el detalle se ve en el centro
+            legend: { display: false },      // el desglose va al lado (40%)
+            tooltip: { enabled: false }      // el detalle se ve en el centro
         }
     };
     if (cdePieChart) {
@@ -6615,6 +6606,27 @@ function cdeRenderPie(perdidos) {
         cdePieChart = new Chart(canvas.getContext('2d'), { type: 'doughnut', data, options: opts, plugins: [cdeCenterLabel] });
         cdePieChart.$cdeNames = names;
     }
+
+    // Desglose con barras al lado (40%) — reemplaza la leyenda amontonada
+    const detail = document.getElementById('cde-pie-detail');
+    if (detail) detail.innerHTML = cdeBuildDetailHTML(entries, total);
+}
+
+// HTML del desglose (dot + nombre + n/% + barra proporcional) — compartido por pie inline y modal
+function cdeBuildDetailHTML(entries, total) {
+    if (!entries || !entries.length) return '';
+    const max = Math.max.apply(null, entries.map(e => e.n)) || 1;
+    return entries.map((e, i) => {
+        const color = CDE_PIE_COLORS[i % CDE_PIE_COLORS.length];
+        const pct = total ? Math.round(e.n / total * 100) : 0;
+        const w = Math.round(e.n / max * 100);
+        return `<div class="cde-detail-row">`
+            + `<span class="cde-dot" style="background:${color}"></span>`
+            + `<span class="cde-detail-name" title="${e.label}">${e.label}</span>`
+            + `<span class="cde-detail-num">${e.n}<span class="cde-detail-pct">${pct}%</span></span>`
+            + `<span class="cde-bar"><i style="width:${w}%;background:${color}"></i></span>`
+            + `</div>`;
+    }).join('');
 }
 
 // ── Modal de detalle del pie (vista ampliada + desglose con barras) ──
@@ -6628,22 +6640,9 @@ function cdeOpenPieModal() {
     const title = document.getElementById('cde-modal-title');
     if (title) title.textContent = `Razones de venta perdida · ${total} en total`;
 
-    // Desglose: dot + nombre + n (%) + barra proporcional
+    // Desglose con barras (mismo helper que el pie inline)
     const detail = document.getElementById('cde-modal-detail');
-    if (detail) {
-        const max = Math.max(...entries.map(e => e.n)) || 1;
-        detail.innerHTML = entries.map((e, i) => {
-            const color = CDE_PIE_COLORS[i % CDE_PIE_COLORS.length];
-            const pct = total ? Math.round(e.n / total * 100) : 0;
-            const w = Math.round(e.n / max * 100);
-            return `<div class="cde-detail-row">
-                <span class="cde-dot" style="background:${color}"></span>
-                <span class="cde-detail-name">${e.label}</span>
-                <span class="cde-detail-num">${e.n}<span class="cde-detail-pct">${pct}%</span></span>
-                <span class="cde-bar"><i style="width:${w}%;background:${color}"></i></span>
-            </div>`;
-        }).join('');
-    }
+    if (detail) detail.innerHTML = cdeBuildDetailHTML(entries, total);
 
     // Mostrar modal y montar la gráfica grande
     modal.classList.remove('hidden');
@@ -6666,7 +6665,7 @@ function cdeOpenPieModal() {
         const opts = {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '60%',
+            cutout: '70%',
             interaction: { mode: 'nearest', intersect: true },
             plugins: {
                 legend: { display: false },

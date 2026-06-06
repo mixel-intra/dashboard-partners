@@ -5609,17 +5609,25 @@
                     .cde-ovl #cde-modal-title{font-size:1.9rem;}
                     .cde-ovl .cde-modal-close{flex:none;width:38px;height:38px;border-radius:11px;border:1px solid var(--border-subtle);background:rgba(127,127,127,.10);color:var(--text-primary);font-size:22px;line-height:1;cursor:pointer;transition:background .15s ease;}
                     .cde-ovl .cde-modal-close:hover{background:rgba(239,68,68,.18);}
-                    #cde-pie-modal .cde-modal-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;align-items:center;}
+                    #cde-pie-modal .cde-modal-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:40px;align-items:center;}
                     @media(max-width:760px){#cde-pie-modal .cde-modal-grid{grid-template-columns:1fr;}}
                     #cde-pie-modal .cde-modal-canvas-wrap{position:relative;width:100%;height:480px;}
-                    #cde-pie-modal .cde-detail-row{display:grid;grid-template-columns:16px 1fr auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--border-subtle);}
-                    #cde-pie-modal .cde-detail-row:last-child{border-bottom:none;}
-                    #cde-pie-modal .cde-dot{width:14px;height:14px;border-radius:50%;}
-                    #cde-pie-modal .cde-detail-name{font-size:15px;font-weight:600;color:var(--text-primary);}
-                    #cde-pie-modal .cde-detail-num{font-size:16px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;}
-                    #cde-pie-modal .cde-detail-pct{font-size:12px;color:var(--text-muted);margin-left:7px;}
-                    #cde-pie-modal .cde-bar{grid-column:2 / 4;height:7px;border-radius:4px;background:rgba(127,127,127,.16);overflow:hidden;margin-top:8px;}
-                    #cde-pie-modal .cde-bar > i{display:block;height:100%;border-radius:4px;}
+                    /* Desglose con barras (compartido: pie inline y modal) */
+                    .cde-detail{display:flex;flex-direction:column;justify-content:center;min-width:0;}
+                    .cde-detail .cde-detail-row{display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-subtle);}
+                    .cde-detail .cde-detail-row:last-child{border-bottom:none;}
+                    .cde-detail .cde-dot{width:12px;height:12px;border-radius:50%;}
+                    .cde-detail .cde-detail-name{font-size:13.5px;font-weight:600;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+                    .cde-detail .cde-detail-num{font-size:14px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap;}
+                    .cde-detail .cde-detail-pct{font-size:11px;color:var(--text-muted);margin-left:6px;}
+                    .cde-detail .cde-bar{grid-column:2 / 4;height:6px;border-radius:4px;background:rgba(127,127,127,.16);overflow:hidden;margin-top:7px;}
+                    .cde-detail .cde-bar > i{display:block;height:100%;border-radius:4px;}
+                    /* Modal: un poco más grande */
+                    #cde-pie-modal .cde-detail .cde-detail-row{padding:13px 0;}
+                    #cde-pie-modal .cde-detail .cde-detail-name{font-size:15px;}
+                    #cde-pie-modal .cde-detail .cde-detail-num{font-size:16px;}
+                    #cde-pie-modal .cde-detail .cde-dot{width:14px;height:14px;}
+                    @media(max-width:560px){#cde-pie-card .cde-pie-body{grid-template-columns:1fr !important;}}
 
                     /* Modal de detalle de un lead */
                     #cde-lead-modal .cde-modal-box{width:min(720px,94vw);}
@@ -5653,8 +5661,11 @@
                         </div>
                         <button type="button" class="cde-expand-btn"><ion-icon name="expand-outline"></ion-icon> Ampliar</button>
                     </div>
-                    <div style="flex:1; position:relative; width:100%; min-height:250px;">
-                        <canvas id="cde-pie"></canvas>
+                    <div class="cde-pie-body" style="flex:1; display:grid; grid-template-columns:60% 40%; gap:18px; align-items:center; min-height:0;">
+                        <div style="position:relative; width:100%; height:100%; min-height:230px;">
+                            <canvas id="cde-pie"></canvas>
+                        </div>
+                        <div id="cde-pie-detail" class="cde-detail"></div>
                     </div>
                     <div id="cde-pie-empty" style="display:none; font-size:12px; color:var(--text-muted); margin-top:10px;">Sin motivos registrados en el periodo.</div>
                 </div>
@@ -5673,7 +5684,7 @@
                     </div>
                     <div class="cde-modal-grid">
                         <div class="cde-modal-canvas-wrap"><canvas id="cde-pie-modal-canvas"></canvas></div>
-                        <div id="cde-modal-detail"></div>
+                        <div id="cde-modal-detail" class="cde-detail"></div>
                     </div>
                 </div>
             </div>
@@ -5774,7 +5785,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde27"></script>
+    <script src="src/dashboard.js?v=20260605-cde28"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
