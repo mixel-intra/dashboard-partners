@@ -6859,25 +6859,26 @@ function cdeUpdateMonthView() {
     if (p7) p7.textContent = spend > 0 ? `${fmt(monto)} ÷ ${fmt(spend)}` : 'Captura inversión pub.';
 }
 
-// ── Panel/sección de captura de Inversión en Publicidad ──
+// ── Cajón lateral de captura de Inversión en Publicidad ──
 function cdeOpenInvestmentPanel() {
-    const modal = document.getElementById('cde-invest-modal');
-    if (!modal) return;
+    const panel = document.getElementById('cde-invest-panel');
+    const back = document.getElementById('cde-invest-backdrop');
+    if (!panel) return;
     const sel = document.getElementById('cde-inv-mes');
     if (sel) sel.innerHTML = CDE_MESES.map(m => `<option value="${m}"${m === cdeSelMonth ? ' selected' : ''}>${CDE_MES_LABEL[m]}</option>`).join('');
     cdeInvestSyncInput();
     cdeInvestRenderList();
-    modal.classList.remove('hidden');
-    requestAnimationFrame(() => modal.classList.add('open'));
+    panel.classList.add('open');
+    if (back) back.classList.add('open');
     document.addEventListener('keydown', cdeInvestEsc);
 }
 
 function cdeCloseInvestmentPanel() {
-    const modal = document.getElementById('cde-invest-modal');
-    if (!modal) return;
-    modal.classList.remove('open');
+    const panel = document.getElementById('cde-invest-panel');
+    const back = document.getElementById('cde-invest-backdrop');
+    if (panel) panel.classList.remove('open');
+    if (back) back.classList.remove('open');
     document.removeEventListener('keydown', cdeInvestEsc);
-    setTimeout(() => modal.classList.add('hidden'), 180);
 }
 
 function cdeInvestEsc(e) { if (e.key === 'Escape') cdeCloseInvestmentPanel(); }
