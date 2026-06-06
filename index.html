@@ -5774,7 +5774,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde26"></script>
+    <script src="src/dashboard.js?v=20260605-cde27"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
@@ -8107,6 +8107,14 @@
 
         // ── Panel open/close ──────────────────────────────────────
         function toggleVentas() {
+            // Casa de Empeño: este botón abre la captura de INVERSIÓN EN PUBLICIDAD (no ventas)
+            const slug = getClientSlug();
+            if ((slug === 'casa-de-empeño' || slug === 'casa-de-empeno') && typeof cdeOpenInvestmentPanel === 'function') {
+                const ip = document.getElementById('cde-invest-panel');
+                if (ip && ip.classList.contains('open')) cdeCloseInvestmentPanel();
+                else cdeOpenInvestmentPanel();
+                return;
+            }
             const panel = document.getElementById('ventas-panel');
             if (panel.classList.contains('open')) {
                 closeVentas();

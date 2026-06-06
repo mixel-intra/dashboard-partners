@@ -6827,6 +6827,13 @@ async function cdeRenderInvestment() {
         wrap.addEventListener('click', cdeOpenInvestmentPanel);
         wrap.dataset.cdeClick = '1';
     }
+    // El botón del sidebar (cash) abre la captura de inversión en CDE → reetiquetar
+    const vBtn = document.getElementById('ventas-toggle-btn');
+    if (vBtn) {
+        const lbl = vBtn.querySelector('.sidebar-btn-label');
+        if (lbl) lbl.textContent = 'Inversión publicidad';
+        vBtn.title = 'Registrar inversión en publicidad';
+    }
     cdeUpdateMonthView();   // refleja el mes activo en card-6 + ROAS
 }
 
