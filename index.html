@@ -5628,12 +5628,10 @@
                     #cde-pie-modal .cde-detail .cde-detail-name{font-size:15px;}
                     #cde-pie-modal .cde-detail .cde-detail-num{font-size:16px;}
                     #cde-pie-modal .cde-detail .cde-dot{width:14px;height:14px;}
-                    /* Desglose DEBAJO de la dona, en varias columnas para aprovechar el ancho */
-                    .cde-detail.cde-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:2px 32px;justify-content:center;}
-                    .cde-detail.cde-detail-grid .cde-detail-row{border-bottom:none;padding:7px 0;}
-                    /* Modal: 3 columnas fijas para una distribución armónica */
-                    #cde-pie-modal .cde-detail.cde-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 44px;}
-                    @media(max-width:720px){#cde-pie-modal .cde-detail.cde-detail-grid{grid-template-columns:1fr;}}
+                    /* Desglose DEBAJO de la dona: lista en UNA columna con barras a todo el ancho (igual inline y modal) */
+                    .cde-detail.cde-detail-grid{display:flex;flex-direction:column;}
+                    .cde-detail.cde-detail-grid .cde-detail-row{border-bottom:1px solid var(--border-subtle);padding:11px 0;}
+                    .cde-detail.cde-detail-grid .cde-detail-row:last-child{border-bottom:none;}
 
                     /* Modal de detalle de un lead */
                     #cde-lead-modal .cde-modal-box{width:min(720px,94vw);}
@@ -5791,7 +5789,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde30"></script>
+    <script src="src/dashboard.js?v=20260605-cde31"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
