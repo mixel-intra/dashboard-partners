@@ -5588,12 +5588,13 @@
                     #cde-pie-card .cde-expand-btn{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text-muted);background:rgba(127,127,127,.10);border:1px solid var(--border-subtle);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease, color .15s ease;}
                     #cde-pie-card:hover .cde-expand-btn{color:var(--text-primary);background:rgba(124,135,176,.18);}
                     #cde-extra #leads-table-card{margin-top:20px;width:100%;}
-                    /* KPIs CDE: números alineados (título de alto fijo), un poco más chicos y sin margen inferior de sobra */
-                    #top-cards-row.cde-kpis{align-items:start !important;}
+                    /* KPIs CDE: TODAS del mismo alto (stretch), título de alto fijo (números alineados),
+                       contenido pegado arriba y poco margen inferior (sin hueco) */
+                    #top-cards-row.cde-kpis{align-items:stretch !important;}
                     #top-cards-row.cde-kpis .card-quantix{justify-content:flex-start !important;gap:6px !important;padding:16px 18px 14px !important;min-height:0 !important;}
-                    #top-cards-row.cde-kpis .kpi-card-top{min-height:50px;}
+                    #top-cards-row.cde-kpis .kpi-card-top{min-height:78px;align-items:flex-start;}
                     #top-cards-row.cde-kpis .value-big{font-size:2.05rem !important;margin:0 !important;line-height:1.05;}
-                    #top-cards-row.cde-kpis .pill-change{margin-top:2px;}
+                    #top-cards-row.cde-kpis .pill-change{margin-top:4px;}
 
                     /* Quitar la barra de scroll fea de la tabla de leads — sigue scrolleando (donde sea que viva la tarjeta) */
                     #leads-table-card .table-wrapper{scrollbar-width:none !important;-ms-overflow-style:none !important;}
@@ -5803,7 +5804,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde36"></script>
+    <script src="src/dashboard.js?v=20260605-cde37"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
