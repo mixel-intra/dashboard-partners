@@ -5575,7 +5575,7 @@
                     /* Pie reubicado junto a "Comportamiento" (grid 2-col); tabla de leads a todo el ancho debajo */
                     #split-row-grid.cde-2col{display:grid !important;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) !important;gap:20px !important;align-items:stretch !important;}
                     @media(max-width:900px){#split-row-grid.cde-2col{grid-template-columns:1fr !important;}}
-                    #cde-pie-card{min-height:340px;cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
+                    #cde-pie-card{min-height:440px;cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
                     #cde-pie-card:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.28);border-color:rgba(124,135,176,.45);}
                     #cde-pie-card .cde-expand-btn{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text-muted);background:rgba(127,127,127,.10);border:1px solid var(--border-subtle);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease, color .15s ease;}
                     #cde-pie-card:hover .cde-expand-btn{color:var(--text-primary);background:rgba(124,135,176,.18);}
@@ -5627,7 +5627,9 @@
                     #cde-pie-modal .cde-detail .cde-detail-name{font-size:15px;}
                     #cde-pie-modal .cde-detail .cde-detail-num{font-size:16px;}
                     #cde-pie-modal .cde-detail .cde-dot{width:14px;height:14px;}
-                    @media(max-width:560px){#cde-pie-card .cde-pie-body{grid-template-columns:1fr !important;}}
+                    /* Pie inline: desglose DEBAJO de la dona, en varias columnas para aprovechar el ancho */
+                    .cde-detail.cde-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:2px 32px;justify-content:center;}
+                    .cde-detail.cde-detail-grid .cde-detail-row{border-bottom:none;padding:7px 0;}
 
                     /* Modal de detalle de un lead */
                     #cde-lead-modal .cde-modal-box{width:min(720px,94vw);}
@@ -5661,11 +5663,11 @@
                         </div>
                         <button type="button" class="cde-expand-btn"><ion-icon name="expand-outline"></ion-icon> Ampliar</button>
                     </div>
-                    <div class="cde-pie-body" style="flex:1; display:grid; grid-template-columns:60% 40%; gap:18px; align-items:center; min-height:0;">
-                        <div style="position:relative; width:100%; height:100%; min-height:230px;">
+                    <div class="cde-pie-body" style="flex:1; display:flex; flex-direction:column; gap:16px; min-height:0;">
+                        <div style="flex:1; position:relative; width:100%; min-height:230px;">
                             <canvas id="cde-pie"></canvas>
                         </div>
-                        <div id="cde-pie-detail" class="cde-detail"></div>
+                        <div id="cde-pie-detail" class="cde-detail cde-detail-grid"></div>
                     </div>
                     <div id="cde-pie-empty" style="display:none; font-size:12px; color:var(--text-muted); margin-top:10px;">Sin motivos registrados en el periodo.</div>
                 </div>
@@ -5785,7 +5787,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde28"></script>
+    <script src="src/dashboard.js?v=20260605-cde29"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
