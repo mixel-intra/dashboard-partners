@@ -6714,7 +6714,7 @@ function cdeRenderStatusChips(leadsToShow, current) {
         return `<button type="button" class="cde-chip${active ? ' active' : ''}" onclick="cdeSetEstado(this.dataset.v)" data-v="${value.replace(/"/g, '&quot;')}">`
             + `<span class="cde-chip-n">${count}</span><span class="cde-chip-l">${label}</span></button>`;
     };
-    cont.innerHTML = chip('Todos', (leadsToShow || []).length, '')
+    cont.innerHTML = chip('Calificados', (leadsToShow || []).length, '')
         + CDE_CHIP_ESTADOS.map(f => chip(f, counts[f], f)).join('');
 }
 
