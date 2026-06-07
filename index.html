@@ -5573,16 +5573,17 @@
             <section id="cde-extra" class="hidden" style="padding:0 24px 28px;">
                 <style>
                     /* Pie reubicado junto a "Comportamiento" (grid 2-col); tabla de leads a todo el ancho debajo */
-                    #split-row-grid.cde-2col{display:grid !important;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) !important;gap:20px !important;align-items:stretch !important;}
+                    #split-row-grid.cde-2col{display:grid !important;grid-template-columns:minmax(0,2fr) minmax(0,3fr) !important;gap:20px !important;align-items:stretch !important;}
                     @media(max-width:900px){#split-row-grid.cde-2col{grid-template-columns:1fr !important;}}
                     /* Altura tope de AMBAS gráficas (Comportamiento y pie) para que no crezcan a pantalla completa */
                     #split-row-grid.cde-2col > .big-chart-card{height:520px !important;min-height:0 !important;}
                     @media(max-width:900px){#split-row-grid.cde-2col > .big-chart-card{height:auto !important;}}
-                    /* Pie inline: dona compacta arriba, el desglose (6 razones) ocupa el resto debajo */
-                    #cde-pie-card .cde-pie-body{min-height:0;overflow:hidden;gap:10px;}
-                    #cde-pie-card .cde-pie-body > div:first-child{flex:0 0 150px;min-height:0;}
-                    #cde-pie-card .cde-detail.cde-detail-grid .cde-detail-row{padding:6px 0;}
-                    #cde-pie-card .cde-detail.cde-detail-grid .cde-bar{margin-top:4px;height:5px;}
+                    /* Comportamiento: que la gráfica NO se corte abajo (aire para puntos/labels del eje X) */
+                    #split-row-grid.cde-2col > .big-chart-card:not(#cde-pie-card) > div:last-child{min-height:0;padding-bottom:10px;}
+                    /* Pie inline: 2 columnas → dona grande a la izquierda + listado a la derecha */
+                    #cde-pie-card .cde-pie-body{min-height:0;display:grid !important;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:26px;align-items:stretch;}
+                    #cde-pie-card .cde-pie-body > div:first-child{position:relative;width:100%;height:100%;min-height:0;}
+                    @media(max-width:700px){#cde-pie-card .cde-pie-body{grid-template-columns:1fr;}#cde-pie-card .cde-pie-body > div:first-child{min-height:200px;}}
                     #cde-pie-card{cursor:pointer;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;}
                     #cde-pie-card:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.28);border-color:rgba(124,135,176,.45);}
                     #cde-pie-card .cde-expand-btn{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text-muted);background:rgba(127,127,127,.10);border:1px solid var(--border-subtle);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease, color .15s ease;}
@@ -5591,10 +5592,10 @@
                     /* KPIs CDE: TODAS del mismo alto (stretch), título de alto fijo (números alineados),
                        contenido pegado arriba y poco margen inferior (sin hueco) */
                     #top-cards-row.cde-kpis{align-items:stretch !important;}
-                    #top-cards-row.cde-kpis .card-quantix{justify-content:flex-start !important;gap:6px !important;padding:16px 18px 14px !important;min-height:0 !important;}
+                    #top-cards-row.cde-kpis .card-quantix{justify-content:flex-start !important;gap:10px !important;padding:18px !important;min-height:0 !important;}
                     #top-cards-row.cde-kpis .kpi-card-top{min-height:78px;align-items:flex-start;}
-                    #top-cards-row.cde-kpis .value-big{font-size:2.05rem !important;margin:0 !important;line-height:1.05;}
-                    #top-cards-row.cde-kpis .pill-change{margin-top:4px;}
+                    #top-cards-row.cde-kpis .value-big{font-size:2.7rem !important;margin:0 !important;line-height:1;}
+                    #top-cards-row.cde-kpis .pill-change{margin-top:2px;align-self:flex-start;}
 
                     /* Quitar la barra de scroll fea de la tabla de leads — sigue scrolleando (donde sea que viva la tarjeta) */
                     #leads-table-card .table-wrapper{scrollbar-width:none !important;-ms-overflow-style:none !important;}
@@ -5627,13 +5628,13 @@
                     #cde-pie-modal .cde-modal-canvas-wrap{position:relative;width:100%;max-width:400px;height:320px;margin:0 auto;}
                     /* Desglose con barras (compartido: pie inline y modal) */
                     .cde-detail{display:flex;flex-direction:column;justify-content:center;min-width:0;}
-                    .cde-detail .cde-detail-row{display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-subtle);}
+                    .cde-detail .cde-detail-row{display:grid;grid-template-columns:14px 1fr auto auto;gap:6px 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-subtle);}
                     .cde-detail .cde-detail-row:last-child{border-bottom:none;}
                     .cde-detail .cde-dot{width:12px;height:12px;border-radius:50%;}
                     .cde-detail .cde-detail-name{font-size:13.5px;font-weight:600;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-                    .cde-detail .cde-detail-num{font-size:14px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap;}
-                    .cde-detail .cde-detail-pct{font-size:11px;color:var(--text-muted);margin-left:6px;}
-                    .cde-detail .cde-bar{grid-column:2 / 4;height:6px;border-radius:4px;background:rgba(127,127,127,.16);overflow:hidden;margin-top:7px;}
+                    .cde-detail .cde-detail-pct{font-size:13px;font-weight:600;color:var(--text-muted);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+                    .cde-detail .cde-detail-num{font-size:15px;font-weight:800;color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:24px;text-align:right;}
+                    .cde-detail .cde-bar{grid-column:2 / 5;height:6px;border-radius:4px;background:rgba(127,127,127,.16);overflow:hidden;margin-top:7px;}
                     .cde-detail .cde-bar > i{display:block;height:100%;border-radius:4px;}
                     /* Modal: un poco más grande */
                     #cde-pie-modal .cde-detail .cde-detail-row{padding:13px 0;}
@@ -5680,11 +5681,11 @@
                         </div>
                         <button type="button" class="cde-expand-btn"><ion-icon name="expand-outline"></ion-icon> Ampliar</button>
                     </div>
-                    <div class="cde-pie-body" style="flex:1; display:flex; flex-direction:column; gap:12px; min-height:0;">
-                        <div style="flex:0 0 150px; position:relative; width:100%; min-height:0;">
+                    <div class="cde-pie-body" style="flex:1; min-height:0;">
+                        <div style="position:relative; width:100%; min-height:0;">
                             <canvas id="cde-pie"></canvas>
                         </div>
-                        <div id="cde-pie-detail" class="cde-detail cde-detail-grid"></div>
+                        <div id="cde-pie-detail" class="cde-detail"></div>
                     </div>
                     <div id="cde-pie-empty" style="display:none; font-size:12px; color:var(--text-muted); margin-top:10px;">Sin motivos registrados en el periodo.</div>
                 </div>
@@ -5804,7 +5805,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260605-cde38"></script>
+    <script src="src/dashboard.js?v=20260606-cde39"></script>
 
     <!-- Client Switcher Drawer -->
     <style>

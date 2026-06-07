@@ -1194,21 +1194,9 @@ function renderTable() {
         const selEl = document.getElementById('filter-estado'); if (selEl) selEl.style.display = 'none';
         const clrBtn = document.querySelector('#table-filter-bar button[onclick*="clearTableFilters"]'); if (clrBtn) clrBtn.style.display = 'none';
         cdeRenderStatusChips(leadsToShow, estadoFiltro);
-
-        const bar = document.getElementById('table-filter-bar');
-        if (bar) {
-            let badge = document.getElementById('cde-leads-count');
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.id = 'cde-leads-count';
-                badge.style.cssText = 'margin-left:auto; display:flex; align-items:baseline; gap:8px; padding:2px 4px;';
-                bar.appendChild(badge);
-            }
-            const etiqueta = estadoFiltro || 'Total';
-            badge.innerHTML =
-                `<span style="font-size:30px; font-weight:800; line-height:1; color:var(--text-primary,#fff);">${mainLeads.length}</span>` +
-                `<span style="font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-muted,#94a3b8);">${etiqueta}</span>`;
-        }
+        // (7a) Se quitó el "N Total" redundante de la derecha — los chips ya muestran los conteos
+        const oldBadge = document.getElementById('cde-leads-count');
+        if (oldBadge) oldBadge.remove();
     }
 
     setupModalEvents();
@@ -6615,15 +6603,15 @@ function cdeRenderPie(perdidos) {
 // HTML del desglose (dot + nombre + n/% + barra proporcional) — compartido por pie inline y modal
 function cdeBuildDetailHTML(entries, total) {
     if (!entries || !entries.length) return '';
-    const max = Math.max.apply(null, entries.map(e => e.n)) || 1;
     return entries.map((e, i) => {
         const color = CDE_PIE_COLORS[i % CDE_PIE_COLORS.length];
         const pct = total ? Math.round(e.n / total * 100) : 0;
-        const w = Math.round(e.n / max * 100);
+        const w = pct;   // barra proporcional al % real (valor ÷ total), NO al máximo
         return `<div class="cde-detail-row">`
             + `<span class="cde-dot" style="background:${color}"></span>`
             + `<span class="cde-detail-name" title="${e.label}">${e.label}</span>`
-            + `<span class="cde-detail-num">${e.n}<span class="cde-detail-pct">${pct}%</span></span>`
+            + `<span class="cde-detail-pct">${pct}%</span>`
+            + `<span class="cde-detail-num">${e.n}</span>`
             + `<span class="cde-bar"><i style="width:${w}%;background:${color}"></i></span>`
             + `</div>`;
     }).join('');
