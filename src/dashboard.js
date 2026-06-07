@@ -6560,6 +6560,9 @@ function cdeRenderPie(perdidos) {
         if (empty) empty.style.display = 'block';
         if (canvas) canvas.style.display = 'none';
         if (cdePieChart) { cdePieChart.destroy(); cdePieChart = null; }
+        // BUG fix: limpiar también el desglose para que NO queden barras del estado anterior
+        const detailEmpty = document.getElementById('cde-pie-detail');
+        if (detailEmpty) detailEmpty.innerHTML = '';
         return;
     }
     if (empty) empty.style.display = 'none';
@@ -6832,24 +6835,42 @@ function cdeTotalMontoEmpenado() {
     return monto;
 }
 
-// Refleja el mes activo en la tarjeta de Inversión (gasto del mes) y recalcula el ROAS.
-// ROAS = monto TOTAL empeñado ÷ inversión TOTAL capturada (suma de los meses).
+// Meses (YYYY-MM) presentes en el periodo filtrado (según la fecha de los leads)
+function cdePeriodMonths() {
+    const leads = state.filteredLeads || [];
+    const set = new Set();
+    leads.forEach(l => {
+        const d = l.fecha_parsed;
+        if (d && typeof d.getFullYear === 'function') {
+            set.add(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+        }
+    });
+    return [...set];
+}
+
+// Inversión y ROAS del PERIODO FILTRADO (respeta el filtro de fecha).
+// Inversión = suma del ad_spend de los meses presentes en el filtro ($0 si no hay captura).
+// ROAS = monto empeñado del periodo ÷ inversión del periodo.
 function cdeUpdateMonthView() {
-    const m = cdeSelMonth || cdeDefaultMonth();
     const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
 
-    // Tarjeta "Inversión en Publicidad" = gasto del mes seleccionado
-    const spend = cdeSpendMap[m] || 0;
-    const val = document.getElementById('card-6-value'); if (val) val.textContent = fmt(spend);
-    const date6 = document.getElementById('card-6-date'); if (date6) date6.textContent = CDE_MES_LABEL[m] || m;
+    const months = cdePeriodMonths();
+    const periodSpend = months.reduce((a, m) => a + (cdeSpendMap[m] || 0), 0);
 
-    // ROAS = monto total empeñado ÷ inversión total (suma de todos los meses capturados)
-    const totalSpend = CDE_MESES.reduce((a, mm) => a + (cdeSpendMap[mm] || 0), 0);
+    let label;
+    if (months.length === 0) label = 'Sin datos en el periodo';
+    else if (months.length === 1) label = CDE_MES_LABEL[months[0]] || months[0];
+    else label = 'Periodo filtrado';
+
+    const val = document.getElementById('card-6-value'); if (val) val.textContent = fmt(periodSpend);
+    const date6 = document.getElementById('card-6-date'); if (date6) date6.textContent = label;
+
+    // ROAS del periodo = monto empeñado (periodo filtrado) ÷ inversión (periodo filtrado)
     const totalMonto = cdeTotalMontoEmpenado();
-    const roas = totalSpend > 0 ? (totalMonto / totalSpend) : 0;
-    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = totalSpend > 0 ? roas.toFixed(2) + 'x' : '—';
+    const roas = periodSpend > 0 ? (totalMonto / periodSpend) : 0;
+    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = periodSpend > 0 ? roas.toFixed(2) + 'x' : '—';
     const p7 = document.querySelector('#card-7-wrapper .pill-change');
-    if (p7) p7.textContent = totalSpend > 0 ? `${fmt(totalMonto)} ÷ ${fmt(totalSpend)}` : 'Captura inversión pub.';
+    if (p7) p7.textContent = periodSpend > 0 ? `${fmt(totalMonto)} ÷ ${fmt(periodSpend)}` : 'Captura inversión pub.';
 }
 
 // ── Cajón lateral de captura de Inversión en Publicidad ──

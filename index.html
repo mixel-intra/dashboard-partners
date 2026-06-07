@@ -5613,10 +5613,11 @@
                     #cde-status-chips .cde-chip-l{font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;opacity:.85;}
 
                     /* Modal reutilizable (.cde-ovl): pie ampliado y detalle de lead */
-                    .cde-ovl{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(2,6,23,.66);backdrop-filter:blur(4px);opacity:0;transition:opacity .18s ease;}
+                    .cde-ovl{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(2,6,23,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .18s ease;}
                     .cde-ovl.open{opacity:1;}
                     .cde-ovl.hidden{display:none;}
-                    .cde-ovl .cde-modal-box{width:min(1320px,96vw);max-height:92vh;overflow:auto;background:var(--bg-card,#0e1223);border:1px solid var(--border-subtle,#334155);border-radius:22px;padding:28px 34px 34px;box-shadow:0 30px 80px rgba(0,0,0,.5);transform:translateY(8px) scale(.985);transition:transform .2s ease;}
+                    .cde-ovl .cde-modal-box{width:min(1320px,96vw);max-height:92vh;overflow:auto;background:#0f1426;border:1px solid rgba(124,135,176,.35);border-radius:22px;padding:28px 34px 34px;box-shadow:0 30px 90px rgba(0,0,0,.7);transform:translateY(8px) scale(.985);transition:transform .2s ease;}
+                    [data-theme="light"] .cde-ovl .cde-modal-box{background:#ffffff;border-color:#E5E7EB;}
                     .cde-ovl.open .cde-modal-box{transform:translateY(0) scale(1);}
                     .cde-ovl .cde-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;}
                     .cde-ovl #cde-modal-title{font-size:1.9rem;}
@@ -5805,7 +5806,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260606-cde39"></script>
+    <script src="src/dashboard.js?v=20260607-cde40"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
