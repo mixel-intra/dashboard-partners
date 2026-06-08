@@ -6416,6 +6416,9 @@ function renderCdeExtra() {
     // Reutilizar card-7 como tarjeta "ROAS" (antes "Costo por oportunidad calificada")
     const lbl7 = document.getElementById('label-main-7'); if (lbl7) lbl7.textContent = 'ROAS';
     const sub7 = document.getElementById('label-sub-7'); if (sub7) sub7.textContent = 'MONTO EMPEÑADO / INVERSIÓN PUB.';
+    // Etiquetas de Inversión (card-6) también síncronas, para que updateUI no deje "Inversión en Pauta"
+    const lbl6s = document.getElementById('label-main-6'); if (lbl6s) lbl6s.textContent = 'Inversión en Publicidad';
+    const sub6s = document.getElementById('label-sub-6'); if (sub6s) sub6s.textContent = 'Captura mensual';
 
     // Las 6 tarjetas en UNA fila: 5(Total) · 1(Oport.) · 2(Conv.) · 3(Empeños) · 7(ROAS) · 6(Inversión)
     // ROI (card-4) oculto por ahora; solo se muestra ROAS.
@@ -6437,7 +6440,9 @@ function renderCdeExtra() {
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
 
     cdeRenderPie(perdidos);
-    cdeRenderInvestment();   // tarjeta "Inversión en Publicidad" (mensual) + ROAS por mes
+    cdeUpdateMonthView();     // SÍNCRONO: fija ROAS 'x' + inversión del periodo de inmediato (con ad_spend en memoria),
+                             // así updateUI (Tasa de Conversión) no deja la tarjeta como número suelto
+    cdeRenderInvestment();   // ASYNC: refresca ad_spend desde Supabase y vuelve a pintar inversión + ROAS
 
     // Layout CDE: el pie sube junto a "Comportamiento" (grid 2-col) y la tabla de leads
     // baja JUSTO debajo de las gráficas, en el MISMO contenedor (.dashboard-grid) para que
