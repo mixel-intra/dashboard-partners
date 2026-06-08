@@ -6873,7 +6873,16 @@ function cdeUpdateMonthView() {
     // ROAS del periodo = monto empeñado (periodo filtrado) ÷ inversión (periodo filtrado)
     const totalMonto = cdeTotalMontoEmpenado();
     const roas = periodSpend > 0 ? (totalMonto / periodSpend) : 0;
-    const c7v = document.getElementById('card-7-value'); if (c7v) c7v.textContent = periodSpend > 0 ? roas.toFixed(2) + 'x' : '—';
+    const c7v = document.getElementById('card-7-value');
+    if (c7v) {
+        if (periodSpend > 0) {
+            c7v.textContent = roas.toFixed(2) + 'x';
+            c7v.style.removeProperty('font-size');   // vuelve al tamaño grande normal
+        } else {
+            c7v.textContent = 'Sin inversión';
+            c7v.style.setProperty('font-size', '1.15rem', 'important');   // cabe sin desbordar
+        }
+    }
     const p7 = document.querySelector('#card-7-wrapper .pill-change');
     if (p7) p7.textContent = periodSpend > 0 ? `${fmt(totalMonto)} ÷ ${fmt(periodSpend)}` : 'Captura inversión pub.';
 }
