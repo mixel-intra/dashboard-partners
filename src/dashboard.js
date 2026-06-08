@@ -6494,6 +6494,24 @@ function cdeMotivo(lead) {
 // Paleta sobria (tonos apagados) para el doughnut — coherente con el dashboard oscuro.
 const CDE_PIE_COLORS = ['#6C8EBF', '#C9A66B', '#9988C9', '#6BA89C', '#C98B8B', '#7E8AA0', '#B5896A', '#9AA0AA'];
 
+// Envuelve un texto en hasta maxLines líneas que quepan en maxWidth (con la fuente ya seteada en ctx).
+function cdeWrapText(ctx, text, maxWidth, maxLines) {
+    const words = String(text || '').split(/\s+/).filter(Boolean);
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+        const test = cur ? cur + ' ' + w : w;
+        if (!cur || ctx.measureText(test).width <= maxWidth) {
+            cur = test;
+        } else {
+            lines.push(cur); cur = w;
+            if (lines.length === maxLines - 1) break;
+        }
+    }
+    if (cur && lines.length < maxLines) lines.push(cur);
+    return lines.length ? lines : [String(text || '')];
+}
+
 // Plugin: muestra EN EL CENTRO el detalle de la sección activa (al pasar el cursor).
 // Sin hover → muestra el total. Con hover → %, motivo y "N de total" de esa sección.
 const cdeCenterLabel = {
@@ -6524,27 +6542,49 @@ const cdeCenterLabel = {
             sub = inner > 90 ? 'pasa el cursor por una sección' : '';   // solo en dona grande (modal)
             accent = '#cbd5e1';
         }
-        const bigSize = Math.max(22, Math.round(inner * 0.5));
-        let nameSize = Math.max(12, Math.round(inner * 0.17));
-        // Si el motivo es largo, achicar para que quepa dentro del hueco de la dona
-        const avail = inner * 1.55;
-        if (name && name.length * nameSize * 0.55 > avail) {
-            nameSize = Math.max(9, Math.floor(avail / (name.length * 0.55)));
-        }
-        const subSize = Math.max(10, Math.round(inner * 0.12));
+        const maxW = inner * 1.45;                          // ancho útil dentro del hueco
+        const ff = 'Inter, system-ui, sans-serif';
         ctx.save();
         ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.textBaseline = 'top';
+
+        // Tamaños base proporcionales al radio interno
+        const bigSize = Math.max(20, Math.round(inner * 0.5));
+        let nameSize = Math.max(11, Math.round(inner * 0.16));
+        const subSize = Math.max(9, Math.round(inner * 0.12));
+
+        // Envuelve el motivo en máx 2 líneas; si una línea no cabe, achica la fuente
+        ctx.font = `700 ${nameSize}px ${ff}`;
+        let nameLines = cdeWrapText(ctx, name, maxW, 2);
+        let g = 0;
+        while (nameLines.some(l => ctx.measureText(l).width > maxW) && nameSize > 9 && g < 12) {
+            nameSize -= 1; ctx.font = `700 ${nameSize}px ${ff}`;
+            nameLines = cdeWrapText(ctx, name, maxW, 2); g++;
+        }
+
+        const nameLH = Math.round(nameSize * 1.18);
+        const gapBigName = Math.round(inner * 0.10);
+        const gapNameSub = Math.round(inner * 0.06);
+        const totalH = bigSize + gapBigName + nameLines.length * nameLH + (sub ? gapNameSub + subSize : 0);
+        let y = cy - totalH / 2;
+
+        // Número grande
         ctx.fillStyle = '#ffffff';
-        ctx.font = `800 ${bigSize}px Inter, system-ui, sans-serif`;
-        ctx.fillText(big, cx, cy - nameSize * 0.8);
+        ctx.font = `800 ${bigSize}px ${ff}`;
+        ctx.fillText(big, cx, y);
+        y += bigSize + gapBigName;
+
+        // Motivo (1-2 líneas)
         ctx.fillStyle = accent;
-        ctx.font = `700 ${nameSize}px Inter, system-ui, sans-serif`;
-        ctx.fillText(name, cx, cy + nameSize * 0.7);
+        ctx.font = `700 ${nameSize}px ${ff}`;
+        nameLines.forEach(l => { ctx.fillText(l, cx, y); y += nameLH; });
+
+        // Sub ("N de total")
         if (sub) {
+            y += gapNameSub - (nameLH - nameSize);
             ctx.fillStyle = 'rgba(148,163,184,0.95)';
-            ctx.font = `500 ${subSize}px Inter, system-ui, sans-serif`;
-            ctx.fillText(sub, cx, cy + nameSize * 0.7 + subSize * 1.5);
+            ctx.font = `500 ${subSize}px ${ff}`;
+            ctx.fillText(sub, cx, y);
         }
         ctx.restore();
     }
