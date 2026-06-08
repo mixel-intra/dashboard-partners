@@ -6348,7 +6348,7 @@ const CDE_STAGES = [
 const CDE_MOTIVOS = [
     { norm: 'monto insuficiente',        label: 'Monto insuficiente',    anchor: 'insuficiente', id: '36957695' },
     { norm: 'articulo fuera de catalogo',label: 'Fuera de catálogo',     anchor: 'catalogo',     id: '36957699' },
-    { norm: 'acepto oferta de otra casa',label: 'Aceptó otra casa',      anchor: 'oferta',       id: '36957703' },
+    { norm: 'acepto oferta de otra casa',label: 'Aceptó oferta de otra casa de empeño', anchor: 'oferta', id: '36957703' },
     { norm: 'no era joyeria de oro',     label: 'No era oro',            anchor: 'joyeria',      id: '36957707' },
     { norm: 'no cumple lineamientos',    label: 'No cumple lineamientos', anchor: 'lineamient',  id: '36957711' },
     { norm: 'usuario dejo de contestar', label: 'Dejó de contestar',     anchor: 'contestar',    id: '36957715' },
@@ -6525,7 +6525,12 @@ const cdeCenterLabel = {
             accent = '#cbd5e1';
         }
         const bigSize = Math.max(22, Math.round(inner * 0.5));
-        const nameSize = Math.max(12, Math.round(inner * 0.17));
+        let nameSize = Math.max(12, Math.round(inner * 0.17));
+        // Si el motivo es largo, achicar para que quepa dentro del hueco de la dona
+        const avail = inner * 1.55;
+        if (name && name.length * nameSize * 0.55 > avail) {
+            nameSize = Math.max(9, Math.floor(avail / (name.length * 0.55)));
+        }
         const subSize = Math.max(10, Math.round(inner * 0.12));
         ctx.save();
         ctx.textAlign = 'center';
