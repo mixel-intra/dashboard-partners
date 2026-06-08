@@ -6494,21 +6494,17 @@ function cdeMotivo(lead) {
 // Paleta sobria (tonos apagados) para el doughnut — coherente con el dashboard oscuro.
 const CDE_PIE_COLORS = ['#6C8EBF', '#C9A66B', '#9988C9', '#6BA89C', '#C98B8B', '#7E8AA0', '#B5896A', '#9AA0AA'];
 
-// Envuelve un texto en hasta maxLines líneas que quepan en maxWidth (con la fuente ya seteada en ctx).
-function cdeWrapText(ctx, text, maxWidth, maxLines) {
+// Envuelve un texto en las líneas necesarias para que quepan en maxWidth (NO descarta palabras).
+function cdeWrapText(ctx, text, maxWidth) {
     const words = String(text || '').split(/\s+/).filter(Boolean);
     const lines = [];
     let cur = '';
     for (const w of words) {
         const test = cur ? cur + ' ' + w : w;
-        if (!cur || ctx.measureText(test).width <= maxWidth) {
-            cur = test;
-        } else {
-            lines.push(cur); cur = w;
-            if (lines.length === maxLines - 1) break;
-        }
+        if (!cur || ctx.measureText(test).width <= maxWidth) cur = test;
+        else { lines.push(cur); cur = w; }
     }
-    if (cur && lines.length < maxLines) lines.push(cur);
+    if (cur) lines.push(cur);
     return lines.length ? lines : [String(text || '')];
 }
 
@@ -6553,13 +6549,13 @@ const cdeCenterLabel = {
         let nameSize = Math.max(11, Math.round(inner * 0.16));
         const subSize = Math.max(9, Math.round(inner * 0.12));
 
-        // Envuelve el motivo en máx 2 líneas; si una línea no cabe, achica la fuente
+        // Motivo COMPLETO (sin cortar palabras): achica la fuente hasta que quepa en ≤2 líneas
         ctx.font = `700 ${nameSize}px ${ff}`;
-        let nameLines = cdeWrapText(ctx, name, maxW, 2);
+        let nameLines = cdeWrapText(ctx, name, maxW);
         let g = 0;
-        while (nameLines.some(l => ctx.measureText(l).width > maxW) && nameSize > 9 && g < 12) {
+        while (nameLines.length > 2 && nameSize > 9 && g < 14) {
             nameSize -= 1; ctx.font = `700 ${nameSize}px ${ff}`;
-            nameLines = cdeWrapText(ctx, name, maxW, 2); g++;
+            nameLines = cdeWrapText(ctx, name, maxW); g++;
         }
 
         const nameLH = Math.round(nameSize * 1.18);
