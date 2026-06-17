@@ -1665,6 +1665,82 @@
             background: rgba(255,255,255,0.20);
         }
 
+        /* — Selección masiva (archivar/desarchivar) — */
+        .rest-select-toggle {
+            flex-shrink: 0;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.72);
+            font-size: 0.78rem; font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: all 0.14s;
+            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+        }
+        .rest-select-toggle:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.14); color: #fff; }
+        .rest-select-toggle.active {
+            background: rgba(148,163,184,0.20);
+            border-color: rgba(148,163,184,0.45);
+            color: #fff; font-weight: 600;
+        }
+        .rest-select-toggle ion-icon { font-size: 1rem; }
+
+        /* Checkbox que aparece en la tarjeta durante el modo selección */
+        .rest-card.is-selecting { cursor: pointer; }
+        .rest-card .rest-card-check {
+            position: absolute; top: 10px; right: 10px;
+            font-size: 1.35rem; color: rgba(255,255,255,0.4);
+            line-height: 0; pointer-events: none; z-index: 2;
+            transition: color 0.14s, transform 0.14s;
+        }
+        .rest-card.is-selecting:hover .rest-card-check { color: rgba(255,255,255,0.7); }
+        .rest-card.is-selected { border-color: rgba(167,139,250,0.6); box-shadow: 0 0 0 1px rgba(167,139,250,0.45), 0 8px 22px -10px rgba(117,81,255,0.5); }
+        .rest-card.is-selected .rest-card-check { color: #A78BFA; transform: scale(1.05); }
+
+        /* Barra de acción inferior (oculta hasta entrar en modo selección) */
+        .rest-bulk-bar {
+            display: none;
+            align-items: center; gap: 14px;
+            padding: 12px 18px; margin-bottom: 12px;
+            background: rgba(20,16,40,0.72);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(167,139,250,0.28);
+            border-radius: 14px;
+            box-shadow: 0 8px 28px -12px rgba(117,81,255,0.45);
+        }
+        .rest-bulk-bar.visible { display: flex; }
+        .rest-bulk-all { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.84rem; color: rgba(255,255,255,0.85); user-select: none; }
+        .rest-bulk-all input { width: 16px; height: 16px; accent-color: #7551FF; cursor: pointer; }
+        .rest-bulk-count { font-size: 0.82rem; color: rgba(255,255,255,0.55); font-weight: 600; }
+        .rest-bulk-spacer { flex: 1; }
+        .rest-bulk-cancel {
+            padding: 9px 16px; border-radius: 10px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8); font-size: 0.84rem; font-weight: 500;
+            font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.14s;
+        }
+        .rest-bulk-cancel:hover { background: rgba(255,255,255,0.09); color: #fff; }
+        .rest-bulk-action {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 9px 18px; border-radius: 10px; border: none;
+            background: linear-gradient(135deg, #8B5CF6 0%, #7551FF 100%);
+            color: #fff; font-size: 0.84rem; font-weight: 600;
+            font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.14s;
+            box-shadow: 0 6px 18px -6px rgba(117,81,255,0.6);
+        }
+        .rest-bulk-action:hover:not(:disabled) { filter: brightness(1.08); }
+        .rest-bulk-action:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+        .rest-bulk-action ion-icon { font-size: 1.05rem; }
+        [data-theme="light"] .rest-select-toggle { background: #F8FAFC; border-color: #E2E8F0; color: #475569; }
+        [data-theme="light"] .rest-select-toggle:hover { background: #F1F5F9; color: #0F172A; }
+        [data-theme="light"] .rest-select-toggle.active { background: #E2E8F0; color: #0F172A; border-color: #CBD5E1; }
+        [data-theme="light"] .rest-bulk-bar { background: rgba(255,255,255,0.92); border-color: rgba(117,81,255,0.25); }
+        [data-theme="light"] .rest-bulk-all { color: #334155; }
+        [data-theme="light"] .rest-bulk-count { color: #64748B; }
+        [data-theme="light"] .rest-bulk-cancel { background: #F1F5F9; border-color: #E2E8F0; color: #334155; }
+        [data-theme="light"] .rest-card.is-selected { box-shadow: 0 0 0 1px rgba(117,81,255,0.5), 0 8px 22px -10px rgba(117,81,255,0.4); }
+
         /* — Sidebar list — */
         .rest-sidebar-list {
             flex: 1;
@@ -3614,6 +3690,32 @@
             align-items: center;
         }
         .avail-date-chip button:hover { color: #FF4444; }
+        /* Estado de hoy: tarjetas Sold Out / Cerrado por eventualidad */
+        .avail-today-card {
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .avail-today-card .avail-msg-input {
+            width: 100%;
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.10);
+            color: #fff;
+            font-size: 0.82rem;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.45;
+            outline: none;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .avail-today-card .avail-msg-input:focus { border-color: rgba(117,81,255,0.5); background: rgba(255,255,255,0.06); }
+        .avail-today-card .avail-msg-input::placeholder { color: rgba(255,255,255,0.3); }
+        [data-theme="light"] .avail-today-card { background: rgba(15,23,42,0.02); border-color: rgba(15,23,42,0.08); }
+        [data-theme="light"] .avail-today-card .avail-msg-input { background: #FFF; border-color: rgba(15,23,42,0.12); color: #0F172A; }
         .avail-save-row { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
         .avail-save-btn {
             padding: 9px 22px;
@@ -5125,6 +5227,42 @@
                             <span style="font-size:0.78rem; color:rgba(255,255,255,0.25);">Sin fechas inhabilitadas</span>
                         </div>
                     </div>
+
+                    <!-- Estado de hoy (Sold Out / Cerrado por eventualidad) — solo roof-107 -->
+                    <div id="avail-today-section" style="display:none;">
+                        <div class="avail-sep"></div>
+                        <div class="avail-panel-label" style="margin-bottom:4px;">Estado de hoy</div>
+                        <div class="avail-panel-sub" style="margin-bottom:14px;">Se activa solo para hoy y se restablece automáticamente a medianoche. El agente responderá con el mensaje correspondiente.</div>
+
+                        <div class="avail-today-card" id="avail-soldout-card">
+                            <div class="avail-panel-row" style="margin:0;">
+                                <div>
+                                    <div class="avail-panel-label">Sold Out (agotado)</div>
+                                    <div class="avail-panel-sub">No se toman reservas, pero el agente sí ofrece walk-in.</div>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span id="avail-soldout-status" class="avail-toggle-label avail-status-off">Inactivo</span>
+                                    <button id="avail-soldout-toggle" class="avail-toggle" onclick="toggleSoldOut()"></button>
+                                </div>
+                            </div>
+                            <textarea id="avail-soldout-msg" class="avail-msg-input" rows="3" placeholder="Mensaje del agente cuando esté Sold Out…"></textarea>
+                        </div>
+
+                        <div class="avail-today-card" id="avail-closed-card" style="margin-top:12px;">
+                            <div class="avail-panel-row" style="margin:0;">
+                                <div>
+                                    <div class="avail-panel-label">Cerrado por eventualidad</div>
+                                    <div class="avail-panel-sub">Cierre total: no se aceptan reservas ni walk-ins.</div>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span id="avail-closed-status" class="avail-toggle-label avail-status-off">Inactivo</span>
+                                    <button id="avail-closed-toggle" class="avail-toggle" onclick="toggleClosedEvent()"></button>
+                                </div>
+                            </div>
+                            <textarea id="avail-closed-msg" class="avail-msg-input" rows="3" placeholder="Mensaje del agente cuando esté cerrado…"></textarea>
+                        </div>
+                    </div>
+
                     <div class="avail-save-row">
                         <span id="avail-save-status" class="avail-save-status">✓ Guardado</span>
                         <button class="avail-save-btn" onclick="saveRestaurantAvailability()">
@@ -5152,6 +5290,9 @@
                             Archivadas <span class="rest-chip-count" id="rest-count-archivadas">0</span>
                         </button>
                     </div>
+                    <button class="rest-select-toggle" id="rest-select-btn" onclick="toggleRestaurantSelectMode()" title="Seleccionar varias para archivar" style="display:none;">
+                        <ion-icon name="checkbox-outline"></ion-icon> Seleccionar
+                    </button>
                     <div class="rest-board-search">
                         <ion-icon name="search-outline"></ion-icon>
                         <input type="text" id="rest-search-input"
@@ -5168,6 +5309,20 @@
                         </button>
                         <input type="text" id="rest-date-picker" style="display:none;">
                     </div>
+                </div>
+
+                <!-- Barra de acción de selección masiva (solo roof-107, visible en modo selección) -->
+                <div class="rest-bulk-bar" id="rest-bulk-bar">
+                    <label class="rest-bulk-all">
+                        <input type="checkbox" id="rest-bulk-all" onchange="toggleSelectAllVisible(this.checked)">
+                        <span>Seleccionar todas</span>
+                    </label>
+                    <span class="rest-bulk-count" id="rest-bulk-count">0 seleccionadas</span>
+                    <div class="rest-bulk-spacer"></div>
+                    <button class="rest-bulk-cancel" onclick="toggleRestaurantSelectMode()">Cancelar</button>
+                    <button class="rest-bulk-action" id="rest-bulk-action-btn" onclick="bulkArchiveSelected()" disabled>
+                        <ion-icon name="archive-outline"></ion-icon> Archivar
+                    </button>
                 </div>
 
                 <!-- Shell: board (cards) + context rail -->
@@ -5421,6 +5576,25 @@
                         <div style="display:flex; gap:12px; margin-top:24px;">
                             <button onclick="closeUnarchiveModal()" style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1); background:transparent; border-radius:12px; color:white; cursor:pointer; font-family:'Inter',sans-serif;">No</button>
                             <button id="unarchive-confirm-btn" style="flex:1; padding:12px; border:none; background:#94A3B8; border-radius:12px; color:#0F172A; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">Sí</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Confirmar acción masiva (archivar/desarchivar) — roof-107 -->
+            <div id="bulk-confirm-modal" class="hidden"
+                style="position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:2100; display:flex; align-items:center; justify-content:center;"
+                onclick="if(event.target===this) closeBulkConfirm();">
+                <div style="background:rgba(15,13,30,0.92); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px); border:1px solid rgba(255,255,255,0.10); border-radius:24px; max-width:420px; width:90%; overflow:hidden;">
+                    <div style="padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
+                        <h3 id="bulk-confirm-title" style="font-size:1.1rem; font-weight:700; margin:0;">Archivar</h3>
+                        <button onclick="closeBulkConfirm()" style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div style="padding:24px;">
+                        <p id="bulk-confirm-text" style="margin:0; color:var(--text-dim, rgba(255,255,255,0.75)); font-size:0.95rem; line-height:1.45;">—</p>
+                        <div style="display:flex; gap:12px; margin-top:24px;">
+                            <button onclick="closeBulkConfirm()" style="flex:1; padding:12px; border:1px solid rgba(255,255,255,0.1); background:transparent; border-radius:12px; color:white; cursor:pointer; font-family:'Inter',sans-serif;">Cancelar</button>
+                            <button id="bulk-confirm-btn" style="flex:1; padding:12px; border:none; background:#94A3B8; border-radius:12px; color:#0F172A; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">Archivar</button>
                         </div>
                     </div>
                 </div>
@@ -8610,6 +8784,17 @@
                 <span>Próximas</span>
                 <span class="restm-tab-count" id="restm-count-proximas">0</span>
             </button>
+            <button class="restm-tab" id="restm-tab-archivadas" data-tab="archivadas" onclick="restMobileSetTab('archivadas')" style="display:none;">
+                <span>Archivadas</span>
+                <span class="restm-tab-count" id="restm-count-archivadas">0</span>
+            </button>
+        </div>
+
+        <!-- Fila de selección masiva (solo roof-107) -->
+        <div class="restm-select-row" id="restm-select-row" style="display:none;">
+            <button class="restm-select-toggle" id="restm-select-btn" onclick="toggleRestMobileSelectMode()">
+                <ion-icon name="checkbox-outline"></ion-icon> Seleccionar
+            </button>
         </div>
 
         <!-- Buscador (busca en todas las reservas por nombre, teléfono o tipo) -->
@@ -8638,6 +8823,21 @@
     <button class="restm-fab" id="restm-fab" onclick="openNewReservationModal()" aria-label="Nueva reserva">
         <ion-icon name="add-outline"></ion-icon>
     </button>
+
+    <!-- Barra de acción de selección masiva móvil (solo roof-107, visible en modo selección) -->
+    <div class="restm-bulk-bar" id="restm-bulk-bar">
+        <button class="restm-bulk-cancel" onclick="toggleRestMobileSelectMode()" aria-label="Cancelar selección">
+            <ion-icon name="close-outline"></ion-icon>
+        </button>
+        <label class="restm-bulk-all">
+            <input type="checkbox" id="restm-bulk-all" onchange="toggleRestMobileSelectAll(this.checked)">
+            <span>Todas</span>
+        </label>
+        <span class="restm-bulk-count" id="restm-bulk-count">0</span>
+        <button class="restm-bulk-action" id="restm-bulk-action-btn" onclick="bulkArchiveMobile()" disabled>
+            <ion-icon name="archive-outline"></ion-icon> Archivar
+        </button>
+    </div>
 
     <!-- Bottom tab bar -->
     <nav class="restm-bottombar">

@@ -39,9 +39,12 @@ const state = {
     restaurantSelectedIndex: null,
     restaurantDatePicker: null,
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '', crmLeadUrlTemplate: '' },
-    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: 80 },
+    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: 80, soldOutDate: null, closedEventDate: null, soldOutMessage: '', closedEventMessage: '' },
     // Reservas archivadas (solo clientes con feature activado, ej: roof-107)
     archivedReservationIds: new Set(),
+    // Selección masiva del board de escritorio (archivar/desarchivar en lote)
+    restaurantSelectMode: false,
+    restaurantSelectedIds: new Set(),
     // Reservas "liberadas" (mesa disponible nuevamente, sale del aforo del día)
     releasedReservationIds: new Set(),
     // Hospedaje reservations (Airtable)
@@ -2106,6 +2109,153 @@ async function executeUnarchive(index) {
     }
 }
 
+// --- Selección masiva (archivar / desarchivar en lote) — solo roof-107 ---
+// Modo selección del board de escritorio. El móvil tiene su propio modo (más abajo).
+function toggleRestaurantSelectMode() {
+    state.restaurantSelectMode = !state.restaurantSelectMode;
+    if (!state.restaurantSelectMode) state.restaurantSelectedIds.clear();
+    renderRestaurantReservations(); // re-pinta tarjetas (con/sin checkbox) y sincroniza la barra
+}
+
+function toggleReservationSelection(id) {
+    if (state.restaurantSelectedIds.has(id)) state.restaurantSelectedIds.delete(id);
+    else state.restaurantSelectedIds.add(id);
+    // Actualización puntual del DOM de la tarjeta para no perder el scroll
+    const card = document.querySelector(`#rest-board .rest-card[data-id="${(window.CSS && CSS.escape) ? CSS.escape(id) : id}"]`);
+    if (card) {
+        const sel = state.restaurantSelectedIds.has(id);
+        card.classList.toggle('is-selected', sel);
+        const ic = card.querySelector('.rest-card-check ion-icon');
+        if (ic) ic.setAttribute('name', sel ? 'checkmark-circle' : 'ellipse-outline');
+    }
+    updateSelectModeUI();
+}
+
+function toggleSelectAllVisible(checked) {
+    const ids = getVisibleReservationIds();
+    if (checked) ids.forEach(id => state.restaurantSelectedIds.add(id));
+    else ids.forEach(id => state.restaurantSelectedIds.delete(id));
+    renderRestaurantReservations();
+}
+
+// Refresca el botón "Seleccionar", el board y la barra de acción inferior (escritorio).
+function updateSelectModeUI() {
+    const selecting = state.restaurantSelectMode;
+    const board = document.getElementById('rest-board');
+    if (board) board.classList.toggle('select-mode', selecting);
+
+    const btn = document.getElementById('rest-select-btn');
+    if (btn) {
+        btn.classList.toggle('active', selecting);
+        btn.innerHTML = selecting
+            ? '<ion-icon name="close-outline"></ion-icon> Cancelar'
+            : '<ion-icon name="checkbox-outline"></ion-icon> Seleccionar';
+    }
+
+    const bar = document.getElementById('rest-bulk-bar');
+    if (!bar) return;
+    bar.classList.toggle('visible', selecting);
+    const n = state.restaurantSelectedIds.size;
+    const isArchivedView = state.restaurantFilters.view === 'archivadas';
+
+    const countEl = document.getElementById('rest-bulk-count');
+    if (countEl) countEl.textContent = `${n} seleccionada${n === 1 ? '' : 's'}`;
+
+    const actBtn = document.getElementById('rest-bulk-action-btn');
+    if (actBtn) {
+        actBtn.disabled = n === 0;
+        actBtn.innerHTML = isArchivedView
+            ? `<ion-icon name="arrow-undo-outline"></ion-icon> Desarchivar${n ? ` (${n})` : ''}`
+            : `<ion-icon name="archive-outline"></ion-icon> Archivar${n ? ` (${n})` : ''}`;
+    }
+
+    const allChk = document.getElementById('rest-bulk-all');
+    if (allChk) {
+        const visibleIds = getVisibleReservationIds();
+        allChk.checked = visibleIds.length > 0 && visibleIds.every(id => state.restaurantSelectedIds.has(id));
+    }
+}
+
+function bulkArchiveSelected() {
+    const ids = Array.from(state.restaurantSelectedIds);
+    if (!ids.length) return;
+    const isUnarchive = state.restaurantFilters.view === 'archivadas';
+    openBulkConfirm(ids.length, isUnarchive, () => isUnarchive ? executeBulkUnarchive(ids) : executeBulkArchive(ids));
+}
+
+// --- Confirmación de acción masiva (modal compartido escritorio + móvil) ---
+let _bulkConfirmCb = null;
+function openBulkConfirm(count, isUnarchive, cb) {
+    _bulkConfirmCb = cb;
+    const modal = document.getElementById('bulk-confirm-modal');
+    const title = document.getElementById('bulk-confirm-title');
+    const text = document.getElementById('bulk-confirm-text');
+    const btn = document.getElementById('bulk-confirm-btn');
+    if (!modal || !title || !text || !btn) { if (cb) cb(); return; }
+    const verb = isUnarchive ? 'Desarchivar' : 'Archivar';
+    const plural = count === 1 ? '' : 's';
+    title.textContent = verb;
+    text.innerHTML = isUnarchive
+        ? `¿Desarchivar <strong>${count}</strong> reserva${plural} y devolverlas al board?`
+        : `¿Archivar <strong>${count}</strong> reserva${plural}? Se ocultarán del board (las verás en “Archivadas”).`;
+    btn.textContent = verb;
+    btn.onclick = () => {
+        const fn = _bulkConfirmCb; // capturar antes de cerrar (closeBulkConfirm limpia _bulkConfirmCb)
+        closeBulkConfirm();
+        if (fn) fn();
+    };
+    modal.classList.remove('hidden');
+}
+function closeBulkConfirm() {
+    const m = document.getElementById('bulk-confirm-modal');
+    if (m) m.classList.add('hidden');
+    _bulkConfirmCb = null;
+}
+
+async function executeBulkArchive(ids) {
+    if (!ids || !ids.length) return;
+    if (!window.clientSupabase) { showToast('No se pudo archivar: cliente no inicializado', 'error'); return; }
+    try {
+        const rows = ids.map(id => ({ reservation_id: id }));
+        const { error } = await window.clientSupabase
+            .from('archived_reservations')
+            .upsert(rows, { onConflict: 'reservation_id' });
+        if (error) throw error;
+        ids.forEach(id => state.archivedReservationIds.add(id));
+        finishBulkAction(`${ids.length} reserva${ids.length === 1 ? '' : 's'} archivada${ids.length === 1 ? '' : 's'}`);
+    } catch (e) {
+        console.error('Error archivando en lote:', e);
+        showToast('Error al archivar: ' + (e.message || e), 'error');
+    }
+}
+
+async function executeBulkUnarchive(ids) {
+    if (!ids || !ids.length) return;
+    if (!window.clientSupabase) { showToast('No se pudo desarchivar: cliente no inicializado', 'error'); return; }
+    try {
+        const { error } = await window.clientSupabase
+            .from('archived_reservations')
+            .delete()
+            .in('reservation_id', ids);
+        if (error) throw error;
+        ids.forEach(id => state.archivedReservationIds.delete(id));
+        finishBulkAction(`${ids.length} reserva${ids.length === 1 ? '' : 's'} desarchivada${ids.length === 1 ? '' : 's'}`);
+    } catch (e) {
+        console.error('Error desarchivando en lote:', e);
+        showToast('Error al desarchivar: ' + (e.message || e), 'error');
+    }
+}
+
+// Limpia ambos modos de selección y re-pinta lo que esté visible (escritorio o móvil).
+function finishBulkAction(msg) {
+    state.restaurantSelectMode = false;
+    state.restaurantSelectedIds.clear();
+    if (state.restMobile) { state.restMobile.selectMode = false; state.restMobile.selectedIds = new Set(); }
+    showToast(msg, 'success');
+    if (document.getElementById('rest-board')) renderRestaurantReservations();
+    if (typeof renderRestMobile === 'function') renderRestMobile();
+}
+
 // --- Liberar mesa (release): saca a la reserva del aforo del día ---
 // Cuando el cliente vino y se fue, la mesa vuelve a estar disponible.
 // La reserva sigue visible en el board (con badge "Servida") para auditoría.
@@ -2318,15 +2468,18 @@ function matchesRestaurantView(r, viewKey) {
     }
 }
 
-function renderRestaurantReservations() {
+// Devuelve las reservas visibles en el board aplicando TODOS los filtros activos
+// (vista, búsqueda, salto de fecha y rango global del header). Centralizado para
+// que el board y la "Selección masiva" coincidan exactamente en lo que muestran.
+function getFilteredRestaurantReservations() {
     const all = state.restaurantReservations;
     let reservations = [...all];
 
-    // Apply view filter
+    // View filter
     const view = state.restaurantFilters.view || 'nuevos';
     reservations = reservations.filter(r => matchesRestaurantView(r, view));
 
-    // Apply search filter
+    // Search filter
     const q = state.restaurantFilters.search.trim().toLowerCase();
     if (q) {
         reservations = reservations.filter(r =>
@@ -2337,7 +2490,7 @@ function renderRestaurantReservations() {
         );
     }
 
-    // Apply date-jump filter (additive, picks exact day)
+    // Date-jump filter (additive, picks exact day)
     if (state.restaurantFilters.date) {
         const target = new Date(state.restaurantFilters.date); target.setHours(0,0,0,0);
         reservations = reservations.filter(r => {
@@ -2346,6 +2499,28 @@ function renderRestaurantReservations() {
             return d.getTime() === target.getTime();
         });
     }
+
+    // Header-level global date range
+    if (state.filters.start || state.filters.end) {
+        reservations = reservations.filter(r => {
+            if (!r.fecha_parsed) return true;
+            if (state.filters.start && r.fecha_parsed < state.filters.start) return false;
+            if (state.filters.end && r.fecha_parsed > state.filters.end) return false;
+            return true;
+        });
+    }
+
+    return reservations;
+}
+
+// IDs de las reservas actualmente visibles en el board (para "Seleccionar todas").
+function getVisibleReservationIds() {
+    return getFilteredRestaurantReservations().map(r => r.id).filter(Boolean);
+}
+
+function renderRestaurantReservations() {
+    const all = state.restaurantReservations;
+    let reservations = getFilteredRestaurantReservations();
 
     // Compute stats (always over the full set, not filtered)
     const now = new Date();
@@ -2369,21 +2544,14 @@ function renderRestaurantReservations() {
     setEl('rest-count-nuevos', all.filter(r => matchesRestaurantView(r, 'nuevos')).length);
     setEl('rest-count-confirmadas', all.filter(r => matchesRestaurantView(r, 'confirmadas')).length);
     setEl('rest-count-rechazadas', all.filter(r => matchesRestaurantView(r, 'rechazadas')).length);
-    setEl('rest-count-todas', all.length);
+    // "Todas" = total visible (excluye archivadas), para que al archivar baje y suba "Archivadas"
+    setEl('rest-count-todas', all.filter(r => matchesRestaurantView(r, 'todas')).length);
     if (clientHasArchiveFeature()) {
         setEl('rest-count-archivadas', all.filter(r => matchesRestaurantView(r, 'archivadas')).length);
         const chipArch = document.getElementById('rest-chip-archivadas');
         if (chipArch) chipArch.style.display = '';
-    }
-
-    // Apply global date filter if set (header-level range)
-    if (state.filters.start || state.filters.end) {
-        reservations = reservations.filter(r => {
-            if (!r.fecha_parsed) return true;
-            if (state.filters.start && r.fecha_parsed < state.filters.start) return false;
-            if (state.filters.end && r.fecha_parsed > state.filters.end) return false;
-            return true;
-        });
+        const selBtn = document.getElementById('rest-select-btn');
+        if (selBtn) selBtn.style.display = '';
     }
 
     // Smart sort: today first, future ASC, past at bottom DESC
@@ -2411,6 +2579,8 @@ function renderRestaurantReservations() {
     if (state.restaurantSelectedIndex === null && document.getElementById('rest-context-content')) {
         populateContextForToday();
     }
+    // Mantener la barra de selección masiva en sincronía con el board recién pintado
+    updateSelectModeUI();
 }
 
 // ============================================
@@ -2516,6 +2686,8 @@ function renderRestaurantTimeline(reservations) {
 
 function buildReservationCard(r, isNew, isPast) {
     const idx = state.restaurantReservations.indexOf(r);
+    const selecting = state.restaurantSelectMode;
+    const isSelected = selecting && state.restaurantSelectedIds.has(r.id);
     const cleanPhone = (r.telefono || '').replace(/[\s\-\+\(\)]/g, '');
     const isPending = r.estado === 'Nuevo Lead';
     const isConfirmed = r.estado === 'Confirmado';
@@ -2560,8 +2732,19 @@ function buildReservationCard(r, isNew, isPast) {
     else if (isRejected) cardCls.push('is-rejected');
     if (isPast) cardCls.push('is-past');
     if (isReleased) cardCls.push('is-released');
+    if (selecting) cardCls.push('is-selecting');
+    if (isSelected) cardCls.push('is-selected');
 
-    return `<div class="${cardCls.join(' ')}" data-index="${idx}" onclick="selectReservation(${idx})">
+    // En modo selección, click en la tarjeta alterna la selección (no abre el detalle)
+    const cardClick = selecting
+        ? `toggleReservationSelection(${JSON.stringify(r.id)})`
+        : `selectReservation(${idx})`;
+    const checkHtml = selecting
+        ? `<span class="rest-card-check"><ion-icon name="${isSelected ? 'checkmark-circle' : 'ellipse-outline'}"></ion-icon></span>`
+        : '';
+
+    return `<div class="${cardCls.join(' ')}" data-index="${idx}" data-id="${escapeHtml(String(r.id || ''))}" onclick='${cardClick}'>
+        ${checkHtml}
         ${notesFlag}
         <div class="rest-card-namebox">
             <div class="rest-card-namerow">
@@ -2576,7 +2759,7 @@ function buildReservationCard(r, isNew, isPast) {
             </div>
         </div>
         ${detailBlock}
-        <div class="rest-card-actions">${actions}</div>
+        ${selecting ? '' : `<div class="rest-card-actions">${actions}</div>`}
     </div>`;
 }
 
@@ -3085,6 +3268,8 @@ function formatReservationDate(input) {
 
 function filterRestaurantByStatus(viewKey) {
     state.restaurantFilters.view = viewKey;
+    // Cambiar de vista limpia la selección para no mezclar contextos (archivar vs desarchivar)
+    state.restaurantSelectedIds.clear();
     document.querySelectorAll('#rest-chips .rest-chip').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.status === viewKey);
     });
@@ -3409,6 +3594,21 @@ function closeConversationModal() {
 // ================================================================
 //  AVAILABILITY PANEL
 // ================================================================
+// Mensajes por defecto que usará el agente (editables desde el panel).
+const DEFAULT_SOLD_OUT_MSG = '¡Gracias por escribirnos! Por hoy estamos sold out y no puedo tomar nuevas reservas. Pero puedes venir como walk-in y con gusto intentamos conseguirte una mesa según disponibilidad. ¡Te esperamos en la terraza!';
+const DEFAULT_CLOSED_EVENT_MSG = 'Hoy permanecemos cerrados por una eventualidad fuera de nuestro control, así que por hoy no podemos recibir reservas ni walk-ins. Lamentamos el inconveniente y te esperamos muy pronto con la mejor vista de Santo Domingo.';
+
+// Fecha "hoy" en la zona horaria del negocio (Santo Domingo), formato YYYY-MM-DD.
+// El estado Sold Out / Cerrado se considera activo solo si su fecha === hoy,
+// por lo que se restablece solo al cruzar la medianoche local.
+function todayBusinessDate() {
+    try {
+        return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santo_Domingo' });
+    } catch (e) {
+        return new Date().toISOString().slice(0, 10);
+    }
+}
+
 async function loadRestaurantAvailability() {
     const db = window.clientSupabase || window.supabase;
     if (!db) return;
@@ -3422,7 +3622,11 @@ async function loadRestaurantAvailability() {
             state.restaurantAvailability = {
                 accepting: data.accepting_reservations !== false,
                 closedDates: data.closed_dates || [],
-                dailyCapacity: data.daily_capacity || 80
+                dailyCapacity: data.daily_capacity || 80,
+                soldOutDate: data.sold_out_date || null,
+                closedEventDate: data.closed_event_date || null,
+                soldOutMessage: data.sold_out_message || DEFAULT_SOLD_OUT_MSG,
+                closedEventMessage: data.closed_event_message || DEFAULT_CLOSED_EVENT_MSG
             };
         }
     } catch (e) {
@@ -3443,12 +3647,21 @@ async function saveRestaurantAvailability() {
         const capVal = parseInt(capInput.value);
         state.restaurantAvailability.dailyCapacity = isNaN(capVal) || capVal < 1 ? null : capVal;
     }
+    // Mensajes editables del agente (Estado de hoy)
+    const soMsg = document.getElementById('avail-soldout-msg');
+    const ceMsg = document.getElementById('avail-closed-msg');
+    if (soMsg) state.restaurantAvailability.soldOutMessage = soMsg.value.trim() || DEFAULT_SOLD_OUT_MSG;
+    if (ceMsg) state.restaurantAvailability.closedEventMessage = ceMsg.value.trim() || DEFAULT_CLOSED_EVENT_MSG;
     try {
         const payload = {
             singleton: true,
             accepting_reservations: state.restaurantAvailability.accepting,
             closed_dates: state.restaurantAvailability.closedDates,
             daily_capacity: state.restaurantAvailability.dailyCapacity,
+            sold_out_date: state.restaurantAvailability.soldOutDate,
+            closed_event_date: state.restaurantAvailability.closedEventDate,
+            sold_out_message: state.restaurantAvailability.soldOutMessage,
+            closed_event_message: state.restaurantAvailability.closedEventMessage,
             updated_at: new Date().toISOString()
         };
         const { error } = await db
@@ -3475,6 +3688,27 @@ function toggleAvailabilityPanel() {
 function toggleAcceptingReservations() {
     state.restaurantAvailability.accepting = !state.restaurantAvailability.accepting;
     renderAvailabilityPanel();
+}
+
+// Sold Out de HOY: no toma reservas pero el agente ofrece walk-in.
+// Mutuamente excluyente con "Cerrado por eventualidad". Persiste de inmediato.
+function toggleSoldOut() {
+    const av = state.restaurantAvailability;
+    const active = av.soldOutDate === todayBusinessDate();
+    av.soldOutDate = active ? null : todayBusinessDate();
+    if (av.soldOutDate) av.closedEventDate = null; // excluyentes
+    renderAvailabilityPanel();
+    saveRestaurantAvailability();
+}
+
+// Cerrado por eventualidad de HOY: cierre total, ni reservas ni walk-ins.
+function toggleClosedEvent() {
+    const av = state.restaurantAvailability;
+    const active = av.closedEventDate === todayBusinessDate();
+    av.closedEventDate = active ? null : todayBusinessDate();
+    if (av.closedEventDate) av.soldOutDate = null; // excluyentes
+    renderAvailabilityPanel();
+    saveRestaurantAvailability();
 }
 
 function addClosedDate() {
@@ -3523,7 +3757,42 @@ function renderAvailabilityPanel() {
     }
     if (capInput && av.dailyCapacity) capInput.value = av.dailyCapacity;
     renderClosedDatesList();
+    renderTodayStateSection();
     updateAvailabilityButton();
+}
+
+// Sección "Estado de hoy" (Sold Out / Cerrado por eventualidad) — solo roof-107.
+function renderTodayStateSection() {
+    const section = document.getElementById('avail-today-section');
+    if (!section) return;
+    if (!clientHasArchiveFeature()) { section.style.display = 'none'; return; }
+    section.style.display = '';
+
+    const av = state.restaurantAvailability;
+    const today = todayBusinessDate();
+    const soldOutOn = av.soldOutDate === today;
+    const closedOn = av.closedEventDate === today;
+
+    const soToggle = document.getElementById('avail-soldout-toggle');
+    const soStatus = document.getElementById('avail-soldout-status');
+    const soMsg = document.getElementById('avail-soldout-msg');
+    if (soToggle) soToggle.classList.toggle('on', soldOutOn);
+    if (soStatus) {
+        soStatus.textContent = soldOutOn ? 'Activo hoy' : 'Inactivo';
+        soStatus.className = 'avail-toggle-label ' + (soldOutOn ? 'avail-status-on' : 'avail-status-off');
+    }
+    // No pisar lo que el usuario esté escribiendo
+    if (soMsg && document.activeElement !== soMsg) soMsg.value = av.soldOutMessage || DEFAULT_SOLD_OUT_MSG;
+
+    const ceToggle = document.getElementById('avail-closed-toggle');
+    const ceStatus = document.getElementById('avail-closed-status');
+    const ceMsg = document.getElementById('avail-closed-msg');
+    if (ceToggle) ceToggle.classList.toggle('on', closedOn);
+    if (ceStatus) {
+        ceStatus.textContent = closedOn ? 'Activo hoy' : 'Inactivo';
+        ceStatus.className = 'avail-toggle-label ' + (closedOn ? 'avail-status-on' : 'avail-status-off');
+    }
+    if (ceMsg && document.activeElement !== ceMsg) ceMsg.value = av.closedEventMessage || DEFAULT_CLOSED_EVENT_MSG;
 }
 
 function updateAvailabilityButton() {
@@ -3545,6 +3814,17 @@ window.rejectReservation = rejectReservation;
 window.archiveReservation = archiveReservation;
 window.unarchiveReservation = unarchiveReservation;
 window.closeUnarchiveModal = closeUnarchiveModal;
+// Selección masiva — escritorio
+window.toggleRestaurantSelectMode = toggleRestaurantSelectMode;
+window.toggleReservationSelection = toggleReservationSelection;
+window.toggleSelectAllVisible = toggleSelectAllVisible;
+window.bulkArchiveSelected = bulkArchiveSelected;
+window.closeBulkConfirm = closeBulkConfirm;
+// Selección masiva — móvil
+window.toggleRestMobileSelectMode = toggleRestMobileSelectMode;
+window.toggleRestMobileSelection = toggleRestMobileSelection;
+window.toggleRestMobileSelectAll = toggleRestMobileSelectAll;
+window.bulkArchiveMobile = bulkArchiveMobile;
 window.releaseReservation = releaseReservation;
 window.restoreReservation = restoreReservation;
 window.viewConversation = viewConversation;
@@ -3568,6 +3848,8 @@ window.openReservationDetail = openReservationDetail;
 window.closeDetailModal = closeDetailModal;
 window.toggleAvailabilityPanel = toggleAvailabilityPanel;
 window.toggleAcceptingReservations = toggleAcceptingReservations;
+window.toggleSoldOut = toggleSoldOut;
+window.toggleClosedEvent = toggleClosedEvent;
 window.addClosedDate = addClosedDate;
 window.removeClosedDate = removeClosedDate;
 window.saveRestaurantAvailability = saveRestaurantAvailability;
@@ -4949,7 +5231,9 @@ state.restMobile = state.restMobile || {
     monthAnchor: null,
     selectedIdx: null,
     dateFilter: null,
-    search: ''
+    search: '',
+    selectMode: false,
+    selectedIds: new Set()
 };
 
 function isRestMobileActive() {
@@ -5085,11 +5369,15 @@ function getRestMobileFilteredReservations() {
     const dateFilter = state.restMobile.dateFilter;
     const q = (state.restMobile.search || '').trim().toLowerCase();
 
-    // Búsqueda global: si hay texto, busca en TODAS las reservas (ignora tab y
-    // filtro de fecha), igual que el buscador de desktop. Encontrar a alguien no
-    // debe depender del tab activo. Busca por nombre, teléfono, email y tipo.
+    const isArchived = (r) => state.archivedReservationIds.has(r.id);
+    const archivedView = tab === 'archivadas';
+    // Las archivadas se ocultan en TODAS las vistas salvo el tab "Archivadas".
+    const base = all.filter(r => archivedView ? isArchived(r) : !isArchived(r));
+
+    // Búsqueda: dentro del conjunto base (respeta si estamos o no en archivadas).
+    // Busca por nombre, teléfono, email y tipo, ignorando tab/fecha como en desktop.
     if (q) {
-        return all.filter(r =>
+        return base.filter(r =>
             (r.nombre || '').toLowerCase().includes(q) ||
             (r.telefono || '').toLowerCase().includes(q) ||
             (r.email || '').toLowerCase().includes(q) ||
@@ -5100,13 +5388,16 @@ function getRestMobileFilteredReservations() {
     // Cuando hay filtro de fecha activo, ignoramos los tabs y mostramos solo
     // las reservas de ese día (todos los estados).
     if (dateFilter) {
-        return all.filter(r => {
+        return base.filter(r => {
             const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
             return d && dateKey(d) === dateFilter;
         });
     }
 
-    return all.filter(r => {
+    // Tab "Archivadas": todas las archivadas, sin más filtros.
+    if (archivedView) return base;
+
+    return base.filter(r => {
         const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
         const dKey = d ? dateKey(d) : null;
         const isUpcoming = !d || (() => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x >= todayDate; })();
@@ -5122,8 +5413,9 @@ function renderRestMobileTabs() {
     const todayK = todayKeyMx();
     const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
 
-    const counts = { pendientes: 0, hoy: 0, proximas: 0 };
+    const counts = { pendientes: 0, hoy: 0, proximas: 0, archivadas: 0 };
     all.forEach(r => {
+        if (state.archivedReservationIds.has(r.id)) { counts.archivadas++; return; } // archivadas no cuentan en los demás tabs
         const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
         const dKey = d ? dateKey(d) : null;
         const isUpcoming = !d || (() => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x >= todayDate; })();
@@ -5135,15 +5427,27 @@ function renderRestMobileTabs() {
     setText('restm-count-pendientes', counts.pendientes);
     setText('restm-count-hoy', counts.hoy);
     setText('restm-count-proximas', counts.proximas);
+    setText('restm-count-archivadas', counts.archivadas);
+
+    // Tab "Archivadas" y fila de selección: solo para clientes con la feature (roof-107)
+    if (clientHasArchiveFeature()) {
+        const archTab = document.getElementById('restm-tab-archivadas');
+        if (archTab) archTab.style.display = '';
+        const selRow = document.getElementById('restm-select-row');
+        if (selRow) selRow.style.display = '';
+    }
 
     document.querySelectorAll('.restm-tab').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === state.restMobile.activeTab);
     });
+    updateRestMobileSelectUI();
 }
 
 function restMobileSetTab(tab) {
     state.restMobile.activeTab = tab;
     state.restMobile.dateFilter = null;
+    // Cambiar de tab limpia la selección para no mezclar contextos (archivar vs desarchivar)
+    if (state.restMobile.selectedIds) state.restMobile.selectedIds.clear();
     // La búsqueda anula los tabs; al elegir un tab, reseteamos la búsqueda para
     // que el cambio de tab tenga efecto visible.
     if (state.restMobile.search) {
@@ -5282,12 +5586,21 @@ function renderRestMobileCard(r, idx) {
     const stateCls = r.estado === 'Confirmado' ? 'confirmed' : (r.estado === 'Rechazado' ? 'rejected' : '');
     const tipo = r.tipoEvento || 'Reserva';
     const pax = parseInt(r.pax) || 0;
-    return `<div class="restm-card-wrap">
-        <div class="restm-card-actions">
+    const selecting = state.restMobile.selectMode;
+    const sel = selecting && state.restMobile.selectedIds.has(r.id);
+    const onclick = selecting
+        ? `toggleRestMobileSelection(${JSON.stringify(r.id)})`
+        : `openRestMobileSheet(${idx})`;
+    const checkHtml = selecting
+        ? `<div class="restm-card-check"><ion-icon name="${sel ? 'checkmark-circle' : 'ellipse-outline'}"></ion-icon></div>`
+        : '';
+    return `<div class="restm-card-wrap${selecting ? ' no-swipe' : ''}">
+        ${selecting ? '' : `<div class="restm-card-actions">
             <div class="restm-card-action confirm"><ion-icon name="checkmark-outline"></ion-icon><span>Confirmar</span></div>
             <div class="restm-card-action reject"><span>Rechazar</span><ion-icon name="close-outline"></ion-icon></div>
-        </div>
-        <div class="restm-card" data-idx="${idx}" onclick="openRestMobileSheet(${idx})">
+        </div>`}
+        <div class="restm-card${sel ? ' is-selected' : ''}" data-idx="${idx}" data-id="${escapeHtml(String(r.id || ''))}" onclick='${onclick}'>
+            ${checkHtml}
             <div class="restm-card-time">
                 <div class="restm-card-time-h">${hh && hh !== '—' ? hh : '—'}</div>
                 <div class="restm-card-time-m">${mm || ''}</div>
@@ -5305,8 +5618,76 @@ function renderRestMobileCard(r, idx) {
     </div>`;
 }
 
+// --- Selección masiva móvil (roof-107) ---
+function toggleRestMobileSelectMode() {
+    state.restMobile.selectMode = !state.restMobile.selectMode;
+    if (!state.restMobile.selectMode) state.restMobile.selectedIds = new Set();
+    renderRestMobileList();
+    updateRestMobileSelectUI();
+}
+
+function toggleRestMobileSelection(id) {
+    const set = state.restMobile.selectedIds;
+    if (set.has(id)) set.delete(id); else set.add(id);
+    const card = document.querySelector(`#restm-list .restm-card[data-id="${(window.CSS && CSS.escape) ? CSS.escape(id) : id}"]`);
+    if (card) {
+        const on = set.has(id);
+        card.classList.toggle('is-selected', on);
+        const ic = card.querySelector('.restm-card-check ion-icon');
+        if (ic) ic.setAttribute('name', on ? 'checkmark-circle' : 'ellipse-outline');
+    }
+    updateRestMobileSelectUI();
+}
+
+function toggleRestMobileSelectAll(checked) {
+    const ids = getRestMobileFilteredReservations().map(r => r.id).filter(Boolean);
+    const set = state.restMobile.selectedIds;
+    if (checked) ids.forEach(id => set.add(id));
+    else ids.forEach(id => set.delete(id));
+    renderRestMobileList();
+    updateRestMobileSelectUI();
+}
+
+function updateRestMobileSelectUI() {
+    const selecting = state.restMobile.selectMode;
+    const btn = document.getElementById('restm-select-btn');
+    if (btn) {
+        btn.classList.toggle('active', selecting);
+        btn.innerHTML = selecting
+            ? '<ion-icon name="close-outline"></ion-icon> Cancelar'
+            : '<ion-icon name="checkbox-outline"></ion-icon> Seleccionar';
+    }
+    const bar = document.getElementById('restm-bulk-bar');
+    if (!bar) return;
+    bar.classList.toggle('visible', selecting);
+    const n = state.restMobile.selectedIds.size;
+    const isArchivedView = state.restMobile.activeTab === 'archivadas';
+    const countEl = document.getElementById('restm-bulk-count');
+    if (countEl) countEl.textContent = String(n);
+    const actBtn = document.getElementById('restm-bulk-action-btn');
+    if (actBtn) {
+        actBtn.disabled = n === 0;
+        actBtn.innerHTML = isArchivedView
+            ? '<ion-icon name="arrow-undo-outline"></ion-icon> Desarchivar'
+            : '<ion-icon name="archive-outline"></ion-icon> Archivar';
+    }
+    const allChk = document.getElementById('restm-bulk-all');
+    if (allChk) {
+        const ids = getRestMobileFilteredReservations().map(r => r.id).filter(Boolean);
+        allChk.checked = ids.length > 0 && ids.every(id => state.restMobile.selectedIds.has(id));
+    }
+}
+
+function bulkArchiveMobile() {
+    const ids = Array.from(state.restMobile.selectedIds);
+    if (!ids.length) return;
+    const isUnarchive = state.restMobile.activeTab === 'archivadas';
+    openBulkConfirm(ids.length, isUnarchive, () => isUnarchive ? executeBulkUnarchive(ids) : executeBulkArchive(ids));
+}
+
 // Swipe gestures: swipe right → confirmar, swipe left → rechazar
 function attachRestMobileSwipeHandlers() {
+    if (state.restMobile.selectMode) return; // en modo selección el tap alterna selección, sin swipe
     const cards = document.querySelectorAll('#restm-list .restm-card');
     cards.forEach(card => {
         if (card.dataset.swipeBound === '1') return;
