@@ -39,7 +39,7 @@ const state = {
     restaurantSelectedIndex: null,
     restaurantDatePicker: null,
     restaurantConfig: { airtableWebhookUrl: '', confirmWebhookUrl: '', crmLeadUrlTemplate: '' },
-    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: 80, soldOutDate: null, closedEventDate: null, soldOutMessage: '', closedEventMessage: '' },
+    restaurantAvailability: { accepting: true, closedDates: [], dailyCapacity: 80, soldOutDate: null, soldOutTime: null, closedEventDate: null, closedEventTime: null, soldOutMessage: '', closedEventMessage: '' },
     // Reservas archivadas (solo clientes con feature activado, ej: roof-107)
     archivedReservationIds: new Set(),
     // Selección masiva del board de escritorio (archivar/desarchivar en lote)
@@ -3624,7 +3624,9 @@ async function loadRestaurantAvailability() {
                 closedDates: data.closed_dates || [],
                 dailyCapacity: data.daily_capacity || 80,
                 soldOutDate: data.sold_out_date || null,
+                soldOutTime: data.sold_out_time ? String(data.sold_out_time).slice(0, 5) : null,
                 closedEventDate: data.closed_event_date || null,
+                closedEventTime: data.closed_event_time ? String(data.closed_event_time).slice(0, 5) : null,
                 soldOutMessage: data.sold_out_message || DEFAULT_SOLD_OUT_MSG,
                 closedEventMessage: data.closed_event_message || DEFAULT_CLOSED_EVENT_MSG
             };
@@ -3659,7 +3661,9 @@ async function saveRestaurantAvailability() {
             closed_dates: state.restaurantAvailability.closedDates,
             daily_capacity: state.restaurantAvailability.dailyCapacity,
             sold_out_date: state.restaurantAvailability.soldOutDate,
+            sold_out_time: state.restaurantAvailability.soldOutTime || null,
             closed_event_date: state.restaurantAvailability.closedEventDate,
+            closed_event_time: state.restaurantAvailability.closedEventTime || null,
             sold_out_message: state.restaurantAvailability.soldOutMessage,
             closed_event_message: state.restaurantAvailability.closedEventMessage,
             updated_at: new Date().toISOString()
@@ -3690,23 +3694,45 @@ function toggleAcceptingReservations() {
     renderAvailabilityPanel();
 }
 
-// Sold Out de HOY: no toma reservas pero el agente ofrece walk-in.
-// Mutuamente excluyente con "Cerrado por eventualidad". Persiste de inmediato.
-function toggleSoldOut() {
+// Sold Out: no toma reservas pero el agente ofrece walk-in. Se programa para una
+// fecha (hoy o futura) con hora de inicio opcional; aplica desde esa hora hasta la
+// medianoche de ese día. Mutuamente excluyente con "Cerrado por eventualidad".
+function scheduleSoldOut() {
+    const dateEl = document.getElementById('avail-soldout-date');
+    const timeEl = document.getElementById('avail-soldout-time');
+    const date = dateEl && dateEl.value ? dateEl.value : null;
+    if (!date) { showToast('Elige una fecha para el Sold Out', 'error'); return; }
     const av = state.restaurantAvailability;
-    const active = av.soldOutDate === todayBusinessDate();
-    av.soldOutDate = active ? null : todayBusinessDate();
-    if (av.soldOutDate) av.closedEventDate = null; // excluyentes
+    av.soldOutDate = date;
+    av.soldOutTime = timeEl && timeEl.value ? timeEl.value : null;
+    av.closedEventDate = null; av.closedEventTime = null; // excluyentes
+    renderAvailabilityPanel();
+    saveRestaurantAvailability();
+}
+function clearSoldOut() {
+    const av = state.restaurantAvailability;
+    av.soldOutDate = null; av.soldOutTime = null;
     renderAvailabilityPanel();
     saveRestaurantAvailability();
 }
 
-// Cerrado por eventualidad de HOY: cierre total, ni reservas ni walk-ins.
-function toggleClosedEvent() {
+// Cerrado por eventualidad: cierre total (ni reservas ni walk-ins). Mismo modelo de
+// programación fecha + hora de inicio. Mutuamente excluyente con Sold Out.
+function scheduleClosedEvent() {
+    const dateEl = document.getElementById('avail-closed-date');
+    const timeEl = document.getElementById('avail-closed-time');
+    const date = dateEl && dateEl.value ? dateEl.value : null;
+    if (!date) { showToast('Elige una fecha para el cierre', 'error'); return; }
     const av = state.restaurantAvailability;
-    const active = av.closedEventDate === todayBusinessDate();
-    av.closedEventDate = active ? null : todayBusinessDate();
-    if (av.closedEventDate) av.soldOutDate = null; // excluyentes
+    av.closedEventDate = date;
+    av.closedEventTime = timeEl && timeEl.value ? timeEl.value : null;
+    av.soldOutDate = null; av.soldOutTime = null; // excluyentes
+    renderAvailabilityPanel();
+    saveRestaurantAvailability();
+}
+function clearClosedEvent() {
+    const av = state.restaurantAvailability;
+    av.closedEventDate = null; av.closedEventTime = null;
     renderAvailabilityPanel();
     saveRestaurantAvailability();
 }
@@ -3761,7 +3787,7 @@ function renderAvailabilityPanel() {
     updateAvailabilityButton();
 }
 
-// Sección "Estado de hoy" (Sold Out / Cerrado por eventualidad) — solo roof-107.
+// Sección "Estado programado" (Sold Out / Cerrado por eventualidad) — solo roof-107.
 function renderTodayStateSection() {
     const section = document.getElementById('avail-today-section');
     if (!section) return;
@@ -3769,30 +3795,52 @@ function renderTodayStateSection() {
     section.style.display = '';
 
     const av = state.restaurantAvailability;
+    renderScheduledState('soldout', av.soldOutDate, av.soldOutTime, av.soldOutMessage, DEFAULT_SOLD_OUT_MSG);
+    renderScheduledState('closed', av.closedEventDate, av.closedEventTime, av.closedEventMessage, DEFAULT_CLOSED_EVENT_MSG);
+}
+
+// Texto/estado para un estado programado (fecha + hora opcional).
+function renderScheduledState(key, date, time, msg, defaultMsg) {
+    const dateEl = document.getElementById(`avail-${key}-date`);
+    const timeEl = document.getElementById(`avail-${key}-time`);
+    const statusEl = document.getElementById(`avail-${key}-status`);
+    const msgEl = document.getElementById(`avail-${key}-msg`);
+
+    if (dateEl && document.activeElement !== dateEl) dateEl.value = date || '';
+    if (timeEl && document.activeElement !== timeEl) timeEl.value = time || '';
+    if (msgEl && document.activeElement !== msgEl) msgEl.value = msg || defaultMsg;
+
+    if (!statusEl) return;
     const today = todayBusinessDate();
-    const soldOutOn = av.soldOutDate === today;
-    const closedOn = av.closedEventDate === today;
-
-    const soToggle = document.getElementById('avail-soldout-toggle');
-    const soStatus = document.getElementById('avail-soldout-status');
-    const soMsg = document.getElementById('avail-soldout-msg');
-    if (soToggle) soToggle.classList.toggle('on', soldOutOn);
-    if (soStatus) {
-        soStatus.textContent = soldOutOn ? 'Activo hoy' : 'Inactivo';
-        soStatus.className = 'avail-toggle-label ' + (soldOutOn ? 'avail-status-on' : 'avail-status-off');
+    let text = 'Inactivo', cls = 'avail-status-off';
+    if (date) {
+        const fmtDate = formatBusinessDateLabel(date);
+        const hora = time ? ` · ${time}` : '';
+        if (date < today) {
+            text = 'Inactivo'; cls = 'avail-status-off'; // venció (quedó en el pasado)
+        } else if (date > today) {
+            text = `Programado · ${fmtDate}${hora}`; cls = 'avail-status-scheduled';
+        } else { // hoy
+            const now = nowBusinessTime();
+            if (time && now < time) { text = `Programado hoy · ${time}`; cls = 'avail-status-scheduled'; }
+            else { text = 'Activo ahora · hasta medianoche'; cls = 'avail-status-on'; }
+        }
     }
-    // No pisar lo que el usuario esté escribiendo
-    if (soMsg && document.activeElement !== soMsg) soMsg.value = av.soldOutMessage || DEFAULT_SOLD_OUT_MSG;
+    statusEl.textContent = text;
+    statusEl.className = 'avail-toggle-label ' + cls;
+}
 
-    const ceToggle = document.getElementById('avail-closed-toggle');
-    const ceStatus = document.getElementById('avail-closed-status');
-    const ceMsg = document.getElementById('avail-closed-msg');
-    if (ceToggle) ceToggle.classList.toggle('on', closedOn);
-    if (ceStatus) {
-        ceStatus.textContent = closedOn ? 'Activo hoy' : 'Inactivo';
-        ceStatus.className = 'avail-toggle-label ' + (closedOn ? 'avail-status-on' : 'avail-status-off');
+function nowBusinessTime() {
+    try {
+        return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Santo_Domingo', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+    } catch (e) {
+        return new Date().toTimeString().slice(0, 5);
     }
-    if (ceMsg && document.activeElement !== ceMsg) ceMsg.value = av.closedEventMessage || DEFAULT_CLOSED_EVENT_MSG;
+}
+
+function formatBusinessDateLabel(d) {
+    try { return new Date(d + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    catch (e) { return d; }
 }
 
 function updateAvailabilityButton() {
@@ -3848,8 +3896,10 @@ window.openReservationDetail = openReservationDetail;
 window.closeDetailModal = closeDetailModal;
 window.toggleAvailabilityPanel = toggleAvailabilityPanel;
 window.toggleAcceptingReservations = toggleAcceptingReservations;
-window.toggleSoldOut = toggleSoldOut;
-window.toggleClosedEvent = toggleClosedEvent;
+window.scheduleSoldOut = scheduleSoldOut;
+window.clearSoldOut = clearSoldOut;
+window.scheduleClosedEvent = scheduleClosedEvent;
+window.clearClosedEvent = clearClosedEvent;
 window.addClosedDate = addClosedDate;
 window.removeClosedDate = removeClosedDate;
 window.saveRestaurantAvailability = saveRestaurantAvailability;

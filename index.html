@@ -1133,8 +1133,7 @@
         }
         #restaurant-panel.hidden { display: none; }
         #restaurant-panel > .rest-toolbar-v2,
-        #restaurant-panel > .rest-board-toolbar,
-        #restaurant-panel > .avail-panel { flex-shrink: 0; }
+        #restaurant-panel > .rest-board-toolbar { flex-shrink: 0; }
 
         /* — Compact toolbar — */
         .rest-toolbar-v2 {
@@ -3577,7 +3576,7 @@
             box-shadow: 0 4px 24px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.05);
             animation: panel-in 0.22s cubic-bezier(0.16,1,0.3,1);
         }
-        .avail-panel.open { display: flex; }
+        .avail-panel.open { display: flex; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         @keyframes panel-in {
             from { opacity: 0; transform: translateY(-8px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -3712,6 +3711,19 @@
             resize: vertical;
             box-sizing: border-box;
         }
+        .avail-sched-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+        .avail-sched-row input[type="time"] { color-scheme: dark; }
+        .avail-clear-btn {
+            padding: 7px 14px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.7);
+            font-size: 0.8rem; font-weight: 500; font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .avail-clear-btn:hover { background: rgba(255,68,68,0.12); border-color: rgba(255,68,68,0.3); color: #fff; }
+        .avail-status-scheduled { color: #F59E0B; }
+        [data-theme="light"] .avail-clear-btn { background: #F1F5F9; border-color: #E2E8F0; color: #475569; }
         .avail-today-card .avail-msg-input:focus { border-color: rgba(117,81,255,0.5); background: rgba(255,255,255,0.06); }
         .avail-today-card .avail-msg-input::placeholder { color: rgba(255,255,255,0.3); }
         [data-theme="light"] .avail-today-card { background: rgba(15,23,42,0.02); border-color: rgba(15,23,42,0.08); }
@@ -5228,11 +5240,11 @@
                         </div>
                     </div>
 
-                    <!-- Estado de hoy (Sold Out / Cerrado por eventualidad) — solo roof-107 -->
+                    <!-- Estado programado (Sold Out / Cerrado por eventualidad) — solo roof-107 -->
                     <div id="avail-today-section" style="display:none;">
                         <div class="avail-sep"></div>
-                        <div class="avail-panel-label" style="margin-bottom:4px;">Estado de hoy</div>
-                        <div class="avail-panel-sub" style="margin-bottom:14px;">Se activa solo para hoy y se restablece automáticamente a medianoche. El agente responderá con el mensaje correspondiente.</div>
+                        <div class="avail-panel-label" style="margin-bottom:4px;">Estado programado</div>
+                        <div class="avail-panel-sub" style="margin-bottom:14px;">Elige la fecha (hoy o a futuro) y, si quieres, la hora de inicio. Aplica desde esa hora hasta la medianoche de ese día y se restablece solo. El agente responderá con el mensaje correspondiente.</div>
 
                         <div class="avail-today-card" id="avail-soldout-card">
                             <div class="avail-panel-row" style="margin:0;">
@@ -5240,10 +5252,13 @@
                                     <div class="avail-panel-label">Sold Out (agotado)</div>
                                     <div class="avail-panel-sub">No se toman reservas, pero el agente sí ofrece walk-in.</div>
                                 </div>
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <span id="avail-soldout-status" class="avail-toggle-label avail-status-off">Inactivo</span>
-                                    <button id="avail-soldout-toggle" class="avail-toggle" onclick="toggleSoldOut()"></button>
-                                </div>
+                                <span id="avail-soldout-status" class="avail-toggle-label avail-status-off">Inactivo</span>
+                            </div>
+                            <div class="avail-sched-row">
+                                <input type="date" id="avail-soldout-date" class="avail-date-input" title="Fecha del Sold Out">
+                                <input type="time" id="avail-soldout-time" class="avail-date-input" title="Hora de inicio (opcional)">
+                                <button class="avail-add-btn" onclick="scheduleSoldOut()"><ion-icon name="checkmark-outline"></ion-icon> Programar</button>
+                                <button class="avail-clear-btn" onclick="clearSoldOut()">Quitar</button>
                             </div>
                             <textarea id="avail-soldout-msg" class="avail-msg-input" rows="3" placeholder="Mensaje del agente cuando esté Sold Out…"></textarea>
                         </div>
@@ -5254,10 +5269,13 @@
                                     <div class="avail-panel-label">Cerrado por eventualidad</div>
                                     <div class="avail-panel-sub">Cierre total: no se aceptan reservas ni walk-ins.</div>
                                 </div>
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <span id="avail-closed-status" class="avail-toggle-label avail-status-off">Inactivo</span>
-                                    <button id="avail-closed-toggle" class="avail-toggle" onclick="toggleClosedEvent()"></button>
-                                </div>
+                                <span id="avail-closed-status" class="avail-toggle-label avail-status-off">Inactivo</span>
+                            </div>
+                            <div class="avail-sched-row">
+                                <input type="date" id="avail-closed-date" class="avail-date-input" title="Fecha del cierre">
+                                <input type="time" id="avail-closed-time" class="avail-date-input" title="Hora de inicio (opcional)">
+                                <button class="avail-add-btn" onclick="scheduleClosedEvent()"><ion-icon name="checkmark-outline"></ion-icon> Programar</button>
+                                <button class="avail-clear-btn" onclick="clearClosedEvent()">Quitar</button>
                             </div>
                             <textarea id="avail-closed-msg" class="avail-msg-input" rows="3" placeholder="Mensaje del agente cuando esté cerrado…"></textarea>
                         </div>
