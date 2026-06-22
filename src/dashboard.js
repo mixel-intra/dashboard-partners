@@ -3483,7 +3483,8 @@ function showConfirmModal(reservation, action) {
         if (isConfirm) {
             const dateStr = formatReservationDate(reservation);
             const timeStr = reservation.horaEvento ? ` a las ${formatTime(reservation.horaEvento)}` : '';
-            msgField.value = `¡Hola ${reservation.nombre}! Tu reserva para el ${dateStr}${timeStr} está confirmada. ¡Te esperamos en 107 Rooftop! 🍽️`;
+            const venueName = (state.config && state.config.clientName) ? state.config.clientName : 'nuestro local';
+            msgField.value = `¡Hola ${reservation.nombre}! Tu reserva para el ${dateStr}${timeStr} está confirmada. ¡Te esperamos en ${venueName}! 🍽️`;
         } else {
             msgField.value = '';
             msgField.placeholder = 'Selecciona un motivo arriba o escribe un mensaje...';
