@@ -6649,16 +6649,55 @@ let chhTimer = null;
 
 function initChannelHealth() {
     const panel = document.getElementById('channel-health-panel');
+    const tabs = document.getElementById('intra-tabs');
     if (!panel) return;
     // Candado por ROL: solo Intra (admin). El cliente no lo ve.
     const session = (typeof getSession === 'function') ? getSession() : null;
     const isIntra = !!(session && session.role === 'admin');
-    if (!isIntra) { panel.classList.add('hidden'); return; }
 
-    panel.classList.remove('hidden');
-    fetchChannelHealth();
-    if (chhTimer) clearInterval(chhTimer);
-    chhTimer = setInterval(fetchChannelHealth, 60000);
+    // En reposo el panel queda oculto (detrás de la pestaña) y sin timer corriendo.
+    panel.classList.add('hidden');
+    if (chhTimer) { clearInterval(chhTimer); chhTimer = null; }
+
+    if (!isIntra) { if (tabs) tabs.classList.add('hidden'); return; }
+
+    // Intra: mostrar la mini-barra; el panel vive detrás de la pestaña "Salud de Canales".
+    if (tabs) {
+        tabs.classList.remove('hidden');
+        tabs.querySelectorAll('.intra-tab').forEach(b =>
+            b.classList.toggle('active', b.dataset.intra === 'dashboard'));
+    }
+}
+
+// Mini-barra Intra: alterna entre el dashboard normal y el panel Salud de Canales.
+// Solo se invoca desde botones que únicamente existen para admin (gateados en initChannelHealth).
+function switchIntraTab(which) {
+    const tabs = document.getElementById('intra-tabs');
+    if (tabs) tabs.querySelectorAll('.intra-tab').forEach(b =>
+        b.classList.toggle('active', b.dataset.intra === which));
+
+    const panel = document.getElementById('channel-health-panel');
+    const hotelTabs = document.getElementById('hotel-tabs');
+    const isHotel = state.clientType === 'hotel';
+
+    if (which === 'canales') {
+        // Ocultar todo el contenido del dashboard; dejar visible solo Salud de Canales.
+        document.querySelectorAll('.content-header-row, .dashboard-grid')
+            .forEach(el => el.classList.add('hidden'));
+        ['hospedaje-panel', 'eventos-panel', 'social-listening-panel', 'restaurant-panel', 'eventos-pipeline-cta']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+        if (hotelTabs) hotelTabs.classList.add('hidden');
+        if (panel) panel.classList.remove('hidden');
+        fetchChannelHealth();
+        if (chhTimer) clearInterval(chhTimer);
+        chhTimer = setInterval(fetchChannelHealth, 60000);
+    } else {
+        // Volver al dashboard: esconder canales, parar el timer y restaurar la sub-vista activa.
+        if (panel) panel.classList.add('hidden');
+        if (chhTimer) { clearInterval(chhTimer); chhTimer = null; }
+        if (hotelTabs && isHotel) hotelTabs.classList.remove('hidden');
+        switchDashTab(state.activeTab || 'eventos');
+    }
 }
 
 async function fetchChannelHealth() {

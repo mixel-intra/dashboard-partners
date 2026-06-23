@@ -4680,6 +4680,26 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Mini-barra Intra (solo admin) — alterna Dashboard / Salud de Canales. El cliente final NUNCA la ve. -->
+            <style>
+                .intra-tabs{display:flex;gap:6px;margin:14px 24px 0;flex-wrap:wrap;}
+                .intra-tab{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:650;color:var(--text-muted);background:transparent;border:1px solid var(--border-subtle);border-radius:10px;padding:7px 13px;cursor:pointer;transition:all .15s;}
+                .intra-tab ion-icon{font-size:16px;}
+                .intra-tab:hover{color:var(--text-primary);border-color:var(--text-muted);}
+                .intra-tab.active{color:#fff;background:#7551FF;border-color:#7551FF;}
+                .intra-tab-badge{font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#b45309;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);border-radius:999px;padding:1px 6px;}
+                .intra-tab.active .intra-tab-badge{color:#fff;background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4);}
+            </style>
+            <div id="intra-tabs" class="intra-tabs hidden">
+                <button class="intra-tab active" data-intra="dashboard" onclick="switchIntraTab('dashboard')">
+                    <ion-icon name="grid-outline"></ion-icon><span>Dashboard</span>
+                </button>
+                <button class="intra-tab" data-intra="canales" onclick="switchIntraTab('canales')">
+                    <ion-icon name="pulse-outline"></ion-icon><span>Salud de Canales</span>
+                    <span class="intra-tab-badge">Intra</span>
+                </button>
+            </div>
+
             <div class="content-header-row">
                 <div class="header-title-area">
                     <div class="live-label">
