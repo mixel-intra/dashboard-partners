@@ -5414,9 +5414,7 @@ function renderRestMobileBanner() {
 
 function getRestMobileFilteredReservations() {
     const all = state.restaurantReservations || [];
-    const todayK = todayKeyMx();
     const tab = state.restMobile.activeTab;
-    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
     const dateFilter = state.restMobile.dateFilter;
     const q = (state.restMobile.search || '').trim().toLowerCase();
 
@@ -5448,37 +5446,23 @@ function getRestMobileFilteredReservations() {
     // Tab "Archivadas": todas las archivadas, sin más filtros.
     if (archivedView) return base;
 
-    return base.filter(r => {
-        const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
-        const dKey = d ? dateKey(d) : null;
-        const isUpcoming = !d || (() => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x >= todayDate; })();
-        if (tab === 'pendientes') return r.estado === 'Nuevo Lead' && isUpcoming;
-        if (tab === 'hoy') return dKey === todayK;
-        if (tab === 'proximas') return r.estado === 'Confirmado' && isUpcoming;
-        return true;
-    });
+    // Mismas reglas que desktop (el tab mobile "pendientes" = vista "nuevos").
+    return base.filter(r => matchesRestaurantView(r, tab === 'pendientes' ? 'nuevos' : tab));
 }
 
 function renderRestMobileTabs() {
     const all = state.restaurantReservations || [];
-    const todayK = todayKeyMx();
-    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
 
-    const counts = { pendientes: 0, hoy: 0, proximas: 0, archivadas: 0 };
-    all.forEach(r => {
-        if (state.archivedReservationIds.has(r.id)) { counts.archivadas++; return; } // archivadas no cuentan en los demás tabs
-        const d = r.fecha_parsed || parseFechaEvento(r.fechaEvento);
-        const dKey = d ? dateKey(d) : null;
-        const isUpcoming = !d || (() => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x >= todayDate; })();
-        if (r.estado === 'Nuevo Lead' && isUpcoming) counts.pendientes++;
-        if (dKey === todayK) counts.hoy++;
-        if (r.estado === 'Confirmado' && isUpcoming) counts.proximas++;
-    });
+    // Conteos idénticos a desktop: reutilizamos matchesRestaurantView (el tab
+    // mobile "pendientes" equivale a la vista "nuevos").
+    const viewOf = (t) => (t === 'pendientes' ? 'nuevos' : t);
+    const countFor = (t) => all.filter(r => matchesRestaurantView(r, viewOf(t))).length;
     const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    setText('restm-count-pendientes', counts.pendientes);
-    setText('restm-count-hoy', counts.hoy);
-    setText('restm-count-proximas', counts.proximas);
-    setText('restm-count-archivadas', counts.archivadas);
+    setText('restm-count-pendientes', countFor('pendientes'));
+    setText('restm-count-confirmadas', countFor('confirmadas'));
+    setText('restm-count-todas', countFor('todas'));
+    setText('restm-count-rechazadas', countFor('rechazadas'));
+    setText('restm-count-archivadas', countFor('archivadas'));
 
     // Tab "Archivadas" y fila de selección: solo para clientes con la feature (roof-107)
     if (clientHasArchiveFeature()) {
@@ -5567,8 +5551,10 @@ function renderRestMobileList() {
         } else {
             const emptyByTab = {
                 pendientes: { icon: 'checkmark-done-outline', title: 'Todo al día ✨', sub: 'No hay reservas pendientes por responder.' },
-                hoy: { icon: 'restaurant-outline', title: 'Sin reservas hoy', sub: 'Cuando lleguen reservas para hoy las verás aquí.' },
-                proximas: { icon: 'calendar-clear-outline', title: 'Sin próximas', sub: 'Todavía no hay reservas confirmadas a futuro.' }
+                confirmadas: { icon: 'calendar-clear-outline', title: 'Sin confirmadas', sub: 'Todavía no hay reservas confirmadas a futuro.' },
+                todas: { icon: 'restaurant-outline', title: 'Sin reservas', sub: 'Aún no hay reservas registradas.' },
+                rechazadas: { icon: 'close-circle-outline', title: 'Sin rechazadas', sub: 'No hay reservas rechazadas.' },
+                archivadas: { icon: 'archive-outline', title: 'Sin archivadas', sub: 'No hay reservas archivadas.' }
             };
             empty = emptyByTab[tab] || emptyByTab.pendientes;
         }

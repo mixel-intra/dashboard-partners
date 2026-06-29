@@ -1607,6 +1607,8 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
    ============================================================ */
 .rest-mobile { display: none; }
 
+/* Vista táctil dedicada SOLO en celular (≤480px). En tablet y desktop se usa
+   el layout normal del dashboard, que es responsive. */
 @media (max-width: 480px) {
     body[data-mobile-mode="restaurant"] #app-wrapper { display: none !important; }
     body[data-mobile-mode="restaurant"] .mobile-dash { display: none !important; }
@@ -1759,12 +1761,17 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
     border-radius: 14px;
     background: rgba(255,255,255,0.045);
     border: 1px solid rgba(255,255,255,0.07);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
 }
+.restm-tabs::-webkit-scrollbar { display: none; }
 [data-theme="light"] .restm-tabs { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.06); }
 .restm-tab {
-    flex: 1;
+    flex: 0 0 auto;
+    white-space: nowrap;
     display: flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 9px 10px;
+    padding: 9px 14px;
     background: transparent;
     border: none;
     border-radius: 10px;
