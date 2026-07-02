@@ -277,9 +277,9 @@ function renderHeroYFunnel(cur, prev) {
 
     // Funnel: primer mensaje → con respuesta → calificado
     const stages = [
-        { name: 'Primer mensaje',  value: total,      color: PALETTE[0] },
-        { name: 'Con respuesta',   value: conResp,     color: PALETTE[3] },
-        { name: 'Lead calificado', value: calificados, color: PALETTE[1] },
+        { name: 'Mensajes recibidos', value: total,      color: PALETTE[0] },
+        { name: 'Leads calificados',  value: conResp,     color: PALETTE[3] },
+        { name: 'Citas agendadas',    value: calificados, color: PALETTE[1] },
     ];
     const max = Math.max(1, total);
     document.getElementById('funnel').innerHTML = stages.map(s => `
@@ -295,8 +295,8 @@ function renderHeroYFunnel(cur, prev) {
 
     const ultimo = [...cur].filter(esCalificado).sort((a, b) => (F.fecha(b) || 0) - (F.fecha(a) || 0))[0];
     setTxt('tickerMsg', ultimo
-        ? `Nuevo lead calificado · ${F.nombre(ultimo)} (${F.campana(ultimo)})`
-        : 'El agente está calificando leads en tiempo real.');
+        ? `Nueva cita agendada · ${F.nombre(ultimo)} (${F.campana(ultimo)})`
+        : 'El agente está agendando demos en tiempo real.');
 }
 
 // --- Donut: tasa de calificación (calificados / con respuesta) ---
@@ -312,7 +312,7 @@ function renderDonut(cur) {
           stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
           transform="rotate(-90 70 70)" style="transition:stroke-dashoffset 700ms cubic-bezier(0.2,0.7,0.2,1);"/>
         <text x="70" y="70" text-anchor="middle" font-family="Inter,sans-serif" font-size="30" font-weight="600" fill="#0A6CFF">${rate}%</text>
-        <text x="70" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#86868B">califican</text>
+        <text x="70" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#86868B">agendan</text>
       </svg>`;
 }
 
@@ -356,7 +356,7 @@ function renderCampanas(cur, prev) {
             <span style="font-size:13px; font-weight:600; color:#1D1D1F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(g.key)}</span>
           </div>
           <div style="font-size:40px; font-weight:600; letter-spacing:-0.03em; color:#0A6CFF; line-height:1;">${fmtInt(g.count)}</div>
-          <div style="font-size:12px; color:#86868B; margin-top:8px;">leads · ${pct(g.count, totalLeads)}%</div>
+          <div style="font-size:12px; color:#86868B; margin-top:8px;">demos agendadas · ${pct(g.count, totalLeads)}%</div>
           <div style="height:6px; border-radius:999px; background:#E9ECF1; overflow:hidden; margin-top:14px;">
             <div style="height:100%; width:${pct(g.count, max)}%; background:${color}; border-radius:999px; transition:width 600ms cubic-bezier(0.2,0.7,0.2,1);"></div>
           </div>
@@ -446,7 +446,7 @@ function renderTrend(cur) {
         const p = pts[idx], b = buckets[idx];
         marker.setAttribute('cx', p[0]); marker.setAttribute('cy', p[1]); marker.setAttribute('opacity', '1');
         guide.setAttribute('x1', p[0]); guide.setAttribute('x2', p[0]); guide.setAttribute('opacity', '0.45');
-        tip.textContent = `${b.count} ${b.count === 1 ? 'calificado' : 'calificados'} · ${b.date.getDate()} ${meses[b.date.getMonth()]}`;
+        tip.textContent = `${b.count} ${b.count === 1 ? 'demo' : 'demos'} · ${b.date.getDate()} ${meses[b.date.getMonth()]}`;
         tip.style.left = (p[0] / W * 100) + '%';
         tip.style.top = (p[1] / H * 100) + '%';
         tip.style.opacity = '1';
