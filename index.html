@@ -8,6 +8,17 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Dashboard partners | Client Dashboard</title>
     <script>
+        // Ruteo por cliente: logic-systems usa un panel dedicado (director.html).
+        // Se corre lo más arriba posible para no cargar el dashboard estándar en vano.
+        (function () {
+            var qs = location.search;
+            var client = new URLSearchParams(qs).get('client');
+            if (client && client.toLowerCase() === 'logic-systems') {
+                location.replace('director.html' + qs);
+            }
+        })();
+    </script>
+    <script>
         // Theme init en <head> para que Safari use el theme-color correcto desde el primer paint
         (function () {
             var t = localStorage.getItem('intra-theme');

@@ -1,8 +1,9 @@
 # 📌 Estado del proyecto — Dashboard Partners (Intra)
 
-> Última actualización: 2026-06-04. Documento de checkpoint para retomar/explicar el trabajo.
-> Resume **dos features** construidas en esta etapa: el **Monitor de Salud de Canales (Kommo)**
-> y los **ajustes al dashboard de CEFEMEX Casa de Empeño**.
+> Última actualización: 2026-07-02. Documento de checkpoint para retomar/explicar el trabajo.
+> Resume las features construidas: el **Monitor de Salud de Canales (Kommo)**,
+> los **ajustes al dashboard de CEFEMEX Casa de Empeño** y el nuevo
+> **Panel del Director General (Logic Systems)** — ver sección 5.
 
 ---
 
@@ -101,6 +102,48 @@ Viven en `index.html` + `src/dashboard.js` (funciones `cde*` / `renderCdeExtra`)
 - [ ] (Mejor calidad de datos) que el equipo llene el dropdown "RAZONES DE PÉRDIDAS" en Kommo.
 - [ ] Decidir si ROAS usa gasto total (actual) o el del periodo filtrado.
 - [ ] Verificar todo en el deploy de Vercel (los leads solo cargan con server real, no estático).
+
+---
+
+## 5. Panel del Director General — Logic Systems  🆕 (solo `logic-systems`, gateado)
+
+Dashboard **exclusivo** del cliente `logic-systems`, con un diseño propio (bento grid claro,
+enfoque "generación de demanda") distinto al dashboard estándar. **No afecta a ningún otro cliente.**
+
+### Cómo funciona
+- **Ruteo:** `index.html` tiene un guard en `<head>` que, si `?client=logic-systems`, redirige a
+  `director.html` (y `director.html` redirige de vuelta a `index.html` cualquier otro cliente).
+  Así el dashboard estándar (`dashboard.js`, 7.4k líneas) ni siquiera se carga para este cliente.
+- **Layout:** es una **página standalone** (bento grid claro, autocontenido con estilos inline),
+  independiente del shell del dashboard estándar. Solo carga Inter + Phosphor; no usa `style.css`
+  ni el sidebar/topbar de la app.
+- **Datos:** mismo pipeline que el resto → `clients_config.webhook_url` → `/api/proxy` → leads de Kommo.
+  Sin framework (vanilla JS), igual que el resto del repo.
+
+### Archivos
+| Archivo | Qué es |
+|---|---|
+| `director.html` | Página standalone del panel (bento grid con estilos inline del diseño). |
+| `src/director.js` | Capa de datos + render. Todo el mapeo lead→panel está en `F` (campos) y `ST` (etapas). |
+| `index.html` (1 edit) | Guard de ruteo en `<head>` hacia `director.html`. |
+
+### Mapeo de datos (leads de Kommo)
+El diseño original era un placeholder B2B ("demos", "sistemas"); se **remapeó** a los datos reales:
+- **Hero "Leads calificados"** = leads en `atencion personalizada` (id 100538416) + `Seguimiento CAMILA`
+  (id 100605424). **Descartados** = `rechazado` (id 100538408). **Sin respuesta** = id 100781696.
+- **Funnel:** Primer mensaje (total) → Con respuesta (no "SIN RESPUESTA") → Calificado.
+- **Fuente de los leads** = `utm_medium`. **Estadísticas / filtro "Campaña"** = `utm_campaign`.
+- **Tasa de calificación** (donut) = calificados ÷ con respuesta. **Prospectos en seguimiento** =
+  leads calificados recientes (nombre, teléfono, campaña, estado).
+- Las **etapas se detectan por `estatus_id`** (robusto), con fallback al texto de `estatus`.
+  Si el pipeline de Kommo agrega etapas, actualizar el objeto `ST` en `director.js`.
+
+### Pendiente / notas
+- [ ] **Configurar `webhook_url` de `logic-systems`** en admin → Identidad. Sin él, el panel
+  carga vacío con un aviso (no truena). Es la causa del error "no tiene webhook_url configurado".
+- [ ] Confirmar el **slug real** en `clients_config` (se asume `logic-systems`).
+- [ ] Verificar en navegador con datos reales (labels/umbrales de etapas ajustables en `director.js`).
+- [ ] `director.js` se carga con `?v=YYYYMMDD-N` (cache-busting); subir el número al cambiar el JS.
 
 ---
 
