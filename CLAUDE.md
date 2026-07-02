@@ -56,6 +56,7 @@ Each top-level `.html` file is a standalone page that pulls in shared modules fr
 | `pipeline.html` | (inline) | Sales/lead pipeline view |
 | `admin.html` | `backoffice.js` | Intra-only back office: manage `clients_config`, users, lead templates |
 | `lead.html` | `lead-template-render.js` | Public per-lead landing page (`/lead?id=…`) |
+| `director.html` | `director.js` | **`logic-systems` only** — dedicated "Panel del Director General". Reached via a redirect guard in `index.html`; see the client section below. |
 
 ### Multi-tenant Supabase (the central concept)
 Two Supabase layers, see `src/config.js`:
@@ -76,6 +77,33 @@ row → sets theme/labels and picks rendering behavior from `client_type`
 **Anon keys are hardcoded in `config.js` and RLS is open** across the app — this is a
 partner-facing dashboard, not a hardened multi-user system. Don't assume RLS protects
 tenant data.
+
+### `logic-systems` — Panel del Director General (caso especial)
+`logic-systems` **no usa el dashboard estándar**. Un guard en el `<head>` de
+`index.html` redirige `?client=logic-systems` a `director.html` (y `director.html`
+redirige de vuelta a `index.html` cualquier otro slug). El panel es una página
+standalone (`director.html` + `src/director.js`, bento grid claro, estilos inline; no
+usa `style.css` ni el sidebar/topbar). Mismo pipeline de datos que el resto:
+`clients_config.webhook_url` → `/api/proxy` → leads de Kommo. Si el `webhook_url` no
+está configurado en admin, el panel carga vacío (no truena).
+
+**Qué mira el cliente:** los leads que piden **demos de sus sistemas**. La empresa
+tiene 4 sistemas y el panel gira en torno a dos dimensiones **fijas** (no dinámicas
+como en el dashboard estándar):
+
+- **Sistema** (antes "Campaña" — el label del filtro y las tarjetas dicen "Sistema"):
+  botones fijos para los 4 productos → **CIB Financiera, e-SIGeN, CIB Casa de Empeño,
+  e-SIGeN PLD**. Definidos en `SISTEMAS` (`src/director.js`); cada lead se mapea con
+  `normSistema()` desde `utm_campaign`.
+- **Fuente:** botones fijos → **Facebook, WhatsApp, Instagram, Google** (siempre estas
+  cuatro). Definidos en `FUENTES`; cada lead se mapea con `normFuente()` desde
+  `utm_medium`/`utm_source`.
+
+`normSistema()`/`normFuente()` normalizan por regex con fallbacks, así que toleran
+variantes (`fb`, `ig`, `cpc`, "casa de empeño", etc.). **Cuando confirmes cómo llega
+el dato real de Kommo, ajusta esos patrones.** El agente de IA que califica los leads
+se llama **Camila** (etapa "Seguimiento CAMILA" en el pipeline de Kommo). Bump del
+cache-bust `director.js?v=YYYYMMDD-N` al tocar el JS.
 
 ### Data sources (three of them)
 1. **n8n webhooks** — lead data is fetched from n8n webhook URLs stored in

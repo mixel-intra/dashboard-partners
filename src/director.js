@@ -29,11 +29,38 @@ const F = {
     estadoId: l => Number(firstNonEmpty(l.estatus_id, l.stage_id)) || null,
     precio:   l => Number(firstNonEmpty(l.precio, l.monto, l.valor)) || 0,
     fecha:    l => parseFecha(firstNonEmpty(l.fecha_creacion, l.fecha, l.created_at)),
-    // Dimensiones de marketing (UTM de Kommo).
-    fuente:   l => firstNonEmpty(l.utm_medium, l.utm_source, l.fuente, l.canal) || 'Directo',
-    campana:  l => firstNonEmpty(l.utm_campaign, l.campana, l.campaign) || 'Sin campaña',
+    // Dimensiones de marketing (UTM de Kommo), normalizadas a las dimensiones fijas del negocio.
+    fuente:   l => normFuente(l)  || 'Otra',
+    sistema:  l => normSistema(l) || 'Otro',
+    campana:  l => normSistema(l) || 'Otro',   // alias histórico: en Logic Systems "campaña" ES el sistema
     respuesta: l => firstNonEmpty(l.respuesta_ai, l.ultimo_mensaje) || '',
 };
+
+// --- Dimensiones fijas del negocio de Logic Systems ----------
+// La empresa vende demos de 4 sistemas; cada lead pide uno de ellos (chips "Sistema").
+const SISTEMAS = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN PLD'];
+// Las fuentes de adquisición que se manejan siempre (chips "Fuente").
+const FUENTES  = ['Facebook', 'WhatsApp', 'Instagram', 'Google'];
+
+// Normaliza el valor crudo del lead (utm_campaign) a uno de los 4 sistemas fijos, o null si no cae.
+// Ajusta los patrones cuando confirmes cómo llega el dato real desde Kommo.
+function normSistema(l) {
+    const s = (firstNonEmpty(l.utm_campaign, l.sistema, l.campana, l.campaign) || '').toString().toLowerCase();
+    if (/empe[ñn]o|casa.?de.?emp/.test(s)) return 'CIB Casa de Empeño'; // antes que "cib"
+    if (/pld/.test(s))                     return 'e-SIGeN PLD';        // antes que "sigen"
+    if (/e.?sigen|sigen/.test(s))          return 'e-SIGeN';
+    if (/financiera|cib/.test(s))          return 'CIB Financiera';
+    return null;
+}
+// Normaliza la fuente cruda del lead (utm_medium/utm_source) a una de las 4 fuentes fijas, o null si no cae.
+function normFuente(l) {
+    const s = (firstNonEmpty(l.utm_medium, l.utm_source, l.fuente, l.canal) || '').toString().toLowerCase();
+    if (/whats|wpp|\bwa\b/.test(s))             return 'WhatsApp';
+    if (/insta|\big\b|ig[_-]/.test(s))          return 'Instagram';
+    if (/face|\bfb\b|fb[_-]|meta/.test(s))      return 'Facebook';
+    if (/google|goog|adwords|gads|\bcpc\b/.test(s)) return 'Google';
+    return null;
+}
 
 // --- Etapas del pipeline (por estatus_id, robusto al texto) --
 // Agrega aquí nuevos ids si el pipeline de Kommo crece.
@@ -241,25 +268,18 @@ function chipButton(label, active, onClick) {
     return b;
 }
 function renderChips() {
-    const campanas = topKeys(F.campana, 6);
-    const fuentes = topKeys(F.fuente, 6);
-
+    // Chips fijos: los 4 sistemas del negocio y las 4 fuentes que se manejan siempre.
     const sysHost = document.getElementById('sysChips');
     sysHost.innerHTML = '';
-    sysHost.appendChild(chipButton('Todas', !S.campanaFilter, () => { S.campanaFilter = null; renderChips(); renderAll(); }));
-    campanas.forEach(k => sysHost.appendChild(chipButton(k, S.campanaFilter === k,
+    sysHost.appendChild(chipButton('Todos', !S.campanaFilter, () => { S.campanaFilter = null; renderChips(); renderAll(); }));
+    SISTEMAS.forEach(k => sysHost.appendChild(chipButton(k, S.campanaFilter === k,
         () => { S.campanaFilter = (S.campanaFilter === k ? null : k); renderChips(); renderAll(); })));
 
     const srcHost = document.getElementById('srcChips');
     srcHost.innerHTML = '';
     srcHost.appendChild(chipButton('Todas', !S.fuenteFilter, () => { S.fuenteFilter = null; renderChips(); renderAll(); }));
-    fuentes.forEach(k => srcHost.appendChild(chipButton(k, S.fuenteFilter === k,
+    FUENTES.forEach(k => srcHost.appendChild(chipButton(k, S.fuenteFilter === k,
         () => { S.fuenteFilter = (S.fuenteFilter === k ? null : k); renderChips(); renderAll(); })));
-}
-function topKeys(accessor, n) {
-    const counts = {};
-    S.leads.forEach(l => { const k = accessor(l); if (k) counts[k] = (counts[k] || 0) + 1; });
-    return Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, n);
 }
 
 // --- Hero (calificados) + funnel + descartados ---------------
@@ -318,11 +338,13 @@ function renderDonut(cur) {
 
 // --- Fuente de los leads (utm_medium) ------------------------
 function renderSources(cur) {
-    const groups = groupCount(cur, F.fuente);
     const total = cur.length || 1;
-    const top = groups.slice(0, 4);
+    const counts = {};
+    cur.forEach(l => { const k = F.fuente(l); counts[k] = (counts[k] || 0) + 1; });
+    // Siempre las 4 fuentes fijas, en orden, aunque alguna venga en 0.
+    const top = FUENTES.map(k => ({ key: k, count: counts[k] || 0 }));
     const max = Math.max(1, ...top.map(g => g.count));
-    document.getElementById('sources').innerHTML = top.length ? top.map((g, i) => {
+    document.getElementById('sources').innerHTML = top.map((g, i) => {
         const color = PALETTE[i % PALETTE.length];
         return `
         <div style="margin-bottom:14px; cursor:pointer;" onclick="window.__dgFilterFuente(${jsArg(g.key)})">
@@ -334,19 +356,21 @@ function renderSources(cur) {
             <div style="height:100%; width:${pct(g.count, max)}%; background:${color}; border-radius:999px; transition:width 600ms cubic-bezier(0.2,0.7,0.2,1);"></div>
           </div>
         </div>`;
-    }).join('') : emptyMini('Sin fuentes en este periodo');
+    }).join('');
 }
 window.__dgFilterFuente = (k) => { S.fuenteFilter = (S.fuenteFilter === k ? null : k); renderChips(); renderAll(); };
 
 // --- Estadísticas por campaña + campaña top ------------------
 function renderCampanas(cur, prev) {
-    const groups = groupCount(cur, F.campana).slice(0, 4);
     const totalLeads = cur.length || 1;
-    const max = Math.max(1, ...groups.map(g => g.count));
-    const prevByCamp = {};
+    const curByCamp = {}, prevByCamp = {};
+    cur.forEach(l => { const k = F.campana(l); curByCamp[k] = (curByCamp[k] || 0) + 1; });
     prev.forEach(l => { const k = F.campana(l); prevByCamp[k] = (prevByCamp[k] || 0) + 1; });
+    // Siempre los 4 sistemas fijos, en orden, aunque alguno venga en 0.
+    const groups = SISTEMAS.map(k => ({ key: k, count: curByCamp[k] || 0 }));
+    const max = Math.max(1, ...groups.map(g => g.count));
 
-    document.getElementById('products').innerHTML = groups.length ? groups.map((g, i) => {
+    document.getElementById('products').innerHTML = groups.map((g, i) => {
         const color = PALETTE[i % PALETTE.length];
         const delta = fmtDelta(g.count, prevByCamp[g.key] || 0);
         return `
@@ -362,10 +386,11 @@ function renderCampanas(cur, prev) {
           </div>
           <div style="margin-top:14px;"><span style="display:inline-block; padding:3px 10px; border-radius:999px; background:#E7F7EF; color:#0E8F53; font-weight:600; font-size:12px;">↑ ${delta} vs. periodo</span></div>
         </div>`;
-    }).join('') : `<div style="grid-column:1/-1;">${emptyMini('Sin campañas en este periodo')}</div>`;
+    }).join('');
 
-    const topG = groups[0];
-    if (topG) {
+    // Sistema más solicitado = el de mayor volumen de demos.
+    const topG = groups.slice().sort((a, b) => b.count - a.count)[0];
+    if (topG && topG.count > 0) {
         setTxt('topShare', pct(topG.count, totalLeads) + '%');
         setTxt('topName', topG.key);
         setTxt('topValue', fmtInt(topG.count));
@@ -520,12 +545,6 @@ function renderSeguimiento(cur) {
 // ============================================================
 // HELPERS
 // ============================================================
-function groupCount(arr, accessor) {
-    const counts = {};
-    arr.forEach(l => { const k = accessor(l); if (k) counts[k] = (counts[k] || 0) + 1; });
-    return Object.keys(counts).map(k => ({ key: k, count: counts[k] })).sort((a, b) => b.count - a.count);
-}
-function emptyMini(msg) { return `<div style="padding:14px 0; font-size:12.5px; color:#A1A1A6;">${esc(msg)}</div>`; }
 // Serializa un string como argumento JS seguro dentro de un atributo onclick.
 function jsArg(str) { return JSON.stringify(String(str)).replace(/"/g, '&quot;'); }
 
@@ -533,8 +552,8 @@ function jsArg(str) { return JSON.stringify(String(str)).replace(/"/g, '&quot;')
 // DEMO data (solo si webhook_url === 'DEMO')
 // ============================================================
 function demoLeads() {
-    const fuentes = ['LAL 1% - BD', 'LAL 1% - Engagers 365', 'Google Ads', 'Directo'];
-    const campanas = ['Empresario sureste 1', 'Cargos', 'Retargeting Q3', 'Orgánico'];
+    const fuentes = ['Facebook', 'WhatsApp', 'Instagram', 'Google'];
+    const campanas = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN PLD'];
     const nombres = ['Carlos Vega', 'Liliana Estrada', 'Jorge Herrera', 'Ana Ruiz', 'MVZ. Cesar Gamboa', 'Sci consultores'];
     const stages = [ST.RECHAZADO, ST.RECHAZADO, ST.SEGUIMIENTO, ST.SIN_RESPUESTA, ST.ATENCION, ST.RECHAZADO];
     const labels = { [ST.RECHAZADO]: 'rechazado', [ST.SEGUIMIENTO]: 'Seguimiento CAMILA', [ST.SIN_RESPUESTA]: 'SIN RESPUESTA', [ST.ATENCION]: 'atencion personalizada' };
