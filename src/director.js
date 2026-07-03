@@ -212,18 +212,25 @@ async function loadConfig() {
 }
 
 async function fetchLeads() {
-    const webhook = S.config.webhook_url;
-    // Sin webhook configurado: no es un error fatal — se muestra el panel vacío
-    // con una guía para configurarlo en admin. (El resto de clientes funciona igual.)
-    if (!webhook) {
+    // Modo demo (datos ficticios): poner webhook_url = 'DEMO' en clients_config.
+    if (S.config.webhook_url === 'DEMO') { S.leads = demoLeads(); return; }
+
+    // Fuente actual: Airtable, vía /api/leads/list (endpoint server-side que guarda el
+    // token AIRTABLE_TOKEN y resuelve base/tabla desde clients_config.leads_config).
+    // MIGRACIÓN FUTURA A SUPABASE: reemplazar esta llamada por una query a
+    // window.clientSupabase (la capa per-client) contra la tabla de leads.
+    const res = await fetch('/api/leads/list?client=' + encodeURIComponent(SLUG));
+
+    // Aún sin Airtable configurado (base/tabla/token): no es error fatal, se muestra
+    // el panel vacío con una guía. (400 = falta config; 500 = falta el token.)
+    if (res.status === 400 || res.status === 500) {
         S.leads = [];
-        status('Configura el webhook de Logic Systems en admin → Identidad para ver datos.', true);
+        const msg = await res.json().catch(() => ({}));
+        status(msg.error || 'Configura el Airtable de Logic Systems para ver datos.', true);
         return;
     }
-    if (webhook === 'DEMO') { S.leads = demoLeads(); return; }
+    if (!res.ok) throw new Error('El origen de leads respondió ' + res.status);
 
-    const res = await fetch('/api/proxy?url=' + encodeURIComponent(webhook));
-    if (!res.ok) throw new Error('El webhook respondió ' + res.status);
     const raw = await res.json();
     S.leads = Array.isArray(raw) ? raw : (raw.leads || raw.data || []);
     console.log('[director] leads cargados:', S.leads.length);

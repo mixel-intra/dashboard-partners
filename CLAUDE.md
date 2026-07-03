@@ -83,9 +83,22 @@ tenant data.
 `index.html` redirige `?client=logic-systems` a `director.html` (y `director.html`
 redirige de vuelta a `index.html` cualquier otro slug). El panel es una página
 standalone (`director.html` + `src/director.js`, bento grid claro, estilos inline; no
-usa `style.css` ni el sidebar/topbar). Mismo pipeline de datos que el resto:
-`clients_config.webhook_url` → `/api/proxy` → leads de Kommo. Si el `webhook_url` no
-está configurado en admin, el panel carga vacío (no truena).
+usa `style.css` ni el sidebar/topbar).
+
+**Fuente de datos:** hoy los leads viven en **Airtable**. `fetchLeads()` los pide a
+**`/api/leads/list?client=logic-systems`** (`api/leads/list.js`), un endpoint
+server-side que guarda el token `AIRTABLE_TOKEN` y resuelve base/tabla desde
+`clients_config.leads_config` (JSON: `airtable_base_id`, `airtable_table_id`,
+`airtable_view?`, y un `field_map` opcional que alias-a los campos de Airtable a las
+claves que espera `director.js`). Si no está configurado, el panel carga vacío (no
+truena) con una guía. **Está pendiente cargar `leads_config` real** (base, tabla y
+nombres de campo) — hasta entonces el panel muestra el estado vacío o el modo demo
+(`webhook_url = 'DEMO'`). **La dirección es migrar de Airtable a Supabase**: cuando
+pase, se reemplaza esa llamada por una query a `clientSupabase`.
+
+Las **demos agendadas** hoy se *derivan* del estatus del lead (`esCalificado`);
+la dirección es que salgan de un **calendario real en Outlook con la cuenta del
+cliente** (integración pendiente).
 
 **Qué mira el cliente:** los leads que piden **demos de sus sistemas**. La empresa
 tiene 4 sistemas y el panel gira en torno a dos dimensiones **fijas** (no dinámicas
