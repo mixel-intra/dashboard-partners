@@ -3,6 +3,9 @@ node_modules
 .vercel
 dist
 .env
+.env*.local
+.next/
+*.tsbuildinfo
 *.log
 .gstack/
 

@@ -1,0 +1,101 @@
+/* ============================================================
+   DESIGN TOKENS — MD3 Dark Glass (Figma Make)
+   ============================================================ */
+:root {
+    --bg-app: #060410;
+    --bg-sidebar: rgba(10, 6, 24, 0.6);
+    --bg-card: rgba(255, 255, 255, 0.055);
+
+    --text-primary: rgba(255, 255, 255, 0.92);
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --text-muted: rgba(255, 255, 255, 0.38);
+
+    --accent-purple: #A78BFA;
+    --accent-purple-glow: rgba(167, 139, 250, 0.2);
+    --accent-green: #6EE7A0;
+    --accent-blue: #7DD3FC;
+    --accent-amber: #FBBF24;
+    --accent-rose: #FDA4AF;
+    --accent-red: #FCA5A5;
+
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --font-main: 'Inter', -apple-system, sans-serif;
+    --font-display: 'General Sans', 'Inter', -apple-system, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ── Body Background ── */
+body {
+    background: linear-gradient(145deg, #0A0618 0%, #0E0B2A 30%, #090F22 60%, #0D0820 100%);
+    background-attachment: fixed;
+    transition: background 0.5s ease;
+}
+
+/* Cosmic orbs */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(circle 700px at -80px -120px, rgba(138, 43, 226, 0.38) 0%, rgba(88, 28, 135, 0.14) 45%, transparent 70%),
+        radial-gradient(circle 750px at calc(100% + 80px) calc(100% + 80px), rgba(79, 70, 229, 0.30) 0%, rgba(49, 46, 129, 0.10) 45%, transparent 70%),
+        radial-gradient(circle 400px at 75% 35%, rgba(6, 182, 212, 0.13) 0%, transparent 65%);
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+/* Dot grid */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+/* ── Light Theme ── */
+[data-theme="light"] {
+    --bg-app: #F7F8FA;
+    --bg-sidebar: #FFFFFF;
+    --bg-card: #FFFFFF;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --accent-purple: #7C3AED;
+    --accent-purple-glow: rgba(124, 58, 237, 0.2);
+    --accent-green: #16A34A;
+    --accent-blue: #0284C7;
+    --accent-amber: #D97706;
+    --accent-rose: #E11D48;
+    --accent-red: #DC2626;
+    --border-subtle: rgba(15, 23, 42, 0.08);
+
+    /* Surface scale */
+    --surface-50:  #F8FAFC;
+    --surface-100: #F1F5F9;
+    --surface-200: #E2E8F0;
+    --surface-300: rgba(15, 23, 42, 0.14);
+
+    /* Shadow scale */
+    --shadow-xs: 0 1px 2px rgba(15,23,42,0.04);
+    --shadow-sm: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+    --shadow-md: 0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+    --shadow-lg: 0 8px 28px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.06);
+}
+
+[data-theme="light"] body {
+    background: #F7F8FA !important;
+    transition: background 0.5s ease;
+}
+
+[data-theme="light"] body::before,
+[data-theme="light"] body::after {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
