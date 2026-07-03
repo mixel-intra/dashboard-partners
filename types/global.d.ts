@@ -9,6 +9,8 @@ declare module 'react' {
         name?: string;
         src?: string;
         size?: string;
+        // React 19 pasa `class` directo a custom elements (paridad con el markup legacy)
+        class?: string;
       };
     }
   }
