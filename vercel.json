@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/scrape-reviews", "schedule": "0 6 * * *" }
+  ]
+}
