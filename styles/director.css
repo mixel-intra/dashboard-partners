@@ -1,0 +1,35 @@
+/* Estilos propios de /director — extraídos de legacy/director.html (bloque <style>).
+   Scoped a html.pg-director; el chrome compartido viene de theme-intra.css + style.css. */
+
+html.pg-director * { margin: 0; padding: 0; box-sizing: border-box; }
+html.pg-director, html.pg-director body { background: #F5F6F8; }
+@keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(31,179,107,0.5); } 70% { box-shadow: 0 0 0 9px rgba(31,179,107,0); } 100% { box-shadow: 0 0 0 0 rgba(31,179,107,0); } }
+@keyframes tkIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+.lift { transition: transform 200ms ease, box-shadow 200ms ease; }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(16,24,40,0.06), 0 18px 40px rgba(16,24,40,0.09); }
+.card-lift { transition: transform 200ms ease, box-shadow 200ms ease; }
+.card-lift:hover { transform: translateY(-2px); }
+html.pg-director button { font-family: inherit; cursor: pointer; border: none; }
+#dg-status { position: fixed; bottom: 18px; right: 18px; font: 13px/1.4 'Inter', sans-serif; color: #6E6E73; background: #fff; padding: 9px 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(16,24,40,0.12); z-index: 9999; }
+#dg-status.err { color: #B42318; background: #FEF3F2; }
+@media (max-width: 1100px) {
+    .dg-bento { grid-template-columns: 1fr 1fr !important; }
+    .dg-hero, .dg-trend, .dg-products, .dg-agenda { grid-column: 1 / span 2 !important; grid-row: auto !important; }
+    .dg-donut, .dg-sources, .dg-top { grid-column: auto !important; grid-row: auto !important; }
+}
+@media (max-width: 680px) {
+    .dg-wrap { padding: 24px 16px 48px !important; }
+    .dg-bento { grid-template-columns: 1fr !important; }
+    .dg-hero, .dg-trend, .dg-products, .dg-agenda, .dg-donut, .dg-sources, .dg-top { grid-column: 1 !important; }
+    .dg-products-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* Modal de contraseña en tema claro (mismo look que el resto del app) */
+[data-theme="light"] #change-pass-modal { background: rgba(0, 0, 0, 0.4) !important; backdrop-filter: blur(4px); }
+[data-theme="light"] #change-pass-modal .modal-content { background: #FFFFFF !important; border: 1px solid var(--border-subtle) !important; box-shadow: var(--shadow-lg) !important; }
+[data-theme="light"] #change-pass-modal h2 { color: var(--text-primary) !important; }
+[data-theme="light"] #change-pass-modal p { color: var(--text-secondary) !important; }
+[data-theme="light"] #change-pass-modal label { color: var(--text-muted) !important; }
+[data-theme="light"] #change-pass-modal input[type="password"] { background: var(--surface-100) !important; border: 1px solid var(--border-subtle) !important; color: var(--text-primary) !important; }
+[data-theme="light"] #change-pass-modal input[type="password"]:focus { background: #FFFFFF !important; border-color: var(--surface-300) !important; }
+[data-theme="light"] #change-pass-modal button[data-cerrar] { color: var(--text-secondary) !important; }

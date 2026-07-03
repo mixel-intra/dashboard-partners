@@ -102,6 +102,7 @@ export default function ChangePasswordModal({
       }}
     >
       <div
+        className="modal-content"
         style={{
           background: 'rgba(10,8,30,0.85)',
           backdropFilter: 'blur(40px)',
@@ -114,6 +115,7 @@ export default function ChangePasswordModal({
         }}
       >
         <button
+          data-cerrar
           onClick={onClose}
           style={{
             position: 'absolute',
