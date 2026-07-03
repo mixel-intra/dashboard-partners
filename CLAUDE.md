@@ -81,9 +81,14 @@ tenant data.
 ### `logic-systems` — Panel del Director General (caso especial)
 `logic-systems` **no usa el dashboard estándar**. Un guard en el `<head>` de
 `index.html` redirige `?client=logic-systems` a `director.html` (y `director.html`
-redirige de vuelta a `index.html` cualquier otro slug). El panel es una página
-standalone (`director.html` + `src/director.js`, bento grid claro, estilos inline; no
-usa `style.css` ni el sidebar/topbar).
+redirige de vuelta a `index.html` cualquier otro slug). El contenido es un bento grid
+claro con estilos inline (`director.html` + `src/director.js`), pero **reutiliza el
+chrome de layout compartido** (`src/style.css` + `src/theme-intra.css`): sidebar
+colapsable + topbar, igual que los demás dashboards, con `<html data-theme="light">`
+**fijo** (este panel NO tiene toggle de modo oscuro). El sidebar/menú-móvil solo trae
+Cambiar contraseña, Ver otro Dashboard y Cerrar sesión (`logout()` /
+`openChangePasswordModal()` vienen de `auth.js`; `toggleSidebar`/`toggleMobileMenu`
+están inline en `director.html`). Usa ionicons para el chrome y Phosphor para el bento.
 
 **Fuente de datos:** hoy los leads viven en **Airtable**. `fetchLeads()` los pide a
 **`/api/leads/list?client=logic-systems`** (`api/leads/list.js`), un endpoint

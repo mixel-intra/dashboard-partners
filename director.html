@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="es">
+<!-- Tema claro fijo: este panel no tiene toggle de modo oscuro (a diferencia del resto). -->
+<html lang="es" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -22,6 +23,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+
+    <!-- Ionicons + hojas de estilo del app: para reutilizar el chrome de layout (sidebar/topbar) -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="./src/theme-intra.css">
+    <link rel="stylesheet" href="./src/style.css">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,13 +53,78 @@
             .dg-hero, .dg-trend, .dg-products, .dg-agenda, .dg-donut, .dg-sources, .dg-top { grid-column: 1 !important; }
             .dg-products-grid { grid-template-columns: 1fr 1fr !important; }
         }
+
+        /* Modal de contraseña en tema claro (mismo look que el resto del app) */
+        [data-theme="light"] #change-pass-modal { background: rgba(0, 0, 0, 0.4) !important; backdrop-filter: blur(4px); }
+        [data-theme="light"] #change-pass-modal .modal-content { background: #FFFFFF !important; border: 1px solid var(--border-subtle) !important; box-shadow: var(--shadow-lg) !important; }
+        [data-theme="light"] #change-pass-modal h2 { color: var(--text-primary) !important; }
+        [data-theme="light"] #change-pass-modal p { color: var(--text-secondary) !important; }
+        [data-theme="light"] #change-pass-modal label { color: var(--text-muted) !important; }
+        [data-theme="light"] #change-pass-modal input[type="password"] { background: var(--surface-100) !important; border: 1px solid var(--border-subtle) !important; color: var(--text-primary) !important; }
+        [data-theme="light"] #change-pass-modal input[type="password"]:focus { background: #FFFFFF !important; border-color: var(--surface-300) !important; }
+        [data-theme="light"] #change-pass-modal button[onclick] { color: var(--text-secondary) !important; }
     </style>
 </head>
 
 <body>
     <div id="dg-status">Cargando datos…</div>
 
-    <div class="dg-wrap" style="min-height:100vh; background:#F5F6F8; background-image:radial-gradient(1100px 520px at 80% -14%, rgba(10,108,255,0.07), transparent 60%); font-family:'Inter',sans-serif; color:#1D1D1F; padding:48px 48px 72px; -webkit-font-smoothing:antialiased;">
+    <!-- Layout compartido con los demás dashboards (sidebar + topbar), sin botón de modo oscuro -->
+    <div class="app-container full-width-layout" id="app-wrapper">
+
+        <!-- Sidebar colapsable -->
+        <aside class="sidebar sidebar-collapsed" id="main-sidebar">
+            <button class="sidebar-hamburger" id="sidebar-hamburger-btn" onclick="toggleSidebar()" title="Menú">
+                <span class="sidebar-ham-lines"><span></span><span></span><span></span></span>
+                <span class="sidebar-ham-label">Menú</span>
+            </button>
+            <div class="sidebar-nav-icons">
+                <button onclick="openChangePasswordModal()" class="sidebar-icon-btn">
+                    <ion-icon name="key-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Cambiar contraseña</span>
+                </button>
+                <button onclick="window.location.href='hub.html'" class="sidebar-icon-btn">
+                    <ion-icon name="apps-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Ver otro Dashboard</span>
+                </button>
+                <button onclick="logout()" class="sidebar-icon-btn">
+                    <ion-icon name="log-out-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Cerrar sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Columna principal -->
+        <div class="main-column">
+
+            <!-- Topbar -->
+            <header class="main-header">
+                <div class="header-left">
+                    <div class="client-branding">
+                        <img id="client-logo" src="" alt="Client Logo" class="client-logo-img hidden">
+                        <div class="welcome-area">
+                            <span class="welcome-label">Bienvenido,</span>
+                            <h2 class="welcome-name" id="welcome-name">Administrador</h2>
+                            <h2 id="client-name-display" class="client-name-header">Cargando...</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="desktop-actions">
+                        <div class="intra-branding">
+                            <img src="src/assets/TechonologyByIntra_Claro.png" alt="Intra" class="intra-logo-img theme-logo-dark">
+                            <img src="src/assets/TechonologyByIntra_Oscuro.png" alt="Intra" class="intra-logo-img theme-logo-light">
+                        </div>
+                    </div>
+                    <button id="mobile-menu-btn" class="logout-btn" onclick="toggleMobileMenu()" title="Menú">
+                        <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Contenido (bento del panel) -->
+            <main class="main-content" style="padding:0;">
+    <div class="dg-wrap" style="min-height:100%; background:#F5F6F8; background-image:radial-gradient(1100px 520px at 80% -14%, rgba(10,108,255,0.07), transparent 60%); font-family:'Inter',sans-serif; color:#1D1D1F; padding:40px 48px 72px; -webkit-font-smoothing:antialiased;">
         <div style="max-width:1600px; margin:0 auto;">
 
             <!-- Header -->
@@ -174,6 +246,80 @@
             </div>
         </div>
     </div>
+            </main>
+        </div><!-- /main-column -->
+    </div><!-- /app-container -->
+
+    <!-- Modal: cambiar contraseña (idéntico al del app; funciona con auth.js) -->
+    <div id="change-pass-modal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #0A0A0A; border: 1px solid rgba(255,255,255,0.08); padding: 32px; border-radius: 24px; width: 100%; max-width: 400px; position: relative;">
+            <button onclick="closeChangePasswordModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; cursor: pointer; font-size: 1.5rem;">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+            <h2 style="font-size: 1.5rem; margin-bottom: 8px; color: #fff;">Cambiar Contraseña</h2>
+            <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-bottom: 24px;">Actualiza tu clave de acceso al portal.</p>
+            <form id="change-pass-form">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Nueva Contraseña</label>
+                    <input type="password" id="new-password" required placeholder="••••••••" style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; outline: none; transition: border-color 0.3s; font-size: 1rem;">
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Confirmar Contraseña</label>
+                    <input type="password" id="confirm-password" required placeholder="••••••••" style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; outline: none; transition: border-color 0.3s; font-size: 1rem;">
+                </div>
+                <div id="change-pass-error" style="color: #ff4444; font-size: 0.85rem; margin-bottom: 16px; display: none;"></div>
+                <div id="change-pass-success" style="color: #01F1E3; font-size: 0.85rem; margin-bottom: 16px; display: none;">Contraseña actualizada correctamente</div>
+                <button type="submit" id="submit-change-pass" style="width: 100%; padding: 14px; background: #7551FF; border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s;">Actualizar Clave</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Menú móvil (bottom sheet), mismas opciones que el sidebar -->
+    <div id="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
+    <div id="mobile-menu-sheet">
+        <div class="mm-handle"></div>
+        <div class="mm-items">
+            <button class="mm-item" onclick="openChangePasswordModal(); closeMobileMenu();">
+                <div class="mm-icon"><ion-icon name="key-outline"></ion-icon></div>
+                <span>Cambiar contraseña</span>
+            </button>
+            <button class="mm-item" onclick="window.location.href='hub.html';">
+                <div class="mm-icon" style="background:rgba(117,81,255,0.1);"><ion-icon name="apps-outline" style="color:rgba(117,81,255,0.8);"></ion-icon></div>
+                <span>Ver otro Dashboard</span>
+            </button>
+            <div class="mm-divider"></div>
+            <button class="mm-item mm-danger" onclick="logout();">
+                <div class="mm-icon" style="background:rgba(239,68,68,0.1);"><ion-icon name="log-out-outline" style="color:#ef4444;"></ion-icon></div>
+                <span>Cerrar sesión</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- JS del chrome (sidebar + menú móvil). logout() y openChangePasswordModal() vienen de auth.js -->
+    <script>
+        function toggleSidebar() {
+            var s = document.getElementById('main-sidebar');
+            if (s) s.classList.toggle('sidebar-open');
+        }
+        document.addEventListener('click', function (e) {
+            var s = document.getElementById('main-sidebar');
+            if (!s || !s.classList.contains('sidebar-open')) return;
+            if (!s.contains(e.target)) s.classList.remove('sidebar-open');
+        });
+        function toggleMobileMenu() {
+            var b = document.getElementById('mobile-menu-backdrop');
+            var sh = document.getElementById('mobile-menu-sheet');
+            if (!b || !sh) return;
+            if (sh.classList.contains('open')) { closeMobileMenu(); }
+            else { b.classList.add('open'); sh.classList.add('open'); }
+        }
+        function closeMobileMenu() {
+            var b = document.getElementById('mobile-menu-backdrop');
+            var sh = document.getElementById('mobile-menu-sheet');
+            if (b) b.classList.remove('open');
+            if (sh) sh.classList.remove('open');
+        }
+    </script>
 
     <!-- Mismo stack de datos que el resto del app -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
