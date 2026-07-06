@@ -210,10 +210,12 @@ function scopedLeads() {
 // INIT
 // ============================================================
 async function init() {
+    // Failsafe: pase lo que pase, el spinner nunca debe quedar cubriendo la pantalla.
+    setTimeout(hideLoader, 7000);
     try {
         const session = typeof getSession === 'function' ? getSession() : null;
-        if (!session) { location.href = 'login.html'; return; }
-        if (!(session.role === 'admin' || (session.clients || []).includes(SLUG))) { location.href = 'hub.html'; return; }
+        if (!session) { hideLoader(); location.href = 'login.html'; return; }
+        if (!(session.role === 'admin' || (session.clients || []).includes(SLUG))) { hideLoader(); location.href = 'hub.html'; return; }
 
         await loadConfig();
         await fetchLeads();

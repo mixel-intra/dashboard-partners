@@ -81,6 +81,33 @@
         .dg-cal-more { font-size: 11px; font-weight: 600; color: #70757A; padding: 1px 7px; }
         .dg-cal-dots { display: none; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
         .dg-cal-dots > span { width: 6px; height: 6px; border-radius: 999px; }
+        /* Nunca desbordar horizontalmente; que las columnas del calendario puedan encoger */
+        .dg-wrap { overflow-x: hidden; }
+        .dg-cal-cell { min-width: 0; }
+
+        /* ── Robustez en móvil: evita la "pantalla en blanco hasta rotar" ──
+           El chrome compartido usa height:100dvh + overflow:hidden anidado, que en
+           pantallas angostas puede colapsar la altura del contenido a 0 en el primer
+           render. Aquí (solo esta página) pasamos al modelo de scroll del body. */
+        @media (max-width: 768px) {
+            html, body { height: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+            .app-container, .app-container.full-width-layout { height: auto; min-height: 100dvh; overflow: visible; }
+            .main-column, .main-content { overflow: visible; }
+            .main-content { min-height: 0; }
+            .sidebar { height: auto; min-height: 100dvh; }
+        }
+
+        /* Media queries en orden desktop-first (los anchos menores ganan por orden) */
+        /* ── Tablet ── */
+        @media (max-width: 1100px) {
+            .dg-wrap { padding: 32px 24px 56px !important; }
+            .dg-bento { grid-template-columns: 1fr 1fr !important; }
+            .dg-hero, .dg-trend, .dg-products, .dg-agenda { grid-column: 1 / span 2 !important; grid-row: auto !important; }
+            .dg-donut, .dg-sources, .dg-top { grid-column: auto !important; grid-row: auto !important; }
+            .dg-products-grid { grid-template-columns: repeat(2, 1fr) !important; }
+            .dg-cal-cell { min-height: 96px; }
+        }
+        /* ── Calendario compacto: chips → puntos ── */
         @media (max-width: 760px) {
             .dg-cal-cell { min-height: 58px; padding: 5px 4px; }
             .dg-cal-events, .dg-cal-more { display: none; }
@@ -89,16 +116,16 @@
             .dg-cal-weekdays > div { font-size: 9.5px; padding: 8px 0; }
             .dg-legend { gap: 8px 12px; }
         }
-        @media (max-width: 1100px) {
-            .dg-bento { grid-template-columns: 1fr 1fr !important; }
-            .dg-hero, .dg-trend, .dg-products, .dg-agenda { grid-column: 1 / span 2 !important; grid-row: auto !important; }
-            .dg-donut, .dg-sources, .dg-top { grid-column: auto !important; grid-row: auto !important; }
-        }
+        /* ── Móvil ── */
         @media (max-width: 680px) {
-            .dg-wrap { padding: 24px 16px 48px !important; }
+            .dg-wrap { padding: 22px 14px 44px !important; }
             .dg-bento { grid-template-columns: 1fr !important; }
             .dg-hero, .dg-trend, .dg-products, .dg-agenda, .dg-donut, .dg-sources, .dg-top { grid-column: 1 !important; }
             .dg-products-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (max-width: 460px) {
+            .dg-wrap { padding: 16px 12px 40px !important; }
+            .dg-products-grid { grid-template-columns: 1fr !important; }
         }
 
         /* Modal de contraseña en tema claro (mismo look que el resto del app) */
@@ -373,7 +400,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/director.js?v=20260706-6"></script>
+    <script src="src/director.js?v=20260706-7"></script>
 </body>
 
 </html>
