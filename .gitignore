@@ -3,6 +3,8 @@ node_modules
 .vercel
 dist
 .env
+.env.local
+.env*.local
 *.log
 .gstack/
 
@@ -17,3 +19,4 @@ src/assets/big-bang-*.mp4
 AVANCES.md
 leads.json
 reservas.json
+references

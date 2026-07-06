@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<!-- Tema claro fijo: este panel no tiene toggle de modo oscuro (a diferencia del resto). -->
+<html lang="es" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#F5F6F8">
+    <title>Logic Systems · Panel del Director General</title>
+
+    <!-- Esta página es EXCLUSIVA de logic-systems. Con otro cliente → dashboard estándar. -->
+    <script>
+        (function () {
+            var client = new URLSearchParams(location.search).get('client');
+            if (client && client.toLowerCase() !== 'logic-systems') {
+                location.replace('index.html?client=' + encodeURIComponent(client));
+            }
+        })();
+    </script>
+
+    <!-- Inter (fuente de marca) + Phosphor icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+
+    <!-- Ionicons + hojas de estilo del app: para reutilizar el chrome de layout (sidebar/topbar) -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="./src/theme-intra.css">
+    <link rel="stylesheet" href="./src/style.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { background: #F5F6F8; }
+        @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(31,179,107,0.5); } 70% { box-shadow: 0 0 0 9px rgba(31,179,107,0); } 100% { box-shadow: 0 0 0 0 rgba(31,179,107,0); } }
+        @keyframes tkIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+        .lift { transition: transform 200ms ease, box-shadow 200ms ease; }
+        .lift:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(16,24,40,0.06), 0 18px 40px rgba(16,24,40,0.09); }
+        .card-lift { transition: transform 200ms ease, box-shadow 200ms ease; }
+        .card-lift:hover { transform: translateY(-2px); }
+        button { font-family: inherit; cursor: pointer; border: none; }
+        #dg-status { position: fixed; bottom: 18px; right: 18px; font: 13px/1.4 'Inter', sans-serif; color: #6E6E73; background: #fff; padding: 9px 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(16,24,40,0.12); z-index: 9999; }
+        #dg-status.err { color: #B42318; background: #FEF3F2; }
+        @media (max-width: 1100px) {
+            .dg-bento { grid-template-columns: 1fr 1fr !important; }
+            .dg-hero, .dg-trend, .dg-products, .dg-agenda { grid-column: 1 / span 2 !important; grid-row: auto !important; }
+            .dg-donut, .dg-sources, .dg-top { grid-column: auto !important; grid-row: auto !important; }
+        }
+        @media (max-width: 680px) {
+            .dg-wrap { padding: 24px 16px 48px !important; }
+            .dg-bento { grid-template-columns: 1fr !important; }
+            .dg-hero, .dg-trend, .dg-products, .dg-agenda, .dg-donut, .dg-sources, .dg-top { grid-column: 1 !important; }
+            .dg-products-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+
+        /* Modal de contraseña en tema claro (mismo look que el resto del app) */
+        [data-theme="light"] #change-pass-modal { background: rgba(0, 0, 0, 0.4) !important; backdrop-filter: blur(4px); }
+        [data-theme="light"] #change-pass-modal .modal-content { background: #FFFFFF !important; border: 1px solid var(--border-subtle) !important; box-shadow: var(--shadow-lg) !important; }
+        [data-theme="light"] #change-pass-modal h2 { color: var(--text-primary) !important; }
+        [data-theme="light"] #change-pass-modal p { color: var(--text-secondary) !important; }
+        [data-theme="light"] #change-pass-modal label { color: var(--text-muted) !important; }
+        [data-theme="light"] #change-pass-modal input[type="password"] { background: var(--surface-100) !important; border: 1px solid var(--border-subtle) !important; color: var(--text-primary) !important; }
+        [data-theme="light"] #change-pass-modal input[type="password"]:focus { background: #FFFFFF !important; border-color: var(--surface-300) !important; }
+        [data-theme="light"] #change-pass-modal button[onclick] { color: var(--text-secondary) !important; }
+    </style>
+</head>
+
+<body>
+    <div id="dg-status">Cargando datos…</div>
+
+    <!-- Layout compartido con los demás dashboards (sidebar + topbar), sin botón de modo oscuro -->
+    <div class="app-container full-width-layout" id="app-wrapper">
+
+        <!-- Sidebar colapsable -->
+        <aside class="sidebar sidebar-collapsed" id="main-sidebar">
+            <button class="sidebar-hamburger" id="sidebar-hamburger-btn" onclick="toggleSidebar()" title="Menú">
+                <span class="sidebar-ham-lines"><span></span><span></span><span></span></span>
+                <span class="sidebar-ham-label">Menú</span>
+            </button>
+            <div class="sidebar-nav-icons">
+                <button onclick="openChangePasswordModal()" class="sidebar-icon-btn">
+                    <ion-icon name="key-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Cambiar contraseña</span>
+                </button>
+                <button onclick="window.location.href='hub.html'" class="sidebar-icon-btn">
+                    <ion-icon name="apps-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Ver otro Dashboard</span>
+                </button>
+                <button onclick="logout()" class="sidebar-icon-btn">
+                    <ion-icon name="log-out-outline"></ion-icon>
+                    <span class="sidebar-btn-label">Cerrar sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Columna principal -->
+        <div class="main-column">
+
+            <!-- Topbar -->
+            <header class="main-header">
+                <div class="header-left">
+                    <div class="client-branding">
+                        <img id="client-logo" src="" alt="Client Logo" class="client-logo-img hidden">
+                        <div class="welcome-area">
+                            <span class="welcome-label">Bienvenido,</span>
+                            <h2 class="welcome-name" id="welcome-name">Administrador</h2>
+                            <h2 id="client-name-display" class="client-name-header">Cargando...</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="desktop-actions">
+                        <div class="intra-branding">
+                            <img src="src/assets/TechonologyByIntra_Claro.png" alt="Intra" class="intra-logo-img theme-logo-dark">
+                            <img src="src/assets/TechonologyByIntra_Oscuro.png" alt="Intra" class="intra-logo-img theme-logo-light">
+                        </div>
+                    </div>
+                    <button id="mobile-menu-btn" class="logout-btn" onclick="toggleMobileMenu()" title="Menú">
+                        <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Contenido (bento del panel) -->
+            <main class="main-content" style="padding:0;">
+    <div class="dg-wrap" style="min-height:100%; background:#F5F6F8; background-image:radial-gradient(1100px 520px at 80% -14%, rgba(10,108,255,0.07), transparent 60%); font-family:'Inter',sans-serif; color:#1D1D1F; padding:40px 48px 72px; -webkit-font-smoothing:antialiased;">
+        <div style="max-width:1600px; margin:0 auto;">
+
+            <!-- Header -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; flex-wrap:wrap; gap:16px;">
+                <div>
+                    <div style="font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#0A6CFF;">Inteligencia comercial · intra</div>
+                    <div id="dg-client-name" style="font-size:27px; font-weight:600; letter-spacing:-0.02em; color:#1D1D1F; margin-top:7px;">Logic Systems</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div id="periods" style="display:inline-flex; gap:3px; padding:4px; border-radius:13px; background:#E8E8ED;"></div>
+                    <div style="display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:999px; background:#E7F7EF; border:1px solid #C7EEDB;">
+                        <span style="width:7px; height:7px; border-radius:999px; background:#1FB36B; animation:pulseDot 2.4s infinite;"></span>
+                        <span style="font-size:12.5px; font-weight:600; color:#0E8F53;">Agente activo · 24/7</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTROS -->
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; margin-bottom:22px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#A1A1A6; margin-right:2px;">Sistema</span>
+                    <div id="sysChips" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"></div>
+                </div>
+                <span style="width:1px; height:22px; background:#E3E3E8;"></span>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#A1A1A6; margin-right:2px;">Fuente</span>
+                    <div id="srcChips" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"></div>
+                </div>
+            </div>
+
+            <!-- BENTO GRID -->
+            <div class="dg-bento" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px;">
+
+                <!-- HERO -->
+                <div class="dg-hero lift" style="grid-column:1; grid-row:1 / span 2; display:flex; flex-direction:column; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:26px;">
+                    <div style="font-size:11.5px; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; color:#86868B; line-height:1.35;">Citas / demos de 90 min agendadas</div>
+                    <div class="citasFmt" style="font-size:84px; line-height:0.86; font-weight:600; letter-spacing:-0.04em; color:#0A6CFF; margin-top:14px;">—</div>
+                    <div style="display:flex; align-items:center; gap:9px; margin-top:18px;">
+                        <span style="display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:999px; background:#E7F7EF; font-size:12.5px; font-weight:600; color:#0E8F53;">↑ <span class="dCitas">—</span></span>
+                        <span style="font-size:12.5px; color:#86868B;">vs. periodo anterior</span>
+                    </div>
+
+                    <div style="margin-top:26px; padding-top:22px; border-top:1px solid #ECECEF;">
+                        <div style="font-size:11.5px; font-weight:600; letter-spacing:0.04em; color:#1D1D1F; margin-bottom:16px;">Del primer mensaje a la demo</div>
+                        <div id="funnel"></div>
+                        <div style="font-size:12px; color:#6E6E73; line-height:1.5; margin-top:16px;">El agente descartó <strong id="descartadosFmt" style="color:#1D1D1F;">—</strong> sin perfil y ahorró <strong style="color:#0A6CFF;">~<span id="horas">—</span> h</strong> a tu equipo este periodo.</div>
+                    </div>
+
+                </div>
+
+                <!-- TREND -->
+                <div class="dg-trend lift" style="grid-column:2 / span 3; grid-row:1; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:26px 28px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div style="font-size:11.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#86868B; white-space:nowrap;">Tendencia de agendamiento</div>
+                            <div style="font-size:22px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F; margin-top:8px;"><span class="citasFmt">—</span> demos · <span class="periodLabel">—</span></div>
+                        </div>
+                        <span style="display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:999px; background:#E7F7EF; font-size:12.5px; font-weight:600; color:#0E8F53;">↑ <span class="dCitas">—</span></span>
+                    </div>
+                    <div id="trendBig" style="margin-top:14px;"></div>
+                </div>
+
+                <!-- DONUT -->
+                <div class="dg-donut lift" style="grid-column:2; grid-row:2; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:24px; display:flex; flex-direction:column;">
+                    <div style="font-size:11.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#86868B; margin-bottom:8px;">Tasa de agendamiento</div>
+                    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+                        <div id="donut" style="flex:none;"></div>
+                        <div style="font-size:12.5px; color:#6E6E73; line-height:1.45; text-align:center; max-width:210px;">de cada lead calificado termina en demo agendada</div>
+                    </div>
+                </div>
+
+                <!-- FUENTE -->
+                <div class="dg-sources lift" style="grid-column:3; grid-row:2; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:24px; display:flex; flex-direction:column;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px;">
+                        <i class="ph ph-broadcast" style="font-size:16px; color:#0A6CFF;"></i>
+                        <span style="font-size:11.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#86868B;">Fuente de los leads</span>
+                    </div>
+                    <div id="sources"></div>
+                </div>
+
+                <!-- CAMPAÑA TOP -->
+                <div class="dg-top lift" style="grid-column:4; grid-row:2; background:linear-gradient(160deg, #EAF2FF 0%, #F4F8FF 100%); border:1px solid #DCE9FF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(10,108,255,0.08); padding:24px; display:flex; flex-direction:column;">
+                    <div style="font-size:11.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#0A6CFF;">Sistema más solicitado</div>
+                    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        <div id="topShare" style="font-size:46px; font-weight:600; letter-spacing:-0.03em; color:#093A8C; line-height:1;">—</div>
+                        <div id="topName" style="font-size:15px; font-weight:600; color:#1D1D1F; margin-top:12px;">—</div>
+                        <div style="font-size:12.5px; color:#3A6CB0; margin-top:6px;"><span id="topValue">—</span> demos · ↑ <span id="topDelta">—</span> vs. periodo</div>
+                    </div>
+                </div>
+
+                <!-- CAMPAÑAS -->
+                <div class="dg-products lift" style="grid-column:1 / span 4; grid-row:3; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:28px 30px;">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:20px;">
+                        <span style="font-size:15px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F;">Estadísticas por sistema</span>
+                        <span style="font-size:12.5px; color:#86868B;">Demos agendadas por producto · <span class="periodLabel">—</span></span>
+                    </div>
+                    <div id="products" class="dg-products-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px;"></div>
+                </div>
+
+                <!-- SEGUIMIENTO -->
+                <div class="dg-agenda lift" style="grid-column:1 / span 4; grid-row:4; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:26px 30px;">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+                        <span style="font-size:15px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F;">Agenda de demos</span>
+                        <span style="font-size:12.5px; color:#0A6CFF; font-weight:600; cursor:pointer;">Ver agenda completa →</span>
+                    </div>
+                    <div style="font-size:12.5px; color:#86868B; margin-bottom:6px;">Próximas reuniones de 90 min con prospectos calificados</div>
+                    <div id="demoGroups"></div>
+                    <div id="noDemos" style="display:none; padding:30px 0; text-align:center; color:#86868B; font-size:13.5px;">No hay demos agendadas con este filtro.</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+            </main>
+        </div><!-- /main-column -->
+    </div><!-- /app-container -->
+
+    <!-- Modal: cambiar contraseña (idéntico al del app; funciona con auth.js) -->
+    <div id="change-pass-modal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #0A0A0A; border: 1px solid rgba(255,255,255,0.08); padding: 32px; border-radius: 24px; width: 100%; max-width: 400px; position: relative;">
+            <button onclick="closeChangePasswordModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; cursor: pointer; font-size: 1.5rem;">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+            <h2 style="font-size: 1.5rem; margin-bottom: 8px; color: #fff;">Cambiar Contraseña</h2>
+            <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-bottom: 24px;">Actualiza tu clave de acceso al portal.</p>
+            <form id="change-pass-form">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Nueva Contraseña</label>
+                    <input type="password" id="new-password" required placeholder="••••••••" style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; outline: none; transition: border-color 0.3s; font-size: 1rem;">
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Confirmar Contraseña</label>
+                    <input type="password" id="confirm-password" required placeholder="••••••••" style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #fff; outline: none; transition: border-color 0.3s; font-size: 1rem;">
+                </div>
+                <div id="change-pass-error" style="color: #ff4444; font-size: 0.85rem; margin-bottom: 16px; display: none;"></div>
+                <div id="change-pass-success" style="color: #01F1E3; font-size: 0.85rem; margin-bottom: 16px; display: none;">Contraseña actualizada correctamente</div>
+                <button type="submit" id="submit-change-pass" style="width: 100%; padding: 14px; background: #7551FF; border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s;">Actualizar Clave</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Menú móvil (bottom sheet), mismas opciones que el sidebar -->
+    <div id="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
+    <div id="mobile-menu-sheet">
+        <div class="mm-handle"></div>
+        <div class="mm-items">
+            <button class="mm-item" onclick="openChangePasswordModal(); closeMobileMenu();">
+                <div class="mm-icon"><ion-icon name="key-outline"></ion-icon></div>
+                <span>Cambiar contraseña</span>
+            </button>
+            <button class="mm-item" onclick="window.location.href='hub.html';">
+                <div class="mm-icon" style="background:rgba(117,81,255,0.1);"><ion-icon name="apps-outline" style="color:rgba(117,81,255,0.8);"></ion-icon></div>
+                <span>Ver otro Dashboard</span>
+            </button>
+            <div class="mm-divider"></div>
+            <button class="mm-item mm-danger" onclick="logout();">
+                <div class="mm-icon" style="background:rgba(239,68,68,0.1);"><ion-icon name="log-out-outline" style="color:#ef4444;"></ion-icon></div>
+                <span>Cerrar sesión</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- JS del chrome (sidebar + menú móvil). logout() y openChangePasswordModal() vienen de auth.js -->
+    <script>
+        function toggleSidebar() {
+            var s = document.getElementById('main-sidebar');
+            if (s) s.classList.toggle('sidebar-open');
+        }
+        document.addEventListener('click', function (e) {
+            var s = document.getElementById('main-sidebar');
+            if (!s || !s.classList.contains('sidebar-open')) return;
+            if (!s.contains(e.target)) s.classList.remove('sidebar-open');
+        });
+        function toggleMobileMenu() {
+            var b = document.getElementById('mobile-menu-backdrop');
+            var sh = document.getElementById('mobile-menu-sheet');
+            if (!b || !sh) return;
+            if (sh.classList.contains('open')) { closeMobileMenu(); }
+            else { b.classList.add('open'); sh.classList.add('open'); }
+        }
+        function closeMobileMenu() {
+            var b = document.getElementById('mobile-menu-backdrop');
+            var sh = document.getElementById('mobile-menu-sheet');
+            if (b) b.classList.remove('open');
+            if (sh) sh.classList.remove('open');
+        }
+    </script>
+
+    <!-- Mismo stack de datos que el resto del app -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="src/config.js"></script>
+    <script src="src/auth.js"></script>
+    <script src="src/director.js?v=20260706-3"></script>
+</body>
+
+</html>
