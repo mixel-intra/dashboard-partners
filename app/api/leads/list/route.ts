@@ -1,117 +1,74 @@
 import { type NextRequest } from 'next/server';
 import { corsJson, corsPreflight } from '@/lib/api/cors';
-import { EnvFaltanteError, requireEnv } from '@/lib/api/env';
-import { adminAnonClient } from '@/lib/api/supabaseServer';
+import { leadsServiceClient } from '@/lib/api/supabaseServer';
 
-// Lee los leads de un cliente desde Airtable y los devuelve como JSON.
-// Port 1:1 de legacy/api/leads/list.js. La base/tabla se resuelven server-side
-// desde clients_config.leads_config (JSON: airtable_base_id, airtable_table_id,
-// airtable_view?, field_map?) para que el frontend no pueda apuntar a una base
-// arbitraria. field_map SOLO agrega alias canónicos (los que espera director.js)
-// sin borrar los campos crudos de Airtable.
+// Lee los leads del Panel del Director (logic-systems) desde su Supabase per-cliente
+// y los devuelve normalizados a las claves que espera components/director/logica.ts.
 //
-// USO: GET /api/leads/list?client=<slug> → { leads: [ { id, ...campos } ] }
+// FUENTE: tabla `leads` de la Supabase per-cliente, poblada por el agente "Camila".
+// Cada lead que llega YA está calificado y con demo agendada en el calendario real
+// (Outlook): accion_calendario, demo_inicio y event_id. (Antes se leía de Airtable;
+// esa ruta se retiró — ver historial de git.)
+//
+// SEGURIDAD: conexión 100% server-side con la SERVICE key (SUPABASE_SECRET_KEY),
+// que NUNCA se expone al navegador.
+//
+// USO: GET /api/leads/list?client=logic-systems
+//   → { leads: [ { id, nombre, telefono, fecha_creacion, utm_campaign, utm_medium, ... } ] }
 
 const METHODS = 'GET, OPTIONS';
+const LEADS_TABLE = process.env.LEADS_TABLE || 'leads';
+const PAGE_SIZE = 1000;
 
-type FieldMap = Record<string, string>;
-
-function applyFieldMap(fields: Record<string, unknown>, fieldMap?: FieldMap) {
-  if (!fieldMap) return fields;
-  const out: Record<string, unknown> = { ...fields };
-  for (const canonical in fieldMap) {
-    const airtableField = fieldMap[canonical];
-    if (airtableField && fields[airtableField] !== undefined && out[canonical] === undefined) {
-      out[canonical] = fields[airtableField];
-    }
-  }
-  return out;
+// Mapea una fila cruda de Supabase a las claves canónicas que consume logica.ts,
+// conservando además los campos originales (empresa, correo, situacion, urgencia,
+// accion_calendario, demo_inicio, event_id, contexto, …).
+function mapLead(row: Record<string, any>): Record<string, any> {
+  return {
+    ...row,
+    id: row.id,
+    nombre: row.nombre,
+    telefono: row.telefono_contacto || row.telefono || '',
+    fecha_creacion: row.created_at,
+    // Dimensiones de marketing: logica.ts las normaliza con normSistema()/normFuente().
+    utm_campaign: row.sistema,
+    utm_medium: row.fuente,
+  };
 }
 
 export async function GET(req: NextRequest) {
-  let airtableToken: string;
-  try {
-    airtableToken = requireEnv('AIRTABLE_TOKEN');
-  } catch (e: any) {
-    return corsJson({ error: e.message }, 500, METHODS);
-  }
-
   const q = req.nextUrl.searchParams;
   const clientSlug = q.get('client') || q.get('slug') || '';
   if (!clientSlug) return corsJson({ error: 'client es requerido' }, 400, METHODS);
 
-  // ── Resolver base/tabla de Airtable del cliente (server-side) ──────────────
-  let leadsConfig: any;
+  let supabase;
   try {
-    const supabase = adminAnonClient();
-    const { data, error } = await supabase
-      .from('clients_config')
-      .select('*')
-      .eq('id_slug', clientSlug)
-      .single();
-    if (error) throw error;
-    leadsConfig = (data && data.leads_config) || {};
+    supabase = leadsServiceClient();
   } catch (e: any) {
-    if (e instanceof EnvFaltanteError) return corsJson({ error: e.message }, 500, METHODS);
-    return corsJson(
-      { error: 'No se pudo leer la configuración del cliente: ' + (e.message || e) },
-      400,
-      METHODS
-    );
+    return corsJson({ error: e.message }, 500, METHODS);
   }
 
-  const baseId = leadsConfig.airtable_base_id;
-  const tableId = leadsConfig.airtable_table_id;
-  const view = leadsConfig.airtable_view;
-  const fieldMap: FieldMap | undefined = leadsConfig.field_map;
-  if (!baseId || !tableId) {
-    return corsJson(
-      {
-        error:
-          'Este cliente no tiene Airtable de leads configurado (base/tabla en clients_config.leads_config).',
-      },
-      400,
-      METHODS
-    );
-  }
-
-  // ── Leer todos los registros (Airtable pagina de 100 en 100) ───────────────
+  // Lee todas las filas paginando (Supabase corta en 1000 por consulta por defecto).
   try {
-    const leads: Record<string, unknown>[] = [];
-    let offset: string | null = null;
-    do {
-      const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableId)}`);
-      url.searchParams.set('pageSize', '100');
-      if (view) url.searchParams.set('view', view);
-      if (offset) url.searchParams.set('offset', offset);
-
-      const r = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${airtableToken}` },
-      });
-      const text = await r.text();
-      if (!r.ok) {
-        console.error('Airtable list error:', r.status, text.substring(0, 500));
-        return corsJson(
-          {
-            error: 'Airtable rechazó la lectura de leads',
-            status: r.status,
-            detail: text.substring(0, 500),
-          },
-          502,
-          METHODS
-        );
-      }
-      const data = JSON.parse(text);
-      (data.records || []).forEach((rec: any) => {
-        leads.push({ id: rec.id, ...applyFieldMap(rec.fields || {}, fieldMap) });
-      });
-      offset = data.offset || null;
-    } while (offset);
-
+    const leads: Record<string, any>[] = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from(LEADS_TABLE)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+      if (error) throw error;
+      (data || []).forEach((row: Record<string, any>) => leads.push(mapLead(row)));
+      if (!data || data.length < PAGE_SIZE) break;
+    }
     return corsJson({ leads }, 200, METHODS);
   } catch (error: any) {
-    console.error('list leads error:', error.message, error.stack);
-    return corsJson({ error: error.message, type: error.name }, 500, METHODS);
+    console.error('list leads (supabase) error:', error.message);
+    return corsJson(
+      { error: 'No se pudieron leer los leads de Supabase: ' + (error.message || error) },
+      502,
+      METHODS
+    );
   }
 }
 

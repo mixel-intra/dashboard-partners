@@ -8,18 +8,18 @@ import {
   PERIODS,
   SISTEMAS,
   conRespuesta,
-  esAtencion,
   esCalificado,
   esDescartado,
   fmtDelta,
   fmtInt,
   firstNonEmpty,
   inRange,
-  parseHora,
+  parseWall,
   pct,
   periodRange,
   smoothPath,
   type Lead,
+  type Wall,
 } from './logica';
 
 // Bento grid del Panel del Director General — port del render de director.js.
@@ -30,7 +30,7 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
   const [campanaFilter, setCampanaFilter] = useState<string | null>(null);
   const [fuenteFilter, setFuenteFilter] = useState<string | null>(null);
 
-  const { cur, prev } = useMemo(() => {
+  const { cur, prev, chip } = useMemo(() => {
     const { start, end, prevStart, prevEnd } = periodRange(period);
     const passesChips = (l: Lead) => {
       if (campanaFilter && F.campana(l) !== campanaFilter) return false;
@@ -41,6 +41,7 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
     return {
       cur: chip.filter((l) => inRange(l, start, end)),
       prev: chip.filter((l) => inRange(l, prevStart, prevEnd)),
+      chip,
     };
   }, [leads, period, campanaFilter, fuenteFilter]);
 
@@ -53,10 +54,6 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
   const conResp = cur.filter(conRespuesta).length;
   const descartados = cur.filter(esDescartado).length;
   const dCitas = fmtDelta(calificados, califPrev);
-
-  const ultimo = [...cur]
-    .filter(esCalificado)
-    .sort((a, b) => (F.fecha(b)?.getTime() || 0) - (F.fecha(a)?.getTime() || 0))[0];
 
   const toggleCampana = (k: string | null) => setCampanaFilter((cf) => (cf === k ? null : k));
   const toggleFuente = (k: string | null) => setFuenteFilter((ff) => (ff === k ? null : k));
@@ -92,9 +89,6 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
             </div>
             <div id="dg-client-name" style={{ fontSize: 27, fontWeight: 600, letterSpacing: '-0.02em', color: '#1D1D1F', marginTop: 7 }}>
               Logic Systems
-            </div>
-            <div style={{ fontSize: 14, color: '#86868B', marginTop: 2 }}>
-              Panel del Director General · generación de demanda
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -238,20 +232,6 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
                 periodo.
               </div>
             </div>
-
-            <div style={{ marginTop: 'auto', paddingTop: 22 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 7, height: 7, borderRadius: 999, background: '#1FB36B', animation: 'pulseDot 2.4s infinite' }}></span>
-                <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0E8F53' }}>
-                  En vivo
-                </span>
-              </div>
-              <div style={{ fontSize: 13, color: '#3A3A3C', marginTop: 9, lineHeight: 1.4, animation: 'tkIn 420ms ease' }}>
-                {ultimo
-                  ? `Nueva cita agendada · ${F.nombre(ultimo)} (${F.campana(ultimo)})`
-                  : 'El agente está agendando demos en tiempo real.'}
-              </div>
-            </div>
           </div>
 
           {/* TREND */}
@@ -389,7 +369,7 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
             <div style={{ fontSize: 12.5, color: '#86868B', marginBottom: 6 }}>
               Próximas reuniones de 90 min con prospectos calificados
             </div>
-            <Seguimiento cur={cur} />
+            <Agenda leads={chip} />
           </div>
         </div>
       </div>
@@ -695,27 +675,42 @@ function GraficaTendencia({ cur, period }: { cur: Lead[]; period: string }) {
   );
 }
 
-function Seguimiento({ cur }: { cur: Lead[] }) {
-  const items = cur
-    .filter(esCalificado)
-    .map((l) => ({ l, d: F.fecha(l) as Date }))
-    .filter((x) => x.d)
-    .sort((a, b) => b.d.getTime() - a.d.getTime())
-    .slice(0, 12);
+// Agenda de demos: ordenada por la fecha de la DEMO (demo_inicio), no la del lead.
+// Próximas primero (ascendente), luego recientes (descendente). Recibe la lista ya
+// filtrada por chips (sistema/fuente) pero SIN filtro de periodo — una agenda mira
+// fechas de demo. La hora sale LITERAL de parseWall (sin conversión de zona).
+type DemoItem = { l: Lead; w: Wall };
+function Agenda({ leads }: { leads: Lead[] }) {
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const finDeHoy = new Date(todayStart.getTime() + 86400000);
+
+  const demos = leads
+    .map((l) => ({ l, w: parseWall(firstNonEmpty(l.demo_inicio)) }))
+    .filter((x) => x.w !== null) as DemoItem[];
+  const futuras = demos
+    .filter((x) => x.w.date >= todayStart)
+    .sort((a, b) => a.w.date.getTime() - b.w.date.getTime());
+  const pasadas = demos
+    .filter((x) => x.w.date < todayStart)
+    .sort((a, b) => b.w.date.getTime() - a.w.date.getTime());
+  const items = [...futuras, ...pasadas.slice(0, Math.max(0, 15 - futuras.length))];
 
   if (!items.length) {
     return (
       <div id="noDemos" style={{ padding: '30px 0', textAlign: 'center', color: '#86868B', fontSize: 13.5 }}>
-        No hay prospectos en seguimiento con este filtro.
+        No hay demos agendadas con este filtro.
       </div>
     );
   }
 
-  const byDay = new Map<string, { d: Date; arr: Lead[] }>();
-  items.forEach(({ l, d }) => {
-    const key = d.toISOString().slice(0, 10);
-    if (!byDay.has(key)) byDay.set(key, { d, arr: [] });
-    byDay.get(key)!.arr.push(l);
+  // Agrupar por día conservando el orden (Map preserva el orden de inserción).
+  const byDay = new Map<string, { d: Date; arr: DemoItem[] }>();
+  items.forEach(({ l, w }) => {
+    const key = `${w.date.getFullYear()}-${w.date.getMonth()}-${w.date.getDate()}`;
+    if (!byDay.has(key)) byDay.set(key, { d: w.date, arr: [] });
+    byDay.get(key)!.arr.push({ l, w });
   });
   const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -724,6 +719,7 @@ function Seguimiento({ cur }: { cur: Lead[] }) {
     <div id="demoGroups">
       {[...byDay.values()].map((group) => {
         const g = group.d;
+        const dayPast = g < todayStart;
         return (
           <div key={g.toISOString()} style={{ marginTop: 22 }}>
             <div
@@ -736,7 +732,7 @@ function Seguimiento({ cur }: { cur: Lead[] }) {
                 borderBottom: '1px solid #F2F2F5',
               }}
             >
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: '#1D1D1F' }}>{dias[g.getDay()]}</span>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: dayPast ? '#86868B' : '#1D1D1F' }}>{dias[g.getDay()]}</span>
               <span style={{ fontSize: 12.5, color: '#86868B' }}>
                 {g.getDate()} {meses[g.getMonth()]}
               </span>
@@ -751,18 +747,23 @@ function Seguimiento({ cur }: { cur: Lead[] }) {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {group.arr.length} lead{group.arr.length !== 1 ? 's' : ''}
+                {group.arr.length} demo{group.arr.length !== 1 ? 's' : ''}
               </span>
             </div>
-            {group.arr.map((l, i) => {
-              const soft = ['#F5F8FF', '#F4FBF7', '#FFF9F0'][i % 3];
+            {group.arr.map(({ l, w }, i) => {
+              const soft = dayPast ? '#FAFAFB' : ['#F5F8FF', '#F4FBF7', '#FFF9F0'][i % 3];
               const accent = PALETTE[i % PALETTE.length];
-              const atencion = esAtencion(l);
-              const estColor = atencion ? '#0E8F53' : '#B7791F';
-              const estLabel = atencion ? 'Atención personal' : 'En seguimiento';
-              const hora = parseHora(firstNonEmpty(l.fecha_creacion, l.fecha)) || '—';
-              const precio = F.precio(l);
-              const sub = [F.telefono(l), F.campana(l)].filter(Boolean).join(' · ');
+              let estColor = '#0E8F53';
+              let estLabel = 'Próxima';
+              if (w.date >= todayStart && w.date < finDeHoy) {
+                estColor = '#0A6CFF';
+                estLabel = 'Hoy';
+              } else if (w.date < now) {
+                estColor = '#86868B';
+                estLabel = 'Realizada';
+              }
+              const hora = String(w.h).padStart(2, '0') + ':' + String(w.mi).padStart(2, '0');
+              const sub = [F.telefono(l), l.empresa, F.campana(l)].filter(Boolean).join(' · ');
               return (
                 <div
                   key={i}
@@ -779,9 +780,7 @@ function Seguimiento({ cur }: { cur: Lead[] }) {
                 >
                   <div style={{ flex: 'none', width: 58, textAlign: 'center' }}>
                     <div style={{ fontSize: 16, fontWeight: 600, color: '#1D1D1F', letterSpacing: '-0.01em' }}>{hora}</div>
-                    <div style={{ fontSize: 10.5, color: '#86868B', marginTop: 2 }}>
-                      {precio ? '$' + fmtInt(precio) : 'lead'}
-                    </div>
+                    <div style={{ fontSize: 10.5, color: '#86868B', marginTop: 2 }}>90 min</div>
                   </div>
                   <div style={{ flex: 'none', width: 4, height: 40, borderRadius: 999, background: accent }}></div>
                   <div style={{ flex: 1, minWidth: 0 }}>

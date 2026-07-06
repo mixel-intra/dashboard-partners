@@ -3,8 +3,9 @@ import { requireAnyEnv, requireEnv } from './env';
 
 // Clientes Supabase server-side. Cada endpoint conserva EXACTAMENTE la misma
 // resolución de proyecto que su versión legacy:
-// - leads/list y reservations/create → proyecto admin (ADMIN_SUPABASE_URL || SUPABASE_URL)
+// - reservations/create → proyecto admin (ADMIN_SUPABASE_URL || SUPABASE_URL)
 // - leads/ingest → proyecto per-cliente (SUPABASE_URL, ¡no el admin!)
+// - leads/list (Panel del Director) → proyecto per-cliente con SERVICE key (bypass RLS)
 // - scrape-reviews y kommo/* → admin con SERVICE key (bypass RLS)
 
 export function adminAnonClient(): SupabaseClient {
@@ -12,6 +13,14 @@ export function adminAnonClient(): SupabaseClient {
     requireAnyEnv('ADMIN_SUPABASE_URL', 'SUPABASE_URL'),
     requireEnv('SUPABASE_ANON_KEY')
   );
+}
+
+// Panel del Director (logic-systems): lee la tabla `leads` de la Supabase per-cliente
+// con la SERVICE key (SUPABASE_SECRET_KEY). Bypassa RLS y NUNCA se expone al navegador.
+export function leadsServiceClient(): SupabaseClient {
+  return createClient(requireEnv('SUPABASE_URL'), requireEnv('SUPABASE_SECRET_KEY'), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 export function ingestClient(): SupabaseClient {

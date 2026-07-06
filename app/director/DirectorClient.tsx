@@ -76,24 +76,26 @@ export default function DirectorClient() {
     },
   });
 
+  // Modo demo (datos ficticios) SOLO si se fuerza con ?demo=1 en la URL. Por defecto
+  // el panel usa datos reales de Supabase; el flag histórico webhook_url='DEMO' se ignora.
+  const demoMode = searchParams.get('demo') !== null;
+
   const leadsQ = useQuery({
-    queryKey: ['director-leads', SLUG],
+    queryKey: ['director-leads', SLUG, demoMode],
     enabled: !!configQ.data,
     queryFn: async (): Promise<{ leads: Lead[]; aviso: string | null }> => {
-      // Modo demo (datos ficticios): webhook_url = 'DEMO' en clients_config.
-      if (configQ.data.webhook_url === 'DEMO') return { leads: demoLeads(), aviso: null };
+      if (demoMode) return { leads: demoLeads(), aviso: null };
 
-      // Fuente actual: Airtable, vía /api/leads/list (server-side resuelve
-      // base/tabla desde clients_config.leads_config y guarda AIRTABLE_TOKEN).
-      // MIGRACIÓN FUTURA A SUPABASE: reemplazar por query a clientSupabase.
+      // Fuente de datos: la Supabase per-cliente de Logic Systems, vía /api/leads/list
+      // (endpoint server-side que lee con la SERVICE key y normaliza los campos).
       const res = await fetch('/api/leads/list?client=' + encodeURIComponent(SLUG));
 
-      // Sin Airtable configurado: no es error fatal — panel vacío con guía.
-      if (res.status === 400 || res.status === 500) {
+      // Sin configurar (faltan env vars) o error de lectura: no es fatal — panel vacío
+      // con la guía que devuelve el endpoint.
+      if (!res.ok) {
         const msg = await res.json().catch(() => ({}) as any);
-        return { leads: [], aviso: msg.error || 'Configura el Airtable de Logic Systems para ver datos.' };
+        return { leads: [], aviso: msg.error || 'El origen de leads respondió ' + res.status };
       }
-      if (!res.ok) throw new Error('El origen de leads respondió ' + res.status);
 
       const raw = await res.json();
       const leads = Array.isArray(raw) ? raw : raw.leads || raw.data || [];
