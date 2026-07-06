@@ -21,6 +21,13 @@ const MIME = {
     '.ttf':  'font/ttf',
 };
 
+// Carga variables de entorno desde .env.local en desarrollo (en prod las inyecta
+// Vercel). Node 22 trae process.loadEnvFile nativo — sin dependencias. Debe ir ANTES
+// de requerir los handlers que leen process.env.
+try {
+    if (typeof process.loadEnvFile === 'function') process.loadEnvFile('.env.local');
+} catch { /* .env.local no existe: se usan las env vars del sistema */ }
+
 const proxyHandler        = require('./api/proxy');
 const leadsIngestHandler  = require('./api/leads/ingest');
 const leadsListHandler    = require('./api/leads/list');

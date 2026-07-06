@@ -90,20 +90,27 @@ Cambiar contraseña, Ver otro Dashboard y Cerrar sesión (`logout()` /
 `openChangePasswordModal()` vienen de `auth.js`; `toggleSidebar`/`toggleMobileMenu`
 están inline en `director.html`). Usa ionicons para el chrome y Phosphor para el bento.
 
-**Fuente de datos:** hoy los leads viven en **Airtable**. `fetchLeads()` los pide a
-**`/api/leads/list?client=logic-systems`** (`api/leads/list.js`), un endpoint
-server-side que guarda el token `AIRTABLE_TOKEN` y resuelve base/tabla desde
-`clients_config.leads_config` (JSON: `airtable_base_id`, `airtable_table_id`,
-`airtable_view?`, y un `field_map` opcional que alias-a los campos de Airtable a las
-claves que espera `director.js`). Si no está configurado, el panel carga vacío (no
-truena) con una guía. **Está pendiente cargar `leads_config` real** (base, tabla y
-nombres de campo) — hasta entonces el panel muestra el estado vacío o el modo demo
-(`webhook_url = 'DEMO'`). **La dirección es migrar de Airtable a Supabase**: cuando
-pase, se reemplaza esa llamada por una query a `clientSupabase`.
+**Fuente de datos:** los leads viven en la **Supabase per-cliente de Logic Systems**
+(proyecto propio, tabla `leads`, poblada por el agente "Camila"). `fetchLeads()` los
+pide a **`/api/leads/list?client=logic-systems`** (`api/leads/list.js`), un endpoint
+**server-side** que se conecta con la **service key** (`SUPABASE_SECRET_KEY`, nunca
+expuesta al navegador) usando `SUPABASE_URL` — ambas en env vars (Vercel en prod,
+`.env.local` en local, cargado por `server.js` vía `process.loadEnvFile`). El endpoint
+normaliza cada fila a las claves canónicas que espera `director.js` (`telefono` ←
+`telefono_contacto`, `fecha_creacion` ← `created_at`, `utm_medium` ← `fuente`,
+`utm_campaign` ← `sistema`) conservando los originales. Si faltan las env vars, el
+panel carga vacío (no truena) con una guía. **Modo demo:** `?demo=1` en la URL fuerza
+datos ficticios (`demoLeads()`); el viejo flag `webhook_url = 'DEMO'` ya se ignora.
+_(La ruta anterior por Airtable — `AIRTABLE_TOKEN` + `clients_config.leads_config` —
+se retiró; ver historial de git.)_
 
-Las **demos agendadas** hoy se *derivan* del estatus del lead (`esCalificado`);
-la dirección es que salgan de un **calendario real en Outlook con la cuenta del
-cliente** (integración pendiente).
+Cada lead de la tabla `leads` **ya está calificado y con demo agendada en el
+calendario real (Outlook)**: trae `accion_calendario`, `demo_inicio` y `event_id`
+(la integración de calendario que antes estaba pendiente ya existe). Por eso los
+predicados de calificación en `director.js` (`tieneDemo`/`esCalificado`/…) se derivan
+de `accion_calendario`/`demo_inicio`/`urgencia`, no de un `estatus_id`. Los predicados
+**mantienen fallback al modelo viejo por `estatus_id`** (para el modo demo y datos
+legacy de Kommo).
 
 **Qué mira el cliente:** los leads que piden **demos de sus sistemas**. La empresa
 tiene 4 sistemas y el panel gira en torno a dos dimensiones **fijas** (no dinámicas

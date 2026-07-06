@@ -3,19 +3,21 @@
 // ============================================================
 // Dashboard EXCLUSIVO del cliente `logic-systems`. Vive dentro del shell normal
 // de la app (sidebar + topbar de director.html) y reutiliza el mismo stack de datos:
-//   · config.js  → window.supabase + clients_config + initializeClientSupabase()
+//   · config.js  → window.supabase + clients_config
 //   · auth.js    → sesión (getSession)
-//   · /api/proxy → trae los leads desde el webhook de n8n (clients_config.webhook_url)
+//   · /api/leads/list → trae los leads desde la Supabase per-cliente (server-side)
 //
-// MODELO DE DATOS REAL (leads de Kommo). Cada lead trae:
-//   nombre, telefono, precio, estatus, estatus_id, tags[], fecha_creacion,
-//   utm_medium, utm_campaign, utm_content, utm_source, respuesta_ai
-// El agente de IA ("Camila") conversa, califica y descarta leads. El panel cuenta
-// esa historia: cuántos calificó, de qué fuente/campaña vienen y a quién pasó a
-// atención personalizada.
+// MODELO DE DATOS REAL (tabla `leads` en Supabase, generada por el agente "Camila").
+// Cada lead que llega YA está calificado y con demo agendada en el calendario real
+// (Outlook). Campos: nombre, empresa, correo, telefono_contacto, tipo_figura, rol,
+// situacion, motivo_interes, urgencia, fuente, sistema, accion_calendario,
+// demo_inicio, event_id, contexto, created_at.
+// El endpoint los normaliza a claves canónicas (telefono, fecha_creacion, utm_medium
+// ← fuente, utm_campaign ← sistema) conservando los originales.
 //
-// ⚠️ MAPEO: todo lead→panel está centralizado en `F` (campos) y `ST` (etapas).
-// Ajústalos ahí si el webhook cambia de nombres o agrega etapas.
+// ⚠️ MAPEO: todo lead→panel está centralizado en `F` (campos) y en los predicados de
+// calificación (tieneDemo/esCalificado/…). Ajústalos ahí si el esquema cambia.
+// Los predicados soportan además el modelo viejo por estatus_id (modo demo / Kommo).
 // ============================================================
 
 const SLUG = 'logic-systems';
@@ -24,7 +26,7 @@ const PALETTE = ['#0A6CFF', '#1FB36B', '#F5A623', '#8B5CF6', '#EC4899', '#14B8A6
 // --- Campos del lead -----------------------------------------
 const F = {
     nombre:   l => firstNonEmpty(l.nombre, l.contacto, l.cliente) || 'Sin nombre',
-    telefono: l => firstNonEmpty(l.telefono, l.phone, l.celular) || '',
+    telefono: l => firstNonEmpty(l.telefono_contacto, l.telefono, l.phone, l.celular) || '',
     estado:   l => (firstNonEmpty(l.estatus, l.estado, l.stage) || '').toString(),
     estadoId: l => Number(firstNonEmpty(l.estatus_id, l.stage_id)) || null,
     precio:   l => Number(firstNonEmpty(l.precio, l.monto, l.valor)) || 0,
@@ -62,18 +64,27 @@ function normFuente(l) {
     return null;
 }
 
-// --- Etapas del pipeline (por estatus_id, robusto al texto) --
-// Agrega aquí nuevos ids si el pipeline de Kommo crece.
+// --- Señales de calificación / demo --------------------------
+// MODELO ACTUAL (Supabase): cada lead trae accion_calendario + demo_inicio (calendario
+// real de Outlook) y urgencia. MODELO VIEJO (modo demo / Kommo): estatus_id + estatus.
+// Los predicados soportan ambos: si hay estatus_id se usa el pipeline de Kommo; si no,
+// se derivan de accion_calendario / demo_inicio / urgencia.
 const ST = {
     RECHAZADO:     100538408,  // "rechazado" — el agente descartó (sin perfil / sin garantía)
     ATENCION:      100538416,  // "atencion personalizada" — pasa a asesor humano (lead caliente)
     SEGUIMIENTO:   100605424,  // "Seguimiento CAMILA" — el agente sigue nutriendo
     SIN_RESPUESTA: 100781696,  // "SIN RESPUESTA" — el lead no contestó
 };
-function esDescartado(l)  { const id = F.estadoId(l); return id ? id === ST.RECHAZADO     : /rechaz|descart/.test(F.estado(l).toLowerCase()); }
-function esSinRespuesta(l){ const id = F.estadoId(l); return id ? id === ST.SIN_RESPUESTA : /sin.?respuesta/.test(F.estado(l).toLowerCase()); }
-function esCalificado(l)  { const id = F.estadoId(l); return id ? (id === ST.ATENCION || id === ST.SEGUIMIENTO) : /atenci[oó]n personal|seguimiento|calific/.test(F.estado(l).toLowerCase()); }
-function esAtencion(l)    { const id = F.estadoId(l); return id ? id === ST.ATENCION : /atenci[oó]n personal/.test(F.estado(l).toLowerCase()); }
+function accionCal(l) { return (firstNonEmpty(l.accion_calendario, l.accion) || '').toString().toLowerCase(); }
+// Un lead "tiene demo" si el calendario la agendó/reagendó/confirmó, o si trae fecha/evento.
+function tieneDemo(l) {
+    if (/agend|reagend|confirm/.test(accionCal(l))) return true;
+    return !!firstNonEmpty(l.demo_inicio, l.event_id);
+}
+function esDescartado(l)  { const id = F.estadoId(l); if (id) return id === ST.RECHAZADO;     return /cancel|descart|rechaz/.test(accionCal(l)); }
+function esSinRespuesta(l){ const id = F.estadoId(l); if (id) return id === ST.SIN_RESPUESTA; return /sin.?respuesta|no.?contest/.test(accionCal(l)); }
+function esCalificado(l)  { const id = F.estadoId(l); if (id) return (id === ST.ATENCION || id === ST.SEGUIMIENTO); return tieneDemo(l); }
+function esAtencion(l)    { const id = F.estadoId(l); if (id) return id === ST.ATENCION;       return /alta|urgente/.test((firstNonEmpty(l.urgencia) || '').toString().toLowerCase()); }
 function conRespuesta(l)  { return !esSinRespuesta(l); }
 
 // ============================================================
@@ -103,6 +114,10 @@ function firstNonEmpty(...vals) {
 function parseFecha(str) {
     if (!str) return null;
     if (str instanceof Date) return isNaN(str) ? null : str;
+    // ISO 8601 (Supabase, ej. "2026-07-06T01:08:13.772066+00:00"): parseo nativo.
+    // Importante hacerlo ANTES del limpiado de abajo, que elimina puntos ("p.m.") y
+    // corrompería la fracción de segundos del ISO.
+    if (/^\d{4}-\d{2}-\d{2}T/.test(String(str))) { const iso = new Date(str); return isNaN(iso) ? null : iso; }
     try {
         const cleaned = String(str).replace(/\./g, '').replace(/p\s*m/i, 'PM').replace(/a\s*m/i, 'AM');
         const datePart = cleaned.split(',')[0].trim();
@@ -112,14 +127,20 @@ function parseFecha(str) {
         return isNaN(nat) ? null : nat;
     } catch { return null; }
 }
-// Extrae "HH:MM" del string de fecha ("30/6/2026, 7:18:57 p.m.")
+// Extrae "HH:MM" de un string de fecha. Soporta el formato legacy con a.m./p.m.
+// ("30/6/2026, 7:18:57 p.m.") y el ISO de Supabase ("2026-07-03T13:00:00+00:00",
+// del que toma la hora literal, sin convertir zona horaria).
 function parseHora(str) {
     if (!str) return '';
     const m = String(str).match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])\s*\.?\s*m/i);
-    if (!m) return '';
-    let h = Number(m[1]); const min = m[2]; const pm = /p/i.test(m[3]);
-    if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0;
-    return String(h).padStart(2, '0') + ':' + min;
+    if (m) {
+        let h = Number(m[1]); const min = m[2]; const pm = /p/i.test(m[3]);
+        if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0;
+        return String(h).padStart(2, '0') + ':' + min;
+    }
+    const iso = String(str).match(/T(\d{2}):(\d{2})/);
+    if (iso) return iso[1] + ':' + iso[2];
+    return '';
 }
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
@@ -212,24 +233,23 @@ async function loadConfig() {
 }
 
 async function fetchLeads() {
-    // Modo demo (datos ficticios): poner webhook_url = 'DEMO' en clients_config.
-    if (S.config.webhook_url === 'DEMO') { S.leads = demoLeads(); return; }
+    // Modo demo (datos ficticios) SOLO si se fuerza con ?demo=1 en la URL. Por defecto
+    // el panel usa datos reales; el flag histórico webhook_url='DEMO' ya se ignora aquí.
+    if (new URLSearchParams(location.search).has('demo')) { S.leads = demoLeads(); return; }
 
-    // Fuente actual: Airtable, vía /api/leads/list (endpoint server-side que guarda el
-    // token AIRTABLE_TOKEN y resuelve base/tabla desde clients_config.leads_config).
-    // MIGRACIÓN FUTURA A SUPABASE: reemplazar esta llamada por una query a
-    // window.clientSupabase (la capa per-client) contra la tabla de leads.
+    // Fuente de datos: la Supabase per-cliente de Logic Systems, vía /api/leads/list
+    // (endpoint server-side que lee con la SERVICE KEY y normaliza los campos). El
+    // service key NUNCA toca el navegador.
     const res = await fetch('/api/leads/list?client=' + encodeURIComponent(SLUG));
 
-    // Aún sin Airtable configurado (base/tabla/token): no es error fatal, se muestra
-    // el panel vacío con una guía. (400 = falta config; 500 = falta el token.)
-    if (res.status === 400 || res.status === 500) {
+    // Sin configurar (faltan env vars) o error de lectura: no es fatal, se muestra el
+    // panel vacío con la guía que devuelve el endpoint.
+    if (!res.ok) {
         S.leads = [];
         const msg = await res.json().catch(() => ({}));
-        status(msg.error || 'Configura el Airtable de Logic Systems para ver datos.', true);
+        status(msg.error || ('El origen de leads respondió ' + res.status), true);
         return;
     }
-    if (!res.ok) throw new Error('El origen de leads respondió ' + res.status);
 
     const raw = await res.json();
     S.leads = Array.isArray(raw) ? raw : (raw.leads || raw.data || []);
@@ -517,9 +537,9 @@ function renderSeguimiento(cur) {
             const atencion = esAtencion(l);
             const estColor = atencion ? '#0E8F53' : '#B7791F';
             const estLabel = atencion ? 'Atención personal' : 'En seguimiento';
-            const hora = parseHora(firstNonEmpty(l.fecha_creacion, l.fecha)) || '—';
+            const hora = parseHora(firstNonEmpty(l.demo_inicio, l.fecha_creacion, l.fecha)) || '—';
             const precio = F.precio(l);
-            const sub = [F.telefono(l), F.campana(l)].filter(Boolean).join(' · ');
+            const sub = [F.telefono(l), l.empresa, F.campana(l)].filter(Boolean).join(' · ');
             return `
             <div class="card-lift" style="display:flex; align-items:center; gap:16px; padding:13px 16px; border-radius:14px; background:${soft}; margin-bottom:10px;">
               <div style="flex:none; width:58px; text-align:center;">
