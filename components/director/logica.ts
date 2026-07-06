@@ -72,6 +72,19 @@ export function parseWall(str: any): Wall | null {
 export const SISTEMAS = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN PLD'];
 export const FUENTES = ['Facebook', 'WhatsApp', 'Instagram', 'Google'];
 
+// Paleta categórica por sistema (validada con la skill dataviz: banda de luminosidad,
+// chroma y separación CVD ΔE 47 ≫ 12). Colorea los eventos del calendario; la identidad
+// no depende solo del color (cada evento lleva etiqueta + hay leyenda).
+export const SIS_COLOR: Record<string, string> = {
+  'CIB Financiera': '#2a78d6', // azul
+  'e-SIGeN': '#1baf7a', // aqua
+  'CIB Casa de Empeño': '#eda100', // ámbar
+  'e-SIGeN PLD': '#4a3aa7', // violeta
+};
+export function sisColor(l: Lead): string {
+  return SIS_COLOR[F.campana(l)] || '#86868B';
+}
+
 // Normaliza el valor crudo del lead (utm_campaign) a uno de los 4 sistemas fijos, o null.
 // Ajusta los patrones cuando confirmes cómo llega el dato real desde Kommo.
 export function normSistema(l: Lead): string | null {
@@ -222,14 +235,18 @@ export function demoLeads(): Lead[] {
     [ST.SIN_RESPUESTA]: 'SIN RESPUESTA',
     [ST.ATENCION]: 'atencion personalizada',
   };
+  const pad = (n: number) => String(n).padStart(2, '0');
   const out: Lead[] = [];
   for (let i = 0; i < 140; i++) {
     const daysAgo = Math.floor((i * 7) % 30);
     const d = new Date();
     d.setDate(d.getDate() - daysAgo);
     const id = stages[i % stages.length];
+    // demo_inicio en formato "de pared" (mismo que Supabase) para poblar el calendario.
+    const demoIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(9 + (i % 8))}:00:00+00:00`;
     out.push({
       nombre: nombres[i % nombres.length],
+      empresa: 'Empresa ' + ((i % 20) + 1),
       telefono: '+52199' + (1000000 + i),
       precio: [0, 0, 150000, 500000][i % 4],
       estatus: labels[id],
@@ -238,6 +255,8 @@ export function demoLeads(): Lead[] {
       fecha_creacion: `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}, ${1 + (i % 11)}:0${i % 6}:00 p.m.`,
       utm_medium: fuentes[i % fuentes.length],
       utm_campaign: campanas[i % campanas.length],
+      demo_inicio: demoIso,
+      accion_calendario: 'agendada',
     });
   }
   return out;

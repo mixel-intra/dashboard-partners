@@ -108,15 +108,20 @@ export default function DirectorClient() {
   const cargando = configQ.isLoading || leadsQ.isLoading;
   const error = configQ.error || leadsQ.error;
   const aviso = leadsQ.data?.aviso || null;
-  const statusMsg = cargando
-    ? 'Cargando datos…'
-    : error
-      ? 'Error al cargar el panel: ' + ((error as Error).message || error)
-      : aviso;
+  // Mientras carga se muestra el spinner; el toast #dg-status queda solo para errores/avisos.
+  const statusMsg = error ? 'Error al cargar el panel: ' + ((error as Error).message || error) : aviso;
 
   return (
     <>
-      {statusMsg && (
+      {cargando && (
+        <div id="dg-loader">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div className="dg-spinner" />
+            <div style={{ font: "13px/1.4 'Inter',sans-serif", color: '#6E6E73' }}>Cargando panel…</div>
+          </div>
+        </div>
+      )}
+      {!cargando && statusMsg && (
         <div id="dg-status" className={error || aviso ? 'err' : ''}>
           {statusMsg}
         </div>

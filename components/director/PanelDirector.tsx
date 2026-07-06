@@ -17,6 +17,8 @@ import {
   parseWall,
   pct,
   periodRange,
+  sisColor,
+  SIS_COLOR,
   smoothPath,
   type Lead,
   type Wall,
@@ -350,7 +352,7 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
             <Sistemas cur={cur} prev={prev} onFiltra={toggleCampana} />
           </div>
 
-          {/* SEGUIMIENTO */}
+          {/* AGENDA (calendario) */}
           <div
             className="dg-agenda lift"
             style={{
@@ -362,13 +364,6 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
               padding: '26px 30px',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-              <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em', color: '#1D1D1F' }}>Agenda de demos</span>
-              <span style={{ fontSize: 12.5, color: '#0A6CFF', fontWeight: 600, cursor: 'pointer' }}>Ver agenda completa →</span>
-            </div>
-            <div style={{ fontSize: 12.5, color: '#86868B', marginBottom: 6 }}>
-              Próximas reuniones de 90 min con prospectos calificados
-            </div>
             <Agenda leads={chip} />
           </div>
         </div>
@@ -402,11 +397,11 @@ function Donut({ rate }: { rate: number }) {
     c = 2 * Math.PI * r,
     off = c * (1 - rate / 100);
   return (
-    <svg width="140" height="140" viewBox="0 0 140 140">
-      <circle cx="70" cy="70" r={r} fill="none" stroke="#EFF1F5" strokeWidth="14" />
+    <svg width="150" height="150" viewBox="0 0 150 150">
+      <circle cx="75" cy="75" r={r} fill="none" stroke="#EFF1F5" strokeWidth="14" />
       <circle
-        cx="70"
-        cy="70"
+        cx="75"
+        cy="75"
         r={r}
         fill="none"
         stroke="#0A6CFF"
@@ -414,13 +409,13 @@ function Donut({ rate }: { rate: number }) {
         strokeLinecap="round"
         strokeDasharray={c.toFixed(1)}
         strokeDashoffset={off.toFixed(1)}
-        transform="rotate(-90 70 70)"
+        transform="rotate(-90 75 75)"
         style={{ transition: 'stroke-dashoffset 700ms cubic-bezier(0.2,0.7,0.2,1)' }}
       />
-      <text x="70" y="70" textAnchor="middle" fontFamily="Inter,sans-serif" fontSize="30" fontWeight="600" fill="#0A6CFF">
+      <text x="75" y="72" textAnchor="middle" fontFamily="Inter,sans-serif" fontSize="29" fontWeight="600" fill="#0A6CFF">
         {rate}%
       </text>
-      <text x="70" y="92" textAnchor="middle" fontFamily="Inter,sans-serif" fontSize="11" fill="#86868B">
+      <text x="75" y="97" textAnchor="middle" fontFamily="Inter,sans-serif" fontSize="11" letterSpacing="0.02em" fill="#86868B">
         agendan
       </text>
     </svg>
@@ -600,16 +595,19 @@ function GraficaTendencia({ cur, period }: { cur: Lead[]; period: string }) {
     if (idx >= 0 && idx < N) buckets[idx].count++;
   });
 
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  // padBot deja aire abajo para las etiquetas de fecha (siempre visibles, no solo en hover).
   const W = 900,
-    H = 130,
-    padX = 14,
-    padY = 16;
+    H = 160,
+    padX = 16,
+    padTop = 18,
+    padBot = 42;
+  const baseY = H - padBot;
   const max = Math.max(1, ...buckets.map((b) => b.count));
   const stepX = (W - padX * 2) / Math.max(1, N - 1);
-  const pts: [number, number][] = buckets.map((b, i) => [padX + i * stepX, H - padY - (b.count / max) * (H - padY * 2)]);
+  const pts: [number, number][] = buckets.map((b, i) => [padX + i * stepX, baseY - (b.count / max) * (baseY - padTop)]);
   const linePath = smoothPath(pts);
-  const areaPath = linePath + ` L${(W - padX).toFixed(1)} ${H - padY} L${padX} ${H - padY} Z`;
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const areaPath = linePath + ` L${(W - padX).toFixed(1)} ${baseY} L${padX} ${baseY} Z`;
 
   function onMove(ev: React.MouseEvent<SVGSVGElement>) {
     const rect = ev.currentTarget.getBoundingClientRect();
@@ -642,9 +640,23 @@ function GraficaTendencia({ cur, period }: { cur: Lead[]; period: string }) {
         {pts.map((pt, i) => (
           <circle key={i} cx={pt[0].toFixed(1)} cy={pt[1].toFixed(1)} r="2.5" fill="#fff" stroke="#0A6CFF" strokeWidth="1.5" />
         ))}
+        {/* Etiquetas de fecha bajo cada punto — visibles siempre. */}
+        {pts.map((pt, i) => (
+          <text
+            key={`lbl-${i}`}
+            x={pt[0].toFixed(1)}
+            y={H - 14}
+            textAnchor="middle"
+            fontFamily="Inter,sans-serif"
+            fontSize="13"
+            fill="#A1A1A6"
+          >
+            {buckets[i].date.getDate()} {meses[buckets[i].date.getMonth()]}
+          </text>
+        ))}
         {p && (
           <>
-            <line x1={p[0]} y1={padY} x2={p[0]} y2={H - padY} stroke="#0A6CFF" strokeWidth="1" strokeDasharray="3 3" opacity="0.45" />
+            <line x1={p[0]} y1={padTop} x2={p[0]} y2={baseY} stroke="#0A6CFF" strokeWidth="1" strokeDasharray="3 3" opacity="0.45" />
             <circle cx={p[0]} cy={p[1]} r="5" fill="#0A6CFF" stroke="#fff" strokeWidth="2.5" />
           </>
         )}
@@ -675,143 +687,177 @@ function GraficaTendencia({ cur, period }: { cur: Lead[]; period: string }) {
   );
 }
 
-// Agenda de demos: ordenada por la fecha de la DEMO (demo_inicio), no la del lead.
-// Próximas primero (ascendente), luego recientes (descendente). Recibe la lista ya
-// filtrada por chips (sistema/fuente) pero SIN filtro de periodo — una agenda mira
-// fechas de demo. La hora sale LITERAL de parseWall (sin conversión de zona).
+// Agenda de demos — vista de CALENDARIO (estilo Google Calendar). Ordena por la fecha
+// de la DEMO (demo_inicio); recibe la lista filtrada por chips (sistema/fuente) pero SIN
+// filtro de periodo. La hora sale LITERAL de parseWall (sin conversión de zona).
 type DemoItem = { l: Lead; w: Wall };
 function Agenda({ leads }: { leads: Lead[] }) {
+  const [calMonth, setCalMonth] = useState<Date | null>(null);
+  const [selKey, setSelKey] = useState<string | null>(null);
+
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const finDeHoy = new Date(todayStart.getTime() + 86400000);
 
-  const demos = leads
-    .map((l) => ({ l, w: parseWall(firstNonEmpty(l.demo_inicio)) }))
-    .filter((x) => x.w !== null) as DemoItem[];
-  const futuras = demos
-    .filter((x) => x.w.date >= todayStart)
-    .sort((a, b) => a.w.date.getTime() - b.w.date.getTime());
-  const pasadas = demos
-    .filter((x) => x.w.date < todayStart)
-    .sort((a, b) => b.w.date.getTime() - a.w.date.getTime());
-  const items = [...futuras, ...pasadas.slice(0, Math.max(0, 15 - futuras.length))];
+  // Demos por día (clave 'año-mes-día', mes 0-based).
+  const byDay = new Map<string, DemoItem[]>();
+  leads.forEach((l) => {
+    const w = parseWall(firstNonEmpty(l.demo_inicio));
+    if (!w) return;
+    const key = `${w.date.getFullYear()}-${w.date.getMonth()}-${w.date.getDate()}`;
+    if (!byDay.has(key)) byDay.set(key, []);
+    byDay.get(key)!.push({ l, w });
+  });
+  const total = [...byDay.values()].reduce((a, arr) => a + arr.length, 0);
 
-  if (!items.length) {
+  const mesesLg = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const diasCortos = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+  const base = calMonth || new Date(now.getFullYear(), now.getMonth(), 1);
+  const y = base.getFullYear();
+  const m = base.getMonth();
+
+  const moveMonth = (delta: number) => { setCalMonth(new Date(y, m + delta, 1)); setSelKey(null); };
+  const goHoy = () => { setCalMonth(new Date(now.getFullYear(), now.getMonth(), 1)); setSelKey(null); };
+  const selDay = (key: string) => setSelKey((k) => (k === key ? null : key));
+
+  const header = (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 12 }}>
+      <div>
+        <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em', color: '#1D1D1F' }}>Agenda de demos</span>
+        <div style={{ fontSize: 12.5, color: '#86868B', marginTop: 2 }}>Reuniones de 90 min con prospectos calificados</div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button className="dg-cal-nav" onClick={() => moveMonth(-1)} aria-label="Mes anterior">‹</button>
+        <span style={{ fontSize: 13.5, fontWeight: 600, color: '#1D1D1F', minWidth: 140, textAlign: 'center' }}>
+          {mesesLg[m]} {y}
+        </span>
+        <button className="dg-cal-nav" onClick={() => moveMonth(1)} aria-label="Mes siguiente">›</button>
+        <button className="dg-cal-hoy" onClick={goHoy}>Hoy</button>
+      </div>
+    </div>
+  );
+
+  if (!total) {
     return (
-      <div id="noDemos" style={{ padding: '30px 0', textAlign: 'center', color: '#86868B', fontSize: 13.5 }}>
-        No hay demos agendadas con este filtro.
+      <>
+        {header}
+        <div id="noDemos" style={{ padding: '30px 0', textAlign: 'center', color: '#86868B', fontSize: 13.5 }}>
+          No hay demos agendadas con este filtro.
+        </div>
+      </>
+    );
+  }
+
+  // Cuadrícula completa (semana inicia lunes) con días de meses vecinos, atenuados.
+  const firstDow = (new Date(y, m, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const weeks = Math.ceil((firstDow + daysInMonth) / 7);
+  const gridStart = new Date(y, m, 1 - firstDow);
+  const MAX = 3;
+
+  const cells = Array.from({ length: weeks * 7 }, (_, i) => {
+    const date = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const arr = (byDay.get(key) || []).slice().sort((a, b) => a.w.date.getTime() - b.w.date.getTime());
+    const isOther = date.getMonth() !== m;
+    const isToday = date.getTime() === todayStart.getTime();
+    const cls = ['dg-cal-cell'];
+    if (isOther) cls.push('other');
+    if (isToday) cls.push('today');
+    if (arr.length) cls.push('has');
+    if (selKey === key) cls.push('sel');
+    return (
+      <div key={key} className={cls.join(' ')} onClick={arr.length ? () => selDay(key) : undefined}>
+        <span className="dg-cal-daynum">{date.getDate()}</span>
+        <div className="dg-cal-events">
+          {arr.slice(0, MAX).map(({ l, w }, j) => (
+            <div key={j} className="dg-cal-ev">
+              <span className="dg-cal-ev-dot" style={{ background: sisColor(l) }}></span>
+              <span className="dg-cal-ev-time">
+                {String(w.h).padStart(2, '0')}:{String(w.mi).padStart(2, '0')}
+              </span>
+              <span className="dg-cal-ev-name">{F.nombre(l)}</span>
+            </div>
+          ))}
+          {arr.length > MAX && <div className="dg-cal-more">+{arr.length - MAX} más</div>}
+        </div>
+        {arr.length > 0 && (
+          <div className="dg-cal-dots">
+            {arr.slice(0, 5).map(({ l }, j) => (
+              <span key={j} style={{ background: sisColor(l) }}></span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  });
+
+  // Panel de detalle del día seleccionado.
+  let detail: React.ReactNode;
+  if (selKey && byDay.has(selKey)) {
+    const arr = byDay.get(selKey)!.slice().sort((a, b) => a.w.date.getTime() - b.w.date.getTime());
+    const [yy, mm, dd] = selKey.split('-').map(Number);
+    const gd = new Date(yy, mm, dd);
+    detail = (
+      <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid #F2F2F5' }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#1D1D1F', marginBottom: 12 }}>
+          {dias[gd.getDay()]} {dd} {meses[mm]} · {arr.length} demo{arr.length !== 1 ? 's' : ''}
+        </div>
+        {arr.map(({ l, w }, i) => {
+          let estColor = '#0E8F53';
+          let estLabel = 'Próxima';
+          if (w.date >= todayStart && w.date < finDeHoy) { estColor = '#0A6CFF'; estLabel = 'Hoy'; }
+          else if (w.date < now) { estColor = '#86868B'; estLabel = 'Realizada'; }
+          const hora = String(w.h).padStart(2, '0') + ':' + String(w.mi).padStart(2, '0');
+          const sub = [F.telefono(l), l.empresa, F.campana(l)].filter(Boolean).join(' · ');
+          return (
+            <div key={i} className="card-lift" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '13px 16px', borderRadius: 14, background: '#F5F8FF', marginBottom: 10 }}>
+              <div style={{ flex: 'none', width: 58, textAlign: 'center' }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: '#1D1D1F', letterSpacing: '-0.01em' }}>{hora}</div>
+                <div style={{ fontSize: 10.5, color: '#86868B', marginTop: 2 }}>90 min</div>
+              </div>
+              <div style={{ flex: 'none', width: 4, height: 40, borderRadius: 999, background: sisColor(l) }}></div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1D1D1F', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{F.nombre(l)}</div>
+                <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>
+              </div>
+              <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999, background: '#FFFFFF', boxShadow: '0 1px 2px rgba(16,24,40,0.05)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: estColor }}></span>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: estColor }}>{estLabel}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  } else {
+    detail = (
+      <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #F2F2F5', textAlign: 'center', color: '#A1A1A6', fontSize: 12.5 }}>
+        Selecciona un día con demos para ver el detalle.
       </div>
     );
   }
 
-  // Agrupar por día conservando el orden (Map preserva el orden de inserción).
-  const byDay = new Map<string, { d: Date; arr: DemoItem[] }>();
-  items.forEach(({ l, w }) => {
-    const key = `${w.date.getFullYear()}-${w.date.getMonth()}-${w.date.getDate()}`;
-    if (!byDay.has(key)) byDay.set(key, { d: w.date, arr: [] });
-    byDay.get(key)!.arr.push({ l, w });
-  });
-  const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
   return (
-    <div id="demoGroups">
-      {[...byDay.values()].map((group) => {
-        const g = group.d;
-        const dayPast = g < todayStart;
-        return (
-          <div key={g.toISOString()} style={{ marginTop: 22 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: 10,
-                marginBottom: 12,
-                paddingBottom: 10,
-                borderBottom: '1px solid #F2F2F5',
-              }}
-            >
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: dayPast ? '#86868B' : '#1D1D1F' }}>{dias[g.getDay()]}</span>
-              <span style={{ fontSize: 12.5, color: '#86868B' }}>
-                {g.getDate()} {meses[g.getMonth()]}
-              </span>
-              <span
-                style={{
-                  marginLeft: 'auto',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  color: '#A1A1A6',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {group.arr.length} demo{group.arr.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            {group.arr.map(({ l, w }, i) => {
-              const soft = dayPast ? '#FAFAFB' : ['#F5F8FF', '#F4FBF7', '#FFF9F0'][i % 3];
-              const accent = PALETTE[i % PALETTE.length];
-              let estColor = '#0E8F53';
-              let estLabel = 'Próxima';
-              if (w.date >= todayStart && w.date < finDeHoy) {
-                estColor = '#0A6CFF';
-                estLabel = 'Hoy';
-              } else if (w.date < now) {
-                estColor = '#86868B';
-                estLabel = 'Realizada';
-              }
-              const hora = String(w.h).padStart(2, '0') + ':' + String(w.mi).padStart(2, '0');
-              const sub = [F.telefono(l), l.empresa, F.campana(l)].filter(Boolean).join(' · ');
-              return (
-                <div
-                  key={i}
-                  className="card-lift"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 16,
-                    padding: '13px 16px',
-                    borderRadius: 14,
-                    background: soft,
-                    marginBottom: 10,
-                  }}
-                >
-                  <div style={{ flex: 'none', width: 58, textAlign: 'center' }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#1D1D1F', letterSpacing: '-0.01em' }}>{hora}</div>
-                    <div style={{ fontSize: 10.5, color: '#86868B', marginTop: 2 }}>90 min</div>
-                  </div>
-                  <div style={{ flex: 'none', width: 4, height: 40, borderRadius: 999, background: accent }}></div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#1D1D1F', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {F.nombre(l)}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {sub}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      flex: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '5px 11px',
-                      borderRadius: 999,
-                      background: '#FFFFFF',
-                      boxShadow: '0 1px 2px rgba(16,24,40,0.05)',
-                    }}
-                  >
-                    <span style={{ width: 6, height: 6, borderRadius: 999, background: estColor }}></span>
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: estColor }}>{estLabel}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
-    </div>
+    <>
+      {header}
+      <div className="dg-legend">
+        {SISTEMAS.map((s) => (
+          <span key={s} className="dg-legend-item">
+            <span className="dg-legend-dot" style={{ background: SIS_COLOR[s] }}></span>
+            {s}
+          </span>
+        ))}
+      </div>
+      <div className="dg-cal">
+        <div className="dg-cal-weekdays">{diasCortos.map((d) => (<div key={d}>{d}</div>))}</div>
+        <div className="dg-cal-grid">{cells}</div>
+      </div>
+      {detail}
+    </>
   );
 }
