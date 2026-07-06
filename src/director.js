@@ -339,11 +339,6 @@ function renderHeroYFunnel(cur, prev) {
             <div style="height:100%; border-radius:999px; width:${pct(s.value, max)}%; background:${s.color}; transition:width 600ms cubic-bezier(0.2,0.7,0.2,1);"></div>
           </div>
         </div>`).join('');
-
-    const ultimo = [...cur].filter(esCalificado).sort((a, b) => (F.fecha(b) || 0) - (F.fecha(a) || 0))[0];
-    setTxt('tickerMsg', ultimo
-        ? `Nueva cita agendada · ${F.nombre(ultimo)} (${F.campana(ultimo)})`
-        : 'El agente está agendando demos en tiempo real.');
 }
 
 // --- Donut: tasa de calificación (calificados / con respuesta) ---
