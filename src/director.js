@@ -201,7 +201,6 @@ async function init() {
         const session = typeof getSession === 'function' ? getSession() : null;
         if (!session) { location.href = 'login.html'; return; }
         if (!(session.role === 'admin' || (session.clients || []).includes(SLUG))) { location.href = 'hub.html'; return; }
-        setTxt('welcome-name', session.name || 'Administrador');
 
         status('Cargando datos…');
         await loadConfig();
@@ -223,7 +222,6 @@ async function loadConfig() {
     if (error || !data) throw new Error('No se encontró la config de "' + SLUG + '" en clients_config.');
     S.config = data;
     setTxt('dg-client-name', data.name || 'Logic Systems');
-    setTxt('client-name-display', data.name || 'Logic Systems');
     // Logo en el topbar (si el cliente tiene uno configurado)
     const logo = document.getElementById('client-logo');
     if (logo && data.logo_url) { logo.src = data.logo_url; logo.classList.remove('hidden'); }
