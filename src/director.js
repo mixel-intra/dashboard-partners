@@ -44,6 +44,17 @@ const SISTEMAS = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN P
 // Las fuentes de adquisición que se manejan siempre (chips "Fuente").
 const FUENTES  = ['Facebook', 'WhatsApp', 'Instagram', 'Google'];
 
+// Paleta categórica por sistema (validada con la skill dataviz: banda de luminosidad,
+// chroma, y separación CVD ΔE 47 ≫ 12). Colorea los eventos del calendario; la
+// identidad no depende solo del color (cada evento lleva etiqueta + hay leyenda).
+const SIS_COLOR = {
+    'CIB Financiera':     '#2a78d6', // azul
+    'e-SIGeN':            '#1baf7a', // aqua
+    'CIB Casa de Empeño': '#eda100', // ámbar
+    'e-SIGeN PLD':        '#4a3aa7', // violeta
+};
+function sisColor(l) { return SIS_COLOR[F.campana(l)] || '#86868B'; }
+
 // Normaliza el valor crudo del lead (utm_campaign) a uno de los 4 sistemas fijos, o null si no cae.
 // Ajusta los patrones cuando confirmes cómo llega el dato real desde Kommo.
 function normSistema(l) {
@@ -96,6 +107,8 @@ const S = {
     period: '30d',            // hoy | 7d | 30d | todo
     campanaFilter: null,
     fuenteFilter: null,
+    calMonth: null,           // Date del 1er día del mes mostrado en el calendario de agenda
+    calSelKey: null,          // día seleccionado en el calendario ('año-mes-día', mes 0-based)
 };
 const PERIODS = [
     { key: 'hoy', label: 'Hoy',       days: 1 },
@@ -202,7 +215,6 @@ async function init() {
         if (!session) { location.href = 'login.html'; return; }
         if (!(session.role === 'admin' || (session.clients || []).includes(SLUG))) { location.href = 'hub.html'; return; }
 
-        status('Cargando datos…');
         await loadConfig();
         await fetchLeads();
 
@@ -210,10 +222,20 @@ async function init() {
         renderChips();
         renderAll();
         status(null);
+        hideLoader();
     } catch (err) {
         console.error('[director] init error', err);
         status('Error al cargar el panel: ' + (err.message || err), true);
+        hideLoader();
     }
+}
+
+// Oculta el spinner de carga inicial (con fade) una vez que el panel ya renderizó.
+function hideLoader() {
+    const ld = document.getElementById('dg-loader');
+    if (!ld) return;
+    ld.classList.add('hidden');
+    setTimeout(() => { ld.style.display = 'none'; }, 340);
 }
 
 async function loadConfig() {
@@ -346,13 +368,13 @@ function renderDonut(cur) {
     const rate = pct(calificados, conResp);
     const r = 52, c = 2 * Math.PI * r, off = c * (1 - rate / 100);
     document.getElementById('donut').innerHTML = `
-      <svg width="140" height="140" viewBox="0 0 140 140">
-        <circle cx="70" cy="70" r="${r}" fill="none" stroke="#EFF1F5" stroke-width="14"/>
-        <circle cx="70" cy="70" r="${r}" fill="none" stroke="#0A6CFF" stroke-width="14" stroke-linecap="round"
+      <svg width="150" height="150" viewBox="0 0 150 150">
+        <circle cx="75" cy="75" r="${r}" fill="none" stroke="#EFF1F5" stroke-width="14"/>
+        <circle cx="75" cy="75" r="${r}" fill="none" stroke="#0A6CFF" stroke-width="14" stroke-linecap="round"
           stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
-          transform="rotate(-90 70 70)" style="transition:stroke-dashoffset 700ms cubic-bezier(0.2,0.7,0.2,1);"/>
-        <text x="70" y="70" text-anchor="middle" font-family="Inter,sans-serif" font-size="30" font-weight="600" fill="#0A6CFF">${rate}%</text>
-        <text x="70" y="92" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#86868B">agendan</text>
+          transform="rotate(-90 75 75)" style="transition:stroke-dashoffset 700ms cubic-bezier(0.2,0.7,0.2,1);"/>
+        <text x="75" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-size="29" font-weight="600" fill="#0A6CFF">${rate}%</text>
+        <text x="75" y="97" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" letter-spacing="0.02em" fill="#86868B">agendan</text>
       </svg>`;
 }
 
@@ -452,13 +474,21 @@ function renderTrend(cur) {
         if (idx >= 0 && idx < N) buckets[idx].count++;
     });
 
-    const W = 900, H = 130, padX = 14, padY = 16;
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    // padBot deja aire abajo para las etiquetas de fecha (siempre visibles).
+    const W = 900, H = 160, padX = 16, padTop = 18, padBot = 42;
+    const baseY = H - padBot;
     const max = Math.max(1, ...buckets.map(b => b.count));
     const stepX = (W - padX * 2) / Math.max(1, N - 1);
-    const pts = buckets.map((b, i) => [padX + i * stepX, H - padY - (b.count / max) * (H - padY * 2)]);
+    const pts = buckets.map((b, i) => [padX + i * stepX, baseY - (b.count / max) * (baseY - padTop)]);
     const linePath = smoothPath(pts);
-    const areaPath = linePath + ` L${(W - padX).toFixed(1)} ${H - padY} L${padX} ${H - padY} Z`;
+    const areaPath = linePath + ` L${(W - padX).toFixed(1)} ${baseY} L${padX} ${baseY} Z`;
     const dots = pts.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="#fff" stroke="#0A6CFF" stroke-width="1.5"/>`).join('');
+    // Etiquetas de fecha bajo cada punto — visibles siempre, no solo en hover.
+    const labels = pts.map((p, i) => {
+        const b = buckets[i];
+        return `<text x="${p[0].toFixed(1)}" y="${H - 14}" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#A1A1A6">${b.date.getDate()} ${meses[b.date.getMonth()]}</text>`;
+    }).join('');
 
     const host = document.getElementById('trendBig');
     host.innerHTML = `
@@ -470,19 +500,19 @@ function renderTrend(cur) {
           <path d="${areaPath}" fill="url(#dgTrendFill)"/>
           <path d="${linePath}" fill="none" stroke="#0A6CFF" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
           ${dots}
-          <line class="dg-trend-guide" x1="0" y1="${padY}" x2="0" y2="${H - padY}" stroke="#0A6CFF" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
+          ${labels}
+          <line class="dg-trend-guide" x1="0" y1="${padTop}" x2="0" y2="${baseY}" stroke="#0A6CFF" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
           <circle class="dg-trend-marker" r="5" fill="#0A6CFF" stroke="#fff" stroke-width="2.5" opacity="0"/>
         </svg>
         <div class="dg-trend-tip" style="position:absolute; pointer-events:none; transform:translate(-50%,-125%); background:#0B1220; color:#fff; padding:6px 10px; border-radius:8px; font-size:11.5px; font-weight:600; white-space:nowrap; opacity:0; transition:opacity 120ms; box-shadow:0 4px 14px rgba(0,0,0,0.22);"></div>
       </div>`;
 
-    // Hover: marca la fecha con un círculo + tooltip con los calificados de esa fecha.
+    // Hover: marca la fecha con un círculo + tooltip con el conteo de esa fecha.
     const svg = host.querySelector('.dg-trend-svg');
     const wrap = host.querySelector('.dg-trend-wrap');
     const guide = host.querySelector('.dg-trend-guide');
     const marker = host.querySelector('.dg-trend-marker');
     const tip = host.querySelector('.dg-trend-tip');
-    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
     function onMove(ev) {
         const rect = svg.getBoundingClientRect();
         const vx = ((ev.clientX - rect.left) / rect.width) * W;
@@ -512,76 +542,145 @@ function parseWall(str) {
     if (!m) return null;
     return { h: +m[4], mi: +m[5], date: new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) };
 }
+// Agrupa las demos (chip-filtered, con fecha) por día. Clave: 'año-mes-día' (mes 0-based).
+function demosPorDia() {
+    const byDay = new Map();
+    S.leads.filter(passesChips).forEach(l => {
+        const w = parseWall(firstNonEmpty(l.demo_inicio));
+        if (!w) return;
+        const key = w.date.getFullYear() + '-' + w.date.getMonth() + '-' + w.date.getDate();
+        if (!byDay.has(key)) byDay.set(key, []);
+        byDay.get(key).push({ l, w });
+    });
+    return byDay;
+}
+
 function renderAgenda() {
-    const host  = document.getElementById('demoGroups');
-    const empty = document.getElementById('noDemos');
+    const host    = document.getElementById('demoCal');
+    const dayHost = document.getElementById('demoDay');
+    const empty   = document.getElementById('noDemos');
+    const byDay = demosPorDia();
+
+    const total = [...byDay.values()].reduce((a, arr) => a + arr.length, 0);
+    if (!total) {
+        host.innerHTML = ''; dayHost.innerHTML = ''; setTxt('calMonthLabel', '—');
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
 
     const now = new Date();
     const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+    if (!S.calMonth) S.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const y = S.calMonth.getFullYear(), m = S.calMonth.getMonth();
 
-    const demos = S.leads.filter(passesChips)
-        .map(l => ({ l, w: parseWall(firstNonEmpty(l.demo_inicio)) }))
-        .filter(x => x.w);
-    const futuras = demos.filter(x => x.w.date >= todayStart).sort((a, b) => a.w.date - b.w.date);
-    const pasadas = demos.filter(x => x.w.date <  todayStart).sort((a, b) => b.w.date - a.w.date);
-    // Todas las próximas + recientes hasta completar ~15.
-    const items = [...futuras, ...pasadas.slice(0, Math.max(0, 15 - futuras.length))];
+    const mesesLg = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    setTxt('calMonthLabel', mesesLg[m] + ' ' + y);
 
-    if (!items.length) { host.innerHTML = ''; empty.style.display = 'block'; return; }
-    empty.style.display = 'none';
+    // Cuadrícula completa tipo Google Calendar (semana inicia LUNES); incluye días de
+    // meses vecinos, atenuados, para no dejar huecos.
+    const firstDow = (new Date(y, m, 1).getDay() + 6) % 7;   // 0 = lunes
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const weeks = Math.ceil((firstDow + daysInMonth) / 7);
+    const gridStart = new Date(y, m, 1 - firstDow);
+    const MAX = 3;  // eventos visibles por celda antes de "+N más"
 
-    // Agrupar por día conservando el orden (Map preserva el orden de inserción).
-    const byDay = new Map();
-    items.forEach(({ l, w }) => {
-        const key = w.date.getFullYear() + '-' + w.date.getMonth() + '-' + w.date.getDate();
-        if (!byDay.has(key)) byDay.set(key, { d: w.date, arr: [] });
-        byDay.get(key).arr.push({ l, w });
-    });
-    const dias  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    const finDeHoy = new Date(todayStart.getTime() + 86400000);
+    const diasCortos = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const head = diasCortos.map(d => `<div>${d}</div>`).join('');
 
-    host.innerHTML = [...byDay.values()].map(group => {
-        const g = group.d;
-        const dayPast = g < todayStart;
-        const rows = group.arr.map(({ l, w }, i) => {
-            const soft = dayPast ? '#FAFAFB' : ['#F5F8FF', '#F4FBF7', '#FFF9F0'][i % 3];
-            const accent = PALETTE[i % PALETTE.length];
-            // Estado por el timing de la demo.
-            let estColor = '#0E8F53', estLabel = 'Próxima';
-            if (w.date >= todayStart && w.date < finDeHoy) { estColor = '#0A6CFF'; estLabel = 'Hoy'; }
-            else if (w.date < now)                         { estColor = '#86868B'; estLabel = 'Realizada'; }
+    let cellsHtml = '';
+    for (let i = 0; i < weeks * 7; i++) {
+        const date = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+        const key = date.getFullYear() + '-' + date.getMonth() + '-' + date.getDate();
+        const arr = (byDay.get(key) || []).slice().sort((a, b) => a.w.date - b.w.date);
+        const isOther = date.getMonth() !== m;
+        const isToday = date.getTime() === todayStart.getTime();
+
+        const cls = ['dg-cal-cell'];
+        if (isOther) cls.push('other');
+        if (isToday) cls.push('today');
+        if (arr.length) cls.push('has');
+        if (S.calSelKey === key) cls.push('sel');
+
+        const evs = arr.slice(0, MAX).map(({ l, w }) => {
             const hora = String(w.h).padStart(2, '0') + ':' + String(w.mi).padStart(2, '0');
-            const sub = [F.telefono(l), l.empresa, F.campana(l)].filter(Boolean).join(' · ');
-            return `
-            <div class="card-lift" style="display:flex; align-items:center; gap:16px; padding:13px 16px; border-radius:14px; background:${soft}; margin-bottom:10px;">
-              <div style="flex:none; width:58px; text-align:center;">
-                <div style="font-size:16px; font-weight:600; color:#1D1D1F; letter-spacing:-0.01em;">${esc(hora)}</div>
-                <div style="font-size:10.5px; color:#86868B; margin-top:2px;">90 min</div>
-              </div>
-              <div style="flex:none; width:4px; height:40px; border-radius:999px; background:${accent};"></div>
-              <div style="flex:1; min-width:0;">
-                <div style="font-size:14px; font-weight:600; color:#1D1D1F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(F.nombre(l))}</div>
-                <div style="font-size:12px; color:#6E6E73; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(sub)}</div>
-              </div>
-              <div style="flex:none; display:flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; background:#FFFFFF; box-shadow:0 1px 2px rgba(16,24,40,0.05);">
-                <span style="width:6px; height:6px; border-radius:999px; background:${estColor};"></span>
-                <span style="font-size:11.5px; font-weight:600; color:${estColor};">${estLabel}</span>
-              </div>
-            </div>`;
+            return `<div class="dg-cal-ev"><span class="dg-cal-ev-dot" style="background:${sisColor(l)};"></span><span class="dg-cal-ev-time">${hora}</span><span class="dg-cal-ev-name">${esc(F.nombre(l))}</span></div>`;
         }).join('');
-        const n = group.arr.length;
+        const more = arr.length > MAX ? `<div class="dg-cal-more">+${arr.length - MAX} más</div>` : '';
+        const dots = arr.length ? `<div class="dg-cal-dots">${arr.slice(0, 5).map(({ l }) => `<span style="background:${sisColor(l)};"></span>`).join('')}</div>` : '';
+        const onclick = arr.length ? ` onclick="window.__dgSelDay('${key}')"` : '';
+
+        cellsHtml += `<div class="${cls.join(' ')}"${onclick}><span class="dg-cal-daynum">${date.getDate()}</span><div class="dg-cal-events">${evs}${more}</div>${dots}</div>`;
+    }
+
+    // Leyenda de sistemas (la identidad no es solo-color).
+    const legend = `<div class="dg-legend">${SISTEMAS.map(s =>
+        `<span class="dg-legend-item"><span class="dg-legend-dot" style="background:${SIS_COLOR[s]};"></span>${esc(s)}</span>`).join('')}</div>`;
+
+    host.innerHTML = `${legend}<div class="dg-cal"><div class="dg-cal-weekdays">${head}</div><div class="dg-cal-grid">${cellsHtml}</div></div>`;
+    renderDaySel(byDay);
+}
+
+// Panel de detalle: lista las demos del día seleccionado (o una guía si no hay selección).
+function renderDaySel(byDay) {
+    const dayHost = document.getElementById('demoDay');
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const dias  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+    if (!S.calSelKey || !byDay.has(S.calSelKey)) {
+        dayHost.innerHTML = `<div style="margin-top:16px; padding-top:16px; border-top:1px solid #F2F2F5; text-align:center; color:#A1A1A6; font-size:12.5px;">Selecciona un día con demos para ver el detalle.</div>`;
+        return;
+    }
+
+    const now = new Date();
+    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+    const finDeHoy = new Date(todayStart.getTime() + 86400000);
+    const arr = byDay.get(S.calSelKey).slice().sort((a, b) => a.w.date - b.w.date);
+    const [yy, mm, dd] = S.calSelKey.split('-').map(Number);
+    const gd = new Date(yy, mm, dd);
+
+    const rows = arr.map(({ l, w }) => {
+        const accent = sisColor(l);
+        let estColor = '#0E8F53', estLabel = 'Próxima';
+        if (w.date >= todayStart && w.date < finDeHoy) { estColor = '#0A6CFF'; estLabel = 'Hoy'; }
+        else if (w.date < now)                         { estColor = '#86868B'; estLabel = 'Realizada'; }
+        const hora = String(w.h).padStart(2, '0') + ':' + String(w.mi).padStart(2, '0');
+        const sub = [F.telefono(l), l.empresa, F.campana(l)].filter(Boolean).join(' · ');
         return `
-        <div style="margin-top:22px;">
-          <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #F2F2F5;">
-            <span style="font-size:13.5px; font-weight:600; color:${dayPast ? '#86868B' : '#1D1D1F'};">${dias[g.getDay()]}</span>
-            <span style="font-size:12.5px; color:#86868B;">${g.getDate()} ${meses[g.getMonth()]}</span>
-            <span style="margin-left:auto; font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; color:#A1A1A6; white-space:nowrap;">${n} demo${n !== 1 ? 's' : ''}</span>
+        <div class="card-lift" style="display:flex; align-items:center; gap:16px; padding:13px 16px; border-radius:14px; background:#F5F8FF; margin-bottom:10px;">
+          <div style="flex:none; width:58px; text-align:center;">
+            <div style="font-size:16px; font-weight:600; color:#1D1D1F; letter-spacing:-0.01em;">${esc(hora)}</div>
+            <div style="font-size:10.5px; color:#86868B; margin-top:2px;">90 min</div>
           </div>
-          ${rows}
+          <div style="flex:none; width:4px; height:40px; border-radius:999px; background:${accent};"></div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:14px; font-weight:600; color:#1D1D1F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(F.nombre(l))}</div>
+            <div style="font-size:12px; color:#6E6E73; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(sub)}</div>
+          </div>
+          <div style="flex:none; display:flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; background:#FFFFFF; box-shadow:0 1px 2px rgba(16,24,40,0.05);">
+            <span style="width:6px; height:6px; border-radius:999px; background:${estColor};"></span>
+            <span style="font-size:11.5px; font-weight:600; color:${estColor};">${estLabel}</span>
+          </div>
         </div>`;
     }).join('');
+
+    dayHost.innerHTML = `
+      <div style="margin-top:18px; padding-top:16px; border-top:1px solid #F2F2F5;">
+        <div style="font-size:13px; font-weight:600; color:#1D1D1F; margin-bottom:12px;">${dias[gd.getDay()]} ${dd} ${meses[mm]} · ${arr.length} demo${arr.length !== 1 ? 's' : ''}</div>
+        ${rows}
+      </div>`;
 }
+
+// Seleccionar/deseleccionar un día del calendario.
+window.__dgSelDay = (key) => { S.calSelKey = (S.calSelKey === key ? null : key); renderAgenda(); };
+// Navegar meses; "Hoy" vuelve al mes actual.
+window.__dgCalMove = (delta) => {
+    const base = S.calMonth || new Date();
+    S.calMonth = new Date(base.getFullYear(), base.getMonth() + delta, 1);
+    S.calSelKey = null;
+    renderAgenda();
+};
+window.__dgCalHoy = () => { S.calMonth = null; S.calSelKey = null; renderAgenda(); };
 
 // ============================================================
 // HELPERS
@@ -598,19 +697,25 @@ function demoLeads() {
     const nombres = ['Carlos Vega', 'Liliana Estrada', 'Jorge Herrera', 'Ana Ruiz', 'MVZ. Cesar Gamboa', 'Sci consultores'];
     const stages = [ST.RECHAZADO, ST.RECHAZADO, ST.SEGUIMIENTO, ST.SIN_RESPUESTA, ST.ATENCION, ST.RECHAZADO];
     const labels = { [ST.RECHAZADO]: 'rechazado', [ST.SEGUIMIENTO]: 'Seguimiento CAMILA', [ST.SIN_RESPUESTA]: 'SIN RESPUESTA', [ST.ATENCION]: 'atencion personalizada' };
+    const pad = n => String(n).padStart(2, '0');
     const out = [];
     for (let i = 0; i < 140; i++) {
         const daysAgo = Math.floor((i * 7) % 30);
         const d = new Date(); d.setDate(d.getDate() - daysAgo);
         const id = stages[i % stages.length];
+        // demo_inicio en formato "de pared" (mismo que Supabase) para poblar el calendario.
+        const demoIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(9 + (i % 8))}:00:00+00:00`;
         out.push({
             nombre: nombres[i % nombres.length],
+            empresa: 'Empresa ' + (i % 20 + 1),
             telefono: '+52199' + (1000000 + i),
             precio: [0, 0, 150000, 500000][i % 4],
             estatus: labels[id], estatus_id: id, tags: [],
             fecha_creacion: `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}, ${1 + (i % 11)}:0${i % 6}:00 p.m.`,
             utm_medium: fuentes[i % fuentes.length],
             utm_campaign: campanas[i % campanas.length],
+            demo_inicio: demoIso,
+            accion_calendario: 'agendada',
         });
     }
     return out;

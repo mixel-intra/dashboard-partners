@@ -42,8 +42,53 @@
         button { font-family: inherit; cursor: pointer; border: none; }
         /* Este dashboard no usa el topbar: solo se mantiene el sidebar */
         .main-header { display: none !important; }
-        #dg-status { position: fixed; bottom: 18px; right: 18px; font: 13px/1.4 'Inter', sans-serif; color: #6E6E73; background: #fff; padding: 9px 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(16,24,40,0.12); z-index: 9999; }
+        #dg-status { display: none; position: fixed; bottom: 18px; right: 18px; font: 13px/1.4 'Inter', sans-serif; color: #6E6E73; background: #fff; padding: 9px 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(16,24,40,0.12); z-index: 9999; }
         #dg-status.err { color: #B42318; background: #FEF3F2; }
+
+        /* Spinner de carga inicial (se oculta cuando el panel termina de renderizar) */
+        #dg-loader { position: fixed; inset: 0; z-index: 9998; display: flex; align-items: center; justify-content: center; background: #F5F6F8; transition: opacity 320ms ease; }
+        #dg-loader.hidden { opacity: 0; pointer-events: none; }
+        .dg-spinner { width: 44px; height: 44px; border-radius: 50%; border: 4px solid #E3E8F0; border-top-color: #0A6CFF; animation: dgSpin 800ms linear infinite; }
+        @keyframes dgSpin { to { transform: rotate(360deg); } }
+
+        /* Calendario de la agenda de demos — estilo Google Calendar */
+        .dg-cal-nav { width: 32px; height: 32px; border-radius: 999px; background: transparent; color: #5F6368; font-size: 20px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; transition: background 140ms ease; }
+        .dg-cal-nav:hover { background: #F1F3F4; }
+        .dg-cal-hoy { padding: 0 14px; height: 32px; border-radius: 999px; background: #FFFFFF; border: 1px solid #DADCE0; color: #3C4043; font-size: 12.5px; font-weight: 600; transition: background 140ms ease, box-shadow 140ms ease; }
+        .dg-cal-hoy:hover { background: #F8F9FA; box-shadow: 0 1px 2px rgba(60,64,67,0.12); }
+        .dg-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 2px 0 14px; }
+        .dg-legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #5F6368; }
+        .dg-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+        .dg-cal { border: 1px solid #E0E3E7; border-radius: 12px; overflow: hidden; background: #fff; }
+        .dg-cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid #E0E3E7; }
+        .dg-cal-weekdays > div { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #70757A; padding: 10px 0; }
+        .dg-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+        .dg-cal-cell { position: relative; min-height: 112px; border-right: 1px solid #ECEEF1; border-top: 1px solid #ECEEF1; padding: 6px 7px 8px; display: flex; flex-direction: column; gap: 4px; background: #fff; transition: background 120ms ease; }
+        .dg-cal-grid > .dg-cal-cell:nth-child(7n) { border-right: none; }
+        .dg-cal-grid > .dg-cal-cell:nth-child(-n+7) { border-top: none; }
+        .dg-cal-cell.other { background: #FAFBFC; }
+        .dg-cal-cell.has { cursor: pointer; }
+        .dg-cal-cell.has:hover { background: #F5F8FF; }
+        .dg-cal-cell.sel { box-shadow: inset 0 0 0 2px #2a78d6; background: #EAF2FF; }
+        .dg-cal-daynum { align-self: flex-start; font-size: 12.5px; font-weight: 500; color: #3C4043; min-width: 24px; height: 24px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; }
+        .dg-cal-cell.other .dg-cal-daynum { color: #BDC1C6; }
+        .dg-cal-cell.today .dg-cal-daynum { background: #2a78d6; color: #fff; font-weight: 600; }
+        .dg-cal-events { display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+        .dg-cal-ev { display: flex; align-items: center; gap: 6px; padding: 2px 7px; border-radius: 6px; font-size: 11.5px; line-height: 1.35; white-space: nowrap; overflow: hidden; }
+        .dg-cal-ev-dot { width: 7px; height: 7px; border-radius: 2px; flex: none; }
+        .dg-cal-ev-time { font-weight: 600; color: #3C4043; flex: none; }
+        .dg-cal-ev-name { color: #5F6368; overflow: hidden; text-overflow: ellipsis; }
+        .dg-cal-more { font-size: 11px; font-weight: 600; color: #70757A; padding: 1px 7px; }
+        .dg-cal-dots { display: none; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
+        .dg-cal-dots > span { width: 6px; height: 6px; border-radius: 999px; }
+        @media (max-width: 760px) {
+            .dg-cal-cell { min-height: 58px; padding: 5px 4px; }
+            .dg-cal-events, .dg-cal-more { display: none; }
+            .dg-cal-dots { display: flex; }
+            .dg-cal-daynum { min-width: 20px; height: 20px; font-size: 11.5px; padding: 0 4px; }
+            .dg-cal-weekdays > div { font-size: 9.5px; padding: 8px 0; }
+            .dg-legend { gap: 8px 12px; }
+        }
         @media (max-width: 1100px) {
             .dg-bento { grid-template-columns: 1fr 1fr !important; }
             .dg-hero, .dg-trend, .dg-products, .dg-agenda { grid-column: 1 / span 2 !important; grid-row: auto !important; }
@@ -70,6 +115,12 @@
 
 <body>
     <div id="dg-status">Cargando datos…</div>
+    <div id="dg-loader">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+            <div class="dg-spinner"></div>
+            <div style="font:13px/1.4 'Inter',sans-serif; color:#6E6E73;">Cargando panel…</div>
+        </div>
+    </div>
 
     <!-- Layout compartido con los demás dashboards (sidebar + topbar), sin botón de modo oscuro -->
     <div class="app-container full-width-layout" id="app-wrapper">
@@ -221,14 +272,22 @@
                     <div id="products" class="dg-products-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px;"></div>
                 </div>
 
-                <!-- SEGUIMIENTO -->
+                <!-- AGENDA (calendario) -->
                 <div class="dg-agenda lift" style="grid-column:1 / span 4; grid-row:4; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:26px 30px;">
-                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
-                        <span style="font-size:15px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F;">Agenda de demos</span>
-                        <span style="font-size:12.5px; color:#0A6CFF; font-weight:600; cursor:pointer;">Ver agenda completa →</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+                        <div>
+                            <span style="font-size:15px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F;">Agenda de demos</span>
+                            <div style="font-size:12.5px; color:#86868B; margin-top:2px;">Reuniones de 90 min con prospectos calificados</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button class="dg-cal-nav" onclick="window.__dgCalMove(-1)" title="Mes anterior" aria-label="Mes anterior">‹</button>
+                            <span id="calMonthLabel" style="font-size:13.5px; font-weight:600; color:#1D1D1F; min-width:140px; text-align:center;">—</span>
+                            <button class="dg-cal-nav" onclick="window.__dgCalMove(1)" title="Mes siguiente" aria-label="Mes siguiente">›</button>
+                            <button class="dg-cal-hoy" onclick="window.__dgCalHoy()">Hoy</button>
+                        </div>
                     </div>
-                    <div style="font-size:12.5px; color:#86868B; margin-bottom:6px;">Próximas reuniones de 90 min con prospectos calificados</div>
-                    <div id="demoGroups"></div>
+                    <div id="demoCal"></div>
+                    <div id="demoDay"></div>
                     <div id="noDemos" style="display:none; padding:30px 0; text-align:center; color:#86868B; font-size:13.5px;">No hay demos agendadas con este filtro.</div>
                 </div>
 
@@ -314,7 +373,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/director.js?v=20260706-4"></script>
+    <script src="src/director.js?v=20260706-6"></script>
 </body>
 
 </html>
