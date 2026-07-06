@@ -38,10 +38,11 @@ ChartJS.register(ArcElement, DoughnutController, Tooltip, Legend);
 
 const fmt = (n: number) => '$' + Number(n).toLocaleString('en-US');
 
-export function useAdSpend() {
+export function useAdSpend(enabled = true) {
   const { adminSupabase } = useClientConfig();
   return useQuery({
     queryKey: ['cde-ad-spend'],
+    enabled,
     queryFn: async (): Promise<Record<string, number>> => {
       const { data } = await adminSupabase
         .from('ad_spend')
@@ -76,15 +77,18 @@ export default function PanelCde({
   const { perdidos } = useMemo(() => cdeConteos(leads), [leads]);
   const { entries, total } = useMemo(() => cdePieEntries(perdidos), [perdidos]);
 
+  // Sin wrapper <section>: la tarjeta del pie debe ser hija DIRECTA del
+  // split-row-grid (cde-2col) para que el grid la acomode junto a la gráfica
+  // (los modales/cajón son fixed, no afectan el layout).
   return (
-    <section id="cde-extra" style={{ padding: 0 }}>
+    <>
       <TarjetaPie entries={entries} total={total} onAmpliar={() => setPieModalOpen(true)} />
       {pieModalOpen && (
         <ModalPie entries={entries} total={total} onClose={() => setPieModalOpen(false)} />
       )}
       {leadModal && <ModalLead lead={leadModal} onClose={() => setLeadModal(null)} />}
       <CajonInversion open={investOpen} onClose={onCloseInvest} leads={leads} />
-    </section>
+    </>
   );
 }
 

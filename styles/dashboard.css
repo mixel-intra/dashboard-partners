@@ -4096,9 +4096,9 @@
         color: var(--text-secondary);
     }
 
-    [data-theme="light"] @media (max-width: 880px) {
-        .rest-drawer { background: #FFFFFF; }
-    }
+    /* Regla inválida en el legacy ([data-theme] @media…) — los navegadores la
+       ignoraban por completo, así que NUNCA aplicó. Se conserva comentada por
+       paridad. */
 
     /* — Light: Context column — */
     [data-theme="light"] .rest-context {

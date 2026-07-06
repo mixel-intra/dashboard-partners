@@ -32,6 +32,8 @@ export default function DashboardShell({
   intraTab,
   onIntraTabChange,
   onToggleVentas,
+  ventasLabel = 'Registrar ventas',
+  headerRowOculto = false,
   headerControls,
   children,
 }: {
@@ -41,6 +43,10 @@ export default function DashboardShell({
   intraTab: IntraTab;
   onIntraTabChange: (t: IntraTab) => void;
   onToggleVentas: () => void;
+  /** CDE re-etiqueta el botón cash del sidebar como "Inversión publicidad". */
+  ventasLabel?: string;
+  /** Las tabs restaurante/social_listening ocultan el content-header-row. */
+  headerRowOculto?: boolean;
   /** Controles del content-header (filtro etiqueta + selector de rango, fase 8c). */
   headerControls?: React.ReactNode;
   children: React.ReactNode;
@@ -101,7 +107,7 @@ export default function DashboardShell({
   const logo = config?.clientLogo || null;
 
   const sidebarItems = [
-    { icon: 'cash-outline', label: 'Registrar ventas', onClick: onToggleVentas },
+    { icon: 'cash-outline', label: ventasLabel, onClick: onToggleVentas },
     { icon: themeIcon, label: 'Cambiar tema', onClick: toggleTheme },
     { icon: 'key-outline', label: 'Cambiar contraseña', onClick: () => setShowChangePass(true) },
     ...(multiCliente
@@ -267,7 +273,7 @@ export default function DashboardShell({
             </div>
           )}
 
-          <div className="content-header-row">
+          <div className={`content-header-row${headerRowOculto ? ' hidden' : ''}`}>
             <div className="header-title-area">
               <div className="live-label">
                 <div className="live-dot"></div>

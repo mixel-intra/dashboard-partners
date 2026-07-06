@@ -31,6 +31,8 @@ import { Line } from 'react-chartjs-2';
 import { useClientConfig } from '@/lib/config/ClientConfigProvider';
 import { useTemaDocumento } from '@/lib/charts/temaChart';
 import { calcularMetricas, type FiltrosGlobales, type Lead, type Venta } from '@/lib/dashboard/filtros';
+import { esCasaDeEmpeno } from '@/lib/slugs';
+import { cdeCalcularRoas, cdeConteos } from '@/components/dashboard/cde/logica';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
@@ -199,6 +201,8 @@ export default function TarjetasKpi({
   ventas,
   filtros,
   fila,
+  cdeSpendMap,
+  onAbrirInversion,
 }: {
   /** Leads YA filtrados con applyGlobalFilters (rango + tab + etiqueta). */
   leads: Lead[];
@@ -206,6 +210,10 @@ export default function TarjetasKpi({
   filtros: FiltrosGlobales;
   /** Qué fila renderear (el DOM legacy intercala el split-row entre ambas). */
   fila?: 'top' | 'bottom';
+  /** Casa de Empeño: ad_spend por mes (activa el modo CDE de renderCdeExtra). */
+  cdeSpendMap?: Record<string, number>;
+  /** Casa de Empeño: card-6 abre el cajón de inversión al hacer clic. */
+  onAbrirInversion?: () => void;
 }) {
   const { clientId, config, clientType, rawConfig } = useClientConfig();
   const tema = useTemaDocumento();
@@ -252,17 +260,56 @@ export default function TarjetasKpi({
   const sparkPrimary = isLight ? LIGHT_BLUE : config?.themePrimary || '#7551FF';
   const sparkSecondary = isLight ? '#60A5FA' : config?.themeSecondary || '#01F1E3';
 
+  // ── Modo CDE (casa-de-empeño): port de renderCdeExtra + cdeUpdateMonthView ──
+  // 6 tarjetas en UNA fila (5,1,2,3,7,6), ROI (4) oculto, sin fila inferior,
+  // etiquetas y valores propios (funnel, empeños cerrados, ROAS, inversión).
+  const esCde = esCasaDeEmpeno(clientId) && !!cdeSpendMap;
+  const cde = useMemo(() => {
+    if (!esCde) return null;
+    const { totalFunnel, empenados } = cdeConteos(leads);
+    const roas = cdeCalcularRoas(leads, cdeSpendMap!);
+    return { totalFunnel, empenados, ...roas };
+  }, [esCde, leads, cdeSpendMap]);
+
+  const fmtMon = (n: number) => '$' + Number(n).toLocaleString('en-US');
+  const cdeLabels: Record<number, { title: string; description: string } | undefined> = cde
+    ? {
+        3: { title: 'Empeños cerrados', description: 'EMPEÑADOS' },
+        6: { title: 'Inversión en Publicidad', description: 'Captura mensual' },
+        7: { title: 'ROAS', description: 'MONTO EMPEÑADO / INVERSIÓN PUB.' },
+      }
+    : {};
+  const cdeValores: Record<number, string | undefined> = cde
+    ? {
+        1: String(cde.totalFunnel),
+        3: String(cde.empenados),
+        6: fmtMon(cde.periodSpend),
+        7: cde.periodSpend > 0 ? cde.roas.toFixed(2) + 'x' : 'Sin inversión',
+      }
+    : {};
+
   // Orden de cards: hoteles reacomodan las filas (port de initHotelTabs):
   //   top: 1, 3, 4, 7 · bottom: 5, 6, 2. Los demás: 1-4 / 5-7.
+  // CDE: 5 · 1 · 2 · 3 · 7 · 6 en una sola fila.
   const esHotel = clientType === 'hotel';
-  const topOrder = esHotel ? [1, 3, 4, 7] : [1, 2, 3, 4];
+  const topOrder = cde ? [5, 1, 2, 3, 7, 6] : esHotel ? [1, 3, 4, 7] : [1, 2, 3, 4];
   const bottomOrder = esHotel ? [5, 6, 2] : [5, 6, 7];
 
   const renderCard = (i: number) => {
     const meta = CARD_META[i];
-    const lbl = labelDe(i);
+    const lbl = cdeLabels[i] || labelDe(i);
+    const valor = cdeValores[i] ?? valores[i];
+    const esCardInversion = !!cde && i === 6;
+    const roasSinInv = !!cde && i === 7 && cde.periodSpend <= 0;
     return (
-      <div className={`card-quantix ${meta.cardClass}`} id={`card-${i}-wrapper`} key={i}>
+      <div
+        className={`card-quantix ${meta.cardClass}`}
+        id={`card-${i}-wrapper`}
+        key={i}
+        onClick={esCardInversion && onAbrirInversion ? onAbrirInversion : undefined}
+        style={esCardInversion ? { cursor: 'pointer' } : undefined}
+        title={esCardInversion ? 'Clic para registrar la inversión mensual' : undefined}
+      >
         <div className="kpi-card-top">
           <div className="label-group">
             <span className="label-main" id={`label-main-${i}`}>
@@ -276,12 +323,20 @@ export default function TarjetasKpi({
             <ion-icon name={meta.icon}></ion-icon>
           </div>
         </div>
-        <div className="value-big" id={`card-${i}-value`}>
-          {valores[i]}
+        <div
+          className="value-big"
+          id={`card-${i}-value`}
+          style={roasSinInv ? { fontSize: '1.15rem' } : undefined}
+        >
+          {valor}
         </div>
         {i === 6 ? (
           <div className="pill-change pill-green" id="card-6-date">
-            {card6Date}
+            {cde ? cde.label : card6Date}
+          </div>
+        ) : cde && i === 7 ? (
+          <div className="pill-change pill-green">
+            {cde.periodSpend > 0 ? `${fmtMon(cde.totalMonto)} ÷ ${fmtMon(cde.periodSpend)}` : 'Captura inversión pub.'}
           </div>
         ) : (
           meta.pill
@@ -292,11 +347,15 @@ export default function TarjetasKpi({
   };
 
   const filaTop = (
-    <div className="cards-grid" id="top-cards-row">
+    <div
+      className={`cards-grid${cde ? ' cde-kpis' : ''}`}
+      id="top-cards-row"
+      style={cde ? { gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' } : undefined}
+    >
       {topOrder.map(renderCard)}
     </div>
   );
-  const filaBottom = (
+  const filaBottom = cde ? null : (
     <div className="bottom-cards-row" id="bottom-cards-row">
       {bottomOrder.map(renderCard)}
     </div>
