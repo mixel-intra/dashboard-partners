@@ -128,6 +128,27 @@
             .dg-products-grid { grid-template-columns: 1fr !important; }
         }
 
+        /* ── FIX pantalla en blanco en móvil (≤480px) ──
+           style.css (compartido) trae el "modo móvil" del dashboard estándar: a ≤480px
+           OCULTA #app-wrapper (display:none) y muestra un .mobile-dash que dashboard.js
+           renderiza. Este panel reutiliza ese id pero NO tiene .mobile-dash, así que ese
+           modo dejaba TODO el panel en blanco. Aquí lo revertimos: #app-wrapper sigue
+           visible y html/body vuelven al modelo de scroll normal (sin el lock de overflow
+           hidden + 100dvh que aplica el modo móvil estándar y volvía a colapsar la altura). */
+        @media (max-width: 480px) {
+            #app-wrapper { display: flex !important; }
+            .mobile-dash { display: none !important; }
+            html, body,
+            [data-theme="light"] html, [data-theme="light"] body {
+                height: auto !important;
+                min-height: 100dvh !important;
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                background: #F5F6F8 !important;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
         /* Modal de contraseña en tema claro (mismo look que el resto del app) */
         [data-theme="light"] #change-pass-modal { background: rgba(0, 0, 0, 0.4) !important; backdrop-filter: blur(4px); }
         [data-theme="light"] #change-pass-modal .modal-content { background: #FFFFFF !important; border: 1px solid var(--border-subtle) !important; box-shadow: var(--shadow-lg) !important; }
