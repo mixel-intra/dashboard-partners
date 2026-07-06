@@ -266,7 +266,7 @@ function renderAll() {
     renderSources(cur);
     renderCampanas(cur, prev);
     renderTrend(cur);
-    renderSeguimiento(cur);
+    renderAgenda();
     setAll('periodLabel', (PERIODS.find(p => p.key === S.period) || {}).label || '');
 }
 
@@ -508,43 +508,63 @@ function renderTrend(cur) {
     wrap.addEventListener('mouseleave', onLeave);
 }
 
-// --- Prospectos en seguimiento (leads calificados recientes) -
-function renderSeguimiento(cur) {
-    const items = cur.filter(esCalificado)
-        .map(l => ({ l, d: F.fecha(l) }))
-        .filter(x => x.d)
-        .sort((a, b) => b.d - a.d)
-        .slice(0, 12);
-    const host = document.getElementById('demoGroups');
+// --- Agenda de demos -----------------------------------------
+// Se ordena por la fecha de la DEMO (demo_inicio), no por la del lead: próximas
+// primero (ascendente) y luego las recientes (descendente). Respeta los chips
+// (sistema/fuente) pero NO el filtro de periodo — una agenda mira fechas de demo.
+// La hora se toma LITERAL del string (parseWall): los datos guardan la hora local del
+// cliente con sufijo "+00:00", así que convertir por zona horaria la desplazaría.
+function parseWall(str) {
+    const m = String(str || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!m) return null;
+    return { h: +m[4], mi: +m[5], date: new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) };
+}
+function renderAgenda() {
+    const host  = document.getElementById('demoGroups');
     const empty = document.getElementById('noDemos');
+
+    const now = new Date();
+    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+
+    const demos = S.leads.filter(passesChips)
+        .map(l => ({ l, w: parseWall(firstNonEmpty(l.demo_inicio)) }))
+        .filter(x => x.w);
+    const futuras = demos.filter(x => x.w.date >= todayStart).sort((a, b) => a.w.date - b.w.date);
+    const pasadas = demos.filter(x => x.w.date <  todayStart).sort((a, b) => b.w.date - a.w.date);
+    // Todas las próximas + recientes hasta completar ~15.
+    const items = [...futuras, ...pasadas.slice(0, Math.max(0, 15 - futuras.length))];
+
     if (!items.length) { host.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
 
+    // Agrupar por día conservando el orden (Map preserva el orden de inserción).
     const byDay = new Map();
-    items.forEach(({ l, d }) => {
-        const key = d.toISOString().slice(0, 10);
-        if (!byDay.has(key)) byDay.set(key, { d, arr: [] });
-        byDay.get(key).arr.push(l);
+    items.forEach(({ l, w }) => {
+        const key = w.date.getFullYear() + '-' + w.date.getMonth() + '-' + w.date.getDate();
+        if (!byDay.has(key)) byDay.set(key, { d: w.date, arr: [] });
+        byDay.get(key).arr.push({ l, w });
     });
-    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dias  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const finDeHoy = new Date(todayStart.getTime() + 86400000);
 
     host.innerHTML = [...byDay.values()].map(group => {
         const g = group.d;
-        const rows = group.arr.map((l, i) => {
-            const soft = ['#F5F8FF', '#F4FBF7', '#FFF9F0'][i % 3];
+        const dayPast = g < todayStart;
+        const rows = group.arr.map(({ l, w }, i) => {
+            const soft = dayPast ? '#FAFAFB' : ['#F5F8FF', '#F4FBF7', '#FFF9F0'][i % 3];
             const accent = PALETTE[i % PALETTE.length];
-            const atencion = esAtencion(l);
-            const estColor = atencion ? '#0E8F53' : '#B7791F';
-            const estLabel = atencion ? 'Atención personal' : 'En seguimiento';
-            const hora = parseHora(firstNonEmpty(l.demo_inicio, l.fecha_creacion, l.fecha)) || '—';
-            const precio = F.precio(l);
+            // Estado por el timing de la demo.
+            let estColor = '#0E8F53', estLabel = 'Próxima';
+            if (w.date >= todayStart && w.date < finDeHoy) { estColor = '#0A6CFF'; estLabel = 'Hoy'; }
+            else if (w.date < now)                         { estColor = '#86868B'; estLabel = 'Realizada'; }
+            const hora = String(w.h).padStart(2, '0') + ':' + String(w.mi).padStart(2, '0');
             const sub = [F.telefono(l), l.empresa, F.campana(l)].filter(Boolean).join(' · ');
             return `
             <div class="card-lift" style="display:flex; align-items:center; gap:16px; padding:13px 16px; border-radius:14px; background:${soft}; margin-bottom:10px;">
               <div style="flex:none; width:58px; text-align:center;">
                 <div style="font-size:16px; font-weight:600; color:#1D1D1F; letter-spacing:-0.01em;">${esc(hora)}</div>
-                <div style="font-size:10.5px; color:#86868B; margin-top:2px;">${precio ? '$' + fmtInt(precio) : 'lead'}</div>
+                <div style="font-size:10.5px; color:#86868B; margin-top:2px;">90 min</div>
               </div>
               <div style="flex:none; width:4px; height:40px; border-radius:999px; background:${accent};"></div>
               <div style="flex:1; min-width:0;">
@@ -557,12 +577,13 @@ function renderSeguimiento(cur) {
               </div>
             </div>`;
         }).join('');
+        const n = group.arr.length;
         return `
         <div style="margin-top:22px;">
           <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #F2F2F5;">
-            <span style="font-size:13.5px; font-weight:600; color:#1D1D1F;">${dias[g.getDay()]}</span>
+            <span style="font-size:13.5px; font-weight:600; color:${dayPast ? '#86868B' : '#1D1D1F'};">${dias[g.getDay()]}</span>
             <span style="font-size:12.5px; color:#86868B;">${g.getDate()} ${meses[g.getMonth()]}</span>
-            <span style="margin-left:auto; font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; color:#A1A1A6; white-space:nowrap;">${group.arr.length} lead${group.arr.length !== 1 ? 's' : ''}</span>
+            <span style="margin-left:auto; font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; color:#A1A1A6; white-space:nowrap;">${n} demo${n !== 1 ? 's' : ''}</span>
           </div>
           ${rows}
         </div>`;
