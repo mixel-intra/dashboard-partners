@@ -20,7 +20,10 @@ import PanelHospedaje from '@/components/dashboard/hospedaje/PanelHospedaje';
 import ResenasSocial from '@/components/dashboard/resenas/ResenasSocial';
 import SaludCanales from '@/components/dashboard/kommo/SaludCanales';
 import PanelCde, { ModalLead, useAdSpend } from '@/components/dashboard/cde/PanelCde';
+import PanelRestaurante from '@/components/dashboard/restaurante';
+import MobileDash from '@/components/dashboard/MobileDash';
 import { CtaPipelineEventos, PanelEventos } from '@/components/dashboard/EventosTab';
+import { calcularRangoPredefinido } from '@/components/dashboard/leads/RangoFechas';
 import { applyGlobalFilters, type FiltrosGlobales, type Lead } from '@/lib/dashboard/filtros';
 import { rangoMesEnCurso, usaRangoServidor, useLeads } from '@/lib/dashboard/useLeads';
 import { useVentas } from '@/lib/dashboard/useVentas';
@@ -109,12 +112,7 @@ function DashboardContent({ session }: { session: Session }) {
   if (esCanales) {
     contenido = <SaludCanales />;
   } else if (activeTab === 'restaurante') {
-    // Fase 8e/8f: <PanelRestaurante/> se monta cuando el módulo esté completo.
-    contenido = (
-      <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-        Módulo de restaurante en migración (fase 8e/8f).
-      </div>
-    );
+    contenido = <PanelRestaurante rangoGlobal={{ start: filtros.start, end: filtros.end }} />;
   } else if (activeTab === 'social_listening') {
     contenido = <ResenasSocial />;
   } else if (eventosPanelOpen) {
@@ -185,6 +183,23 @@ function DashboardContent({ session }: { session: Session }) {
             />
           </>
         ) : undefined
+      }
+      mobileDashSlot={(abrirMenu) =>
+        activeTab !== 'restaurante' && !esCanales ? (
+          <MobileDash
+            leads={filteredLeads}
+            ventas={ventas}
+            filtros={filtros}
+            onRango={(r) => {
+              const v = calcularRangoPredefinido(r);
+              setFiltros((f) => ({ ...f, start: v.start, end: v.end }));
+            }}
+            onOpenMenu={abrirMenu}
+            // Paridad con el legacy: "Ver todo" dispara el botón del card de la
+            // tabla (abre el modal de leads).
+            onVerTodo={() => document.getElementById('view-all-btn')?.click()}
+          />
+        ) : null
       }
     >
       {contenido}

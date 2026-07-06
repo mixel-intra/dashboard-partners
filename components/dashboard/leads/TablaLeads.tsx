@@ -226,6 +226,42 @@ export default function TablaLeads({
         </div>
 
         {/* Filter bar (estado + limpiar) */}
+        {/* CDE: mini-tarjetas de estatus además del dropdown (cdeRenderStatusChips) */}
+        {isCDE && (
+          <div id="cde-status-chips">
+            {(() => {
+              const CDE_CHIP_ESTADOS = [
+                'Lead Empeño Oro',
+                'Rescate / Empeño Otros',
+                'Cita agendada',
+                'Reagendar',
+                'Empeñado',
+                'Venta perdida',
+              ];
+              const counts: Record<string, number> = {};
+              CDE_CHIP_ESTADOS.forEach((f) => (counts[f] = 0));
+              leadsToShow.forEach((l) => {
+                const b = (l as any).etiquetas_display || l.estatus;
+                if (counts[b] != null) counts[b]++;
+              });
+              const chip = (label: string, count: number, value: string) => (
+                <button
+                  key={value || 'todos'}
+                  type="button"
+                  className={`cde-chip${(estadoFiltro || '') === value ? ' active' : ''}`}
+                  onClick={() => setEstadoFiltro(value)}
+                >
+                  <span className="cde-chip-n">{count}</span>
+                  <span className="cde-chip-l">{label}</span>
+                </button>
+              );
+              return [
+                chip('Calificados', leadsToShow.length, ''),
+                ...CDE_CHIP_ESTADOS.map((f) => chip(f, counts[f], f)),
+              ];
+            })()}
+          </div>
+        )}
         <FiltrosLeads estados={estados} value={estadoFiltro} onChange={setEstadoFiltro} />
 
         <div

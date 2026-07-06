@@ -35,6 +35,7 @@ export default function DashboardShell({
   ventasLabel = 'Registrar ventas',
   headerRowOculto = false,
   headerControls,
+  mobileDashSlot,
   children,
 }: {
   session: Session;
@@ -49,6 +50,8 @@ export default function DashboardShell({
   headerRowOculto?: boolean;
   /** Controles del content-header (filtro etiqueta + selector de rango, fase 8c). */
   headerControls?: React.ReactNode;
+  /** Dashboard móvil (≤480px, CSS controla visibilidad). Recibe cómo abrir el menú móvil. */
+  mobileDashSlot?: (abrirMenu: () => void) => React.ReactNode;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -319,6 +322,9 @@ export default function DashboardShell({
           ))}
         </div>
       </div>
+
+      {/* Dashboard móvil (overlay fixed; visible solo ≤480px vía CSS) */}
+      {mobileDashSlot?.(() => setMobileOpen(true))}
 
       <ChangePasswordModal open={showChangePass} onClose={() => setShowChangePass(false)} />
     </div>
