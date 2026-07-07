@@ -3,6 +3,9 @@ import { corsJson, corsPreflight } from '@/lib/api/cors';
 import { EnvFaltanteError, requireEnv } from '@/lib/api/env';
 import { adminAnonClient } from '@/lib/api/supabaseServer';
 
+// ⚠️ DIRECCIÓN: Airtable se va a retirar — toda la información migrará a
+// Supabase (los leads del Panel del Director ya migraron). Cuando existan las
+// tablas nuevas, este es el único punto que hay que cambiar.
 // Crea una reserva escribiéndola directo en la tabla de Airtable del cliente.
 // Port 1:1 de legacy/api/reservations/create.js. Base/tabla resueltas
 // server-side desde clients_config.restaurant_config; typecast:true para que

@@ -10,6 +10,9 @@ import {
   type HospedajeReserva,
 } from './tipos';
 
+// ⚠️ DIRECCIÓN: Airtable se va a retirar — toda la información migrará a
+// Supabase (los leads del Panel del Director ya migraron). Cuando existan las
+// tablas nuevas, este es el único punto que hay que cambiar.
 // Data hooks del panel de hospedaje. Airtable SIEMPRE vía /api/proxy (CORS).
 // OJO: el legacy usa el `supabase` global (= ADMIN Supabase) para `ventas` y
 // `hospedaje_interacciones`; aquí eso equivale a adminSupabase del provider.

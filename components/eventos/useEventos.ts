@@ -11,6 +11,9 @@ import {
   type Interaccion,
 } from './tipos';
 
+// ⚠️ DIRECCIÓN: Airtable se va a retirar — toda la información migrará a
+// Supabase (los leads del Panel del Director ya migraron). Cuando existan las
+// tablas nuevas, este es el único punto que hay que cambiar.
 // Data hooks del CRM de eventos — compartidos entre /pipeline y el dashboard.
 // Todas las llamadas a Airtable pasan por /api/proxy (CORS), igual que el legacy.
 
