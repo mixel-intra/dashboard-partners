@@ -25,7 +25,7 @@ Key routing rules:
 ## Running & deploying
 
 ```bash
-npm install            # Node 22 required (see package.json engines)
+pnpm install           # Node 22 required (see package.json engines); pnpm is the package manager
 node server.js         # dev server → http://localhost:3000
 ```
 

@@ -13,7 +13,7 @@
   los leads (vienen por `/api/proxy`).
 ```bash
 cd /Users/david/Downloads/dashboard-partners-main
-npm install
+pnpm install
 node server.js          # http://localhost:3000
 ```
 - Entrar: `http://localhost:3000/login.html` (usuario admin/Intra) →
