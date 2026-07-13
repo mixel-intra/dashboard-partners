@@ -7,8 +7,10 @@ import {
   esCalificado,
   esDescartado,
   esSinRespuesta,
+  eventosRange,
   fmtDelta,
   inRange,
+  mapEvento,
   normFuente,
   normSistema,
   parseFecha,
@@ -102,6 +104,15 @@ describe('normSistema (precedencia de patrones)', () => {
   it('sin match → null (el panel lo agrupa como "Otro")', () => {
     expect(normSistema({ utm_campaign: 'otra cosa' })).toBeNull();
     expect(F.sistema({ utm_campaign: 'otra cosa' })).toBe('Otro');
+  });
+
+  it.each([
+    ['KonektaPUI'],
+    ['konectapui'],
+    ['DEMO KonektaPUI con Grisel'],
+    ['RA - Demostración KonectaPui'],
+  ])('%s → KonektaPUI (5º sistema)', (raw) => {
+    expect(normSistema({ sistema: raw })).toBe('KonektaPUI');
   });
 });
 
@@ -205,6 +216,75 @@ describe('periodRange (con reloj congelado)', () => {
     const { start, end } = periodRange('7d');
     expect(inRange({}, start, end)).toBe(true);
     expect(inRange({ fecha_creacion: '1/1/2020' }, start, end)).toBe(false);
+  });
+
+  it('esteMes: del 1 al último día del mes; anterior = mes previo', () => {
+    const { start, end, prevStart } = periodRange('esteMes');
+    expect(start!.getDate()).toBe(1);
+    expect(start!.getMonth()).toBe(6); // julio
+    expect(end!.getDate()).toBe(31); // julio tiene 31
+    expect(end!.getMonth()).toBe(6);
+    expect(prevStart!.getMonth()).toBe(5); // junio
+  });
+
+  it('mesPasado: mes natural anterior (junio) con anterior = mayo', () => {
+    const { start, end, prevStart } = periodRange('mesPasado');
+    expect(start!.getMonth()).toBe(5); // junio
+    expect(start!.getDate()).toBe(1);
+    expect(end!.getDate()).toBe(30); // junio tiene 30
+    expect(prevStart!.getMonth()).toBe(4); // mayo
+  });
+
+  it('todo: sin límites de fecha', () => {
+    const { start, end, prevStart } = periodRange('todo');
+    expect(start).toBeNull();
+    expect(end).toBeNull();
+    expect(prevStart).toBeNull();
+  });
+});
+
+describe('eventosRange (rango del webhook de calendario)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 15, 12, 0, 0)); // 15 jul 2026
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('mes visible ± 1 mes de margen', () => {
+    const { from, to } = eventosRange('esteMes', new Date(2026, 6, 1)); // julio
+    expect(from.getMonth()).toBe(5); // junio
+    expect(to.getMonth()).toBe(7); // agosto
+    expect(to.getDate()).toBe(31); // fin de agosto
+  });
+
+  it('todo el tiempo: ~1 año atrás → 3 meses adelante', () => {
+    const { from, to } = eventosRange('todo', null);
+    expect(from.getFullYear()).toBe(2025);
+    expect(from.getMonth()).toBe(6); // julio 2025
+    expect(to.getFullYear()).toBe(2026);
+  });
+});
+
+describe('mapEvento (normaliza eventos crudos de Microsoft Graph)', () => {
+  it('mapea asunto/fecha/id y deriva sistema del asunto', () => {
+    const ev = mapEvento({
+      id: 'AAA',
+      subject: 'DEMO CIB Financiera con Grisel',
+      start: { dateTime: '2026-07-01T09:00:00.0000000', timeZone: 'Central Standard Time (Mexico)' },
+      end: { dateTime: '2026-07-01T13:00:00.0000000' },
+    });
+    expect(ev).not.toBeNull();
+    expect(ev!.event_id).toBe('AAA');
+    expect(ev!.nombre).toBe('DEMO CIB Financiera con Grisel');
+    expect(ev!.demo_inicio).toBe('2026-07-01T09:00:00.0000000');
+    expect(F.campana(ev!)).toBe('CIB Financiera');
+    expect(parseWall(ev!.demo_inicio)!.h).toBe(9);
+  });
+
+  it('descarta eventos de todo el día, cancelados y sin hora de inicio', () => {
+    expect(mapEvento({ id: '1', subject: 'X', isAllDay: true, start: { dateTime: '2026-07-01T00:00:00' } })).toBeNull();
+    expect(mapEvento({ id: '2', subject: 'Cancelado: junta', start: { dateTime: '2026-07-01T09:00:00' } })).toBeNull();
+    expect(mapEvento({ id: '3', subject: 'sin fecha' })).toBeNull();
   });
 });
 

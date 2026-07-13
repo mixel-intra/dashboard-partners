@@ -1,25 +1,31 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
+  EVENTOS_WEBHOOK,
   F,
   FUENTES,
+  LEADS_WEBHOOK,
   PALETTE,
   PERIODS,
   SISTEMAS,
   conRespuesta,
   esCalificado,
-  esDescartado,
+  eventosRange,
   fmtDelta,
   fmtInt,
   firstNonEmpty,
   inRange,
+  mapEvento,
+  mapWebhookLead,
   parseWall,
   pct,
   periodRange,
   sisColor,
   SIS_COLOR,
   smoothPath,
+  ymd,
   type Lead,
   type Wall,
 } from './logica';
@@ -27,25 +33,73 @@ import {
 // Bento grid del Panel del Director General — port del render de director.js.
 // Los estilos inline se conservan tal cual (paridad visual con el legacy).
 
-export default function PanelDirector({ leads }: { leads: Lead[] }) {
+export default function PanelDirector({ leads, demoMode }: { leads: Lead[]; demoMode: boolean }) {
   const [period, setPeriod] = useState('30d');
   const [campanaFilter, setCampanaFilter] = useState<string | null>(null);
   const [fuenteFilter, setFuenteFilter] = useState<string | null>(null);
+  // Mes visible del calendario (elevado desde <Agenda> para que el rango de eventos
+  // que se pide al webhook dependa de él). null = mes actual.
+  const [calMonth, setCalMonth] = useState<Date | null>(null);
 
-  const { cur, prev, chip } = useMemo(() => {
-    const { start, end, prevStart, prevEnd } = periodRange(period);
-    const passesChips = (l: Lead) => {
+  const passesChips = useCallback(
+    (l: Lead) => {
       if (campanaFilter && F.campana(l) !== campanaFilter) return false;
       if (fuenteFilter && F.fuente(l) !== fuenteFilter) return false;
       return true;
-    };
+    },
+    [campanaFilter, fuenteFilter]
+  );
+
+  const { cur, prev, chip } = useMemo(() => {
+    const { start, end, prevStart, prevEnd } = periodRange(period);
     const chip = leads.filter(passesChips);
     return {
       cur: chip.filter((l) => inRange(l, start, end)),
       prev: chip.filter((l) => inRange(l, prevStart, prevEnd)),
       chip,
     };
-  }, [leads, period, campanaFilter, fuenteFilter]);
+  }, [leads, period, passesChips]);
+
+  // --- Fuente 2: total de "Leads entrantes" desde el webhook de n8n (pipeline de Kommo).
+  // Best-effort vía /api/proxy; si falla, el funnel cae al conteo de la fuente actual.
+  const webhookLeadsQ = useQuery({
+    queryKey: ['director-webhook-leads', demoMode],
+    enabled: !demoMode,
+    queryFn: async (): Promise<Lead[]> => {
+      const res = await fetch('/api/proxy?url=' + encodeURIComponent(LEADS_WEBHOOK));
+      if (!res.ok) throw new Error('el proxy respondió ' + res.status);
+      const raw = await res.json();
+      const rows = Array.isArray(raw) ? raw : raw.leads || raw.data || [];
+      return rows.map(mapWebhookLead);
+    },
+  });
+
+  // --- Fuente 3: eventos del calendario de Outlook. El rango (from/to) forma parte del
+  // queryKey, así que cambiar de periodo o navegar de mes re-consulta automáticamente.
+  const { from, to } = useMemo(() => eventosRange(period, calMonth), [period, calMonth]);
+  const eventosQ = useQuery({
+    queryKey: ['director-eventos', ymd(from), ymd(to), demoMode],
+    enabled: !demoMode,
+    placeholderData: keepPreviousData, // mantiene los eventos visibles mientras recarga
+    queryFn: async (): Promise<Lead[]> => {
+      const target = EVENTOS_WEBHOOK + '?startDate=' + ymd(from) + '&endDate=' + ymd(to);
+      const res = await fetch('/api/proxy?url=' + encodeURIComponent(target));
+      if (!res.ok) throw new Error('el proxy respondió ' + res.status);
+      const raw = await res.json();
+      const rows = Array.isArray(raw) ? raw : raw.value || raw.leads || raw.data || [];
+      return rows.map(mapEvento).filter((x: Lead | null): x is Lead => x !== null);
+    },
+  });
+
+  const webhookLeads = webhookLeadsQ.data || [];
+  const eventos = eventosQ.data || [];
+
+  // Fuente del calendario: eventos de Outlook (filtrados por chips) o, si no cargaron
+  // (modo demo o webhook caído), los leads con demo_inicio de la fuente actual.
+  const calendarSource = useMemo(
+    () => (eventos.length ? eventos.filter(passesChips) : chip),
+    [eventos, chip, passesChips]
+  );
 
   const periodLabel = (PERIODS.find((p) => p.key === period) || {}).label || '';
 
@@ -54,11 +108,26 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
   const califPrev = prev.filter(esCalificado).length;
   const total = cur.length;
   const conResp = cur.filter(conRespuesta).length;
-  const descartados = cur.filter(esDescartado).length;
   const dCitas = fmtDelta(calificados, califPrev);
+
+  // "Leads entrantes" desde el webhook (mismo periodo/chips); fallback al conteo de cur.
+  const leadsEntrantes = useMemo(() => {
+    if (!webhookLeads.length) return total;
+    const { start, end } = periodRange(period);
+    return webhookLeads.filter(passesChips).filter((l) => inRange(l, start, end)).length;
+  }, [webhookLeads, period, passesChips, total]);
 
   const toggleCampana = (k: string | null) => setCampanaFilter((cf) => (cf === k ? null : k));
   const toggleFuente = (k: string | null) => setFuenteFilter((ff) => (ff === k ? null : k));
+
+  // Cambiar de periodo mueve el calendario: "este mes"/"mes pasado" saltan a ese mes;
+  // los demás vuelven al mes actual (null). El rango de eventos se recalcula solo.
+  const cambiarPeriodo = (p: (typeof PERIODS)[number]) => {
+    setPeriod(p.key);
+    const now = new Date();
+    if (p.type === 'month') setCalMonth(new Date(now.getFullYear(), now.getMonth() + (p.offset || 0), 1));
+    else setCalMonth(null);
+  };
 
   return (
     <div
@@ -94,11 +163,11 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div id="periods" style={{ display: 'inline-flex', gap: 3, padding: 4, borderRadius: 13, background: '#E8E8ED' }}>
+            <div id="periods" style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 3, padding: 4, borderRadius: 13, background: '#E8E8ED' }}>
               {PERIODS.map((p) => (
                 <button
                   key={p.key}
-                  onClick={() => setPeriod(p.key)}
+                  onClick={() => cambiarPeriodo(p)}
                   style={{
                     fontSize: 12.5,
                     fontWeight: 600,
@@ -205,8 +274,7 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
               </div>
               <div id="funnel">
                 {[
-                  { name: 'Mensajes recibidos', value: total, color: PALETTE[0] },
-                  { name: 'Leads calificados', value: conResp, color: PALETTE[3] },
+                  { name: 'Leads entrantes', value: leadsEntrantes, color: PALETTE[0] },
                   { name: 'Citas agendadas', value: calificados, color: PALETTE[1] },
                 ].map((s) => (
                   <div key={s.name} style={{ marginBottom: 15 }}>
@@ -219,7 +287,7 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
                         style={{
                           height: '100%',
                           borderRadius: 999,
-                          width: `${pct(s.value, Math.max(1, total))}%`,
+                          width: `${pct(s.value, Math.max(1, leadsEntrantes))}%`,
                           background: s.color,
                           transition: 'width 600ms cubic-bezier(0.2,0.7,0.2,1)',
                         }}
@@ -227,11 +295,6 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
                     </div>
                   </div>
                 ))}
-              </div>
-              <div style={{ fontSize: 12, color: '#6E6E73', lineHeight: 1.5, marginTop: 16 }}>
-                El agente descartó <strong style={{ color: '#1D1D1F' }}>{fmtInt(descartados)} leads</strong> sin perfil y
-                ahorró <strong style={{ color: '#0A6CFF' }}>~{fmtInt(descartados * 0.25)} h</strong> a tu equipo este
-                periodo.
               </div>
             </div>
           </div>
@@ -364,7 +427,7 @@ export default function PanelDirector({ leads }: { leads: Lead[] }) {
               padding: '26px 30px',
             }}
           >
-            <Agenda leads={chip} />
+            <Agenda leads={calendarSource} calMonth={calMonth} setCalMonth={setCalMonth} />
           </div>
         </div>
       </div>
@@ -521,7 +584,7 @@ function Sistemas({ cur, prev, onFiltra }: { cur: Lead[]; prev: Lead[]; onFiltra
   const { groups, prevByCamp } = conteosPorSistema(cur, prev);
   const max = Math.max(1, ...groups.map((g) => g.count));
   return (
-    <div id="products" className="dg-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+    <div id="products" className="dg-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
       {groups.map((g, i) => {
         const color = PALETTE[i % PALETTE.length];
         const delta = fmtDelta(g.count, prevByCamp[g.key] || 0);
@@ -691,8 +754,15 @@ function GraficaTendencia({ cur, period }: { cur: Lead[]; period: string }) {
 // de la DEMO (demo_inicio); recibe la lista filtrada por chips (sistema/fuente) pero SIN
 // filtro de periodo. La hora sale LITERAL de parseWall (sin conversión de zona).
 type DemoItem = { l: Lead; w: Wall };
-function Agenda({ leads }: { leads: Lead[] }) {
-  const [calMonth, setCalMonth] = useState<Date | null>(null);
+function Agenda({
+  leads,
+  calMonth,
+  setCalMonth,
+}: {
+  leads: Lead[];
+  calMonth: Date | null;
+  setCalMonth: (d: Date | null) => void;
+}) {
   const [selKey, setSelKey] = useState<string | null>(null);
 
   const now = new Date();
@@ -721,7 +791,7 @@ function Agenda({ leads }: { leads: Lead[] }) {
   const m = base.getMonth();
 
   const moveMonth = (delta: number) => { setCalMonth(new Date(y, m + delta, 1)); setSelKey(null); };
-  const goHoy = () => { setCalMonth(new Date(now.getFullYear(), now.getMonth(), 1)); setSelKey(null); };
+  const goHoy = () => { setCalMonth(null); setSelKey(null); }; // null → mes actual (y refetch del rango)
   const selDay = (key: string) => setSelKey((k) => (k === key ? null : key));
 
   const header = (

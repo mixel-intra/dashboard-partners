@@ -69,7 +69,7 @@ export function parseWall(str: any): Wall | null {
 }
 
 // --- Dimensiones fijas del negocio de Logic Systems ----------
-export const SISTEMAS = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN PLD'];
+export const SISTEMAS = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN PLD', 'KonektaPUI'];
 export const FUENTES = ['Facebook', 'WhatsApp', 'Instagram', 'Google'];
 
 // Paleta categórica por sistema (validada con la skill dataviz: banda de luminosidad,
@@ -80,15 +80,17 @@ export const SIS_COLOR: Record<string, string> = {
   'e-SIGeN': '#1baf7a', // aqua
   'CIB Casa de Empeño': '#eda100', // ámbar
   'e-SIGeN PLD': '#4a3aa7', // violeta
+  KonektaPUI: '#d6457a', // rosa
 };
 export function sisColor(l: Lead): string {
   return SIS_COLOR[F.campana(l)] || '#86868B';
 }
 
-// Normaliza el valor crudo del lead (utm_campaign) a uno de los 4 sistemas fijos, o null.
+// Normaliza el valor crudo del lead (utm_campaign) a uno de los 5 sistemas fijos, o null.
 // Ajusta los patrones cuando confirmes cómo llega el dato real desde Kommo.
 export function normSistema(l: Lead): string | null {
   const s = (firstNonEmpty(l.utm_campaign, l.sistema, l.campana, l.campaign) || '').toString().toLowerCase();
+  if (/kon[ae][ck]ta|kpui/.test(s)) return 'KonektaPUI'; // "KonektaPUI"/"KonectaPui"
   if (/empe[ñn]o|casa.?de.?emp/.test(s)) return 'CIB Casa de Empeño'; // antes que "cib"
   if (/pld/.test(s)) return 'e-SIGeN PLD'; // antes que "sigen"
   if (/e.?sigen|sigen/.test(s)) return 'e-SIGeN';
@@ -163,16 +165,37 @@ export function conRespuesta(l: Lead) {
 }
 
 // --- Periodos -------------------------------------------------
-export const PERIODS = [
+// `days` = ventana móvil que termina hoy; `type:'month'` con `offset` = mes natural
+// (0 = este mes, -1 = mes pasado); sin `days` ni `type` = todo el tiempo.
+export type PeriodDef = { key: string; label: string; days?: number; type?: 'month'; offset?: number };
+export const PERIODS: PeriodDef[] = [
   { key: 'hoy', label: 'Hoy', days: 1 },
-  { key: '7d', label: '7 días', days: 7 },
-  { key: '30d', label: '30 días', days: 30 },
-  { key: 'trimestre', label: 'Trimestre', days: 90 },
+  { key: '7d', label: 'Últimos 7 días', days: 7 },
+  { key: '30d', label: 'Últimos 30 días', days: 30 },
+  { key: 'esteMes', label: 'Este mes', type: 'month', offset: 0 },
+  { key: 'mesPasado', label: 'Mes pasado', type: 'month', offset: -1 },
+  { key: 'todo', label: 'Todo el tiempo' },
 ];
 
 export function periodRange(period: string) {
-  const def = PERIODS.find((p) => p.key === period) || PERIODS[2];
+  const def = PERIODS.find((p) => p.key === period) || PERIODS.find((p) => p.key === '30d')!;
+  const now = new Date();
+  // Mes natural (este mes / mes pasado): rango del mes completo; el "anterior" es el mes previo.
+  if (def.type === 'month') {
+    const off = def.offset || 0;
+    const start = new Date(now.getFullYear(), now.getMonth() + off, 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth() + off + 1, 0);
+    end.setHours(23, 59, 59, 999);
+    const prevStart = new Date(now.getFullYear(), now.getMonth() + off - 1, 1);
+    prevStart.setHours(0, 0, 0, 0);
+    const prevEnd = new Date(start);
+    prevEnd.setMilliseconds(-1);
+    return { start, end, prevStart, prevEnd };
+  }
+  // Todo el tiempo: sin límites (inRange devuelve true) y sin periodo anterior.
   if (!def.days) return { start: null, end: null, prevStart: null, prevEnd: null };
+  // Ventana móvil que termina hoy (hoy / 7 / 30 días).
   const end = new Date();
   end.setHours(23, 59, 59, 999);
   const start = new Date(end);
@@ -184,6 +207,68 @@ export function periodRange(period: string) {
   prevStart.setDate(prevStart.getDate() - (def.days - 1));
   prevStart.setHours(0, 0, 0, 0);
   return { start, end, prevStart, prevEnd };
+}
+
+// --- Fuentes de datos externas (webhooks de n8n, vía /api/proxy por CORS) ------
+// Pipeline de Kommo → total de "Leads entrantes". Devuelve el listado completo de leads.
+export const LEADS_WEBHOOK = 'https://n8n.srv1436923.hstgr.cloud/webhook/dashboard_logicsystems';
+// Calendario de Outlook (Microsoft Graph calendarView) → agenda de demos. Requiere
+// ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD y devuelve el JSON crudo de Graph ({ value: [...] }).
+export const EVENTOS_WEBHOOK = 'https://n8n.srv1436923.hstgr.cloud/webhook/eventos-calendario';
+
+// Normaliza un lead crudo del webhook de Kommo (`id_lead`) al modelo del panel (`id`),
+// conservando el resto de campos (estatus_id, fecha_creacion, utm_*), ya compatibles con F.
+export function mapWebhookLead(r: Lead): Lead {
+  return { ...r, id: firstNonEmpty(r.id, r.id_lead) };
+}
+
+// Normaliza un evento crudo de Microsoft Graph (calendarView) al modelo del calendario.
+// `start.dateTime` ya viene en hora local de México (ver `timeZone` del evento), así que
+// `demo_inicio` se toma literal — igual que parseWall, sin convertir zona horaria.
+// Devuelve null para eventos que no son demos agendables (todo el día / cancelados).
+export function mapEvento(ev: any): Lead | null {
+  const inicio = ev && ev.start && ev.start.dateTime;
+  if (!inicio) return null;
+  if (ev.isAllDay) return null;
+  const subject = (ev.subject || '').trim();
+  if (/^cancelad/i.test(subject)) return null; // "Cancelado: ..." → no cuenta como cita
+  return {
+    id: ev.id,
+    event_id: ev.id,
+    nombre: subject || 'Sin asunto',
+    demo_inicio: inicio,
+    demo_fin: ev.end && ev.end.dateTime,
+    // Outlook no trae un campo de "sistema" limpio: se deriva por regex del asunto
+    // (normSistema mira `sistema`). Lo que no cae en los patrones → "Otro".
+    sistema: subject,
+    empresa: '',
+    accion_calendario: 'agendada',
+    weblink: ev.webLink || '',
+  };
+}
+
+// Rango de fechas a pedir al webhook de eventos. Depende del filtro de periodo y del mes
+// visible del calendario: para "todo el tiempo" trae una ventana amplia (~1 año atrás →
+// 3 meses adelante); para el resto, el mes del calendario con un mes de margen a cada lado
+// (para los días de meses vecinos que asoman en la grilla y para poder navegar).
+export function eventosRange(period: string, calMonth: Date | null): { from: Date; to: Date } {
+  const now = new Date();
+  if (period === 'todo') {
+    return {
+      from: new Date(now.getFullYear() - 1, now.getMonth(), 1),
+      to: new Date(now.getFullYear(), now.getMonth() + 3, 0),
+    };
+  }
+  const base = calMonth || new Date(now.getFullYear(), now.getMonth(), 1);
+  return {
+    from: new Date(base.getFullYear(), base.getMonth() - 1, 1),
+    to: new Date(base.getFullYear(), base.getMonth() + 2, 0),
+  };
+}
+
+// Formatea una fecha como YYYY-MM-DD (para los params del webhook de eventos).
+export function ymd(d: Date): string {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 export function inRange(l: Lead, start: Date | null, end: Date | null): boolean {

@@ -131,7 +131,7 @@ export default function DirectorClient() {
         logoUrl={configQ.data?.logo_url || null}
         welcomeName={welcomeName}
       >
-        <PanelDirector leads={leadsQ.data?.leads || []} />
+        <PanelDirector leads={leadsQ.data?.leads || []} demoMode={demoMode} />
       </AppChrome>
     </>
   );
