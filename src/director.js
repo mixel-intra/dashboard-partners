@@ -121,17 +121,21 @@ const S = {
     leads: [],
     webhookLeads: [],         // listado del webhook de n8n → total de "Leads entrantes"
     eventos: [],              // eventos de Outlook (Graph) → calendario de demos
-    period: '30d',            // hoy | 7d | 30d | todo
+    period: '30d',            // hoy | 7d | 30d | esteMes | mesPasado | todo
     campanaFilter: null,
     fuenteFilter: null,
     calMonth: null,           // Date del 1er día del mes mostrado en el calendario de agenda
     calSelKey: null,          // día seleccionado en el calendario ('año-mes-día', mes 0-based)
 };
+// Filtros de periodo. `days` = ventana móvil que termina hoy; `type:'month'` con `offset`
+// = mes natural (0 = este mes, -1 = mes pasado); sin `days` ni `type` = todo el tiempo.
 const PERIODS = [
-    { key: 'hoy', label: 'Hoy',       days: 1 },
-    { key: '7d',  label: '7 días',    days: 7 },
-    { key: '30d', label: '30 días',   days: 30 },
-    { key: 'trimestre', label: 'Trimestre', days: 90 },
+    { key: 'hoy',       label: 'Hoy',             days: 1 },
+    { key: '7d',        label: 'Últimos 7 días',  days: 7 },
+    { key: '30d',       label: 'Últimos 30 días', days: 30 },
+    { key: 'esteMes',   label: 'Este mes',        type: 'month', offset: 0 },
+    { key: 'mesPasado', label: 'Mes pasado',      type: 'month', offset: -1 },
+    { key: 'todo',      label: 'Todo el tiempo' },
 ];
 
 // ============================================================
@@ -195,8 +199,19 @@ function status(msg, isErr) {
 // FILTRADO POR PERIODO / CHIPS
 // ============================================================
 function periodRange(period) {
-    const def = PERIODS.find(p => p.key === period) || PERIODS[2];
-    if (!def.days) return { start: null, end: null, prevStart: null, prevEnd: null };
+    const def = PERIODS.find(p => p.key === period) || PERIODS.find(p => p.key === '30d');
+    const now = new Date();
+    // Mes natural (este mes / mes pasado): rango del mes completo; el "anterior" es el mes previo.
+    if (def && def.type === 'month') {
+        const start = new Date(now.getFullYear(), now.getMonth() + def.offset, 1); start.setHours(0, 0, 0, 0);
+        const end   = new Date(now.getFullYear(), now.getMonth() + def.offset + 1, 0); end.setHours(23, 59, 59, 999);
+        const prevStart = new Date(now.getFullYear(), now.getMonth() + def.offset - 1, 1); prevStart.setHours(0, 0, 0, 0);
+        const prevEnd   = new Date(start); prevEnd.setMilliseconds(-1);
+        return { start, end, prevStart, prevEnd };
+    }
+    // Todo el tiempo: sin límites (inRange devuelve true) y sin periodo anterior.
+    if (!def || !def.days) return { start: null, end: null, prevStart: null, prevEnd: null };
+    // Ventana móvil que termina hoy (hoy / 7 / 30 días).
     const end = new Date(); end.setHours(23, 59, 59, 999);
     const start = new Date(end); start.setDate(start.getDate() - (def.days - 1)); start.setHours(0, 0, 0, 0);
     const prevEnd = new Date(start); prevEnd.setMilliseconds(-1);
@@ -354,16 +369,30 @@ function mapEvento(ev) {
     };
 }
 
-// Trae los eventos del calendario de Outlook (vía el proxy CORS) para un rango que cubre
-// el mes actual y sus vecinos (para navegar sin refetch). Best-effort: si falla, el
+// Rango de fechas a pedir al webhook de eventos. Depende del filtro de periodo y del mes
+// visible del calendario: para "todo el tiempo" trae una ventana amplia (~1 año atrás →
+// 3 meses adelante); para el resto, el mes del calendario (S.calMonth, o el actual) con un
+// mes de margen a cada lado, para cubrir los días de meses vecinos que asoman en la grilla
+// y permitir navegar. La navegación (‹ ›) y el cambio de periodo vuelven a llamar fetchEventos.
+function eventosRange() {
+    const now  = new Date();
+    if (S.period === 'todo') {
+        return { from: new Date(now.getFullYear() - 1, now.getMonth(), 1),
+                 to:   new Date(now.getFullYear(), now.getMonth() + 3, 0) };
+    }
+    const base = S.calMonth || new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: new Date(base.getFullYear(), base.getMonth() - 1, 1),
+             to:   new Date(base.getFullYear(), base.getMonth() + 2, 0) };
+}
+
+// Trae los eventos del calendario de Outlook (vía el proxy CORS) para el rango que
+// corresponde al periodo/mes actual (ver eventosRange). Best-effort: si falla, el
 // calendario cae a la fuente actual (S.leads) sin romper el panel.
 async function fetchEventos() {
     if (new URLSearchParams(location.search).has('demo')) { S.eventos = []; return; }
     const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     try {
-        const now  = new Date();
-        const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);   // inicio del mes anterior
-        const to   = new Date(now.getFullYear(), now.getMonth() + 3, 0);   // fin de +2 meses
+        const { from, to } = eventosRange();
         const target = EVENTOS_WEBHOOK + '?startDate=' + ymd(from) + '&endDate=' + ymd(to);
         const res = await fetch('/api/proxy?url=' + encodeURIComponent(target));
         if (!res.ok) throw new Error('el proxy respondió ' + res.status);
@@ -401,7 +430,19 @@ function renderPeriods() {
         b.style.cssText = 'font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:10px; transition:all 160ms ease; ' +
             (active ? 'background:#FFFFFF; color:#0A6CFF; box-shadow:0 1px 3px rgba(16,24,40,0.12);'
                     : 'background:transparent; color:#6E6E73;');
-        b.onclick = () => { S.period = p.key; renderPeriods(); renderAll(); };
+        b.onclick = async () => {
+            S.period = p.key;
+            // El calendario sigue al periodo: "este mes"/"mes pasado" saltan a ese mes;
+            // los demás vuelven al mes actual. Luego se re-piden los eventos del rango.
+            const now = new Date();
+            if (p.type === 'month') S.calMonth = new Date(now.getFullYear(), now.getMonth() + p.offset, 1);
+            else                    S.calMonth = null;
+            S.calSelKey = null;
+            renderPeriods();
+            renderAll();          // pinta stats de inmediato con el nuevo periodo
+            await fetchEventos();  // re-consulta el calendario para el nuevo rango
+            renderAgenda();
+        };
         host.appendChild(b);
     });
 }
@@ -773,14 +814,16 @@ function renderDaySel(byDay) {
 
 // Seleccionar/deseleccionar un día del calendario.
 window.__dgSelDay = (key) => { S.calSelKey = (S.calSelKey === key ? null : key); renderAgenda(); };
-// Navegar meses; "Hoy" vuelve al mes actual.
-window.__dgCalMove = (delta) => {
+// Navegar meses; "Hoy" vuelve al mes actual. Cada cambio de mes re-consulta el webhook
+// para el nuevo rango (ver eventosRange) y luego re-pinta el calendario.
+window.__dgCalMove = async (delta) => {
     const base = S.calMonth || new Date();
     S.calMonth = new Date(base.getFullYear(), base.getMonth() + delta, 1);
     S.calSelKey = null;
+    await fetchEventos();
     renderAgenda();
 };
-window.__dgCalHoy = () => { S.calMonth = null; S.calSelKey = null; renderAgenda(); };
+window.__dgCalHoy = async () => { S.calMonth = null; S.calSelKey = null; await fetchEventos(); renderAgenda(); };
 
 // ============================================================
 // HELPERS
