@@ -23,6 +23,19 @@
 const SLUG = 'logic-systems';
 const PALETTE = ['#0A6CFF', '#1FB36B', '#F5A623', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#0EA5E9'];
 
+// Webhook de n8n (pipeline de Kommo) que devuelve el listado completo de leads. Se usa
+// SOLO para el total de "Leads entrantes" del funnel; las citas/calendario van por otra
+// fuente. El navegador no puede pegarle directo (CORS) → se consume vía /api/proxy.
+// Si más adelante el webhook se protege con Header Auth, mover esta llamada a un endpoint
+// server-side (patrón de api/leads/list.js) para no exponer el secreto en el navegador.
+const LEADS_WEBHOOK = 'https://n8n.srv1436923.hstgr.cloud/webhook/dashboard_logicsystems';
+
+// Webhook de n8n que devuelve los eventos del calendario de Outlook (Microsoft Graph
+// calendarView) para un rango de fechas. Fuente del CALENDARIO de demos. Requiere
+// ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD. Devuelve el JSON crudo de Graph ({ value: [...] });
+// mapEvento() lo normaliza. Se consume vía /api/proxy (CORS).
+const EVENTOS_WEBHOOK = 'https://n8n.srv1436923.hstgr.cloud/webhook/eventos-calendario';
+
 // --- Campos del lead -----------------------------------------
 const F = {
     nombre:   l => firstNonEmpty(l.nombre, l.contacto, l.cliente) || 'Sin nombre',
@@ -40,7 +53,7 @@ const F = {
 
 // --- Dimensiones fijas del negocio de Logic Systems ----------
 // La empresa vende demos de 4 sistemas; cada lead pide uno de ellos (chips "Sistema").
-const SISTEMAS = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN PLD'];
+const SISTEMAS = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN PLD', 'KonektaPUI'];
 // Las fuentes de adquisición que se manejan siempre (chips "Fuente").
 const FUENTES  = ['Facebook', 'WhatsApp', 'Instagram', 'Google'];
 
@@ -52,13 +65,15 @@ const SIS_COLOR = {
     'e-SIGeN':            '#1baf7a', // aqua
     'CIB Casa de Empeño': '#eda100', // ámbar
     'e-SIGeN PLD':        '#4a3aa7', // violeta
+    'KonektaPUI':         '#d6457a', // rosa
 };
 function sisColor(l) { return SIS_COLOR[F.campana(l)] || '#86868B'; }
 
-// Normaliza el valor crudo del lead (utm_campaign) a uno de los 4 sistemas fijos, o null si no cae.
+// Normaliza el valor crudo del lead (utm_campaign) a uno de los 5 sistemas fijos, o null si no cae.
 // Ajusta los patrones cuando confirmes cómo llega el dato real desde Kommo.
 function normSistema(l) {
     const s = (firstNonEmpty(l.utm_campaign, l.sistema, l.campana, l.campaign) || '').toString().toLowerCase();
+    if (/kon[ae][ck]ta|kpui/.test(s))      return 'KonektaPUI';         // "KonektaPUI"/"KonectaPui"
     if (/empe[ñn]o|casa.?de.?emp/.test(s)) return 'CIB Casa de Empeño'; // antes que "cib"
     if (/pld/.test(s))                     return 'e-SIGeN PLD';        // antes que "sigen"
     if (/e.?sigen|sigen/.test(s))          return 'e-SIGeN';
@@ -104,6 +119,8 @@ function conRespuesta(l)  { return !esSinRespuesta(l); }
 const S = {
     config: {},
     leads: [],
+    webhookLeads: [],         // listado del webhook de n8n → total de "Leads entrantes"
+    eventos: [],              // eventos de Outlook (Graph) → calendario de demos
     period: '30d',            // hoy | 7d | 30d | todo
     campanaFilter: null,
     fuenteFilter: null,
@@ -205,6 +222,17 @@ function scopedLeads() {
         prev: chip.filter(l => inRange(l, prevStart, prevEnd)),
     };
 }
+// Total de "Leads entrantes" desde el webhook de n8n, filtrado por el MISMO periodo/chips
+// que el resto del funnel. Si el webhook no cargó, cae al conteo de la fuente actual (cur).
+function leadsEntrantes(cur, prev) {
+    if (!S.webhookLeads.length) return { total: cur.length, totalPrev: prev.length };
+    const { start, end, prevStart, prevEnd } = periodRange(S.period);
+    const chip = S.webhookLeads.filter(passesChips);
+    return {
+        total:     chip.filter(l => inRange(l, start, end)).length,
+        totalPrev: chip.filter(l => inRange(l, prevStart, prevEnd)).length,
+    };
+}
 
 // ============================================================
 // INIT
@@ -218,7 +246,10 @@ async function init() {
         if (!(session.role === 'admin' || (session.clients || []).includes(SLUG))) { hideLoader(); location.href = 'hub.html'; return; }
 
         await loadConfig();
-        await fetchLeads();
+        // Fuentes en paralelo: Supabase (panel), webhook de leads (total de "Leads
+        // entrantes") y webhook de Outlook (calendario de demos). Los webhooks son
+        // best-effort: si fallan, el panel cae a la fuente actual sin romperse.
+        await Promise.all([fetchLeads(), fetchWebhookLeads(), fetchEventos()]);
 
         renderPeriods();
         renderChips();
@@ -278,6 +309,74 @@ async function fetchLeads() {
     console.log('[director] leads cargados:', S.leads.length);
 }
 
+// Trae el listado completo de leads del webhook de n8n (pipeline de Kommo) vía el proxy
+// CORS. Alimenta SOLO el total de "Leads entrantes" del funnel. Es best-effort: si el
+// webhook falla, el funnel cae al conteo de la fuente actual (S.leads), sin romper nada.
+async function fetchWebhookLeads() {
+    if (new URLSearchParams(location.search).has('demo')) { S.webhookLeads = []; return; }
+    try {
+        const res = await fetch('/api/proxy?url=' + encodeURIComponent(LEADS_WEBHOOK));
+        if (!res.ok) throw new Error('el proxy respondió ' + res.status);
+        const raw = await res.json();
+        const rows = Array.isArray(raw) ? raw : (raw.leads || raw.data || []);
+        // El webhook usa `id_lead`; normalizamos a `id` conservando el resto de campos
+        // (estatus_id, fecha_creacion, utm_*) que ya son compatibles con los accesores F.
+        S.webhookLeads = rows.map(r => ({ ...r, id: firstNonEmpty(r.id, r.id_lead) }));
+        console.log('[director] leads (webhook) cargados:', S.webhookLeads.length);
+    } catch (err) {
+        console.warn('[director] no se pudo leer el webhook de leads:', err.message);
+        S.webhookLeads = [];
+    }
+}
+
+// Normaliza un evento crudo de Microsoft Graph (calendarView) al modelo que consume el
+// calendario. `start.dateTime` ya viene en hora local de México (ver `timeZone` del evento),
+// así que `demo_inicio` se toma literal — igual que parseWall, sin convertir zona horaria.
+// Devuelve null para eventos que no son demos agendables (todo el día / cancelados).
+function mapEvento(ev) {
+    const inicio = ev && ev.start && ev.start.dateTime;
+    if (!inicio) return null;
+    if (ev.isAllDay) return null;
+    const subject = (ev.subject || '').trim();
+    if (/^cancelad/i.test(subject)) return null;   // "Cancelado: ..." → no cuenta como cita
+    return {
+        id:          ev.id,
+        event_id:    ev.id,
+        nombre:      subject || 'Sin asunto',
+        demo_inicio: inicio,
+        demo_fin:    ev.end && ev.end.dateTime,
+        // Outlook no trae un campo de "sistema" limpio: se deriva por regex del asunto
+        // (normSistema mira `sistema`). Lo que no cae en los 4 patrones → "Otro".
+        sistema:     subject,
+        empresa:     '',
+        accion_calendario: 'agendada',
+        weblink:     ev.webLink || '',
+    };
+}
+
+// Trae los eventos del calendario de Outlook (vía el proxy CORS) para un rango que cubre
+// el mes actual y sus vecinos (para navegar sin refetch). Best-effort: si falla, el
+// calendario cae a la fuente actual (S.leads) sin romper el panel.
+async function fetchEventos() {
+    if (new URLSearchParams(location.search).has('demo')) { S.eventos = []; return; }
+    const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    try {
+        const now  = new Date();
+        const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);   // inicio del mes anterior
+        const to   = new Date(now.getFullYear(), now.getMonth() + 3, 0);   // fin de +2 meses
+        const target = EVENTOS_WEBHOOK + '?startDate=' + ymd(from) + '&endDate=' + ymd(to);
+        const res = await fetch('/api/proxy?url=' + encodeURIComponent(target));
+        if (!res.ok) throw new Error('el proxy respondió ' + res.status);
+        const raw  = await res.json();
+        const rows = Array.isArray(raw) ? raw : (raw.value || raw.leads || raw.data || []);
+        S.eventos = rows.map(mapEvento).filter(Boolean);
+        console.log('[director] eventos (Outlook) cargados:', S.eventos.length);
+    } catch (err) {
+        console.warn('[director] no se pudo leer el webhook de eventos:', err.message);
+        S.eventos = [];
+    }
+}
+
 // ============================================================
 // RENDER
 // ============================================================
@@ -331,24 +430,20 @@ function renderChips() {
         () => { S.fuenteFilter = (S.fuenteFilter === k ? null : k); renderChips(); renderAll(); })));
 }
 
-// --- Hero (calificados) + funnel + descartados ---------------
+// --- Hero (citas agendadas) + funnel --------------------------
 function renderHeroYFunnel(cur, prev) {
     const calificados = cur.filter(esCalificado).length;
     const califPrev = prev.filter(esCalificado).length;
-    const total = cur.length;
-    const conResp = cur.filter(conRespuesta).length;
-    const descartados = cur.filter(esDescartado).length;
+    // "Leads entrantes" viene del webhook de n8n (con fallback al conteo de cur).
+    const { total } = leadsEntrantes(cur, prev);
 
     setAll('citasFmt', fmtInt(calificados));
     setAll('dCitas', fmtDelta(calificados, califPrev));
-    setTxt('descartadosFmt', fmtInt(descartados) + ' leads');
-    setTxt('horas', fmtInt(descartados * 0.25)); // ~15 min de calificación ahorrados por lead descartado
 
-    // Funnel: primer mensaje → con respuesta → calificado
+    // Funnel: leads entrantes → citas agendadas
     const stages = [
-        { name: 'Mensajes recibidos', value: total,      color: PALETTE[0] },
-        { name: 'Leads calificados',  value: conResp,     color: PALETTE[3] },
-        { name: 'Citas agendadas',    value: calificados, color: PALETTE[1] },
+        { name: 'Leads entrantes', value: total,      color: PALETTE[0] },
+        { name: 'Citas agendadas', value: calificados, color: PALETTE[1] },
     ];
     const max = Math.max(1, total);
     document.getElementById('funnel').innerHTML = stages.map(s => `
@@ -547,7 +642,10 @@ function parseWall(str) {
 // Agrupa las demos (chip-filtered, con fecha) por día. Clave: 'año-mes-día' (mes 0-based).
 function demosPorDia() {
     const byDay = new Map();
-    S.leads.filter(passesChips).forEach(l => {
+    // Fuente del calendario: los eventos reales de Outlook si cargaron; si no (modo demo o
+    // webhook caído), cae a los leads con `demo_inicio` de la fuente actual.
+    const src = S.eventos.length ? S.eventos : S.leads;
+    src.filter(passesChips).forEach(l => {
         const w = parseWall(firstNonEmpty(l.demo_inicio));
         if (!w) return;
         const key = w.date.getFullYear() + '-' + w.date.getMonth() + '-' + w.date.getDate();
