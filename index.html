@@ -1349,24 +1349,23 @@
         .rest-board-grid {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 9px;
         }
 
         /* ── Reservation row card ── */
         .rest-card {
             position: relative;
             display: grid;
-            grid-template-columns: minmax(180px, 1.1fr) minmax(0, 1.4fr) auto;
+            grid-template-columns: minmax(0, 1fr) auto auto;
             align-items: center;
-            gap: 16px;
-            padding: 10px 14px;
+            gap: 22px;
+            padding: 15px 18px;
             background: rgba(255,255,255,0.025);
             border: 1px solid rgba(255,255,255,0.06);
             border-left: 3px solid transparent;
             border-radius: 10px;
             transition: border-color 0.15s ease, background 0.15s ease;
             cursor: pointer;
-            min-height: 56px;
         }
         .rest-card:hover {
             border-color: rgba(255,255,255,0.12);
@@ -1379,22 +1378,38 @@
         .rest-card.is-past { opacity: 0.55; }
         .rest-card.is-active { background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.32); }
 
-        .rest-card-namebox { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .rest-card-namebox { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
         .rest-card-namerow {
             display: flex; align-items: center; gap: 8px; min-width: 0;
         }
         .rest-card-name {
-            font-size: 0.88rem; font-weight: 600; color: #fff;
+            font-size: 0.95rem; font-weight: 600; color: #fff; letter-spacing: -0.01em;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             min-width: 0;
         }
         .rest-card-meta {
-            font-size: 0.74rem; color: rgba(255,255,255,0.5);
-            display: flex; gap: 6px; align-items: center;
+            font-size: 0.78rem; color: rgba(255,255,255,0.5);
+            display: flex; gap: 7px; align-items: center;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .rest-card-meta strong { color: rgba(255,255,255,0.85); font-weight: 600; }
         .rest-card-meta .dot { color: rgba(255,255,255,0.2); }
+
+        /* Bloque de urgencia (cuándo entró el lead) — columna propia, derecha */
+        .rest-card-when {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+            text-align: right; flex-shrink: 0; white-space: nowrap; min-width: 92px;
+        }
+        .rest-card-when:empty { min-width: 0; }
+        .rest-card-when .when-ago {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.82);
+        }
+        .rest-card-when .when-ago ion-icon { font-size: 0.9em; }
+        .rest-card-when .when-abs { font-size: 0.68rem; color: rgba(255,255,255,0.35); }
+        /* Urgencia del SLA de 24h: colorea el "hace X" en pendientes. */
+        .rest-card-when.lvl-urgent .when-ago { color: #FBBF24; }
+        .rest-card-when.lvl-overdue .when-ago { color: #FCA5A5; }
 
         .rest-card-pill {
             display: inline-flex; align-items: center; gap: 4px;
@@ -1412,12 +1427,14 @@
         .rest-card-pill .pdot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
 
         .rest-card-detail {
-            font-size: 0.78rem;
+            font-size: 0.79rem;
             color: rgba(255,255,255,0.55);
-            line-height: 1.4;
-            white-space: nowrap;
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
             min-width: 0;
         }
         .rest-card-detail.is-empty {
@@ -1469,10 +1486,10 @@
         @media (max-width: 720px) {
             .rest-card {
                 grid-template-columns: 1fr;
-                gap: 8px;
-                padding: 12px;
+                gap: 10px;
+                padding: 13px 14px;
             }
-            .rest-card-detail { white-space: normal; }
+            .rest-card-when { align-items: flex-start; text-align: left; min-width: 0; }
             .rest-card-actions { justify-content: flex-end; }
         }
 
@@ -2297,6 +2314,12 @@
             font-weight: 700;
         }
         .rest-info-cell-value.muted { color: rgba(255,255,255,0.4); font-weight: 400; }
+
+        /* "Lead generado": antigüedad coloreada por SLA + fecha/hora exacta */
+        #rdm-generado .rdm-gen-ago { font-weight: 700; }
+        #rdm-generado .rdm-gen-ago.lvl-urgent { color: #FBBF24; }
+        #rdm-generado .rdm-gen-ago.lvl-overdue { color: #FCA5A5; }
+        #rdm-generado .rdm-gen-abs { color: rgba(255,255,255,0.45); font-weight: 500; font-size: 0.86rem; }
 
         /* — Chat block (Kommo conversation, placeholder until wired) — */
         .rest-chat {
@@ -5428,6 +5451,10 @@
                                         Información
                                     </div>
                                     <div class="rest-info-grid">
+                                        <div class="rest-info-cell full" id="rdm-generado-block">
+                                            <div class="rest-info-cell-label">Lead generado</div>
+                                            <div class="rest-info-cell-value" id="rdm-generado">—</div>
+                                        </div>
                                         <div class="rest-info-cell">
                                             <div class="rest-info-cell-label">Tipo de evento</div>
                                             <div class="rest-info-cell-value" id="rdm-tipo">—</div>

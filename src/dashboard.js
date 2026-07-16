@@ -2390,14 +2390,20 @@ async function fetchRestaurantReservations() {
             estado: r.Estado || r.estado || 'Nuevo Lead',
             detalles: r.Detalles || r.detalles || '',
             conversacion: r.Conversacion || r.conversacion || '',
+            // "Fecha de Registro" (Airtable): momento en que se generó el lead.
+            // Es texto libre tipo "16/7/2026 12:32pm". Se usa para mostrar cuándo
+            // entró el lead y para el SLA de 24h de contacto.
+            fechaRegistro: r['Fecha de Registro'] || r.fecha_registro || r.fechaRegistro || '',
             // Momento en que se creó el registro: ancla los relativos ("hoy",
             // "mañana", "lunes 18") al día en que el cliente lo dijo, no a hoy.
-            createdTime: r.createdTime || r.created_time || r.created_at || ''
+            // Si no viene el createdTime nativo, usamos la Fecha de Registro.
+            createdTime: r.createdTime || r.created_time || r.created_at || r['Fecha de Registro'] || ''
         }));
 
         // Parsear fechas y extraer hora si no viene separada
         state.restaurantReservations.forEach(r => {
             r.fecha_parsed = parseFechaEvento(r.fechaEvento, r.createdTime);
+            r.registro_parsed = parseFechaRegistro(r.fechaRegistro);
             // Fallback: si horaEvento está vacío pero FechaEvento traía hora (ISO datetime),
             // extraerla de fecha_parsed para que el dashboard la muestre.
             if (!r.horaEvento && r.fecha_parsed) {
@@ -2698,12 +2704,22 @@ function buildReservationCard(r, isNew, isPast) {
 
     const t = r.horaEvento ? formatTime(r.horaEvento) : null;
     const tipo = escapeHtml(r.tipoEvento || 'Reserva');
-    const detail = (r.detalles || '').trim();
-    const detailBlock = detail
-        ? `<div class="rest-card-detail">${escapeHtml(detail)}</div>`
-        : `<div class="rest-card-detail is-empty">Sin detalles del lead</div>`;
 
     const notesFlag = hasReservationNotes(r.id) ? '<span class="rest-card-notes-flag" title="Tiene notas"></span>' : '';
+
+    // Bloque de urgencia: hace cuánto entró el lead ("hace 3h") como dato
+    // principal + fecha/hora exacta debajo. El color marca el SLA de 24h en
+    // pendientes. Es su propia columna a la derecha; el detalle completo del
+    // lead vive en el drawer al hacer clic en la tarjeta.
+    const registroTxt = r.registro_parsed ? formatRegistro(r.registro_parsed) : '';
+    const agoTxt = r.registro_parsed ? formatAgo(r.registro_parsed) : '';
+    const level = isPending ? contactLevel(r.registro_parsed) : null;
+    const whenHtml = r.registro_parsed
+        ? `<div class="rest-card-when${level ? ' lvl-' + level : ''}">
+                <div class="when-ago"><ion-icon name="time-outline"></ion-icon>${agoTxt}</div>
+                <div class="when-abs">${registroTxt}</div>
+           </div>`
+        : '<div class="rest-card-when"></div>';
 
     const stop = "event.stopPropagation();";
     let actions = '';
@@ -2758,7 +2774,7 @@ function buildReservationCard(r, isNew, isPast) {
                 ${t ? `<span class="dot">·</span><span>${t}</span>` : ''}
             </div>
         </div>
-        ${detailBlock}
+        ${whenHtml}
         ${selecting ? '' : `<div class="rest-card-actions">${actions}</div>`}
     </div>`;
 }
@@ -2824,6 +2840,73 @@ function formatTime(hora) {
     const ampm = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
     return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+// Parsea la "Fecha de Registro" de Airtable conservando la hora.
+// Formatos soportados: "16/7/2026 12:32pm", "3/2/2026, 5:37:27 p.m.".
+// Devuelve un Date (hora local) o null si no se puede interpretar.
+function parseFechaRegistro(str) {
+    if (!str) return null;
+    const s = String(str).trim();
+    const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap])\.?\s*m\.?/i);
+    if (m) {
+        const [, dd, mo, yy, hh, mi, se, ap] = m;
+        let h = parseInt(hh, 10);
+        const pm = ap.toLowerCase() === 'p';
+        if (pm && h < 12) h += 12;
+        if (!pm && h === 12) h = 0;
+        let year = parseInt(yy, 10);
+        if (year < 100) year += 2000;
+        return new Date(year, parseInt(mo, 10) - 1, parseInt(dd, 10), h, parseInt(mi, 10), parseInt(se || '0', 10));
+    }
+    const dt = new Date(s);
+    return isNaN(dt.getTime()) ? null : dt;
+}
+
+// "16 jul, 12:32pm" — cuándo se generó el lead (tarjeta).
+function formatRegistro(dt) {
+    if (!dt || isNaN(dt.getTime())) return '';
+    const fecha = dt.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    let h = dt.getHours();
+    const mi = dt.getMinutes();
+    const ampm = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    return `${fecha}, ${h}:${String(mi).padStart(2, '0')}${ampm}`;
+}
+
+// "16 jul 2026, 12:32pm" — versión con año para el drawer (evita confundirla
+// con la fecha solicitada del evento).
+function formatRegistroLong(dt) {
+    if (!dt || isNaN(dt.getTime())) return '';
+    const fecha = dt.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+    let h = dt.getHours();
+    const mi = dt.getMinutes();
+    const ampm = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    return `${fecha}, ${h}:${String(mi).padStart(2, '0')}${ampm}`;
+}
+
+// "hace cuánto" se generó el lead: "hace 8m", "hace 3h", "hace 2 días".
+function formatAgo(dt) {
+    if (!dt || isNaN(dt.getTime())) return '';
+    const mins = (Date.now() - dt.getTime()) / 60000;
+    if (mins < 1) return 'recién';
+    if (mins < 60) return `hace ${Math.floor(mins)}m`;
+    const hrs = mins / 60;
+    if (hrs < 24) return `hace ${Math.floor(hrs)}h`;
+    const days = Math.floor(hrs / 24);
+    return `hace ${days} ${days === 1 ? 'día' : 'días'}`;
+}
+
+// Urgencia del SLA de 24h: el equipo tiene 24h desde que entra el lead para
+// contactarlo. Colorea la antigüedad — mientras más viejo, más urgente.
+const CONTACT_SLA_HOURS = 24;
+function contactLevel(dt) {
+    if (!dt || isNaN(dt.getTime())) return null;
+    const hrs = (Date.now() - dt.getTime()) / 3600000;
+    if (hrs >= CONTACT_SLA_HOURS) return 'overdue';
+    if (hrs >= CONTACT_SLA_HOURS - 6) return 'urgent'; // últimas 6h del plazo
+    return 'ok';
 }
 
 // =============================================
@@ -2893,6 +2976,16 @@ function populateDrawer(r, index) {
         pill.className = 'rest-drawer-status-pill ' + statusKey;
         const txt = document.getElementById('rdm-status-text');
         if (txt) txt.textContent = isReleasedR ? 'Servida' : (r.estado === 'Nuevo Lead' ? 'Nuevo Lead' : r.estado);
+    }
+
+    // "Lead generado": cuándo entró el lead. Etiquetado y con año para no
+    // confundirlo con la fecha solicitada del evento (que va en el header).
+    if (r.registro_parsed) {
+        const genLvl = (r.estado === 'Nuevo Lead') ? contactLevel(r.registro_parsed) : null;
+        setHtml('rdm-generado', `<span class="rdm-gen-ago${genLvl ? ' lvl-' + genLvl : ''}">${formatAgo(r.registro_parsed)}</span><span class="rdm-gen-abs"> · ${formatRegistroLong(r.registro_parsed)}</span>`);
+        show('rdm-generado-block', true);
+    } else {
+        show('rdm-generado-block', false);
     }
 
     // Info cells
