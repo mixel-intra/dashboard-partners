@@ -143,9 +143,11 @@ async function init() {
             return;
         }
 
-        // CEFEMEX Capital: arranca consultando solo el mes en curso (data server-side por rango)
+        // Clientes con data server-side por rango: Casa de Empeño arranca consultando
+        // solo el día actual; CEFEMEX Capital, el mes en curso.
         if (usaRangoServidor()) {
-            setRangoMesEnCurso();
+            if (esCasaDeEmpeno()) setRangoHoy();
+            else setRangoMesEnCurso();
         }
 
         await fetchData();
@@ -408,10 +410,27 @@ function setPredefinedRange(range) {
     aplicarRangoFechas();
 }
 
-// CEFEMEX Capital consulta los leads por rango de fechas en el servidor;
-// los demás clientes traen todo una vez y filtran en memoria.
+// CEFEMEX Capital y Casa de Empeño consultan los leads por rango de fechas en el
+// servidor; los demás clientes traen todo una vez y filtran en memoria.
 function usaRangoServidor() {
-    return state.clientId === 'cefemex';
+    return state.clientId === 'cefemex' || esCasaDeEmpeno();
+}
+
+function esCasaDeEmpeno() {
+    return state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño';
+}
+
+// Fija el rango global al día actual (sin re-render).
+function setRangoHoy() {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    state.filters.start = start;
+    state.filters.end = end;
+    const label = document.getElementById('current-range-label');
+    if (label) label.textContent = 'Hoy';
+    if (state.flatpickr) state.flatpickr.setDate([start, end]);
 }
 
 // Fija el rango global al mes en curso (sin re-render).
@@ -428,7 +447,8 @@ function setRangoMesEnCurso() {
     if (state.flatpickr) state.flatpickr.setDate([start, end]);
 }
 
-// Aplica el rango activo: CEFEMEX re-consulta el webhook; los demás filtran en memoria.
+// Aplica el rango activo: CEFEMEX y Casa de Empeño re-consultan el webhook;
+// los demás filtran en memoria.
 async function aplicarRangoFechas() {
     if (usaRangoServidor()) {
         showFetchingOverlay();
@@ -969,7 +989,7 @@ async function fetchData() {
             rawData = generateFakeHotelLeads();
         } else {
             let leadsUrl = state.config.webhookUrl;
-            // CEFEMEX Capital: el webhook filtra los leads por rango de fechas en el servidor
+            // CEFEMEX Capital / Casa de Empeño: el webhook filtra los leads por rango de fechas en el servidor
             if (usaRangoServidor() && state.filters.start && state.filters.end) {
                 const desde = Math.floor(state.filters.start.getTime() / 1000);
                 const hasta = Math.floor(state.filters.end.getTime() / 1000);
@@ -980,6 +1000,11 @@ async function fetchData() {
             if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
             rawData = await response.json();
         }
+
+        // Rango sin leads: el webhook responde [{ sin_datos: true }] para que la
+        // petición siempre tenga respuesta; aquí se descarta ese marcador.
+        if (!Array.isArray(rawData)) rawData = [];
+        rawData = rawData.filter(l => l && !l.sin_datos);
 
         // Normalize leads — extraer tipo_servicio del campo crudo (tipo_servicio o estatus)
         state.leads = rawData.map(lead => {
