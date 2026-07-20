@@ -40,6 +40,18 @@
         .card-lift { transition: transform 200ms ease, box-shadow 200ms ease; }
         .card-lift:hover { transform: translateY(-2px); }
         button { font-family: inherit; cursor: pointer; border: none; }
+        /* Filtros como dropdowns compactos (periodo, sistema, fuente) */
+        .dg-select {
+            font-family: inherit; font-size: 13px; font-weight: 600; color: #1D1D1F;
+            padding: 8px 34px 8px 14px; border-radius: 11px;
+            border: 1px solid #E3E3E8; background-color: #FFFFFF;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%236E6E73' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+            background-repeat: no-repeat; background-position: right 12px center;
+            -webkit-appearance: none; -moz-appearance: none; appearance: none; cursor: pointer;
+            transition: border-color 160ms ease, box-shadow 160ms ease;
+        }
+        .dg-select:hover { border-color: #C7C7CC; }
+        .dg-select:focus { outline: none; border-color: #0A6CFF; box-shadow: 0 0 0 3px rgba(10,108,255,0.12); }
         /* Este dashboard no usa el topbar: solo se mantiene el sidebar */
         .main-header { display: none !important; }
         #dg-status { display: none; position: fixed; bottom: 18px; right: 18px; font: 13px/1.4 'Inter', sans-serif; color: #6E6E73; background: #fff; padding: 9px 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(16,24,40,0.12); z-index: 9999; }
@@ -230,7 +242,7 @@
                     <div id="dg-client-name" style="font-size:27px; font-weight:600; letter-spacing:-0.02em; color:#1D1D1F; margin-top:7px;">Logic Systems</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:14px;">
-                    <div id="periods" style="display:inline-flex; flex-wrap:wrap; gap:3px; padding:4px; border-radius:13px; background:#E8E8ED;"></div>
+                    <select id="periodSelect" class="dg-select" aria-label="Periodo"></select>
                     <div style="display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:999px; background:#E7F7EF; border:1px solid #C7EEDB;">
                         <span style="width:7px; height:7px; border-radius:999px; background:#1FB36B; animation:pulseDot 2.4s infinite;"></span>
                         <span style="font-size:12.5px; font-weight:600; color:#0E8F53;">Agente activo · 24/7</span>
@@ -240,14 +252,13 @@
 
             <!-- FILTROS -->
             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; margin-bottom:22px;">
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <span style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#A1A1A6; margin-right:2px;">Sistema</span>
-                    <div id="sysChips" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"></div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#A1A1A6;">Sistema</span>
+                    <select id="sysSelect" class="dg-select" aria-label="Sistema"></select>
                 </div>
-                <span style="width:1px; height:22px; background:#E3E3E8;"></span>
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <span style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#A1A1A6; margin-right:2px;">Fuente</span>
-                    <div id="srcChips" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"></div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#A1A1A6;">Fuente</span>
+                    <select id="srcSelect" class="dg-select" aria-label="Fuente"></select>
                 </div>
             </div>
 
@@ -420,7 +431,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/director.js?v=20260720-1"></script>
+    <script src="src/director.js?v=20260720-2"></script>
 </body>
 
 </html>

@@ -420,55 +420,45 @@ function renderAll() {
     setAll('periodLabel', (PERIODS.find(p => p.key === S.period) || {}).label || '');
 }
 
+// Rellena un <select> con opciones y sincroniza el valor seleccionado.
+function fillSelect(host, options, selectedValue) {
+    if (!host) return;
+    host.innerHTML = options.map(o =>
+        `<option value="${esc(o.value)}"${o.value === selectedValue ? ' selected' : ''}>${esc(o.label)}</option>`
+    ).join('');
+    host.value = selectedValue;
+}
+
 function renderPeriods() {
-    const host = document.getElementById('periods');
-    host.innerHTML = '';
-    PERIODS.forEach(p => {
-        const active = p.key === S.period;
-        const b = document.createElement('button');
-        b.textContent = p.label;
-        b.style.cssText = 'font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:10px; transition:all 160ms ease; ' +
-            (active ? 'background:#FFFFFF; color:#0A6CFF; box-shadow:0 1px 3px rgba(16,24,40,0.12);'
-                    : 'background:transparent; color:#6E6E73;');
-        b.onclick = async () => {
-            S.period = p.key;
-            // El calendario sigue al periodo: "este mes"/"mes pasado" saltan a ese mes;
-            // los demás vuelven al mes actual. Luego se re-piden los eventos del rango.
-            const now = new Date();
-            if (p.type === 'month') S.calMonth = new Date(now.getFullYear(), now.getMonth() + p.offset, 1);
-            else                    S.calMonth = null;
-            S.calSelKey = null;
-            renderPeriods();
-            renderAll();          // pinta stats de inmediato con el nuevo periodo
-            await fetchEventos();  // re-consulta el calendario para el nuevo rango
-            renderAgenda();
-        };
-        host.appendChild(b);
-    });
+    const host = document.getElementById('periodSelect');
+    if (!host) return;
+    fillSelect(host, PERIODS.map(p => ({ value: p.key, label: p.label })), S.period);
+    host.onchange = async () => {
+        const p = PERIODS.find(x => x.key === host.value) || PERIODS[0];
+        S.period = p.key;
+        // El calendario sigue al periodo: "este mes"/"mes pasado" saltan a ese mes;
+        // los demás vuelven al mes actual. Luego se re-piden los eventos del rango.
+        const now = new Date();
+        if (p.type === 'month') S.calMonth = new Date(now.getFullYear(), now.getMonth() + p.offset, 1);
+        else                    S.calMonth = null;
+        S.calSelKey = null;
+        renderAll();          // pinta stats de inmediato con el nuevo periodo
+        await fetchEventos();  // re-consulta el calendario para el nuevo rango
+        renderAgenda();
+    };
 }
 
-function chipButton(label, active, onClick) {
-    const b = document.createElement('button');
-    b.textContent = label;
-    b.style.cssText = 'font-size:12.5px; font-weight:500; padding:6px 13px; border-radius:999px; transition:all 160ms ease; ' +
-        (active ? 'background:#0A6CFF; color:#fff; border:1px solid #0A6CFF;'
-                : 'background:#fff; color:#3A3A3C; border:1px solid #E3E3E8;');
-    b.onclick = onClick;
-    return b;
-}
 function renderChips() {
-    // Chips fijos: los 4 sistemas del negocio y las 4 fuentes que se manejan siempre.
-    const sysHost = document.getElementById('sysChips');
-    sysHost.innerHTML = '';
-    sysHost.appendChild(chipButton('Todos', !S.campanaFilter, () => { S.campanaFilter = null; renderChips(); renderAll(); }));
-    SISTEMAS.forEach(k => sysHost.appendChild(chipButton(k, S.campanaFilter === k,
-        () => { S.campanaFilter = (S.campanaFilter === k ? null : k); renderChips(); renderAll(); })));
+    // Dropdowns fijos: los 4 sistemas del negocio y las 4 fuentes que se manejan siempre.
+    // El valor "" es "Todos/Todas" (sin filtro). __dgFilter* llama a renderChips() para
+    // re-sincronizar el <select> cuando el filtro cambia desde las tarjetas.
+    const sysHost = document.getElementById('sysSelect');
+    fillSelect(sysHost, [{ value: '', label: 'Todos' }, ...SISTEMAS.map(k => ({ value: k, label: k }))], S.campanaFilter || '');
+    if (sysHost) sysHost.onchange = () => { S.campanaFilter = sysHost.value || null; renderAll(); };
 
-    const srcHost = document.getElementById('srcChips');
-    srcHost.innerHTML = '';
-    srcHost.appendChild(chipButton('Todas', !S.fuenteFilter, () => { S.fuenteFilter = null; renderChips(); renderAll(); }));
-    FUENTES.forEach(k => srcHost.appendChild(chipButton(k, S.fuenteFilter === k,
-        () => { S.fuenteFilter = (S.fuenteFilter === k ? null : k); renderChips(); renderAll(); })));
+    const srcHost = document.getElementById('srcSelect');
+    fillSelect(srcHost, [{ value: '', label: 'Todas' }, ...FUENTES.map(k => ({ value: k, label: k }))], S.fuenteFilter || '');
+    if (srcHost) srcHost.onchange = () => { S.fuenteFilter = srcHost.value || null; renderAll(); };
 }
 
 // --- Hero (citas agendadas) + funnel --------------------------
