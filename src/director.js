@@ -412,7 +412,7 @@ async function fetchEventos() {
 function renderAll() {
     const { cur, prev } = scopedLeads();
     renderHeroYFunnel(cur, prev);
-    renderDonut(cur);
+    renderDonut(cur, prev);
     renderSources(cur);
     renderCampanas(cur, prev);
     renderTrend(cur);
@@ -499,11 +499,14 @@ function renderHeroYFunnel(cur, prev) {
         </div>`).join('');
 }
 
-// --- Donut: tasa de calificación (calificados / con respuesta) ---
-function renderDonut(cur) {
-    const conResp = cur.filter(conRespuesta).length;
+// --- Donut: tasa de agendamiento (citas agendadas / leads entrantes) ---
+// Cada lead de la tabla ya llega calificado y con demo, así que dividir entre
+// "con respuesta" daba siempre 100%. La tasa real es agendadas ÷ leads entrantes,
+// el mismo par de números que muestra el funnel.
+function renderDonut(cur, prev) {
+    const { total } = leadsEntrantes(cur, prev);
     const calificados = cur.filter(esCalificado).length;
-    const rate = pct(calificados, conResp);
+    const rate = pct(calificados, total);
     const r = 52, c = 2 * Math.PI * r, off = c * (1 - rate / 100);
     document.getElementById('donut').innerHTML = `
       <svg width="150" height="150" viewBox="0 0 150 150">
