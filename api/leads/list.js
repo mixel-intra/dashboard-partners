@@ -44,9 +44,12 @@ function mapLead(row) {
         telefono:       row.telefono_contacto || row.telefono || '',
         fecha_creacion: row.created_at,
         // Dimensiones de marketing: director.js las normaliza con normSistema()/normFuente().
-        // Se exponen como utm_* (además de los originales sistema/fuente) para robustez.
+        // Se exponen como utm_* (además de los originales) para robustez.
+        // NOTA: la columna del canal de contacto se renombró de `fuente` a `contacto`.
+        // El componente "Contacto" lee `contacto`; el componente "Fuente" lee `fuente_lead`
+        // (ambas llegan crudas vía el spread `...row`, categorías dinámicas / fijas en el front).
         utm_campaign:   row.sistema,
-        utm_medium:     row.fuente,
+        utm_medium:     row.contacto || row.fuente,
     };
 }
 
