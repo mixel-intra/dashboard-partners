@@ -45,7 +45,11 @@ const F = {
     precio:   l => Number(firstNonEmpty(l.precio, l.monto, l.valor)) || 0,
     fecha:    l => parseFecha(firstNonEmpty(l.fecha_creacion, l.fecha, l.created_at)),
     // Dimensiones de marketing (UTM de Kommo), normalizadas a las dimensiones fijas del negocio.
+    // "Contacto": el canal por el que llegó el lead → 4 canales fijos. La columna que
+    // alimenta esta dimensión se renombró de `fuente` a `contacto` en la tabla `leads`.
     fuente:   l => normFuente(l)  || 'Otra',
+    // "Fuente del lead" (columna `fuente_lead`): valor CRUDO, categorías dinámicas (no normaliza).
+    fuenteLead: l => (firstNonEmpty(l.fuente_lead, l.fuenteLead) || 'Sin fuente').toString().trim(),
     sistema:  l => normSistema(l) || 'Otro',
     campana:  l => normSistema(l) || 'Otro',   // alias histórico: en Logic Systems "campaña" ES el sistema
     respuesta: l => firstNonEmpty(l.respuesta_ai, l.ultimo_mensaje) || '',
@@ -80,9 +84,11 @@ function normSistema(l) {
     if (/financiera|cib/.test(s))          return 'CIB Financiera';
     return null;
 }
-// Normaliza la fuente cruda del lead (utm_medium/utm_source) a una de las 4 fuentes fijas, o null si no cae.
+// Normaliza el canal de contacto crudo del lead a uno de los 4 canales fijos, o null si no cae.
+// Lee primero la columna `contacto` (así se llama ahora en la tabla `leads`); mantiene los
+// fallbacks a utm_medium/utm_source/fuente/canal para el modo demo y datos legacy de Kommo.
 function normFuente(l) {
-    const s = (firstNonEmpty(l.utm_medium, l.utm_source, l.fuente, l.canal) || '').toString().toLowerCase();
+    const s = (firstNonEmpty(l.contacto, l.utm_medium, l.utm_source, l.fuente, l.canal) || '').toString().toLowerCase();
     if (/whats|wpp|\bwa\b/.test(s))             return 'WhatsApp';
     if (/insta|\big\b|ig[_-]/.test(s))          return 'Instagram';
     if (/face|\bfb\b|fb[_-]|meta/.test(s))      return 'Facebook';
@@ -123,7 +129,8 @@ const S = {
     eventos: [],              // eventos de Outlook (Graph) → calendario de demos
     period: '30d',            // hoy | 7d | 30d | esteMes | mesPasado | todo
     campanaFilter: null,
-    fuenteFilter: null,
+    fuenteFilter: null,       // filtro del componente "Contacto" (canal, 4 fijos)
+    fuenteLeadFilter: null,   // filtro del componente "Fuente" (columna fuente_lead, dinámico)
     calMonth: null,           // Date del 1er día del mes mostrado en el calendario de agenda
     calSelKey: null,          // día seleccionado en el calendario ('año-mes-día', mes 0-based)
 };
@@ -227,6 +234,7 @@ function inRange(l, start, end) {
 function passesChips(l) {
     if (S.campanaFilter && F.campana(l) !== S.campanaFilter) return false;
     if (S.fuenteFilter && F.fuente(l) !== S.fuenteFilter) return false;
+    if (S.fuenteLeadFilter && F.fuenteLead(l) !== S.fuenteLeadFilter) return false;
     return true;
 }
 function scopedLeads() {
@@ -414,6 +422,7 @@ function renderAll() {
     renderHeroYFunnel(cur, prev);
     renderDonut(cur, prev);
     renderSources(cur);
+    renderFuenteLead(cur);
     renderCampanas(cur, prev);
     renderTrend(cur);
     renderAgenda();
@@ -509,12 +518,12 @@ function renderDonut(cur, prev) {
       </svg>`;
 }
 
-// --- Fuente de los leads (utm_medium) ------------------------
+// --- Contacto (columna `contacto`, 4 canales fijos) ----------
 function renderSources(cur) {
     const total = cur.length || 1;
     const counts = {};
     cur.forEach(l => { const k = F.fuente(l); counts[k] = (counts[k] || 0) + 1; });
-    // Siempre las 4 fuentes fijas, en orden, aunque alguna venga en 0.
+    // Siempre los 4 canales fijos, en orden, aunque alguno venga en 0.
     const top = FUENTES.map(k => ({ key: k, count: counts[k] || 0 }));
     const max = Math.max(1, ...top.map(g => g.count));
     document.getElementById('sources').innerHTML = top.map((g, i) => {
@@ -532,6 +541,39 @@ function renderSources(cur) {
     }).join('');
 }
 window.__dgFilterFuente = (k) => { S.fuenteFilter = (S.fuenteFilter === k ? null : k); renderChips(); renderAll(); };
+
+// --- Fuente (columna `fuente_lead`, categorías dinámicas) -----
+// Mismo look de barras que "Contacto", pero las categorías salen de los valores que
+// realmente trae la columna `fuente_lead`, ordenadas de mayor a menor volumen.
+function renderFuenteLead(cur) {
+    const host = document.getElementById('fuenteLead');
+    if (!host) return;
+    const total = cur.length || 1;
+    const counts = {};
+    cur.forEach(l => { const k = F.fuenteLead(l); counts[k] = (counts[k] || 0) + 1; });
+    const top = Object.keys(counts)
+        .map(k => ({ key: k, count: counts[k] }))
+        .sort((a, b) => b.count - a.count);
+    if (!top.length) {
+        host.innerHTML = '<div style="font-size:13px; color:#86868B;">Sin datos en el periodo.</div>';
+        return;
+    }
+    const max = Math.max(1, ...top.map(g => g.count));
+    host.innerHTML = top.map((g, i) => {
+        const color = PALETTE[i % PALETTE.length];
+        return `
+        <div style="margin-bottom:14px; cursor:pointer;" onclick="window.__dgFilterFuenteLead(${jsArg(g.key)})">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="display:flex; align-items:center; gap:8px; font-size:13px; color:#3A3A3C;"><span style="width:8px; height:8px; border-radius:2px; background:${color};"></span>${esc(g.key)}</span>
+            <span style="font-size:13px; font-weight:600; color:#1D1D1F;">${pct(g.count, total)}%</span>
+          </div>
+          <div style="height:6px; border-radius:999px; background:#EFF1F5; overflow:hidden;">
+            <div style="height:100%; width:${pct(g.count, max)}%; background:${color}; border-radius:999px; transition:width 600ms cubic-bezier(0.2,0.7,0.2,1);"></div>
+          </div>
+        </div>`;
+    }).join('');
+}
+window.__dgFilterFuenteLead = (k) => { S.fuenteLeadFilter = (S.fuenteLeadFilter === k ? null : k); renderAll(); };
 
 // --- Estadísticas por campaña + campaña top ------------------
 function renderCampanas(cur, prev) {
@@ -560,17 +602,6 @@ function renderCampanas(cur, prev) {
           <div style="margin-top:14px;"><span style="display:inline-block; padding:3px 10px; border-radius:999px; background:#E7F7EF; color:#0E8F53; font-weight:600; font-size:12px;">↑ ${delta} vs. periodo</span></div>
         </div>`;
     }).join('');
-
-    // Sistema más solicitado = el de mayor volumen de demos.
-    const topG = groups.slice().sort((a, b) => b.count - a.count)[0];
-    if (topG && topG.count > 0) {
-        setTxt('topShare', pct(topG.count, totalLeads) + '%');
-        setTxt('topName', topG.key);
-        setTxt('topValue', fmtInt(topG.count));
-        setTxt('topDelta', fmtDelta(topG.count, prevByCamp[topG.key] || 0));
-    } else {
-        setTxt('topShare', '—'); setTxt('topName', 'Sin datos'); setTxt('topValue', '0'); setTxt('topDelta', '0%');
-    }
 }
 window.__dgFilterCampana = (k) => { S.campanaFilter = (S.campanaFilter === k ? null : k); renderChips(); renderAll(); };
 
@@ -829,6 +860,8 @@ function jsArg(str) { return JSON.stringify(String(str)).replace(/"/g, '&quot;')
 // ============================================================
 function demoLeads() {
     const fuentes = ['Facebook', 'WhatsApp', 'Instagram', 'Google'];
+    // Valores de ejemplo para la columna `fuente_lead` (categorías dinámicas del componente "Fuente").
+    const fuentesLead = ['Campaña Meta Ads', 'Orgánico', 'Referido', 'Landing page', 'Google Ads'];
     const campanas = ['CIB Financiera', 'e-SIGeN', 'CIB Casa de Empeño', 'e-SIGeN PLD'];
     const nombres = ['Carlos Vega', 'Liliana Estrada', 'Jorge Herrera', 'Ana Ruiz', 'MVZ. Cesar Gamboa', 'Sci consultores'];
     const stages = [ST.RECHAZADO, ST.RECHAZADO, ST.SEGUIMIENTO, ST.SIN_RESPUESTA, ST.ATENCION, ST.RECHAZADO];
@@ -848,6 +881,8 @@ function demoLeads() {
             precio: [0, 0, 150000, 500000][i % 4],
             estatus: labels[id], estatus_id: id, tags: [],
             fecha_creacion: `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}, ${1 + (i % 11)}:0${i % 6}:00 p.m.`,
+            contacto: fuentes[i % fuentes.length],
+            fuente_lead: fuentesLead[i % fuentesLead.length],
             utm_medium: fuentes[i % fuentes.length],
             utm_campaign: campanas[i % campanas.length],
             demo_inicio: demoIso,
