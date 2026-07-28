@@ -167,10 +167,8 @@ async function init() {
             fetchHospedajeReservas();
         }
 
-        // Pre-fetch eventos data in background (pipeline opens on demand)
-        if (state.activeTab === 'eventos' && state.eventosConfig.apiKey) {
-            fetchEventosLeads();
-        }
+        // (El pre-fetch de eventos ahora lo dispara switchDashTab desde
+        // initHotelTabs, con guard para no duplicar la llamada a Airtable.)
 
         hideLoader();
     } catch (err) {
@@ -592,9 +590,9 @@ function initHotelTabs() {
             });
         }
 
-        // Actually switch to the first unlocked service (otherwise the user
-        // sees the default dashboard until they click the tab manually)
-        if (activeTab && activeTab !== 'eventos') {
+        // Sincroniza la vista con el tab inicial. Incluye 'eventos': si no,
+        // el CTA "Ver Pipeline de Eventos" queda oculto hasta cambiar de tab.
+        if (activeTab) {
             switchDashTab(activeTab);
         }
 
@@ -4587,6 +4585,12 @@ async function fetchEventosLeads() {
     } catch (err) {
         console.error('Eventos CRM: fetch failed:', err);
         state.eventosLeads = [];
+    }
+    // Refresca el badge del CTA: en la carga inicial el CTA se muestra antes
+    // de que termine este fetch, así que el conteo se pinta aquí.
+    const ctaCountEl = document.getElementById('evt-pipeline-cta-count');
+    if (ctaCountEl && state.eventosLeads.length > 0) {
+        ctaCountEl.textContent = `${state.eventosLeads.length} leads`;
     }
     renderEventosPanel();
 }
