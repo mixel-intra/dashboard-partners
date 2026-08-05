@@ -70,6 +70,26 @@ function initCefemexMetrics() {
 }
 
 function setupCefemexMetricsControls() {
+    const toggle = document.getElementById('cmx-range-toggle');
+    const dropdown = document.getElementById('cmx-range-dropdown');
+    if (toggle && dropdown) {
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            const chev = toggle.querySelector('.chevron');
+            if (chev) chev.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        });
+        document.addEventListener('click', () => cmxCloseRangeDropdown());
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    document.querySelectorAll('.cmx-range-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+            cmxSetPredefinedRange(opt.dataset.range, opt.textContent.trim());
+            cmxCloseRangeDropdown();
+        });
+    });
+
     const input = document.getElementById('cmx-date-range');
     if (input && typeof flatpickr === 'function') {
         cefemexMetrics.flatpickr = flatpickr(input, {
@@ -83,10 +103,8 @@ function setupCefemexMetricsControls() {
                     const hasta = new Date(selectedDates[1]);
                     hasta.setHours(23, 59, 59, 999);
                     cefemexMetrics.hasta = hasta;
-                    fetchCefemexMetrics();
-                } else if (selectedDates.length === 0) {
-                    cefemexMetrics.desde = null;
-                    cefemexMetrics.hasta = null;
+                    cmxSetRangeLabel('Rango personalizado');
+                    cmxCloseRangeDropdown();
                     fetchCefemexMetrics();
                 }
             }
@@ -101,6 +119,59 @@ function setupCefemexMetricsControls() {
     }
 
     cmxRenderPorToggle();
+}
+
+function cmxCloseRangeDropdown() {
+    const dropdown = document.getElementById('cmx-range-dropdown');
+    const toggle = document.getElementById('cmx-range-toggle');
+    if (dropdown) dropdown.classList.add('hidden');
+    const chev = toggle && toggle.querySelector('.chevron');
+    if (chev) chev.style.transform = 'rotate(0deg)';
+}
+
+function cmxSetRangeLabel(txt) {
+    const label = document.getElementById('cmx-range-label');
+    if (label) label.textContent = txt;
+}
+
+// Mismas opciones que el selector del dashboard. Ojo con "Todo el tiempo":
+// omitir desde/hasta hace que el endpoint use el mes en curso, así que se
+// manda un rango abierto explícito.
+function cmxSetPredefinedRange(range, label) {
+    const hoy = new Date();
+    hoy.setHours(23, 59, 59, 999);
+    let start = null;
+    let end = hoy;
+
+    switch (range) {
+        case 'today':
+            start = new Date(); start.setHours(0, 0, 0, 0);
+            break;
+        case '7d':
+            start = new Date(); start.setDate(hoy.getDate() - 7); start.setHours(0, 0, 0, 0);
+            break;
+        case '30d':
+            start = new Date(); start.setDate(hoy.getDate() - 30); start.setHours(0, 0, 0, 0);
+            break;
+        case 'this-month':
+            start = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            break;
+        case 'last-month':
+            start = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+            end = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+            end.setHours(23, 59, 59, 999);
+            break;
+        case 'all':
+        default:
+            start = new Date(2020, 0, 1);
+            break;
+    }
+
+    cefemexMetrics.desde = start;
+    cefemexMetrics.hasta = end;
+    cmxSetRangeLabel(label || 'Rango');
+    if (cefemexMetrics.flatpickr) cefemexMetrics.flatpickr.setDate([start, end], false);
+    fetchCefemexMetrics();
 }
 
 function cmxSetVista(vista) {
@@ -250,7 +321,6 @@ function renderCefemexMetricsContent() {
         ${hayLeads
             ? '<div class="cmx-table-card" id="cmx-table-slot"></div>'
             : `<div class="cmx-state-msg">${vacio}</div>${esActivos ? '' : cmxBuildDescartadosHtml()}`}
-        ${cmxBuildCriteriosHtml(cefemexMetrics.data.criterios)}
     `;
     if (hayLeads) cmxRenderTableSlot();
 }
@@ -531,19 +601,4 @@ function cmxBuildActivosNotasHtml(rebotados) {
     }
     notas.push('<span>El punto ámbar marca la etapa en curso: ese número no está cerrado y crece cada día que el lead siga ahí.</span>');
     return notas.map(n => `<div class="cmx-footnote"><ion-icon name="information-circle-outline"></ion-icon>${n}</div>`).join('');
-}
-
-// El texto viene del endpoint a propósito: si cambian las reglas del reporte,
-// se actualiza solo.
-function cmxBuildCriteriosHtml(criterios) {
-    if (!criterios || typeof criterios !== 'object') return '';
-    const entries = Object.entries(criterios).map(([k, v]) => `
-        <dt>${escapeHtml(k)}</dt>
-        <dd>${escapeHtml(v)}</dd>
-    `).join('');
-    if (!entries) return '';
-    return `<details class="cmx-criterios">
-        <summary>Criterios de este reporte</summary>
-        <dl class="cmx-criterios-body">${entries}</dl>
-    </details>`;
 }

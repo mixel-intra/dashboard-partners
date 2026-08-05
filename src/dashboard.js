@@ -543,13 +543,6 @@ function initHotelTabs() {
             });
         });
 
-        // "Métricas" es exclusivo de CEFEMEX Capital — no es un hotel_service,
-        // así que se controla aparte del loop de arriba.
-        const metricsTabBtn = document.getElementById('tab-btn-metricas');
-        if (metricsTabBtn) {
-            metricsTabBtn.classList.toggle('hidden', state.clientId !== 'cefemex');
-        }
-
         // Hotel-specific overrides
         document.getElementById('table-title').textContent = 'Últimas cotizaciones enviadas a ventas';
         document.getElementById('main-chart-title').textContent = 'Histórico de cotizaciones de eventos canalizados a ventas';
@@ -611,20 +604,6 @@ function initHotelTabs() {
             const el = document.getElementById(`${id}-wrapper`);
             if (el) el.style.display = 'flex';
         });
-
-        // "Métricas" (CEFEMEX Capital) vive en el mismo segmented control aunque
-        // el cliente no sea clientType 'hotel' — se muestra solo ese botón,
-        // el resto de las pestañas de hotel se mantienen ocultas.
-        const metricsTabBtn = document.getElementById('tab-btn-metricas');
-        if (metricsTabBtn && state.clientId === 'cefemex') {
-            tabsContainer.classList.remove('hidden');
-            tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
-                btn.classList.toggle('hidden', btn.dataset.tab !== 'metricas');
-            });
-            metricsTabBtn.addEventListener('click', () => switchDashTab('metricas'));
-        } else if (metricsTabBtn) {
-            metricsTabBtn.classList.add('hidden');
-        }
     }
 }
 
@@ -648,7 +627,9 @@ function switchDashTab(tab) {
     // Always hide the panels we are not switching to
     if (tab !== 'restaurante' && restaurantPanel) restaurantPanel.classList.add('hidden');
     if (tab !== 'social_listening' && socialListeningPanel) socialListeningPanel.classList.add('hidden');
-    if (tab !== 'metricas' && metricsPanel) metricsPanel.classList.add('hidden');
+    // Métricas se navega desde la mini-barra, no desde este segmented: al volver
+    // a cualquier sub-vista del dashboard su panel siempre se esconde.
+    if (metricsPanel) metricsPanel.classList.add('hidden');
 
     if (tab === 'restaurante') {
         if (dashboardGrid) dashboardGrid.classList.add('hidden');
@@ -667,13 +648,6 @@ function switchDashTab(tab) {
             socialListeningPanel.classList.remove('hidden');
             if (!state.socialListeningLoaded) fetchSocialListeningReviews();
             else renderSocialListeningPanel();
-        }
-    } else if (tab === 'metricas') {
-        if (dashboardGrid) dashboardGrid.classList.add('hidden');
-        if (contentHeaderRow) contentHeaderRow.classList.add('hidden');
-        if (metricsPanel) {
-            metricsPanel.classList.remove('hidden');
-            if (typeof initCefemexMetrics === 'function') initCefemexMetrics();
         }
     } else {
         if (dashboardGrid) dashboardGrid.classList.remove('hidden');
@@ -3623,9 +3597,19 @@ function showConfirmModal(reservation, action) {
         reasonsEl.querySelectorAll('.reject-reason-chip').forEach(c => c.classList.remove('selected'));
     }
 
+    // Fuera de la ventana de 24h de Meta, Kommo no envía mensajes de formato
+    // libre. En ese caso (confirmar un lead vencido) ocultamos el textarea y
+    // mostramos una nota: se confirma pero sin enviar mensaje al cliente.
+    const isOverdue = contactLevel(reservation.registro_parsed) === 'overdue';
+    const skipMessage = isConfirm && isOverdue;
+    const msgBlock = document.getElementById('confirm-modal-msg-block');
+    const noMsgNote = document.getElementById('confirm-modal-no-msg-note');
+    if (msgBlock) msgBlock.style.display = skipMessage ? 'none' : '';
+    if (noMsgNote) noMsgNote.style.display = skipMessage ? 'flex' : 'none';
+
     // Pre-fill message
     const msgField = document.getElementById('confirm-modal-message');
-    if (msgField) {
+    if (msgField && !skipMessage) {
         if (isConfirm) {
             const dateStr = formatReservationDate(reservation);
             const timeStr = reservation.horaEvento ? ` a las ${formatTime(reservation.horaEvento)}` : '';
@@ -3635,6 +3619,8 @@ function showConfirmModal(reservation, action) {
             msgField.value = '';
             msgField.placeholder = 'Selecciona un motivo arriba o escribe un mensaje...';
         }
+    } else if (msgField && skipMessage) {
+        msgField.value = '';
     }
 
     modal.classList.remove('hidden');
@@ -3678,6 +3664,10 @@ async function executeReservationAction(reservation, newStatus) {
         const webhookUrl = state.restaurantConfig.confirmWebhookUrl;
         if (!webhookUrl) throw new Error('No hay webhook de confirmación configurado');
 
+        // Lead vencido (>24h): fuera de la ventana de 24h de Meta, Kommo no
+        // puede enviar el mensaje. Se confirma el estado pero sin mensaje.
+        const skipMessage = newStatus === 'Confirmado' && contactLevel(reservation.registro_parsed) === 'overdue';
+
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(webhookUrl)}`;
         const response = await fetch(proxyUrl, {
             method: 'POST',
@@ -3694,7 +3684,10 @@ async function executeReservationAction(reservation, newStatus) {
                 fechaEvento: reservation.fechaEvento,
                 detalles: reservation.detalles,
                 nuevoEstado: newStatus,
-                mensajeCliente: document.getElementById('confirm-modal-message')?.value || '',
+                // enviarMensaje=false → n8n debe saltarse el envío del mensaje
+                // (ventana de 24h de Meta cerrada). mensajeCliente va vacío.
+                enviarMensaje: !skipMessage,
+                mensajeCliente: skipMessage ? '' : (document.getElementById('confirm-modal-message')?.value || ''),
                 clientSlug: state.clientId,
                 hotelName: state.config.clientName
             })
@@ -6797,28 +6790,50 @@ function initChannelHealth() {
     panel.classList.add('hidden');
     if (chhTimer) { clearInterval(chhTimer); chhTimer = null; }
 
-    if (!isIntra) { if (tabs) tabs.classList.add('hidden'); return; }
+    // La mini-barra ya no es solo de Intra: CEFEMEX la usa para alternar entre
+    // Dashboard y Métricas, y esa pestaña sí la ve el cliente final.
+    const esCefemex = state.clientId === 'cefemex';
+    if (!tabs) return;
 
-    // Intra: mostrar la mini-barra; el panel vive detrás de la pestaña "Salud de Canales".
-    if (tabs) {
-        tabs.classList.remove('hidden');
-        tabs.querySelectorAll('.intra-tab').forEach(b =>
-            b.classList.toggle('active', b.dataset.intra === 'dashboard'));
-    }
+    const btnCanales = document.getElementById('tab-btn-canales');
+    if (btnCanales) btnCanales.classList.toggle('hidden', !isIntra);
+    const btnMetricas = document.getElementById('tab-btn-metricas');
+    if (btnMetricas) btnMetricas.classList.toggle('hidden', !esCefemex);
+
+    if (!isIntra && !esCefemex) { tabs.classList.add('hidden'); return; }
+
+    tabs.classList.remove('hidden');
+    tabs.querySelectorAll('.intra-tab').forEach(b =>
+        b.classList.toggle('active', b.dataset.intra === 'dashboard'));
 }
 
-// Mini-barra Intra: alterna entre el dashboard normal y el panel Salud de Canales.
-// Solo se invoca desde botones que únicamente existen para admin (gateados en initChannelHealth).
+// Mini-barra: alterna entre el dashboard normal, Métricas (CEFEMEX) y el panel
+// Salud de Canales (solo admin). Cada botón está gateado en initChannelHealth.
 function switchIntraTab(which) {
     const tabs = document.getElementById('intra-tabs');
     if (tabs) tabs.querySelectorAll('.intra-tab').forEach(b =>
         b.classList.toggle('active', b.dataset.intra === which));
 
     const panel = document.getElementById('channel-health-panel');
+    const metricsPanel = document.getElementById('cefemex-metrics-panel');
     const hotelTabs = document.getElementById('hotel-tabs');
     const isHotel = state.clientType === 'hotel';
 
-    if (which === 'canales') {
+    if (which !== 'metricas' && metricsPanel) metricsPanel.classList.add('hidden');
+
+    if (which === 'metricas') {
+        document.querySelectorAll('.content-header-row, .dashboard-grid')
+            .forEach(el => el.classList.add('hidden'));
+        ['hospedaje-panel', 'eventos-panel', 'social-listening-panel', 'restaurant-panel', 'eventos-pipeline-cta']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+        if (hotelTabs) hotelTabs.classList.add('hidden');
+        if (panel) panel.classList.add('hidden');
+        if (chhTimer) { clearInterval(chhTimer); chhTimer = null; }
+        if (metricsPanel) {
+            metricsPanel.classList.remove('hidden');
+            if (typeof initCefemexMetrics === 'function') initCefemexMetrics();
+        }
+    } else if (which === 'canales') {
         // Ocultar todo el contenido del dashboard; dejar visible solo Salud de Canales.
         document.querySelectorAll('.content-header-row, .dashboard-grid')
             .forEach(el => el.classList.add('hidden'));

@@ -4684,9 +4684,6 @@
                         <ion-icon name="star-outline"></ion-icon><span>Reputación</span>
                         <span id="sl-new-badge" class="rest-new-badge"></span>
                     </button>
-                    <button class="dash-tab hidden" data-tab="metricas" id="tab-btn-metricas">
-                        <ion-icon name="bar-chart-outline"></ion-icon><span>Métricas</span>
-                    </button>
                 </div>
             </div>
 
@@ -4743,7 +4740,12 @@
                 <button class="intra-tab active" data-intra="dashboard" onclick="switchIntraTab('dashboard')">
                     <ion-icon name="grid-outline"></ion-icon><span>Dashboard</span>
                 </button>
-                <button class="intra-tab" data-intra="canales" onclick="switchIntraTab('canales')">
+                <!-- Métricas: solo CEFEMEX. A diferencia de "Salud de Canales", el
+                     cliente final SÍ la ve (no está gateada por rol). -->
+                <button class="intra-tab hidden" id="tab-btn-metricas" data-intra="metricas" onclick="switchIntraTab('metricas')">
+                    <ion-icon name="bar-chart-outline"></ion-icon><span>Métricas</span>
+                </button>
+                <button class="intra-tab hidden" id="tab-btn-canales" data-intra="canales" onclick="switchIntraTab('canales')">
                     <ion-icon name="pulse-outline"></ion-icon><span>Salud de Canales</span>
                     <span class="intra-tab-badge">Intra</span>
                 </button>
@@ -5109,7 +5111,7 @@
                     .cmx-note ion-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; color: #FBBF24; }
                     .cmx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
                     .cmx-table-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px 22px; }
-                    .cmx-table-wrapper { overflow: auto; max-height: 560px; border-radius: 12px; border: 1px solid var(--border-subtle); }
+                    .cmx-table-wrapper { overflow: auto; max-height: calc(100vh - 300px); min-height: 480px; border-radius: 12px; border: 1px solid var(--border-subtle); }
                     .cmx-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.82rem; white-space: nowrap; }
                     .cmx-table thead th { position: sticky; top: 0; z-index: 3; background: #1B1836; color: var(--text-secondary); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px; text-align: left; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border-subtle); }
                     [data-theme="light"] .cmx-table thead th { background: #FFFFFF; }
@@ -5143,6 +5145,13 @@
                     .cmx-criterios-body dt { font-weight: 600; color: var(--text-primary); }
                     .cmx-criterios-body dd { margin: 0 0 6px; color: var(--text-muted); }
                     .cmx-state-msg { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+                    /* Réplica de .range-opt / #current-range-label, que llevan clase e id
+                       propios para no colisionar con los handlers del dashboard. */
+                    .cmx-range-opt { background: transparent; border: none; padding: 10px 16px; color: var(--text-secondary); text-align: left; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 0.92rem; transition: all .15s ease; }
+                    .cmx-range-opt:hover { background: rgba(196,168,255,0.08); color: var(--text-primary); }
+                    [data-theme="light"] .cmx-range-opt { color: #475569; }
+                    [data-theme="light"] .cmx-range-opt:hover { background: #F8FAFC; color: #0F172A; }
+                    .range-display #cmx-range-label { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
                 </style>
 
                 <div class="cmx-toolbar">
@@ -5151,7 +5160,31 @@
                             <button type="button" class="cmx-por-btn active" data-vista="cierres">Cerrados</button>
                             <button type="button" class="cmx-por-btn" data-vista="activos">Activos</button>
                         </div>
-                        <input type="text" id="cmx-date-range" class="cmx-date-input" placeholder="Mes en curso" readonly>
+                        <!-- Mismo selector de rango que el dashboard. Clases propias en
+                             las opciones: dashboard.js engancha .range-opt globalmente. -->
+                        <div class="global-range-selector">
+                            <div class="range-display" id="cmx-range-toggle">
+                                <ion-icon name="calendar-outline"></ion-icon>
+                                <span id="cmx-range-label">Mes en curso</span>
+                                <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
+                            </div>
+                            <div class="range-dropdown hidden" id="cmx-range-dropdown">
+                                <div class="custom-range-inputs">
+                                    <span class="label">Seleccionar rango personalizado:</span>
+                                    <div class="inputs-row">
+                                        <input type="text" id="cmx-date-range" class="range-input-field full-width"
+                                            placeholder="Clic para abrir calendario..." readonly>
+                                    </div>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <button class="cmx-range-opt" data-range="today">Hoy</button>
+                                <button class="cmx-range-opt" data-range="7d">Últimos 7 días</button>
+                                <button class="cmx-range-opt" data-range="30d">Últimos 30 días</button>
+                                <button class="cmx-range-opt" data-range="this-month">Este mes</button>
+                                <button class="cmx-range-opt" data-range="last-month">Mes pasado</button>
+                                <button class="cmx-range-opt" data-range="all">Todo el tiempo</button>
+                            </div>
+                        </div>
                         <!-- Los valores de "por" dependen de la vista: se pintan desde JS. -->
                         <div class="cmx-por-toggle" id="cmx-por-toggle"></div>
                     </div>
@@ -6137,8 +6170,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260805-cmx1"></script>
-    <script src="src/metrics-cefemex.js?v=20260805-cmx3"></script>
+    <script src="src/dashboard.js?v=20260805-cmx4"></script>
+    <script src="src/metrics-cefemex.js?v=20260805-cmx4"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
