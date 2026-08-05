@@ -5106,6 +5106,10 @@
                     .cmx-range-opt.active { background: var(--accent-purple-glow); color: var(--accent-purple); font-weight: 600; }
                     .cmx-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
                     .cmx-btn:hover { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.3); color: var(--accent-purple); }
+                    /* Descarga: solo ícono, para no competir con los filtros. */
+                    .cmx-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; transition: all .15s ease; }
+                    .cmx-icon-btn ion-icon { font-size: 1.25rem; }
+                    .cmx-icon-btn:hover { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.3); color: var(--accent-purple); }
                     .cmx-note { font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; display: flex; gap: 8px; align-items: flex-start; }
                     .cmx-note ion-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; color: #FBBF24; }
                     .cmx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
@@ -5182,6 +5186,15 @@
                             <button class="cmx-range-opt" data-vista="activos">Activos</button>
                         </div>
                     </div>
+                    <!-- Filtrar por: las opciones dependen de la vista, se pintan desde JS. -->
+                    <div class="global-range-selector">
+                        <div class="range-display" id="cmx-por-toggle">
+                            <ion-icon name="funnel-outline"></ion-icon>
+                            <span id="cmx-por-label">Por cierre</span>
+                            <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
+                        </div>
+                        <div class="range-dropdown hidden" id="cmx-por-dropdown"></div>
+                    </div>
                     <!-- Rango de fechas. Clases propias en las opciones:
                          dashboard.js engancha .range-opt globalmente. -->
                     <div class="global-range-selector">
@@ -5207,17 +5220,9 @@
                             <button class="cmx-range-opt" data-range="all">Todo el tiempo</button>
                         </div>
                     </div>
-                    <!-- Filtrar por: las opciones dependen de la vista, se pintan desde JS. -->
-                    <div class="global-range-selector">
-                        <div class="range-display" id="cmx-por-toggle">
-                            <ion-icon name="funnel-outline"></ion-icon>
-                            <span id="cmx-por-label">Por cierre</span>
-                            <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
-                        </div>
-                        <div class="range-dropdown hidden" id="cmx-por-dropdown"></div>
-                    </div>
-                    <button type="button" class="cmx-btn" id="cmx-excel-btn" onclick="downloadCefemexMetricsExcel()">
-                        <ion-icon name="download-outline"></ion-icon> Descargar Excel
+                    <button type="button" class="cmx-icon-btn" id="cmx-excel-btn" title="Descargar Excel"
+                        aria-label="Descargar Excel" onclick="downloadCefemexMetricsExcel()">
+                        <ion-icon name="download-outline"></ion-icon>
                     </button>
                 </div>
 
@@ -6199,7 +6204,7 @@
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
     <script src="src/dashboard.js?v=20260805-cmx4"></script>
-    <script src="src/metrics-cefemex.js?v=20260805-cmx9"></script>
+    <script src="src/metrics-cefemex.js?v=20260805-cmx10"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
