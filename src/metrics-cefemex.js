@@ -69,24 +69,47 @@ function initCefemexMetrics() {
     fetchCefemexMetrics();
 }
 
+// Los tres filtros son dropdowns con el mismo comportamiento; solo cambia
+// qué hace cada opción al elegirse.
+const CMX_DROPDOWNS = [
+    { toggle: 'cmx-vista-toggle', menu: 'cmx-vista-dropdown' },
+    { toggle: 'cmx-range-toggle', menu: 'cmx-range-dropdown' },
+    { toggle: 'cmx-por-toggle', menu: 'cmx-por-dropdown' },
+];
+
+function cmxCloseAllDropdowns() {
+    CMX_DROPDOWNS.forEach(d => {
+        const menu = document.getElementById(d.menu);
+        const toggle = document.getElementById(d.toggle);
+        if (menu) menu.classList.add('hidden');
+        const chev = toggle && toggle.querySelector('.chevron');
+        if (chev) chev.style.transform = 'rotate(0deg)';
+    });
+}
+
 function setupCefemexMetricsControls() {
-    const toggle = document.getElementById('cmx-range-toggle');
-    const dropdown = document.getElementById('cmx-range-dropdown');
-    if (toggle && dropdown) {
+    CMX_DROPDOWNS.forEach(d => {
+        const toggle = document.getElementById(d.toggle);
+        const menu = document.getElementById(d.menu);
+        if (!toggle || !menu) return;
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            dropdown.classList.toggle('hidden');
-            const chev = toggle.querySelector('.chevron');
-            if (chev) chev.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+            const abierto = !menu.classList.contains('hidden');
+            cmxCloseAllDropdowns();
+            if (!abierto) {
+                menu.classList.remove('hidden');
+                const chev = toggle.querySelector('.chevron');
+                if (chev) chev.style.transform = 'rotate(180deg)';
+            }
         });
-        document.addEventListener('click', () => cmxCloseRangeDropdown());
-        dropdown.addEventListener('click', (e) => e.stopPropagation());
-    }
+        menu.addEventListener('click', (e) => e.stopPropagation());
+    });
+    document.addEventListener('click', () => cmxCloseAllDropdowns());
 
-    document.querySelectorAll('.cmx-range-opt').forEach(opt => {
+    document.querySelectorAll('#cmx-range-dropdown .cmx-range-opt').forEach(opt => {
         opt.addEventListener('click', () => {
             cmxSetPredefinedRange(opt.dataset.range, opt.textContent.trim());
-            cmxCloseRangeDropdown();
+            cmxCloseAllDropdowns();
         });
     });
 
@@ -104,29 +127,32 @@ function setupCefemexMetricsControls() {
                     hasta.setHours(23, 59, 59, 999);
                     cefemexMetrics.hasta = hasta;
                     cmxSetRangeLabel('Rango personalizado');
-                    cmxCloseRangeDropdown();
+                    cmxCloseAllDropdowns();
                     fetchCefemexMetrics();
                 }
             }
         });
     }
 
-    const vistaToggle = document.getElementById('cmx-vista-toggle');
-    if (vistaToggle) {
-        vistaToggle.querySelectorAll('[data-vista]').forEach(btn => {
-            btn.addEventListener('click', () => cmxSetVista(btn.dataset.vista));
+    document.querySelectorAll('#cmx-vista-dropdown [data-vista]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            cmxCloseAllDropdowns();
+            cmxSetVista(btn.dataset.vista);
         });
-    }
-
+    });
+    cmxSyncVistaUI();
     cmxRenderPorToggle();
 }
 
-function cmxCloseRangeDropdown() {
-    const dropdown = document.getElementById('cmx-range-dropdown');
-    const toggle = document.getElementById('cmx-range-toggle');
-    if (dropdown) dropdown.classList.add('hidden');
-    const chev = toggle && toggle.querySelector('.chevron');
-    if (chev) chev.style.transform = 'rotate(0deg)';
+function cmxSyncVistaUI() {
+    document.querySelectorAll('#cmx-vista-dropdown [data-vista]').forEach(b => {
+        const activo = b.dataset.vista === cefemexMetrics.vista;
+        b.classList.toggle('active', activo);
+        if (activo) {
+            const label = document.getElementById('cmx-vista-label');
+            if (label) label.textContent = b.textContent.trim();
+        }
+    });
 }
 
 function cmxSetRangeLabel(txt) {
@@ -170,6 +196,8 @@ function cmxSetPredefinedRange(range, label) {
     cefemexMetrics.desde = start;
     cefemexMetrics.hasta = end;
     cmxSetRangeLabel(label || 'Rango');
+    document.querySelectorAll('#cmx-range-dropdown .cmx-range-opt').forEach(o =>
+        o.classList.toggle('active', o.dataset.range === range));
     if (cefemexMetrics.flatpickr) cefemexMetrics.flatpickr.setDate([start, end], false);
     fetchCefemexMetrics();
 }
@@ -182,28 +210,28 @@ function cmxSetVista(vista) {
     cefemexMetrics.sortCol = CMX_VISTAS[vista].sortDefault;
     cefemexMetrics.sortDir = 'desc';
 
-    const vistaToggle = document.getElementById('cmx-vista-toggle');
-    if (vistaToggle) {
-        vistaToggle.querySelectorAll('[data-vista]').forEach(b => {
-            b.classList.toggle('active', b.dataset.vista === vista);
-        });
-    }
+    cmxSyncVistaUI();
     cmxRenderPorToggle();
     fetchCefemexMetrics();
 }
 
 function cmxRenderPorToggle() {
-    const cont = document.getElementById('cmx-por-toggle');
-    if (!cont) return;
+    const menu = document.getElementById('cmx-por-dropdown');
+    if (!menu) return;
     const opciones = CMX_VISTAS[cefemexMetrics.vista].porOpciones;
-    cont.innerHTML = opciones.map(o => `
-        <button type="button" class="cmx-por-btn ${o.value === cefemexMetrics.por ? 'active' : ''}" data-por="${o.value}">${escapeHtml(o.label)}</button>
+    menu.innerHTML = opciones.map(o => `
+        <button class="cmx-range-opt ${o.value === cefemexMetrics.por ? 'active' : ''}" data-por="${o.value}">${escapeHtml(o.label)}</button>
     `).join('');
-    cont.querySelectorAll('[data-por]').forEach(btn => {
+    const label = document.getElementById('cmx-por-label');
+    const activa = opciones.find(o => o.value === cefemexMetrics.por);
+    if (label && activa) label.textContent = activa.label;
+
+    menu.querySelectorAll('[data-por]').forEach(btn => {
         btn.addEventListener('click', () => {
+            cmxCloseAllDropdowns();
             if (cefemexMetrics.por === btn.dataset.por) return;
             cefemexMetrics.por = btn.dataset.por;
-            cont.querySelectorAll('[data-por]').forEach(b => b.classList.toggle('active', b === btn));
+            cmxRenderPorToggle();
             fetchCefemexMetrics();
         });
     });
@@ -361,7 +389,6 @@ function cmxRenderCards(cards) {
                 <div class="icon-box"><ion-icon name="${c.icon}"></ion-icon></div>
             </div>
             <div class="value-big">${c.value}</div>
-            <p class="cmx-card-desc">${escapeHtml(c.desc)}</p>
         </div>
     `).join('')}</div>`;
 }
@@ -369,32 +396,22 @@ function cmxRenderCards(cards) {
 function cmxBuildCardsHtml(totales) {
     if (!totales) return '';
     return cmxRenderCards([
-        { label: 'Leads en el rango', sub: 'TOTAL', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline',
-          desc: 'Leads que se cerraron dentro del periodo y sí pasaron por el proceso de crédito.' },
-        { label: 'Ganados', sub: 'CERRADOS', value: cmxNum(totales.ganados), cls: 'card-orange', icon: 'trophy-outline',
-          desc: 'De esos, los que terminaron en crédito colocado.' },
-        { label: 'Perdidos', sub: 'CERRADOS', value: cmxNum(totales.perdidos), cls: 'card-pink', icon: 'close-circle-outline',
-          desc: 'De esos, los que se cayeron antes de cerrar.' },
-        { label: 'Días en proceso · Ganado', sub: `Mediana ${fmtDias(totales.dias_en_proceso_mediana_ganado)}`, value: fmtDias(totales.dias_en_proceso_promedio_ganado), cls: 'card-purple', icon: 'trending-up-outline',
-          desc: 'Promedio de días desde que el lead entró al proceso hasta que se ganó. La mediana es el caso típico: no la mueven los casos extremos.' },
-        { label: 'Días en proceso · Perdido', sub: `Mediana ${fmtDias(totales.dias_en_proceso_mediana_perdido)}`, value: fmtDias(totales.dias_en_proceso_promedio_perdido), cls: 'card-purple', icon: 'trending-down-outline',
-          desc: 'Lo mismo para los que se perdieron: cuánto tiempo se invirtió antes de que se cayeran.' },
+        { label: 'Leads en el rango', sub: 'TOTAL', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline' },
+        { label: 'Ganados', sub: 'CERRADOS', value: cmxNum(totales.ganados), cls: 'card-orange', icon: 'trophy-outline' },
+        { label: 'Perdidos', sub: 'CERRADOS', value: cmxNum(totales.perdidos), cls: 'card-pink', icon: 'close-circle-outline' },
+        { label: 'Días en proceso · Ganado', sub: 'PROMEDIO', value: fmtDias(totales.dias_en_proceso_promedio_ganado), cls: 'card-purple', icon: 'trending-up-outline' },
+        { label: 'Días en proceso · Perdido', sub: 'PROMEDIO', value: fmtDias(totales.dias_en_proceso_promedio_perdido), cls: 'card-purple', icon: 'trending-down-outline' },
     ]);
 }
 
 function cmxBuildCardsActivosHtml(totales) {
     if (!totales) return '';
     return cmxRenderCards([
-        { label: 'Leads activos', sub: 'EN EL PROCESO', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline',
-          desc: 'Leads que hoy siguen vivos dentro del proceso de crédito: ni ganados ni perdidos.' },
-        { label: 'Monto en el embudo', sub: 'DINERO EXPUESTO', value: cmxMonto(totales.monto_total), cls: 'card-orange', icon: 'cash-outline',
-          desc: 'Suma del monto de todos los leads activos: el dinero que está en juego ahora mismo.' },
-        { label: 'Días activo · promedio', sub: `Mediana ${fmtDias(totales.dias_activo_mediana)}`, value: fmtDias(totales.dias_activo_promedio), cls: 'card-purple', icon: 'time-outline',
-          desc: 'Cuántos días llevan en promedio desde que entraron al proceso. La mediana es el caso típico.' },
-        { label: 'Días activo · máximo', sub: 'EL MÁS ESTANCADO', value: fmtDias(totales.dias_activo_max), cls: 'card-pink', icon: 'hourglass-outline',
-          desc: 'El lead que lleva más tiempo esperando sin resolverse.' },
-        { label: 'Leads que rebotaron', sub: 'SALIERON Y VOLVIERON', value: cmxNum(totales.leads_que_rebotaron), cls: 'card-orange', icon: 'repeat-outline',
-          desc: 'Salieron a una etapa fuera del proceso y regresaron. Van marcados con * en la tabla.' },
+        { label: 'Leads activos', sub: 'EN EL PROCESO', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline' },
+        { label: 'Monto en el embudo', sub: 'DINERO EXPUESTO', value: cmxMonto(totales.monto_total), cls: 'card-orange', icon: 'cash-outline' },
+        { label: 'Días activo · promedio', sub: 'PROMEDIO', value: fmtDias(totales.dias_activo_promedio), cls: 'card-purple', icon: 'time-outline' },
+        { label: 'Días activo · máximo', sub: 'EL MÁS ESTANCADO', value: fmtDias(totales.dias_activo_max), cls: 'card-pink', icon: 'hourglass-outline' },
+        { label: 'Leads que rebotaron', sub: 'SALIERON Y VOLVIERON', value: cmxNum(totales.leads_que_rebotaron), cls: 'card-orange', icon: 'repeat-outline' },
     ]);
 }
 
@@ -455,7 +472,7 @@ function cmxSortedLeads() {
 // Las columnas de etapa salen SIEMPRE de etapas[]: la config vive en Supabase
 // y puede cambiar sin tocar este código.
 function cmxEtapaHeaderCells(etapas) {
-    return etapas.map(e => `<th data-cmx-sort="${escapeHtml(e.etapa)}">${escapeHtml(e.etapa)} ${cmxSortIcon(e.etapa)}</th>`).join('');
+    return etapas.map(e => `<th class="cmx-th-etapa" data-cmx-sort="${escapeHtml(e.etapa)}">${escapeHtml(e.etapa)} ${cmxSortIcon(e.etapa)}</th>`).join('');
 }
 
 // Celda vacía ≠ cero: si la etapa no está en dias_por_etapa el lead nunca pasó

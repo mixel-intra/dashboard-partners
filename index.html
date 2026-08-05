@@ -5099,19 +5099,16 @@
             <!-- ===== PANEL DE MÉTRICAS — CEFEMEX Capital ("Días por etapa por lead") ===== -->
             <div id="cefemex-metrics-panel" class="hidden" style="padding: 0 24px 28px;">
                 <style>
-                    .cmx-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 20px 0 18px; }
-                    .cmx-toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-                    .cmx-por-toggle { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; }
-                    .cmx-por-btn { padding: 6px 13px; border: none; background: transparent; color: var(--text-secondary); font-size: 0.78rem; font-weight: 600; border-radius: 7px; cursor: pointer; }
-                    .cmx-por-btn.active { background: var(--accent-purple-glow); color: var(--accent-purple); }
-                    .cmx-date-input { padding: 8px 12px; border-radius: 9px; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-primary); font-size: 0.82rem; min-width: 220px; cursor: pointer; }
+                    .cmx-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin: 20px 0 18px; }
+                    .cmx-toolbar .range-dropdown { min-width: 190px; }
+                    /* La opción activa del dropdown se marca, ya que el control
+                       colapsado solo muestra la etiqueta seleccionada. */
+                    .cmx-range-opt.active { background: var(--accent-purple-glow); color: var(--accent-purple); font-weight: 600; }
                     .cmx-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
                     .cmx-btn:hover { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.3); color: var(--accent-purple); }
                     .cmx-note { font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; display: flex; gap: 8px; align-items: flex-start; }
                     .cmx-note ion-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; color: #FBBF24; }
-                    .cmx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 20px; align-items: stretch; }
-                    .cmx-cards .card-quantix { height: 100%; }
-                    .cmx-card-desc { margin: 6px 0 0; font-size: 0.74rem; line-height: 1.45; color: var(--text-muted); }
+                    .cmx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
                     .cmx-table-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px 22px; }
                     /* Sin min-height: con pocas filas la tabla se ajusta al contenido;
                        con muchas crece hasta llenar la ventana. */
@@ -5120,6 +5117,10 @@
                     .cmx-table thead th { position: sticky; top: 0; z-index: 3; background: #1B1836; color: var(--text-secondary); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px; text-align: left; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border-subtle); }
                     [data-theme="light"] .cmx-table thead th { background: #FFFFFF; }
                     .cmx-table thead th ion-icon { font-size: 0.75rem; margin-left: 4px; vertical-align: -1px; opacity: 0.5; }
+                    /* Las etapas son el dato principal de la tabla: se distinguen de las
+                       columnas de contexto (Lead, fechas, totales). */
+                    .cmx-table thead th.cmx-th-etapa { color: var(--accent-purple); font-size: 0.82rem; font-weight: 750; letter-spacing: 0.2px; border-bottom: 2px solid var(--accent-purple); }
+                    .cmx-table thead th.cmx-th-etapa ion-icon { opacity: 0.7; }
                     .cmx-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
                     .cmx-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
                     /* Columnas congeladas: el left de cada una debe coincidir con el
@@ -5131,6 +5132,14 @@
                        estira la celda y el ancho real deja de coincidir con el left. */
                     .cmx-col-sticky-etapa { left: 120px; width: 190px; min-width: 190px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
                     .cmx-table thead th.cmx-col-sticky-lead, .cmx-table thead th.cmx-col-sticky-result, .cmx-table thead th.cmx-col-sticky-etapa { z-index: 4; }
+                    /* El hover genérico es translúcido y dejaba ver por debajo las
+                       columnas que se deslizan: las congeladas necesitan un hover opaco. */
+                    .cmx-table tbody tr:hover td.cmx-col-sticky-lead,
+                    .cmx-table tbody tr:hover td.cmx-col-sticky-result,
+                    .cmx-table tbody tr:hover td.cmx-col-sticky-etapa { background: #12102A; }
+                    [data-theme="light"] .cmx-table tbody tr:hover td.cmx-col-sticky-lead,
+                    [data-theme="light"] .cmx-table tbody tr:hover td.cmx-col-sticky-result,
+                    [data-theme="light"] .cmx-table tbody tr:hover td.cmx-col-sticky-etapa { background: #EEF1F6; }
                     .cmx-day-cell { text-align: right; font-variant-numeric: tabular-nums; }
                     .cmx-day-empty { color: var(--text-muted); text-align: center; }
                     .cmx-badge-ganado { color: var(--accent-green); font-weight: 700; }
@@ -5155,42 +5164,57 @@
                     .cmx-range-opt:hover { background: rgba(196,168,255,0.08); color: var(--text-primary); }
                     [data-theme="light"] .cmx-range-opt { color: #475569; }
                     [data-theme="light"] .cmx-range-opt:hover { background: #F8FAFC; color: #0F172A; }
-                    .range-display #cmx-range-label { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+                    .range-display #cmx-range-label,
+                    .range-display #cmx-vista-label,
+                    .range-display #cmx-por-label { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
                 </style>
 
                 <div class="cmx-toolbar">
-                    <div class="cmx-toolbar-left">
-                        <div class="cmx-por-toggle" id="cmx-vista-toggle">
-                            <button type="button" class="cmx-por-btn active" data-vista="cierres">Cerrados</button>
-                            <button type="button" class="cmx-por-btn" data-vista="activos">Activos</button>
+                    <!-- Vista -->
+                    <div class="global-range-selector">
+                        <div class="range-display" id="cmx-vista-toggle">
+                            <ion-icon name="layers-outline"></ion-icon>
+                            <span id="cmx-vista-label">Cerrados</span>
+                            <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
                         </div>
-                        <!-- Mismo selector de rango que el dashboard. Clases propias en
-                             las opciones: dashboard.js engancha .range-opt globalmente. -->
-                        <div class="global-range-selector">
-                            <div class="range-display" id="cmx-range-toggle">
-                                <ion-icon name="calendar-outline"></ion-icon>
-                                <span id="cmx-range-label">Mes en curso</span>
-                                <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
-                            </div>
-                            <div class="range-dropdown hidden" id="cmx-range-dropdown">
-                                <div class="custom-range-inputs">
-                                    <span class="label">Seleccionar rango personalizado:</span>
-                                    <div class="inputs-row">
-                                        <input type="text" id="cmx-date-range" class="range-input-field full-width"
-                                            placeholder="Clic para abrir calendario..." readonly>
-                                    </div>
+                        <div class="range-dropdown hidden" id="cmx-vista-dropdown">
+                            <button class="cmx-range-opt" data-vista="cierres">Cerrados</button>
+                            <button class="cmx-range-opt" data-vista="activos">Activos</button>
+                        </div>
+                    </div>
+                    <!-- Rango de fechas. Clases propias en las opciones:
+                         dashboard.js engancha .range-opt globalmente. -->
+                    <div class="global-range-selector">
+                        <div class="range-display" id="cmx-range-toggle">
+                            <ion-icon name="calendar-outline"></ion-icon>
+                            <span id="cmx-range-label">Mes en curso</span>
+                            <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
+                        </div>
+                        <div class="range-dropdown hidden" id="cmx-range-dropdown">
+                            <div class="custom-range-inputs">
+                                <span class="label">Seleccionar rango personalizado:</span>
+                                <div class="inputs-row">
+                                    <input type="text" id="cmx-date-range" class="range-input-field full-width"
+                                        placeholder="Clic para abrir calendario..." readonly>
                                 </div>
-                                <div class="dropdown-divider"></div>
-                                <button class="cmx-range-opt" data-range="today">Hoy</button>
-                                <button class="cmx-range-opt" data-range="7d">Últimos 7 días</button>
-                                <button class="cmx-range-opt" data-range="30d">Últimos 30 días</button>
-                                <button class="cmx-range-opt" data-range="this-month">Este mes</button>
-                                <button class="cmx-range-opt" data-range="last-month">Mes pasado</button>
-                                <button class="cmx-range-opt" data-range="all">Todo el tiempo</button>
                             </div>
+                            <div class="dropdown-divider"></div>
+                            <button class="cmx-range-opt" data-range="today">Hoy</button>
+                            <button class="cmx-range-opt" data-range="7d">Últimos 7 días</button>
+                            <button class="cmx-range-opt" data-range="30d">Últimos 30 días</button>
+                            <button class="cmx-range-opt" data-range="this-month">Este mes</button>
+                            <button class="cmx-range-opt" data-range="last-month">Mes pasado</button>
+                            <button class="cmx-range-opt" data-range="all">Todo el tiempo</button>
                         </div>
-                        <!-- Los valores de "por" dependen de la vista: se pintan desde JS. -->
-                        <div class="cmx-por-toggle" id="cmx-por-toggle"></div>
+                    </div>
+                    <!-- Filtrar por: las opciones dependen de la vista, se pintan desde JS. -->
+                    <div class="global-range-selector">
+                        <div class="range-display" id="cmx-por-toggle">
+                            <ion-icon name="funnel-outline"></ion-icon>
+                            <span id="cmx-por-label">Por cierre</span>
+                            <ion-icon name="chevron-down-outline" class="chevron"></ion-icon>
+                        </div>
+                        <div class="range-dropdown hidden" id="cmx-por-dropdown"></div>
                     </div>
                     <button type="button" class="cmx-btn" id="cmx-excel-btn" onclick="downloadCefemexMetricsExcel()">
                         <ion-icon name="download-outline"></ion-icon> Descargar Excel
@@ -6175,7 +6199,7 @@
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
     <script src="src/dashboard.js?v=20260805-cmx4"></script>
-    <script src="src/metrics-cefemex.js?v=20260805-cmx6"></script>
+    <script src="src/metrics-cefemex.js?v=20260805-cmx9"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
