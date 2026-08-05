@@ -5118,13 +5118,19 @@
                        solo el fallback antes del primer ajuste. */
                     .cmx-table-wrapper { overflow: auto; max-height: calc(100vh - 300px); border-radius: 12px; border: 1px solid var(--border-subtle); }
                     .cmx-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.82rem; white-space: nowrap; }
-                    .cmx-table thead th { position: sticky; top: 0; z-index: 3; background: #1B1836; color: var(--text-secondary); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px; text-align: left; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border-subtle); }
+                    /* Los nombres largos de etapa se parten en dos líneas: si van en una
+                       sola, la tabla se va innecesariamente a lo ancho. */
+                    .cmx-table thead th { position: sticky; top: 0; z-index: 3; background: #1B1836; color: var(--text-secondary); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px; text-align: left; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border-subtle); white-space: normal; max-width: 155px; vertical-align: bottom; line-height: 1.3; }
                     [data-theme="light"] .cmx-table thead th { background: #FFFFFF; }
                     .cmx-table thead th ion-icon { font-size: 0.75rem; margin-left: 4px; vertical-align: -1px; opacity: 0.5; }
                     /* Las etapas son el dato principal de la tabla: se distinguen de las
                        columnas de contexto (Lead, fechas, totales). */
                     .cmx-table thead th.cmx-th-etapa { color: var(--accent-purple); font-size: 0.82rem; font-weight: 750; letter-spacing: 0.2px; border-bottom: 2px solid var(--accent-purple); }
                     .cmx-table thead th.cmx-th-etapa ion-icon { opacity: 0.7; }
+                    /* El total de días va pegado a la fecha de entrada, antes de las
+                       etapas, y se separa de ellas con una línea. */
+                    .cmx-table th.cmx-th-total, .cmx-table td.cmx-td-total { border-right: 1px solid var(--border-subtle); }
+                    .cmx-table thead th.cmx-th-total { color: var(--text-primary); }
                     .cmx-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
                     .cmx-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
                     /* Columnas congeladas: el left de cada una debe coincidir con el
@@ -6204,7 +6210,7 @@
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
     <script src="src/dashboard.js?v=20260805-cmx4"></script>
-    <script src="src/metrics-cefemex.js?v=20260805-cmx13"></script>
+    <script src="src/metrics-cefemex.js?v=20260805-cmx14"></script>
 
     <!-- Client Switcher Drawer -->
     <style>

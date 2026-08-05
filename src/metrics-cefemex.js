@@ -526,8 +526,8 @@ function cmxBuildTableCierresHtml() {
         `<th class="cmx-col-sticky-result" data-cmx-sort="resultado">Resultado ${cmxSortIcon('resultado')}</th>`,
         `<th data-cmx-sort="creado_en">Creado ${cmxSortIcon('creado_en')}</th>`,
         `<th data-cmx-sort="cerrado_en">Cerrado ${cmxSortIcon('cerrado_en')}</th>`,
+        `<th class="cmx-th-total" data-cmx-sort="dias_en_proceso">Total en proceso ${cmxSortIcon('dias_en_proceso')}</th>`,
         cmxEtapaHeaderCells(etapas),
-        `<th data-cmx-sort="dias_en_proceso">Total en proceso ${cmxSortIcon('dias_en_proceso')}</th>`,
         `<th data-cmx-sort="etapas_count">Etapas ${cmxSortIcon('etapas_count')}</th>`,
     ].join('');
 
@@ -541,14 +541,15 @@ function cmxBuildTableCierresHtml() {
             <td class="cmx-col-sticky-result ${resultClass}">${escapeHtml(lead.resultado || '—')}</td>
             <td>${fmtFecha(lead.creado_en)}</td>
             <td>${fmtFecha(lead.cerrado_en)}</td>
+            <td class="cmx-day-cell cmx-td-total" ${totalStyle}>${fmtDias(lead.dias_en_proceso)}</td>
             ${cmxEtapaBodyCells(etapas, dxe, null)}
-            <td class="cmx-day-cell" ${totalStyle}>${fmtDias(lead.dias_en_proceso)}</td>
             <td>${Object.keys(dxe).length}</td>
         </tr>`;
     }).join('');
 
-    // colspan 4 = Lead, Resultado, Creado, Cerrado (las columnas previas a etapas).
-    const foot = cmxBuildFooterRow(etapas, leads, 'dias_en_proceso', 4, 2);
+    // colspan 5 = Lead, Resultado, Creado, Cerrado, Total (previas a etapas);
+    // después de las etapas solo queda "Etapas".
+    const foot = cmxBuildFooterRow(etapas, leads, 'dias_en_proceso', 5, 1);
 
     return `
         <div class="cmx-table-wrapper">
@@ -570,8 +571,8 @@ function cmxBuildTableActivosHtml() {
         `<th class="cmx-col-sticky-lead" data-cmx-sort="lead_id">Lead ID ${cmxSortIcon('lead_id')}</th>`,
         `<th class="cmx-col-sticky-etapa" data-cmx-sort="etapa_actual">Etapa actual ${cmxSortIcon('etapa_actual')}</th>`,
         `<th data-cmx-sort="entro_al_proceso_en">Entró al proceso ${cmxSortIcon('entro_al_proceso_en')}</th>`,
+        `<th class="cmx-th-total" data-cmx-sort="dias_activo">Días activo ${cmxSortIcon('dias_activo')}</th>`,
         cmxEtapaHeaderCells(etapas),
-        `<th data-cmx-sort="dias_activo">Días activo ${cmxSortIcon('dias_activo')}</th>`,
         `<th data-cmx-sort="precio">Monto ${cmxSortIcon('precio')}</th>`,
     ].join('');
 
@@ -591,14 +592,15 @@ function cmxBuildTableActivosHtml() {
             <td class="cmx-col-sticky-lead">${escapeHtml(lead.lead_id)}${marca}</td>
             <td class="cmx-col-sticky-etapa" title="${escapeHtml(lead.etapa_actual || '')}">${escapeHtml(lead.etapa_actual || '—')}</td>
             <td>${fmtFecha(lead.entro_al_proceso_en)}</td>
+            <td class="cmx-day-cell cmx-td-total" ${totalStyle}>${fmtDias(lead.dias_activo)}</td>
             ${cmxEtapaBodyCells(etapas, dxe, lead.etapa_actual)}
-            <td class="cmx-day-cell" ${totalStyle}>${fmtDias(lead.dias_activo)}</td>
             <td class="cmx-day-cell">${cmxMonto(lead.precio)}</td>
         </tr>`;
     }).join('');
 
-    // colspan 3 = Lead, Etapa actual, Entró al proceso.
-    const foot = cmxBuildFooterRow(etapas, leads, 'dias_activo', 3, 2);
+    // colspan 4 = Lead, Etapa actual, Entró al proceso, Días activo;
+    // después de las etapas solo queda "Monto".
+    const foot = cmxBuildFooterRow(etapas, leads, 'dias_activo', 4, 1);
 
     return `
         <div class="cmx-table-wrapper">
