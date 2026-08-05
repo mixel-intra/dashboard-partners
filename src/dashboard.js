@@ -543,6 +543,13 @@ function initHotelTabs() {
             });
         });
 
+        // "Métricas" es exclusivo de CEFEMEX Capital — no es un hotel_service,
+        // así que se controla aparte del loop de arriba.
+        const metricsTabBtn = document.getElementById('tab-btn-metricas');
+        if (metricsTabBtn) {
+            metricsTabBtn.classList.toggle('hidden', state.clientId !== 'cefemex');
+        }
+
         // Hotel-specific overrides
         document.getElementById('table-title').textContent = 'Últimas cotizaciones enviadas a ventas';
         document.getElementById('main-chart-title').textContent = 'Histórico de cotizaciones de eventos canalizados a ventas';
@@ -617,15 +624,17 @@ function switchDashTab(tab) {
         });
     }
 
-    // Toggle between regular dashboard and special panels (restaurant, social listening)
+    // Toggle between regular dashboard and special panels (restaurant, social listening, métricas)
     const dashboardGrid = document.querySelector('.dashboard-grid');
     const restaurantPanel = document.getElementById('restaurant-panel');
     const socialListeningPanel = document.getElementById('social-listening-panel');
+    const metricsPanel = document.getElementById('cefemex-metrics-panel');
     const contentHeaderRow = document.querySelector('.content-header-row');
 
     // Always hide the panels we are not switching to
     if (tab !== 'restaurante' && restaurantPanel) restaurantPanel.classList.add('hidden');
     if (tab !== 'social_listening' && socialListeningPanel) socialListeningPanel.classList.add('hidden');
+    if (tab !== 'metricas' && metricsPanel) metricsPanel.classList.add('hidden');
 
     if (tab === 'restaurante') {
         if (dashboardGrid) dashboardGrid.classList.add('hidden');
@@ -644,6 +653,13 @@ function switchDashTab(tab) {
             socialListeningPanel.classList.remove('hidden');
             if (!state.socialListeningLoaded) fetchSocialListeningReviews();
             else renderSocialListeningPanel();
+        }
+    } else if (tab === 'metricas') {
+        if (dashboardGrid) dashboardGrid.classList.add('hidden');
+        if (contentHeaderRow) contentHeaderRow.classList.add('hidden');
+        if (metricsPanel) {
+            metricsPanel.classList.remove('hidden');
+            if (typeof initCefemexMetrics === 'function') initCefemexMetrics();
         }
     } else {
         if (dashboardGrid) dashboardGrid.classList.remove('hidden');

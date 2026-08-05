@@ -4672,6 +4672,9 @@
                         <ion-icon name="star-outline"></ion-icon><span>Reputación</span>
                         <span id="sl-new-badge" class="rest-new-badge"></span>
                     </button>
+                    <button class="dash-tab hidden" data-tab="metricas" id="tab-btn-metricas">
+                        <ion-icon name="bar-chart-outline"></ion-icon><span>Métricas</span>
+                    </button>
                 </div>
             </div>
 
@@ -5077,6 +5080,64 @@
             <!-- Eventos Pipeline (full-screen, toggled from dashboard) -->
             <div id="eventos-panel" class="evt-panel-full hidden" style="padding: 0 24px 24px;">
                 <!-- Content injected by renderEventosPanel() -->
+            </div>
+
+            <!-- ===== PANEL DE MÉTRICAS — CEFEMEX Capital ("Días por etapa por lead") ===== -->
+            <div id="cefemex-metrics-panel" class="hidden" style="padding: 0 24px 28px;">
+                <style>
+                    .cmx-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 20px 0 18px; }
+                    .cmx-toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+                    .cmx-por-toggle { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; }
+                    .cmx-por-btn { padding: 6px 13px; border: none; background: transparent; color: var(--text-secondary); font-size: 0.78rem; font-weight: 600; border-radius: 7px; cursor: pointer; }
+                    .cmx-por-btn.active { background: var(--accent-purple-glow); color: var(--accent-purple); }
+                    .cmx-date-input { padding: 8px 12px; border-radius: 9px; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-primary); font-size: 0.82rem; min-width: 220px; cursor: pointer; }
+                    .cmx-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+                    .cmx-btn:hover { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.3); color: #A78BFA; }
+                    .cmx-note { font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; display: flex; gap: 8px; align-items: flex-start; }
+                    .cmx-note ion-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; color: #FBBF24; }
+                    .cmx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+                    .cmx-table-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px 22px; }
+                    .cmx-table-wrapper { overflow: auto; max-height: 560px; border-radius: 12px; border: 1px solid var(--border-subtle); }
+                    .cmx-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.82rem; white-space: nowrap; }
+                    .cmx-table thead th { position: sticky; top: 0; z-index: 3; background: #1B1836; color: var(--text-secondary); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px; text-align: left; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border-subtle); }
+                    [data-theme="light"] .cmx-table thead th { background: #FFFFFF; }
+                    .cmx-table thead th ion-icon { font-size: 0.75rem; margin-left: 4px; vertical-align: -1px; opacity: 0.5; }
+                    .cmx-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
+                    .cmx-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+                    .cmx-col-sticky-lead, .cmx-col-sticky-result { position: sticky; background: var(--bg-app); z-index: 2; }
+                    .cmx-col-sticky-lead { left: 0; width: 120px; min-width: 120px; }
+                    .cmx-col-sticky-result { left: 120px; width: 100px; min-width: 100px; }
+                    .cmx-table thead th.cmx-col-sticky-lead, .cmx-table thead th.cmx-col-sticky-result { z-index: 4; }
+                    .cmx-day-cell { text-align: right; font-variant-numeric: tabular-nums; }
+                    .cmx-day-empty { color: var(--text-muted); text-align: center; }
+                    .cmx-badge-ganado { color: #16A34A; font-weight: 700; }
+                    .cmx-badge-perdido { color: #DC2626; font-weight: 700; }
+                    .cmx-tfoot td { padding: 9px 12px; font-weight: 600; color: var(--text-secondary); border-top: 2px solid var(--border-subtle); background: var(--bg-card); }
+                    .cmx-descartados { margin-top: 12px; font-size: 0.78rem; color: var(--text-muted); }
+                    .cmx-criterios { margin-top: 14px; }
+                    .cmx-criterios summary { cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); padding: 8px 0; }
+                    .cmx-criterios-body { padding: 10px 4px 4px; font-size: 0.8rem; color: var(--text-secondary); display: grid; gap: 6px; }
+                    .cmx-criterios-body dt { font-weight: 600; color: var(--text-primary); }
+                    .cmx-criterios-body dd { margin: 0 0 6px; color: var(--text-muted); }
+                    .cmx-state-msg { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+                </style>
+
+                <div class="cmx-toolbar">
+                    <div class="cmx-toolbar-left">
+                        <input type="text" id="cmx-date-range" class="cmx-date-input" placeholder="Mes en curso" readonly>
+                        <div class="cmx-por-toggle" id="cmx-por-toggle">
+                            <button type="button" class="cmx-por-btn active" data-por="cierre">Por cierre</button>
+                            <button type="button" class="cmx-por-btn" data-por="creacion">Por creación</button>
+                        </div>
+                    </div>
+                    <button type="button" class="cmx-btn" id="cmx-excel-btn" onclick="downloadCefemexMetricsExcel()">
+                        <ion-icon name="download-outline"></ion-icon> Descargar Excel
+                    </button>
+                </div>
+
+                <div id="cmx-content">
+                    <div class="cmx-state-msg">Cargando métricas…</div>
+                </div>
             </div>
 
             <!-- ===== PANEL DE SOCIAL LISTENING — REPUTACIÓN (Editorial Intelligence) ===== -->
