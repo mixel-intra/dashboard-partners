@@ -611,6 +611,20 @@ function initHotelTabs() {
             const el = document.getElementById(`${id}-wrapper`);
             if (el) el.style.display = 'flex';
         });
+
+        // "Métricas" (CEFEMEX Capital) vive en el mismo segmented control aunque
+        // el cliente no sea clientType 'hotel' — se muestra solo ese botón,
+        // el resto de las pestañas de hotel se mantienen ocultas.
+        const metricsTabBtn = document.getElementById('tab-btn-metricas');
+        if (metricsTabBtn && state.clientId === 'cefemex') {
+            tabsContainer.classList.remove('hidden');
+            tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
+                btn.classList.toggle('hidden', btn.dataset.tab !== 'metricas');
+            });
+            metricsTabBtn.addEventListener('click', () => switchDashTab('metricas'));
+        } else if (metricsTabBtn) {
+            metricsTabBtn.classList.add('hidden');
+        }
     }
 }
 
