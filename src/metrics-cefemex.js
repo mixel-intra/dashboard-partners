@@ -73,5 +73,61 @@ function renderCefemexMetricsState() {
         content.innerHTML = `<div class="cmx-state-msg">Sin datos.</div>`;
         return;
     }
-    content.innerHTML = `<div class="cmx-state-msg">${cefemexMetrics.data.leads.length} leads cargados.</div>`;
+    renderCefemexMetricsContent();
+}
+
+function fmtDias(n) {
+    if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+    return Number(n).toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function fmtFecha(iso) {
+    if (!iso) return '—';
+    const dt = new Date(iso);
+    if (isNaN(dt.getTime())) return '—';
+    return dt.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function cmxBuildNoteHtml(totales) {
+    if (!totales) return '';
+    return `
+        <div class="cmx-note">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>Comparación con poca base: ${totales.ganados} leads ganados contra ${totales.perdidos} perdidos en este rango. Cualquier lectura entre ambos grupos se apoya en muy pocos casos del lado ganador.</span>
+        </div>
+    `;
+}
+
+function cmxBuildCardsHtml(totales) {
+    if (!totales) return '';
+    const cards = [
+        { label: 'Leads en el rango', sub: 'TOTAL', value: (totales.leads ?? 0).toLocaleString('es-MX'), cls: 'card-cyan', icon: 'people-outline' },
+        { label: 'Ganados', sub: 'CERRADOS', value: (totales.ganados ?? 0).toLocaleString('es-MX'), cls: 'card-orange', icon: 'trophy-outline' },
+        { label: 'Perdidos', sub: 'CERRADOS', value: (totales.perdidos ?? 0).toLocaleString('es-MX'), cls: 'card-pink', icon: 'close-circle-outline' },
+        { label: 'Días en proceso · Ganado', sub: `Mediana ${fmtDias(totales.dias_en_proceso_mediana_ganado)}`, value: fmtDias(totales.dias_en_proceso_promedio_ganado), cls: 'card-purple', icon: 'trending-up-outline' },
+        { label: 'Días en proceso · Perdido', sub: `Mediana ${fmtDias(totales.dias_en_proceso_mediana_perdido)}`, value: fmtDias(totales.dias_en_proceso_promedio_perdido), cls: 'card-purple', icon: 'trending-down-outline' },
+    ];
+    return `<div class="cmx-cards">${cards.map(c => `
+        <div class="card-quantix ${c.cls}">
+            <div class="kpi-card-top">
+                <div class="label-group">
+                    <span class="label-main">${escapeHtml(c.label)}</span>
+                    <span class="label-sub">${escapeHtml(c.sub)}</span>
+                </div>
+                <div class="icon-box"><ion-icon name="${c.icon}"></ion-icon></div>
+            </div>
+            <div class="value-big">${c.value}</div>
+        </div>
+    `).join('')}</div>`;
+}
+
+function renderCefemexMetricsContent() {
+    const content = document.getElementById('cmx-content');
+    if (!content) return;
+    const { totales } = cefemexMetrics.data;
+    content.innerHTML = `
+        ${cmxBuildNoteHtml(totales)}
+        ${cmxBuildCardsHtml(totales)}
+        <div class="cmx-table-card" id="cmx-table-slot"></div>
+    `;
 }
