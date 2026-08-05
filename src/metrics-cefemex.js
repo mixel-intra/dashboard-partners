@@ -66,6 +66,7 @@ function initCefemexMetrics() {
     }
 
     setupCefemexMetricsControls();
+    window.addEventListener('resize', cmxFitTableHeight);
     fetchCefemexMetrics();
 }
 
@@ -359,6 +360,35 @@ function cmxRenderTableSlot() {
     slot.innerHTML = cefemexMetrics.vista === 'activos'
         ? cmxBuildTableActivosHtml()
         : cmxBuildTableCierresHtml();
+    cmxFitTableHeight();
+}
+
+// Un solo scroll: la tabla se queda con el alto que sobra dentro del área de
+// contenido, para que el contenedor de la página no tenga que scrollear.
+// Se mide colapsando la tabla y midiendo posiciones — no sirve restar
+// scrollHeight, que nunca baja de clientHeight cuando el contenido ya cabe.
+function cmxFitTableHeight() {
+    const wrap = document.querySelector('.cmx-table-wrapper');
+    const scroller = document.querySelector('.main-content');
+    const panel = document.getElementById('cefemex-metrics-panel');
+    if (!wrap || !scroller || !panel) return;
+
+    wrap.style.maxHeight = '0px';
+    const scBottom = scroller.getBoundingClientRect().bottom;
+    const wrapRect = wrap.getBoundingClientRect();
+    // Lo que va después de la tabla (notas al pie, descartados, padding).
+    const despues = panel.getBoundingClientRect().bottom - wrapRect.bottom;
+    const disponible = scBottom - wrapRect.top - despues - 8;
+    let alto = Math.max(260, Math.floor(disponible));
+    wrap.style.maxHeight = alto + 'px';
+
+    // Corrección: si algo del layout no entró en la cuenta y el contenedor
+    // sigue desbordando, se le descuenta el excedente medido.
+    const exceso = scroller.scrollHeight - scroller.clientHeight;
+    if (exceso > 0) {
+        alto = Math.max(260, alto - exceso);
+        wrap.style.maxHeight = alto + 'px';
+    }
 }
 
 // ---------- tarjetas ----------
