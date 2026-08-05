@@ -5092,7 +5092,7 @@
                     .cmx-por-btn.active { background: var(--accent-purple-glow); color: var(--accent-purple); }
                     .cmx-date-input { padding: 8px 12px; border-radius: 9px; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-primary); font-size: 0.82rem; min-width: 220px; cursor: pointer; }
                     .cmx-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--border-subtle); background: var(--bg-card); color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
-                    .cmx-btn:hover { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.3); color: #A78BFA; }
+                    .cmx-btn:hover { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.3); color: var(--accent-purple); }
                     .cmx-note { font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; display: flex; gap: 8px; align-items: flex-start; }
                     .cmx-note ion-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; color: #FBBF24; }
                     .cmx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
@@ -5110,8 +5110,8 @@
                     .cmx-table thead th.cmx-col-sticky-lead, .cmx-table thead th.cmx-col-sticky-result { z-index: 4; }
                     .cmx-day-cell { text-align: right; font-variant-numeric: tabular-nums; }
                     .cmx-day-empty { color: var(--text-muted); text-align: center; }
-                    .cmx-badge-ganado { color: #16A34A; font-weight: 700; }
-                    .cmx-badge-perdido { color: #DC2626; font-weight: 700; }
+                    .cmx-badge-ganado { color: var(--accent-green); font-weight: 700; }
+                    .cmx-badge-perdido { color: var(--accent-red); font-weight: 700; }
                     .cmx-tfoot td { padding: 9px 12px; font-weight: 600; color: var(--text-secondary); border-top: 2px solid var(--border-subtle); background: var(--bg-card); }
                     .cmx-descartados { margin-top: 12px; font-size: 0.78rem; color: var(--text-muted); }
                     .cmx-criterios { margin-top: 14px; }
@@ -6107,8 +6107,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260716-cde47"></script>
-    <script src="src/metrics-cefemex.js?v=20260805-2"></script>
+    <script src="src/dashboard.js?v=20260805-cmx1"></script>
+    <script src="src/metrics-cefemex.js?v=20260805-cmx1"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
