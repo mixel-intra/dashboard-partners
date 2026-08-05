@@ -5109,7 +5109,9 @@
                     .cmx-btn:hover { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.3); color: var(--accent-purple); }
                     .cmx-note { font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; display: flex; gap: 8px; align-items: flex-start; }
                     .cmx-note ion-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; color: #FBBF24; }
-                    .cmx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+                    .cmx-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 20px; align-items: stretch; }
+                    .cmx-cards .card-quantix { height: 100%; }
+                    .cmx-card-desc { margin: 6px 0 0; font-size: 0.74rem; line-height: 1.45; color: var(--text-muted); }
                     .cmx-table-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px 22px; }
                     /* Sin min-height: con pocas filas la tabla se ajusta al contenido;
                        con muchas crece hasta llenar la ventana. */
@@ -6173,7 +6175,7 @@
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
     <script src="src/dashboard.js?v=20260805-cmx4"></script>
-    <script src="src/metrics-cefemex.js?v=20260805-cmx5"></script>
+    <script src="src/metrics-cefemex.js?v=20260805-cmx6"></script>
 
     <!-- Client Switcher Drawer -->
     <style>

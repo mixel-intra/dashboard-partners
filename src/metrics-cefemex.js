@@ -361,6 +361,7 @@ function cmxRenderCards(cards) {
                 <div class="icon-box"><ion-icon name="${c.icon}"></ion-icon></div>
             </div>
             <div class="value-big">${c.value}</div>
+            <p class="cmx-card-desc">${escapeHtml(c.desc)}</p>
         </div>
     `).join('')}</div>`;
 }
@@ -368,22 +369,32 @@ function cmxRenderCards(cards) {
 function cmxBuildCardsHtml(totales) {
     if (!totales) return '';
     return cmxRenderCards([
-        { label: 'Leads en el rango', sub: 'TOTAL', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline' },
-        { label: 'Ganados', sub: 'CERRADOS', value: cmxNum(totales.ganados), cls: 'card-orange', icon: 'trophy-outline' },
-        { label: 'Perdidos', sub: 'CERRADOS', value: cmxNum(totales.perdidos), cls: 'card-pink', icon: 'close-circle-outline' },
-        { label: 'Días en proceso · Ganado', sub: `Mediana ${fmtDias(totales.dias_en_proceso_mediana_ganado)}`, value: fmtDias(totales.dias_en_proceso_promedio_ganado), cls: 'card-purple', icon: 'trending-up-outline' },
-        { label: 'Días en proceso · Perdido', sub: `Mediana ${fmtDias(totales.dias_en_proceso_mediana_perdido)}`, value: fmtDias(totales.dias_en_proceso_promedio_perdido), cls: 'card-purple', icon: 'trending-down-outline' },
+        { label: 'Leads en el rango', sub: 'TOTAL', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline',
+          desc: 'Leads que se cerraron dentro del periodo y sí pasaron por el proceso de crédito.' },
+        { label: 'Ganados', sub: 'CERRADOS', value: cmxNum(totales.ganados), cls: 'card-orange', icon: 'trophy-outline',
+          desc: 'De esos, los que terminaron en crédito colocado.' },
+        { label: 'Perdidos', sub: 'CERRADOS', value: cmxNum(totales.perdidos), cls: 'card-pink', icon: 'close-circle-outline',
+          desc: 'De esos, los que se cayeron antes de cerrar.' },
+        { label: 'Días en proceso · Ganado', sub: `Mediana ${fmtDias(totales.dias_en_proceso_mediana_ganado)}`, value: fmtDias(totales.dias_en_proceso_promedio_ganado), cls: 'card-purple', icon: 'trending-up-outline',
+          desc: 'Promedio de días desde que el lead entró al proceso hasta que se ganó. La mediana es el caso típico: no la mueven los casos extremos.' },
+        { label: 'Días en proceso · Perdido', sub: `Mediana ${fmtDias(totales.dias_en_proceso_mediana_perdido)}`, value: fmtDias(totales.dias_en_proceso_promedio_perdido), cls: 'card-purple', icon: 'trending-down-outline',
+          desc: 'Lo mismo para los que se perdieron: cuánto tiempo se invirtió antes de que se cayeran.' },
     ]);
 }
 
 function cmxBuildCardsActivosHtml(totales) {
     if (!totales) return '';
     return cmxRenderCards([
-        { label: 'Leads activos', sub: 'EN EL PROCESO', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline' },
-        { label: 'Monto en el embudo', sub: 'DINERO EXPUESTO', value: cmxMonto(totales.monto_total), cls: 'card-orange', icon: 'cash-outline' },
-        { label: 'Días activo · promedio', sub: `Mediana ${fmtDias(totales.dias_activo_mediana)}`, value: fmtDias(totales.dias_activo_promedio), cls: 'card-purple', icon: 'time-outline' },
-        { label: 'Días activo · máximo', sub: 'EL MÁS ESTANCADO', value: fmtDias(totales.dias_activo_max), cls: 'card-pink', icon: 'hourglass-outline' },
-        { label: 'Leads que rebotaron', sub: 'SALIERON Y VOLVIERON', value: cmxNum(totales.leads_que_rebotaron), cls: 'card-orange', icon: 'repeat-outline' },
+        { label: 'Leads activos', sub: 'EN EL PROCESO', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline',
+          desc: 'Leads que hoy siguen vivos dentro del proceso de crédito: ni ganados ni perdidos.' },
+        { label: 'Monto en el embudo', sub: 'DINERO EXPUESTO', value: cmxMonto(totales.monto_total), cls: 'card-orange', icon: 'cash-outline',
+          desc: 'Suma del monto de todos los leads activos: el dinero que está en juego ahora mismo.' },
+        { label: 'Días activo · promedio', sub: `Mediana ${fmtDias(totales.dias_activo_mediana)}`, value: fmtDias(totales.dias_activo_promedio), cls: 'card-purple', icon: 'time-outline',
+          desc: 'Cuántos días llevan en promedio desde que entraron al proceso. La mediana es el caso típico.' },
+        { label: 'Días activo · máximo', sub: 'EL MÁS ESTANCADO', value: fmtDias(totales.dias_activo_max), cls: 'card-pink', icon: 'hourglass-outline',
+          desc: 'El lead que lleva más tiempo esperando sin resolverse.' },
+        { label: 'Leads que rebotaron', sub: 'SALIERON Y VOLVIERON', value: cmxNum(totales.leads_que_rebotaron), cls: 'card-orange', icon: 'repeat-outline',
+          desc: 'Salieron a una etapa fuera del proceso y regresaron. Van marcados con * en la tabla.' },
     ]);
 }
 
