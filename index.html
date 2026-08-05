@@ -4010,6 +4010,18 @@
         [data-theme="light"] .rest-card-meta .dot { color: #CBD5E1; }
         [data-theme="light"] .rest-card-detail { color: #475569; }
         [data-theme="light"] .rest-card-detail.is-empty { color: #94A3B8; }
+        /* Urgencia "hace X" — contraste sobre fondo claro */
+        [data-theme="light"] .rest-card-when .when-ago { color: #334155; }
+        [data-theme="light"] .rest-card-when .when-ago ion-icon { color: #64748B; }
+        [data-theme="light"] .rest-card-when .when-abs { color: #94A3B8; }
+        [data-theme="light"] .rest-card-when.lvl-urgent .when-ago,
+        [data-theme="light"] .rest-card-when.lvl-urgent .when-ago ion-icon { color: #B45309; }
+        [data-theme="light"] .rest-card-when.lvl-overdue .when-ago,
+        [data-theme="light"] .rest-card-when.lvl-overdue .when-ago ion-icon { color: #DC2626; }
+        /* Drawer: "Lead generado" en light */
+        [data-theme="light"] #rdm-generado .rdm-gen-abs { color: #64748B; }
+        [data-theme="light"] #rdm-generado .rdm-gen-ago.lvl-urgent { color: #B45309; }
+        [data-theme="light"] #rdm-generado .rdm-gen-ago.lvl-overdue { color: #DC2626; }
 
         /* Status pills — proper contrast */
         [data-theme="light"] .rest-card-pill.s-pending {
@@ -5104,14 +5116,25 @@
                     .cmx-table thead th ion-icon { font-size: 0.75rem; margin-left: 4px; vertical-align: -1px; opacity: 0.5; }
                     .cmx-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
                     .cmx-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
-                    .cmx-col-sticky-lead, .cmx-col-sticky-result { position: sticky; background: var(--bg-app); z-index: 2; }
+                    /* Columnas congeladas: el left de cada una debe coincidir con el
+                       ancho real de la anterior o tapa su contenido. */
+                    .cmx-col-sticky-lead, .cmx-col-sticky-result, .cmx-col-sticky-etapa { position: sticky; background: var(--bg-app); z-index: 2; }
                     .cmx-col-sticky-lead { left: 0; width: 120px; min-width: 120px; }
                     .cmx-col-sticky-result { left: 120px; width: 100px; min-width: 100px; }
-                    .cmx-table thead th.cmx-col-sticky-lead, .cmx-table thead th.cmx-col-sticky-result { z-index: 4; }
+                    /* max-width + ellipsis: sin esto el nombre largo de una etapa
+                       estira la celda y el ancho real deja de coincidir con el left. */
+                    .cmx-col-sticky-etapa { left: 120px; width: 190px; min-width: 190px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+                    .cmx-table thead th.cmx-col-sticky-lead, .cmx-table thead th.cmx-col-sticky-result, .cmx-table thead th.cmx-col-sticky-etapa { z-index: 4; }
                     .cmx-day-cell { text-align: right; font-variant-numeric: tabular-nums; }
                     .cmx-day-empty { color: var(--text-muted); text-align: center; }
                     .cmx-badge-ganado { color: var(--accent-green); font-weight: 700; }
                     .cmx-badge-perdido { color: var(--accent-red); font-weight: 700; }
+                    /* Etapa en curso: el número sigue creciendo, no es un tiempo cerrado. */
+                    .cmx-en-curso { position: relative; }
+                    .cmx-en-curso::after { content: ''; position: absolute; top: 6px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent-amber); }
+                    .cmx-rebote { color: var(--accent-amber); font-weight: 700; margin-left: 4px; cursor: help; }
+                    .cmx-footnote { margin-top: 10px; font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 7px; align-items: flex-start; }
+                    .cmx-footnote ion-icon { flex-shrink: 0; margin-top: 2px; color: var(--accent-amber); }
                     .cmx-tfoot td { padding: 9px 12px; font-weight: 600; color: var(--text-secondary); border-top: 2px solid var(--border-subtle); background: var(--bg-card); }
                     .cmx-descartados { margin-top: 12px; font-size: 0.78rem; color: var(--text-muted); }
                     .cmx-criterios { margin-top: 14px; }
@@ -5124,11 +5147,13 @@
 
                 <div class="cmx-toolbar">
                     <div class="cmx-toolbar-left">
-                        <input type="text" id="cmx-date-range" class="cmx-date-input" placeholder="Mes en curso" readonly>
-                        <div class="cmx-por-toggle" id="cmx-por-toggle">
-                            <button type="button" class="cmx-por-btn active" data-por="cierre">Por cierre</button>
-                            <button type="button" class="cmx-por-btn" data-por="creacion">Por creación</button>
+                        <div class="cmx-por-toggle" id="cmx-vista-toggle">
+                            <button type="button" class="cmx-por-btn active" data-vista="cierres">Cerrados</button>
+                            <button type="button" class="cmx-por-btn" data-vista="activos">Activos</button>
                         </div>
+                        <input type="text" id="cmx-date-range" class="cmx-date-input" placeholder="Mes en curso" readonly>
+                        <!-- Los valores de "por" dependen de la vista: se pintan desde JS. -->
+                        <div class="cmx-por-toggle" id="cmx-por-toggle"></div>
                     </div>
                     <button type="button" class="cmx-btn" id="cmx-excel-btn" onclick="downloadCefemexMetricsExcel()">
                         <ion-icon name="download-outline"></ion-icon> Descargar Excel
@@ -5665,11 +5690,16 @@
                                 <button class="reject-reason-chip" onclick="selectRejectReason(this, 'otra')">Otra razón</button>
                             </div>
                         </div>
-                        <div style="margin-top:4px;">
+                        <div id="confirm-modal-msg-block" style="margin-top:4px;">
                             <label id="confirm-modal-msg-label"
                                 style="font-size:0.78rem; color:rgba(255,255,255,0.45); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Mensaje para el cliente</label>
                             <textarea id="confirm-modal-message" class="rest-confirm-message"
                                 placeholder="Mensaje para el cliente..."></textarea>
+                        </div>
+                        <!-- Nota cuando el lead pasó la ventana de 24h de Meta: no se envía mensaje -->
+                        <div id="confirm-modal-no-msg-note" style="display:none; margin-top:4px; padding:12px 14px; background:rgba(245,158,11,0.10); border:1px solid rgba(245,158,11,0.25); border-radius:12px; gap:10px; align-items:flex-start;">
+                            <ion-icon name="information-circle-outline" style="color:#FBBF24; font-size:1.1rem; flex-shrink:0; margin-top:1px;"></ion-icon>
+                            <span style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.45;">La ventana de 24 h de WhatsApp para este cliente ya expiró, por lo que no es posible enviar la confirmación automática. La reserva quedará confirmada; te sugerimos dar seguimiento por llamada o WhatsApp directo.</span>
                         </div>
                         <div style="display:flex; gap:12px; margin-top:16px;">
                             <button onclick="closeConfirmModal()"
@@ -6108,7 +6138,7 @@
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
     <script src="src/dashboard.js?v=20260805-cmx1"></script>
-    <script src="src/metrics-cefemex.js?v=20260805-cmx1"></script>
+    <script src="src/metrics-cefemex.js?v=20260805-cmx3"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
