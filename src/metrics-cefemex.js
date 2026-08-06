@@ -480,6 +480,12 @@ function cmxSortIcon(col) {
 function cmxSortValue(lead, col) {
     switch (col) {
         case 'lead_id': return Number(lead.lead_id) || 0;
+        // Los leads sin contacto llegan como "Lead #<id>": van al final, no
+        // revueltos entre la L de la lista alfabética.
+        case 'nombre': {
+            const n = (lead.nombre || '').trim();
+            return (!n || n === `Lead #${lead.lead_id}`) ? '￿' : n;
+        }
         case 'resultado': return lead.resultado || '';
         case 'etapa_actual': return lead.etapa_actual || '';
         case 'creado_en': return lead.creado_en ? new Date(lead.creado_en).getTime() : -Infinity;
@@ -522,6 +528,17 @@ function cmxSortedLeads() {
 
 // ---------- tablas ----------
 
+// Nombre del contacto con el id debajo. Cuando Kommo no tiene contacto, el
+// endpoint manda "Lead #<id>": ahí se muestra solo el id, sin repetirlo.
+function cmxCeldaContacto(lead, marca) {
+    const id = String(lead.lead_id);
+    const nombre = (lead.nombre || '').trim();
+    const sinNombre = !nombre || nombre === `Lead #${id}`;
+    const titulo = sinNombre ? 'Sin contacto' : nombre;
+    return `<div class="cmx-lead-nombre" title="${escapeHtml(titulo)}">${escapeHtml(titulo)}${marca || ''}</div>
+            <div class="cmx-lead-id">#${escapeHtml(id)}</div>`;
+}
+
 // Las columnas de etapa salen SIEMPRE de etapas[]: la config vive en Supabase
 // y puede cambiar sin tocar este código.
 function cmxEtapaHeaderCells(etapas) {
@@ -545,7 +562,7 @@ function cmxBuildTableCierresHtml() {
     const leads = cmxSortedLeads();
 
     const headerCells = [
-        `<th class="cmx-col-sticky-lead" data-cmx-sort="lead_id">Lead ID ${cmxSortIcon('lead_id')}</th>`,
+        `<th class="cmx-col-sticky-lead" data-cmx-sort="nombre">Contacto ${cmxSortIcon('nombre')}</th>`,
         `<th class="cmx-col-sticky-result" data-cmx-sort="resultado">Resultado ${cmxSortIcon('resultado')}</th>`,
         `<th data-cmx-sort="creado_en">Creado ${cmxSortIcon('creado_en')}</th>`,
         `<th data-cmx-sort="cerrado_en">Cerrado ${cmxSortIcon('cerrado_en')}</th>`,
@@ -560,7 +577,7 @@ function cmxBuildTableCierresHtml() {
         const totalStyle = (lead.dias_en_proceso === null || lead.dias_en_proceso === undefined)
             ? '' : `style="background:${cmxHeatColor(lead.dias_en_proceso)}"`;
         return `<tr>
-            <td class="cmx-col-sticky-lead">${escapeHtml(lead.lead_id)}</td>
+            <td class="cmx-col-sticky-lead">${cmxCeldaContacto(lead)}</td>
             <td class="cmx-col-sticky-result ${resultClass}">${escapeHtml(lead.resultado || '—')}</td>
             <td>${fmtFecha(lead.creado_en)}</td>
             <td>${fmtFecha(lead.cerrado_en)}</td>
@@ -591,7 +608,7 @@ function cmxBuildTableActivosHtml() {
     const leads = cmxSortedLeads();
 
     const headerCells = [
-        `<th class="cmx-col-sticky-lead" data-cmx-sort="lead_id">Lead ID ${cmxSortIcon('lead_id')}</th>`,
+        `<th class="cmx-col-sticky-lead" data-cmx-sort="nombre">Contacto ${cmxSortIcon('nombre')}</th>`,
         `<th class="cmx-col-sticky-etapa" data-cmx-sort="etapa_actual">Etapa actual ${cmxSortIcon('etapa_actual')}</th>`,
         `<th data-cmx-sort="entro_al_proceso_en">Entró al proceso ${cmxSortIcon('entro_al_proceso_en')}</th>`,
         `<th class="cmx-th-total" data-cmx-sort="dias_activo">Días activo ${cmxSortIcon('dias_activo')}</th>`,
@@ -612,7 +629,7 @@ function cmxBuildTableActivosHtml() {
         const totalStyle = (lead.dias_activo === null || lead.dias_activo === undefined)
             ? '' : `style="background:${cmxHeatColor(lead.dias_activo)}"`;
         return `<tr>
-            <td class="cmx-col-sticky-lead">${escapeHtml(lead.lead_id)}${marca}</td>
+            <td class="cmx-col-sticky-lead">${cmxCeldaContacto(lead, marca)}</td>
             <td class="cmx-col-sticky-etapa" title="${escapeHtml(lead.etapa_actual || '')}">${escapeHtml(lead.etapa_actual || '—')}</td>
             <td>${fmtFecha(lead.entro_al_proceso_en)}</td>
             <td class="cmx-day-cell cmx-td-total" ${totalStyle}>${fmtDias(lead.dias_activo)}</td>

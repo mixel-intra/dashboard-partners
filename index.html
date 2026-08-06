@@ -5138,11 +5138,13 @@
                     /* Columnas congeladas: el left de cada una debe coincidir con el
                        ancho real de la anterior o tapa su contenido. */
                     .cmx-col-sticky-lead, .cmx-col-sticky-result, .cmx-col-sticky-etapa { position: sticky; background: var(--bg-app); z-index: 2; }
-                    .cmx-col-sticky-lead { left: 0; width: 120px; min-width: 120px; }
-                    .cmx-col-sticky-result { left: 120px; width: 100px; min-width: 100px; }
+                    .cmx-col-sticky-lead { left: 0; width: 210px; min-width: 210px; max-width: 210px; }
+                    .cmx-col-sticky-result { left: 210px; width: 100px; min-width: 100px; }
+                    .cmx-lead-nombre { font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                    .cmx-lead-id { font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
                     /* max-width + ellipsis: sin esto el nombre largo de una etapa
                        estira la celda y el ancho real deja de coincidir con el left. */
-                    .cmx-col-sticky-etapa { left: 120px; width: 190px; min-width: 190px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+                    .cmx-col-sticky-etapa { left: 210px; width: 190px; min-width: 190px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
                     .cmx-table thead th.cmx-col-sticky-lead, .cmx-table thead th.cmx-col-sticky-result, .cmx-table thead th.cmx-col-sticky-etapa { z-index: 4; }
                     /* El hover genérico es translúcido y dejaba ver por debajo las
                        columnas que se deslizan: las congeladas necesitan un hover opaco. */
@@ -6212,7 +6214,7 @@
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
     <script src="src/dashboard.js?v=20260805-cmx4"></script>
-    <script src="src/metrics-cefemex.js?v=20260805-cmx18"></script>
+    <script src="src/metrics-cefemex.js?v=20260805-cmx19"></script>
 
     <!-- Client Switcher Drawer -->
     <style>
