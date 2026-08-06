@@ -360,7 +360,30 @@ function cmxRenderTableSlot() {
     slot.innerHTML = cefemexMetrics.vista === 'activos'
         ? cmxBuildTableActivosHtml()
         : cmxBuildTableCierresHtml();
+    cmxFitHeaderWidths();
     cmxFitTableHeight();
+}
+
+// Los títulos deben caber en dos líneas como máximo. El ancho de columna lo
+// decide el contenido (números cortos), así que un título largo se parte en 3-4
+// renglones. Se ensancha la columna hasta que el título quepa en dos líneas —
+// midiendo el texto ya renderizado, porque estimarlo da de menos y la columna
+// se queda corta.
+function cmxFitHeaderWidths() {
+    const ths = document.querySelectorAll('#cmx-table thead th');
+    if (!ths.length) return;
+    const rango = document.createRange();
+
+    ths.forEach(th => {
+        const nodo = th.childNodes[0];
+        if (!nodo || !(nodo.textContent || '').trim()) return;
+        th.style.minWidth = '';
+        for (let i = 0; i < 8; i++) {
+            rango.selectNodeContents(nodo);
+            if (rango.getClientRects().length <= 2) break;
+            th.style.minWidth = Math.ceil(th.getBoundingClientRect().width * 1.18) + 'px';
+        }
+    });
 }
 
 // Un solo scroll: la tabla se queda con el alto que sobra dentro del área de
