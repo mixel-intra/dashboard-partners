@@ -6998,6 +6998,24 @@ function cdeStage(lead) {
     return null;
 }
 
+// Empeños cerrados dentro del rango activo, contados por la fecha en que se
+// empeñó (f_empeno_ts, unix en segundos) y no por la fecha de creación del lead:
+// un lead puede crearse un mes y empeñarse al siguiente.
+// Se recorre state.leads, no filteredLeads, porque ese ya viene filtrado por
+// fecha de creación y dejaría fuera empeños del rango.
+function cdeEmpenosEnRango() {
+    const ini = state.filters.start ? state.filters.start.getTime() : null;
+    const fin = state.filters.end ? state.filters.end.getTime() : null;
+    return (state.leads || []).filter(l => {
+        const ts = Number(l.f_empeno_ts);
+        if (!ts) return false;
+        const ms = ts * 1000;
+        if (ini !== null && ms < ini) return false;
+        if (fin !== null && ms > fin) return false;
+        return true;
+    }).length;
+}
+
 function cdeIsIntra() {
     const ses = (typeof getSession === 'function') ? getSession() : null;
     return !!(ses && ses.role === 'admin');
@@ -7029,13 +7047,15 @@ function renderCdeExtra() {
         if (k === 'perdido') perdidos.push(l);
     });
     const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
-    const empenados = counts.empenado;
+    // "Empeños cerrados" se cuenta por FECHA DE EMPEÑO (f_empeno_ts del webhook),
+    // no por la etapa actual del lead ni por su fecha de creación.
+    const empenados = cdeEmpenosEnRango();
 
     // Punto 1: Oportunidades calificadas = total del funnel INCLUYENDO venta perdida
     const c1 = document.getElementById('card-1-value'); if (c1) c1.textContent = totalFunnel;
     // Punto 2: "Ventas" -> "Empeños cerrados" (conteo de empeñados)
     const lbl3 = document.getElementById('label-main-3'); if (lbl3) lbl3.textContent = 'Empeños cerrados';
-    const sub3 = document.getElementById('label-sub-3'); if (sub3) sub3.textContent = 'EMPEÑADOS';
+    const sub3 = document.getElementById('label-sub-3'); if (sub3) sub3.textContent = 'POR FECHA DE EMPEÑO';
     const c3 = document.getElementById('card-3-value'); if (c3) c3.textContent = empenados;
     // Reutilizar card-7 como tarjeta "ROAS" (antes "Costo por oportunidad calificada")
     const lbl7 = document.getElementById('label-main-7'); if (lbl7) lbl7.textContent = 'ROAS';
