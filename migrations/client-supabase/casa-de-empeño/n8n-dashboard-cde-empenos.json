@@ -1,0 +1,121 @@
+{
+  "name": "DASHBOARD CDE - Empeños",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "dashbord_cde_empenos",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Webhook Empeños",
+      "webhookId": "c1a11ee0-1111-4111-8111-111111111111"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Rango que manda el dashboard. Sin fechas = mes en curso.\nconst ahora = new Date();\nconst inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);\nlet desde = Math.floor(inicioMes.getTime() / 1000);\nlet hasta = Math.floor(ahora.getTime() / 1000);\n\ntry {\n  const q = $('Webhook Empeños').first().json.query || {};\n  if (q.desde && q.hasta) { desde = Number(q.desde); hasta = Number(q.hasta); }\n  else { desde = 0; hasta = Math.floor(Date.now() / 1000); }\n} catch (e) { /* ejecución manual: mes en curso */ }\n\n// Kommo NO permite filtrar por el campo F_Empeño en esta cuenta\n// (\"Invalid filter for current account\"), así que se filtra por updated_at:\n// un lead empeñado dentro del rango se actualizó forzosamente dentro del rango.\n// El margen cubre relojes desfasados y ediciones con fecha retroactiva.\nconst MARGEN_DIAS = 2;\nconst desdeUpd = Math.max(0, desde - MARGEN_DIAS * 86400);\n\nreturn [{ json: { desde, hasta, desdeUpd, page: 1 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Lee Rango Empeños"
+    },
+    {
+      "parameters": {
+        "url": "=https://cefemexcasaempeno.kommo.com/api/v4/leads?limit=250&with=custom_fields_values,contacts&page={{ $json.page }}&filter[statuses][0][pipeline_id]=13551203&filter[statuses][0][status_id]=105415071&filter[updated_at][from]={{ $('Lee Rango Empeños').first().json.desdeUpd }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [440, 0],
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Kommo Empeñados"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst resp = typeof raw.data === 'string' ? JSON.parse(raw.data) : raw;\nconst leads = resp._embedded?.leads || [];\n\nconst sd = $getWorkflowStaticData('global');\nif (!sd.empLeads) sd.empLeads = [];\nif (!sd.empPage) sd.empPage = 1;\n\nsd.empLeads = sd.empLeads.concat(leads);\nsd.empPage += 1;\n\nreturn [{ json: { hasMore: leads.length === 250, page: sd.empPage, total: sd.empLeads.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0],
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Acumula Empeños"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+          "conditions": [
+            {
+              "id": "cond-more",
+              "leftValue": "={{ $json.hasMore }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [880, 0],
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "name": "¿Hay más páginas?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "page-next", "name": "page", "value": "={{ $json.page }}", "type": "number" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [880, -200],
+      "id": "a1000000-0000-4000-8000-000000000006",
+      "name": "Siguiente Página Empeños"
+    },
+    {
+      "parameters": {
+        "jsCode": "// F_Empeño = campo 1380934 (date_time). Se filtra AQUÍ por el rango exacto:\n// la consulta a Kommo fue por updated_at, que es más amplio.\nconst F_EMPENO_FIELD_ID = 1380934;\n\nconst { desde, hasta } = $('Lee Rango Empeños').first().json;\nconst sd = $getWorkflowStaticData('global');\nconst leads = sd.empLeads || [];\nsd.empLeads = [];\nsd.empPage = 1;\n\nconst tsDe = (lead) => {\n  const f = (lead.custom_fields_values || []).find(c => c.field_id === F_EMPENO_FIELD_ID);\n  return Number(f?.values?.[0]?.value) || 0;\n};\n\nconst enRango = leads.filter(l => { const ts = tsDe(l); return ts >= desde && ts <= hasta; });\n\nconst detalle = enRango.map(l => {\n  const ts = tsDe(l);\n  return {\n    id_lead: l.id,\n    nombre: l._embedded?.contacts?.[0]?.name || l.name,\n    precio: l.price || 0,\n    f_empeno_ts: ts,\n    f_empeno: new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),\n    fecha_creacion: new Date(l.created_at * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })\n  };\n});\n\nreturn [{ json: {\n  total: detalle.length,\n  monto: detalle.reduce((a, d) => a + Number(d.precio || 0), 0),\n  rango: { desde, hasta },\n  revisados: leads.length,\n  leads: detalle\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 100],
+      "id": "a1000000-0000-4000-8000-000000000007",
+      "name": "Filtra por F_Empeño"
+    },
+    {
+      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1320, 100],
+      "id": "a1000000-0000-4000-8000-000000000008",
+      "name": "Responde Empeños"
+    }
+  ],
+  "connections": {
+    "Webhook Empeños": { "main": [[{ "node": "Lee Rango Empeños", "type": "main", "index": 0 }]] },
+    "Lee Rango Empeños": { "main": [[{ "node": "Kommo Empeñados", "type": "main", "index": 0 }]] },
+    "Kommo Empeñados": { "main": [[{ "node": "Acumula Empeños", "type": "main", "index": 0 }]] },
+    "Acumula Empeños": { "main": [[{ "node": "¿Hay más páginas?", "type": "main", "index": 0 }]] },
+    "¿Hay más páginas?": {
+      "main": [
+        [{ "node": "Siguiente Página Empeños", "type": "main", "index": 0 }],
+        [{ "node": "Filtra por F_Empeño", "type": "main", "index": 0 }]
+      ]
+    },
+    "Siguiente Página Empeños": { "main": [[{ "node": "Kommo Empeñados", "type": "main", "index": 0 }]] },
+    "Filtra por F_Empeño": { "main": [[{ "node": "Responde Empeños", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

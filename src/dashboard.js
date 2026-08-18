@@ -7003,6 +7003,36 @@ function cdeStage(lead) {
 // un lead puede crearse un mes y empeñarse al siguiente.
 // Se recorre state.leads, no filteredLeads, porque ese ya viene filtrado por
 // fecha de creación y dejaría fuera empeños del rango.
+// Endpoint dedicado a los empeños del rango. Existe porque el webhook principal
+// filtra por fecha de creación: un lead creado en junio y empeñado en agosto no
+// llega en la consulta de agosto y la tarjeta lo perdía.
+// Consulta Kommo por etapa "Empeñado" + updated_at y filtra por F_Empeño.
+const CDE_EMPENOS_URL = 'https://n8n.srv1436923.hstgr.cloud/webhook/dashbord_cde_empenos';
+let cdeEmpenosRemotos = null;   // null = sin dato del endpoint; se usa el conteo local
+
+async function cdeFetchEmpenos() {
+    if (state.clientId !== CDE_SLUG) return;
+    const params = new URLSearchParams();
+    if (state.filters.start) params.set('desde', Math.floor(state.filters.start.getTime() / 1000));
+    if (state.filters.end) params.set('hasta', Math.floor(state.filters.end.getTime() / 1000));
+    try {
+        const url = `/api/proxy?url=${encodeURIComponent(CDE_EMPENOS_URL + '?' + params.toString())}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const payload = Array.isArray(data) ? data[0] : data;
+        if (!payload || typeof payload.total !== 'number') throw new Error('respuesta inesperada');
+        cdeEmpenosRemotos = payload.total;
+        const c3 = document.getElementById('card-3-value');
+        if (c3) c3.textContent = payload.total;
+    } catch (e) {
+        // Si el endpoint aún no existe o falla, la tarjeta se queda con el conteo
+        // local (solo los empeños de leads creados dentro del rango).
+        console.warn('[CDE] Empeños por fecha de empeño no disponibles:', e.message);
+        cdeEmpenosRemotos = null;
+    }
+}
+
 function cdeEmpenosEnRango() {
     const ini = state.filters.start ? state.filters.start.getTime() : null;
     const fin = state.filters.end ? state.filters.end.getTime() : null;
@@ -7047,9 +7077,10 @@ function renderCdeExtra() {
         if (k === 'perdido') perdidos.push(l);
     });
     const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
-    // "Empeños cerrados" se cuenta por FECHA DE EMPEÑO (f_empeno_ts del webhook),
-    // no por la etapa actual del lead ni por su fecha de creación.
-    const empenados = cdeEmpenosEnRango();
+    // "Empeños cerrados" se cuenta por FECHA DE EMPEÑO (f_empeno_ts), no por la
+    // etapa actual del lead ni por su fecha de creación. cdeEmpenosRemotos llega
+    // del endpoint dedicado y, cuando existe, manda sobre el conteo local.
+    const empenados = (cdeEmpenosRemotos !== null) ? cdeEmpenosRemotos : cdeEmpenosEnRango();
 
     // Punto 1: Oportunidades calificadas = total del funnel INCLUYENDO venta perdida
     const c1 = document.getElementById('card-1-value'); if (c1) c1.textContent = totalFunnel;
@@ -7083,6 +7114,7 @@ function renderCdeExtra() {
     }
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
 
+    cdeFetchEmpenos();       // ASYNC: corrige el conteo con los empeños del rango real
     cdeRenderPie(perdidos);
     cdeUpdateMonthView();     // SÍNCRONO: fija ROAS 'x' + inversión del periodo de inmediato (con ad_spend en memoria),
                              // así updateUI (Tasa de Conversión) no deja la tarjeta como número suelto
