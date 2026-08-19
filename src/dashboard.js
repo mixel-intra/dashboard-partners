@@ -370,13 +370,18 @@ function setPredefinedRange(range) {
             start = new Date();
             start.setHours(0, 0, 0, 0);
             break;
+        // N días naturales contando hoy, desde las 00:00 — mismo criterio que los
+        // presets de Kommo. Restar N days daba N+1 días y arrancaba a la hora
+        // actual, partiendo el primer día por la mitad.
         case '7d':
             start = new Date();
-            start.setDate(today.getDate() - 7);
+            start.setDate(today.getDate() - 6);
+            start.setHours(0, 0, 0, 0);
             break;
         case '30d':
             start = new Date();
-            start.setDate(today.getDate() - 30);
+            start.setDate(today.getDate() - 29);
+            start.setHours(0, 0, 0, 0);
             break;
         case 'this-month':
             start = new Date(today.getFullYear(), today.getMonth(), 1);
