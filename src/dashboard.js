@@ -7009,9 +7009,14 @@ function cdeStage(lead) {
 // Consulta Kommo por etapa "Empeñado" + updated_at y filtra por F_Empeño.
 const CDE_EMPENOS_URL = 'https://n8n.srv1436923.hstgr.cloud/webhook/dashbord_cde_empenos';
 let cdeEmpenosRemotos = null;   // null = sin dato del endpoint; se usa el conteo local
+let cdeEmpenosReqId = 0;        // descarta respuestas de rangos ya abandonados
 
 async function cdeFetchEmpenos() {
     if (state.clientId !== CDE_SLUG) return;
+    // Cambiar de rango dispara una petición nueva; la anterior puede contestar
+    // después y traería el conteo del rango viejo.
+    const reqId = ++cdeEmpenosReqId;
+    cdeEmpenosRemotos = null;
     const params = new URLSearchParams();
     if (state.filters.start) params.set('desde', Math.floor(state.filters.start.getTime() / 1000));
     if (state.filters.end) params.set('hasta', Math.floor(state.filters.end.getTime() / 1000));
@@ -7020,12 +7025,18 @@ async function cdeFetchEmpenos() {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        if (reqId !== cdeEmpenosReqId) return;   // llegó tarde: ya hay otro rango activo
         const payload = Array.isArray(data) ? data[0] : data;
         if (!payload || typeof payload.total !== 'number') throw new Error('respuesta inesperada');
         cdeEmpenosRemotos = payload.total;
         const c3 = document.getElementById('card-3-value');
         if (c3) c3.textContent = payload.total;
+        // Las tarjetas animan su número al renderizar (animateCounters, en index.html).
+        // Esta respuesta llega a media animación, cuyo destino es el conteo viejo y
+        // pisaría el valor al terminar: se relanza para que apunte al nuevo.
+        if (typeof window.animateCounters === 'function') window.animateCounters();
     } catch (e) {
+        if (reqId !== cdeEmpenosReqId) return;
         // Si el endpoint aún no existe o falla, la tarjeta se queda con el conteo
         // local (solo los empeños de leads creados dentro del rango).
         console.warn('[CDE] Empeños por fecha de empeño no disponibles:', e.message);
