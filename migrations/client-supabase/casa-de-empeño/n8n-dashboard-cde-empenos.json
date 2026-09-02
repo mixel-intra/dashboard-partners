@@ -9,7 +9,10 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "id": "a1000000-0000-4000-8000-000000000001",
       "name": "Webhook Empeños",
       "webhookId": "c1a11ee0-1111-4111-8111-111111111111"
@@ -20,7 +23,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 0],
+      "position": [
+        220,
+        0
+      ],
       "id": "a1000000-0000-4000-8000-000000000002",
       "name": "Lee Rango Empeños"
     },
@@ -33,7 +39,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [440, 0],
+      "position": [
+        440,
+        0
+      ],
       "id": "a1000000-0000-4000-8000-000000000003",
       "name": "Kommo Empeñados"
     },
@@ -43,20 +52,32 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 0],
+      "position": [
+        660,
+        0
+      ],
       "id": "a1000000-0000-4000-8000-000000000004",
       "name": "Acumula Empeños"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
           "conditions": [
             {
               "id": "cond-more",
               "leftValue": "={{ $json.hasMore }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals", "singleValue": true }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
             }
           ],
           "combinator": "and"
@@ -65,7 +86,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [880, 0],
+      "position": [
+        880,
+        0
+      ],
       "id": "a1000000-0000-4000-8000-000000000005",
       "name": "¿Hay más páginas?"
     },
@@ -73,49 +97,244 @@
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "page-next", "name": "page", "value": "={{ $json.page }}", "type": "number" }
+            {
+              "id": "page-next",
+              "name": "page",
+              "value": "={{ $json.page }}",
+              "type": "number"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [880, -200],
+      "position": [
+        880,
+        -200
+      ],
       "id": "a1000000-0000-4000-8000-000000000006",
       "name": "Siguiente Página Empeños"
     },
     {
       "parameters": {
-        "jsCode": "// F_Empeño = campo 1380934 (date_time). Se filtra AQUÍ por el rango exacto:\n// la consulta a Kommo fue por updated_at, que es más amplio.\nconst F_EMPENO_FIELD_ID = 1380934;\n\nconst { desde, hasta } = $('Lee Rango Empeños').first().json;\nconst sd = $getWorkflowStaticData('global');\nconst leads = sd.empLeads || [];\nsd.empLeads = [];\nsd.empPage = 1;\n\nconst tsDe = (lead) => {\n  const f = (lead.custom_fields_values || []).find(c => c.field_id === F_EMPENO_FIELD_ID);\n  return Number(f?.values?.[0]?.value) || 0;\n};\n\nconst enRango = leads.filter(l => { const ts = tsDe(l); return ts >= desde && ts <= hasta; });\n\nconst detalle = enRango.map(l => {\n  const ts = tsDe(l);\n  return {\n    id_lead: l.id,\n    nombre: l._embedded?.contacts?.[0]?.name || l.name,\n    precio: l.price || 0,\n    f_empeno_ts: ts,\n    f_empeno: new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),\n    fecha_creacion: new Date(l.created_at * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })\n  };\n});\n\nreturn [{ json: {\n  total: detalle.length,\n  monto: detalle.reduce((a, d) => a + Number(d.precio || 0), 0),\n  rango: { desde, hasta },\n  revisados: leads.length,\n  leads: detalle\n} }];"
+        "jsCode": "// F_Empeño = campo 1380934 (date_time). Se filtra AQUÍ por el rango exacto:\n// la consulta a Kommo fue por updated_at, que es más amplio.\nconst F_EMPENO_FIELD_ID = 1380934;\n\nconst { desde, hasta } = $('Lee Rango Empeños').first().json;\nconst sd = $getWorkflowStaticData('global');\nconst leads = sd.empLeads || [];\nsd.empLeads = [];\nsd.empPage = 1;\n\nconst tsDe = (lead) => {\n  const f = (lead.custom_fields_values || []).find(c => c.field_id === F_EMPENO_FIELD_ID);\n  return Number(f?.values?.[0]?.value) || 0;\n};\n\nconst enRango = leads.filter(l => { const ts = tsDe(l); return ts >= desde && ts <= hasta; });\n\n// Contacto principal del lead: Kommo solo manda su id aquí (with=contacts no\n// trae el nombre), así que \"Contactos Empeños\" lo resuelve después en batch.\nconst contactoDe = (lead) => {\n  const cs = lead._embedded?.contacts || [];\n  return (cs.find(c => c.is_main) || cs[0] || {}).id || null;\n};\n\nconst detalle = enRango.map(l => {\n  const ts = tsDe(l);\n  return {\n    id_lead: l.id,\n    id_contacto: contactoDe(l),\n    nombre: l._embedded?.contacts?.[0]?.name || l.name,\n    precio: l.price || 0,\n    f_empeno_ts: ts,\n    f_empeno: new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),\n    fecha_creacion: new Date(l.created_at * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })\n  };\n});\n\n// Ids de contacto para resolver nombres en UNA llamada (máx. 250 por request de Kommo)\nconst contactIds = [...new Set(detalle.map(d => d.id_contacto).filter(Boolean))].slice(0, 250);\n\nreturn [{ json: {\n  total: detalle.length,\n  monto: detalle.reduce((a, d) => a + Number(d.precio || 0), 0),\n  rango: { desde, hasta },\n  revisados: leads.length,\n  leads: detalle,\n  hayContactos: contactIds.length > 0,\n  contactQs: contactIds.map(id => `filter[id][]=${id}`).join('&')\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 100],
+      "position": [
+        1100,
+        100
+      ],
       "id": "a1000000-0000-4000-8000-000000000007",
       "name": "Filtra por F_Empeño"
     },
     {
-      "parameters": { "respondWith": "allIncomingItems", "options": {} },
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1320, 100],
+      "position": [
+        1980,
+        100
+      ],
       "id": "a1000000-0000-4000-8000-000000000008",
       "name": "Responde Empeños"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-contactos",
+              "leftValue": "={{ $json.hayContactos }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        100
+      ],
+      "id": "a1000000-0000-4000-8000-000000000009",
+      "name": "¿Hay contactos?"
+    },
+    {
+      "parameters": {
+        "url": "=https://cefemexcasaempeno.kommo.com/api/v4/contacts?limit=250&{{ $json.contactQs }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1540,
+        0
+      ],
+      "id": "a1000000-0000-4000-8000-000000000010",
+      "name": "Contactos Empeños",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pone el NOMBRE DEL CONTACTO (como lo muestra la tabla de leads del dashboard)\n// a cada empeño. Si la llamada a /contacts falló, se queda el nombre del lead.\nconst base = $('Filtra por F_Empeño').first().json;\nconst raw = $input.first().json || {};\nlet data = raw;\ntry { if (typeof raw.data === 'string') data = JSON.parse(raw.data); } catch (e) { data = {}; }\n\nconst nombres = {};\n(data?._embedded?.contacts || []).forEach(c => { if (c.name) nombres[c.id] = c.name; });\n\nconst leads = (base.leads || []).map(l => ({ ...l, nombre: nombres[l.id_contacto] || l.nombre }));\nconst { hayContactos, contactQs, ...resto } = base;\n\nreturn [{ json: { ...resto, leads, contactos_resueltos: Object.keys(nombres).length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ],
+      "id": "a1000000-0000-4000-8000-000000000011",
+      "name": "Nombres Empeños"
     }
   ],
   "connections": {
-    "Webhook Empeños": { "main": [[{ "node": "Lee Rango Empeños", "type": "main", "index": 0 }]] },
-    "Lee Rango Empeños": { "main": [[{ "node": "Kommo Empeñados", "type": "main", "index": 0 }]] },
-    "Kommo Empeñados": { "main": [[{ "node": "Acumula Empeños", "type": "main", "index": 0 }]] },
-    "Acumula Empeños": { "main": [[{ "node": "¿Hay más páginas?", "type": "main", "index": 0 }]] },
-    "¿Hay más páginas?": {
+    "Webhook Empeños": {
       "main": [
-        [{ "node": "Siguiente Página Empeños", "type": "main", "index": 0 }],
-        [{ "node": "Filtra por F_Empeño", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Lee Rango Empeños",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Siguiente Página Empeños": { "main": [[{ "node": "Kommo Empeñados", "type": "main", "index": 0 }]] },
-    "Filtra por F_Empeño": { "main": [[{ "node": "Responde Empeños", "type": "main", "index": 0 }]] }
+    "Lee Rango Empeños": {
+      "main": [
+        [
+          {
+            "node": "Kommo Empeñados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kommo Empeñados": {
+      "main": [
+        [
+          {
+            "node": "Acumula Empeños",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acumula Empeños": {
+      "main": [
+        [
+          {
+            "node": "¿Hay más páginas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay más páginas?": {
+      "main": [
+        [
+          {
+            "node": "Siguiente Página Empeños",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filtra por F_Empeño",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Siguiente Página Empeños": {
+      "main": [
+        [
+          {
+            "node": "Kommo Empeñados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtra por F_Empeño": {
+      "main": [
+        [
+          {
+            "node": "¿Hay contactos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay contactos?": {
+      "main": [
+        [
+          {
+            "node": "Contactos Empeños",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde Empeños",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contactos Empeños": {
+      "main": [
+        [
+          {
+            "node": "Nombres Empeños",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nombres Empeños": {
+      "main": [
+        [
+          {
+            "node": "Responde Empeños",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

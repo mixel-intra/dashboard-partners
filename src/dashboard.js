@@ -7152,13 +7152,24 @@ function cdeRenderEmpenosTable() {
     const act = cdeEmpenosActivos();
     if (nota) nota.style.display = (act.origen === 'local') ? '' : 'none';
 
+    // Nombre del contacto tal como lo muestra la tabla de leads de abajo: el
+    // endpoint de empeños manda el nombre del lead de Kommo ("Lead #id" cuando
+    // no hay contacto), así que se busca el mismo lead en state.leads (webhook
+    // principal, que sí resuelve el nombre del contacto) y se prefiere ese.
+    const nombresPorLead = new Map();
+    (state.leads || []).forEach(x => {
+        const n = (x.nombre || '').trim();
+        if (x.id_lead != null && n && !/^lead #\d+$/i.test(n)) nombresPorLead.set(String(x.id_lead), n);
+    });
+    const nombreDe = (l) => nombresPorLead.get(String(l.id_lead)) || (l.nombre || '').trim() || 'Sin nombre';
+
     const leads = [...act.leads].sort((a, b) => (Number(b.f_empeno_ts) || 0) - (Number(a.f_empeno_ts) || 0));
     if (leads.length === 0) filaAviso('Sin empeños en el periodo');
     leads.forEach(l => {
         const precio = Number(l.precio) || 0;
         const ts = Number(l.f_empeno_ts) || 0;
         const celdas = [
-            { txt: l.nombre || 'Sin nombre', css: 'font-weight:600; color:var(--text-primary);' },
+            { txt: nombreDe(l), css: 'font-weight:600; color:var(--text-primary);' },
             { txt: precio > 0 ? fmt(precio) : '—', css: 'font-weight:600; color:var(--text-primary); font-variant-numeric:tabular-nums;' },
             { txt: ts ? cdeFechaCorta(ts * 1000) : '—', css: '' },
             { txt: cdeFechaCorta(l.fecha_creacion), css: 'color:var(--text-secondary);' }
