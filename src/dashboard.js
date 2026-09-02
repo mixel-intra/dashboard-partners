@@ -7013,15 +7013,22 @@ function cdeStage(lead) {
 // llega en la consulta de agosto y la tarjeta lo perdía.
 // Consulta Kommo por etapa "Empeñado" + updated_at y filtra por F_Empeño.
 const CDE_EMPENOS_URL = 'https://n8n.srv1436923.hstgr.cloud/webhook/dashbord_cde_empenos';
-let cdeEmpenosRemotos = null;   // null = sin dato del endpoint; se usa el conteo local
+// Respuesta completa del endpoint: { total, monto, leads[] }. null = sin respuesta
+// (petición en vuelo o fallida) → se usa el respaldo local (cdeEmpenosLocales()).
+// Conteo (card-3), monto (card-8), ROAS y la tabla "Empeños cerrados del periodo"
+// salen TODOS de cdeEmpenosActivos(), así siempre cuadran entre sí.
+let cdeEmpenos = null;
+let cdeEmpenosCargando = false;
 let cdeEmpenosReqId = 0;        // descarta respuestas de rangos ya abandonados
 
 async function cdeFetchEmpenos() {
     if (state.clientId !== CDE_SLUG) return;
     // Cambiar de rango dispara una petición nueva; la anterior puede contestar
-    // después y traería el conteo del rango viejo.
+    // después y traería los empeños del rango viejo.
     const reqId = ++cdeEmpenosReqId;
-    cdeEmpenosRemotos = null;
+    cdeEmpenos = null;
+    cdeEmpenosCargando = true;
+    cdeRenderEmpenosTable();   // "Cargando…" mientras responde
     const params = new URLSearchParams();
     if (state.filters.start) params.set('desde', Math.floor(state.filters.start.getTime() / 1000));
     if (state.filters.end) params.set('hasta', Math.floor(state.filters.end.getTime() / 1000));
@@ -7033,33 +7040,141 @@ async function cdeFetchEmpenos() {
         if (reqId !== cdeEmpenosReqId) return;   // llegó tarde: ya hay otro rango activo
         const payload = Array.isArray(data) ? data[0] : data;
         if (!payload || typeof payload.total !== 'number') throw new Error('respuesta inesperada');
-        cdeEmpenosRemotos = payload.total;
-        const c3 = document.getElementById('card-3-value');
-        if (c3) c3.textContent = payload.total;
-        // Las tarjetas animan su número al renderizar (animateCounters, en index.html).
-        // Esta respuesta llega a media animación, cuyo destino es el conteo viejo y
-        // pisaría el valor al terminar: se relanza para que apunte al nuevo.
-        if (typeof window.animateCounters === 'function') window.animateCounters();
+        cdeEmpenos = {
+            total: payload.total,
+            monto: Number(payload.monto) || 0,
+            leads: Array.isArray(payload.leads) ? payload.leads : []
+        };
     } catch (e) {
         if (reqId !== cdeEmpenosReqId) return;
-        // Si el endpoint aún no existe o falla, la tarjeta se queda con el conteo
-        // local (solo los empeños de leads creados dentro del rango).
+        // Si el endpoint aún no existe o falla, se pinta el respaldo local
+        // (solo los empeños de leads creados dentro del rango).
         console.warn('[CDE] Empeños por fecha de empeño no disponibles:', e.message);
-        cdeEmpenosRemotos = null;
+        cdeEmpenos = null;
     }
+    cdeEmpenosCargando = false;
+    cdePintarEmpenos();
 }
 
-function cdeEmpenosEnRango() {
+// Respaldo local: empeños con f_empeno_ts (unix en segundos) dentro del rango.
+// Recorre state.leads, no filteredLeads, porque ese ya viene filtrado por fecha
+// de creación y dejaría fuera empeños del rango cuyo lead se creó antes.
+function cdeEmpenosLocales() {
     const ini = state.filters.start ? state.filters.start.getTime() : null;
     const fin = state.filters.end ? state.filters.end.getTime() : null;
-    return (state.leads || []).filter(l => {
+    const leads = (state.leads || []).filter(l => {
         const ts = Number(l.f_empeno_ts);
         if (!ts) return false;
         const ms = ts * 1000;
         if (ini !== null && ms < ini) return false;
         if (fin !== null && ms > fin) return false;
         return true;
-    }).length;
+    }).map(l => ({
+        id_lead: l.id || l.lead_id || null,
+        nombre: l.nombre || (l.id ? 'Lead #' + l.id : 'Sin nombre'),
+        precio: Number(l.precio || l.price || 0),
+        f_empeno_ts: Number(l.f_empeno_ts),
+        fecha_creacion: l.fecha_parsed || l.fecha || null
+    }));
+    return {
+        total: leads.length,
+        monto: leads.reduce((a, l) => a + l.precio, 0),
+        leads,
+        origen: 'local'
+    };
+}
+
+// Fuente única de los empeños del periodo: remota si ya respondió, local si no.
+function cdeEmpenosActivos() {
+    if (cdeEmpenos) return { ...cdeEmpenos, origen: 'remoto' };
+    return cdeEmpenosLocales();
+}
+
+// Pinta conteo, monto, ROAS y tabla con la fuente activa.
+function cdePintarEmpenos() {
+    const act = cdeEmpenosActivos();
+    const c3 = document.getElementById('card-3-value');
+    if (c3) c3.textContent = act.total;
+    const c8 = document.getElementById('card-8-value');
+    if (c8) c8.textContent = '$' + Number(act.monto).toLocaleString('en-US');
+    // Las tarjetas animan su número al renderizar (animateCounters, en index.html).
+    // La respuesta llega a media animación, cuyo destino es el valor viejo y
+    // pisaría el nuevo al terminar: se relanza para que apunte al nuevo.
+    if (typeof window.animateCounters === 'function') window.animateCounters();
+    cdeUpdateMonthView();      // ROAS con el mismo monto de la tarjeta
+    cdeRenderEmpenosTable();
+}
+
+// dd/mm/aaaa a partir de un Date, ms, o el string es-MX que manda el endpoint
+// ("15/8/2026, 5:38:41 p.m."). Si no se reconoce, se devuelve tal cual.
+function cdeFechaCorta(v) {
+    if (v == null || v === '') return '—';
+    let d = null;
+    if (v instanceof Date) d = v;
+    else if (typeof v === 'number') d = new Date(v);
+    else if (typeof v === 'string') {
+        const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (m) return `${m[1].padStart(2, '0')}/${m[2].padStart(2, '0')}/${m[3]}`;
+        const p = new Date(v);
+        if (!isNaN(p.getTime())) d = p;
+    }
+    if (!d || isNaN(d.getTime())) return String(v);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+// Tabla "Empeños cerrados del periodo" (#cde-empenos-card): los mismos empeños
+// que cuentan card-3 y card-8. Se construye con nodos (nombre viene de Kommo).
+function cdeRenderEmpenosTable() {
+    const body = document.getElementById('cde-empenos-body');
+    const foot = document.getElementById('cde-empenos-foot');
+    const nota = document.getElementById('cde-empenos-nota');
+    if (!body || !foot) return;
+    const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
+    body.replaceChildren();
+
+    const filaAviso = (txt) => {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 4;
+        td.textContent = txt;
+        td.style.cssText = 'text-align:center; color:var(--text-muted); padding:22px 16px; font-size:0.85rem;';
+        tr.appendChild(td);
+        body.appendChild(tr);
+    };
+
+    if (cdeEmpenosCargando) {
+        filaAviso('Cargando empeños del periodo…');
+        foot.textContent = '';
+        if (nota) nota.style.display = 'none';
+        return;
+    }
+
+    const act = cdeEmpenosActivos();
+    if (nota) nota.style.display = (act.origen === 'local') ? '' : 'none';
+
+    const leads = [...act.leads].sort((a, b) => (Number(b.f_empeno_ts) || 0) - (Number(a.f_empeno_ts) || 0));
+    if (leads.length === 0) filaAviso('Sin empeños en el periodo');
+    leads.forEach(l => {
+        const precio = Number(l.precio) || 0;
+        const ts = Number(l.f_empeno_ts) || 0;
+        const celdas = [
+            { txt: l.nombre || 'Sin nombre', css: 'font-weight:600; color:var(--text-primary);' },
+            { txt: precio > 0 ? fmt(precio) : '—', css: 'font-weight:600; color:var(--text-primary); font-variant-numeric:tabular-nums;' },
+            { txt: ts ? cdeFechaCorta(ts * 1000) : '—', css: '' },
+            { txt: cdeFechaCorta(l.fecha_creacion), css: 'color:var(--text-secondary);' }
+        ];
+        const tr = document.createElement('tr');
+        celdas.forEach(c => {
+            const td = document.createElement('td');
+            td.textContent = c.txt;
+            if (c.css) td.style.cssText = c.css;
+            tr.appendChild(td);
+        });
+        body.appendChild(tr);
+    });
+
+    // Pie: reproduce literalmente las dos tarjetas (conteo · monto)
+    foot.textContent = `${act.total} ${act.total === 1 ? 'empeño' : 'empeños'} · ${fmt(act.monto)}`;
 }
 
 function cdeIsIntra() {
@@ -7080,6 +7195,10 @@ function renderCdeExtra() {
         if (sg) sg.classList.remove('cde-2col');
         const tr = document.getElementById('top-cards-row'); if (tr) tr.classList.remove('cde-kpis');
         if (pc && pc.parentElement !== sec) sec.appendChild(pc);
+        const ec = document.getElementById('cde-empenos-card');
+        if (ec && ec.parentElement !== sec) { sec.appendChild(ec); ec.style.removeProperty('margin-top'); }
+        const c8 = document.getElementById('card-8-wrapper');
+        if (c8) c8.style.setProperty('display', 'none', 'important');   // solo Casa de Empeño
         return;
     }
     sec.classList.remove('hidden');
@@ -7093,10 +7212,12 @@ function renderCdeExtra() {
         if (k === 'perdido') perdidos.push(l);
     });
     const totalFunnel = CDE_STAGES.reduce((a, s) => a + counts[s.key], 0);
-    // "Empeños cerrados" se cuenta por FECHA DE EMPEÑO (f_empeno_ts), no por la
-    // etapa actual del lead ni por su fecha de creación. cdeEmpenosRemotos llega
-    // del endpoint dedicado y, cuando existe, manda sobre el conteo local.
-    const empenados = (cdeEmpenosRemotos !== null) ? cdeEmpenosRemotos : cdeEmpenosEnRango();
+    // "Empeños cerrados" y "Monto empeñado" se cuentan por FECHA DE EMPEÑO
+    // (f_empeno_ts), no por la etapa actual del lead ni por su fecha de creación.
+    // cdeEmpenosActivos() usa el endpoint dedicado cuando ya respondió y el
+    // respaldo local mientras tanto; cdeFetchEmpenos() repinta al llegar.
+    const empenosAct = cdeEmpenosActivos();
+    const empenados = empenosAct.total;
 
     // Punto 1: Oportunidades calificadas = total del funnel INCLUYENDO venta perdida
     const c1 = document.getElementById('card-1-value'); if (c1) c1.textContent = totalFunnel;
@@ -7104,6 +7225,9 @@ function renderCdeExtra() {
     const lbl3 = document.getElementById('label-main-3'); if (lbl3) lbl3.textContent = 'Empeños cerrados';
     const sub3 = document.getElementById('label-sub-3'); if (sub3) sub3.textContent = 'POR FECHA DE EMPEÑO';
     const c3 = document.getElementById('card-3-value'); if (c3) c3.textContent = empenados;
+    // Tarjeta nueva (card-8): monto $ de esos mismos empeños
+    const c8 = document.getElementById('card-8-value');
+    if (c8) c8.textContent = '$' + Number(empenosAct.monto).toLocaleString('en-US');
     // Reutilizar card-7 como tarjeta "ROAS" (antes "Costo por oportunidad calificada")
     const lbl7 = document.getElementById('label-main-7'); if (lbl7) lbl7.textContent = 'ROAS';
     const sub7 = document.getElementById('label-sub-7'); if (sub7) sub7.textContent = 'MONTO EMPEÑADO / INVERSIÓN PUB.';
@@ -7111,22 +7235,26 @@ function renderCdeExtra() {
     const lbl6s = document.getElementById('label-main-6'); if (lbl6s) lbl6s.textContent = 'Inversión en Publicidad';
     const sub6s = document.getElementById('label-sub-6'); if (sub6s) sub6s.textContent = 'Captura mensual';
 
-    // Las 6 tarjetas en UNA fila: 5(Total) · 1(Oport.) · 2(Conv.) · 3(Empeños) · 7(ROAS) · 6(Inversión)
+    // Las 7 tarjetas en UNA fila:
+    // 5(Total) · 1(Oport.) · 2(Conv.) · 3(Empeños) · 8(Monto empeñado) · 7(ROAS) · 6(Inversión)
     // ROI (card-4) oculto por ahora; solo se muestra ROAS.
     const topRow = document.getElementById('top-cards-row');
     const bottomRow = document.getElementById('bottom-cards-row');
+    const c3w = document.getElementById('card-3-wrapper');
     const c4w = document.getElementById('card-4-wrapper');
     const c5w = document.getElementById('card-5-wrapper');
     const c6w = document.getElementById('card-6-wrapper');
     const c7w = document.getElementById('card-7-wrapper');
+    const c8w = document.getElementById('card-8-wrapper');
     if (c4w) c4w.style.setProperty('display', 'none', 'important');   // ocultar ROI
     if (topRow && c5w && c6w) {
         topRow.insertBefore(c5w, topRow.firstChild);     // Total de Registros PRIMERO
+        if (c8w && c3w) topRow.insertBefore(c8w, c3w.nextSibling);   // Monto empeñado junto a Empeños cerrados
         if (c7w && c4w) topRow.insertBefore(c7w, c4w);   // ROAS donde estaba ROI (antes de card-4)
         topRow.appendChild(c6w);                          // Inversión al final
-        topRow.style.setProperty('grid-template-columns', 'repeat(6, minmax(0, 1fr))', 'important');
+        topRow.style.setProperty('grid-template-columns', 'repeat(7, minmax(0, 1fr))', 'important');
         topRow.classList.add('cde-kpis');   // reparte el contenido para llenar la tarjeta
-        [c5w, c6w, c7w].forEach(el => el && el.style.setProperty('display', 'flex', 'important'));
+        [c5w, c6w, c7w, c8w].forEach(el => el && el.style.setProperty('display', 'flex', 'important'));
     }
     if (bottomRow) bottomRow.style.setProperty('display', 'none', 'important');
 
@@ -7151,6 +7279,13 @@ function renderCdeExtra() {
         dashGrid.insertBefore(leadsCard, splitGrid.nextSibling);   // justo después de la fila de gráficas
         leadsCard.style.setProperty('margin-top', '24px', 'important');
     }
+    // Tabla "Empeños cerrados del periodo": entre las gráficas y la tabla de leads
+    const empCard = document.getElementById('cde-empenos-card');
+    if (empCard && dashGrid && empCard.parentElement !== dashGrid) {
+        dashGrid.insertBefore(empCard, splitGrid.nextSibling);
+        empCard.style.setProperty('margin-top', '24px', 'important');
+    }
+    cdeRenderEmpenosTable();   // estado inicial (local o "Cargando…"); cdeFetchEmpenos repinta
     // Ocultar "Ver todo" (cada lead ya abre su detalle al hacer clic)
     const viewAll = document.getElementById('view-all-btn'); if (viewAll) viewAll.style.display = 'none';
 
@@ -7565,12 +7700,11 @@ async function cdeRenderInvestment() {
     cdeUpdateMonthView();   // refleja el mes activo en card-6 + ROAS
 }
 
-// Monto TOTAL empeñado (suma del Presupuesto de TODOS los empeñados del periodo filtrado)
+// Monto TOTAL empeñado del periodo: el MISMO de la tarjeta "Monto empeñado"
+// (por fecha de empeño, endpoint dedicado o respaldo local), así ROAS cuadra
+// con las tarjetas y con la tabla de empeños del periodo.
 function cdeTotalMontoEmpenado() {
-    const leads = state.filteredLeads || [];
-    let monto = 0;
-    leads.forEach(l => { if (cdeStage(l) === 'empenado') monto += Number(l.precio || l.price || 0); });
-    return monto;
+    return cdeEmpenosActivos().monto;
 }
 
 // Meses (YYYY-MM) presentes en el periodo filtrado (según la fecha de los leads)

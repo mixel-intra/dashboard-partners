@@ -4936,6 +4936,24 @@
                         </div>
                         <div class="card-chart-container" style="display:none;"><canvas id="chart-4"></canvas></div>
                     </div>
+
+                    <!-- Card 8: Monto empeñado — SOLO Casa de Empeño. renderCdeExtra() la muestra
+                         y la coloca junto a "Empeños cerrados" (card-3); el resto de clientes no la ve. -->
+                    <div class="card-quantix card-cyan" id="card-8-wrapper" style="display:none;">
+                        <div class="kpi-card-top">
+                            <div class="label-group">
+                                <span class="label-main" id="label-main-8">Monto empeñado</span>
+                                <span class="label-sub" id="label-sub-8">POR FECHA DE EMPEÑO</span>
+                            </div>
+                            <div class="icon-box" style="background: rgba(147,197,253,0.15); border-color: rgba(147,197,253,0.25); color: #93C5FD; box-shadow: 0 0 20px rgba(147,197,253,0.2);">
+                                <ion-icon name="wallet"></ion-icon>
+                            </div>
+                        </div>
+                        <div class="value-big" id="card-8-value">$0</div>
+                        <div class="pill-change pill-green" id="pill-8">
+                            <ion-icon name="trending-up"></ion-icon> <span id="pill-8-text">Suma de empeños cerrados</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Middle Row: Chart & Table -->
@@ -6097,6 +6115,33 @@
                     </div>
                     <div id="cde-pie-empty" style="display:none; font-size:12px; color:var(--text-muted); margin-top:10px;">Sin motivos registrados en el periodo.</div>
                 </div>
+
+                <!-- Tabla "Empeños cerrados del periodo": los MISMOS empeños que cuentan las tarjetas
+                     "Empeños cerrados" y "Monto empeñado" (mismo endpoint, por fecha de empeño).
+                     JS (renderCdeExtra) la reubica debajo de las gráficas, encima de la tabla de leads. -->
+                <div class="table-card" id="cde-empenos-card" style="display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; gap:12px;">
+                        <div>
+                            <span class="label-sub">POR FECHA DE EMPEÑO</span>
+                            <h3 class="section-headline" style="font-size:1.5rem; margin:0;">Empeños cerrados del periodo</h3>
+                            <div id="cde-empenos-nota" style="display:none; font-size:12px; color:var(--text-muted); margin-top:6px;">Datos locales: solo leads registrados en el periodo</div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper" style="border:none; padding:0; background:none; max-height:420px; overflow-y:auto;">
+                        <table>
+                            <thead class="leads-thead" style="position:sticky; top:0; z-index:10;">
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Monto</th>
+                                    <th>Fecha de empeño</th>
+                                    <th>Fecha de registro</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cde-empenos-body"></tbody>
+                        </table>
+                    </div>
+                    <div id="cde-empenos-foot" style="display:flex; justify-content:flex-end; gap:8px; padding:14px 16px 0; font-size:0.88rem; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; border-top:1px solid rgba(127,127,127,0.18); margin-top:8px;"></div>
+                </div>
                 <!-- La tabla "Registro de leads" (#leads-table-card) se mueve aquí (debajo de las gráficas) por JS -->
             </section>
 
@@ -6213,7 +6258,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260819-cde5"></script>
+    <script src="src/dashboard.js?v=20260902-cde6"></script>
     <script src="src/metrics-cefemex.js?v=20260805-cmx19"></script>
 
     <!-- Client Switcher Drawer -->
@@ -9212,6 +9257,11 @@
         var valueBigs = document.querySelectorAll('.value-big');
         valueBigs.forEach(function (el) {
             var raw = el.textContent.trim();
+            // El destino se lee del texto en pantalla. Si hay una animación en vuelo
+            // y nadie cambió el texto desde fuera, lo que hay en pantalla es un valor
+            // PARCIAL de esa animación: no se relanza (tomaría el parcial como destino
+            // y el número se quedaría a medias). Solo se relanza si el texto cambió.
+            if (el._animToken && !el._animDone && raw === el._animLast) return;
             // Extract prefix, number, suffix
             var match = raw.match(/^([^0-9]*)([0-9,\.]+)([^0-9]*)$/);
             if (!match) return;
@@ -9230,8 +9280,12 @@
 
             var start = null;
             var duration = 1200;
+            // Una llamada nueva con texto distinto cancela la animación anterior
+            var token = el._animToken = (el._animToken || 0) + 1;
+            el._animDone = false;
 
             function step(ts) {
+                if (el._animToken !== token) return;   // cancelada por una llamada posterior
                 if (!start) start = ts;
                 var elapsed = ts - start;
                 var t = Math.min(elapsed / duration, 1);
@@ -9245,6 +9299,7 @@
                 }
                 el.textContent = prefix + formatted + suffix;
                 if (t < 1) {
+                    el._animLast = el.textContent;
                     requestAnimationFrame(step);
                 } else {
                     // Ensure final value matches exactly
@@ -9253,6 +9308,8 @@
                     } else {
                         el.textContent = prefix + target.toFixed(decimals) + suffix;
                     }
+                    el._animLast = el.textContent;
+                    el._animDone = true;
                 }
             }
             requestAnimationFrame(step);
