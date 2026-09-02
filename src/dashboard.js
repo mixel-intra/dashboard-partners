@@ -7568,7 +7568,10 @@ function cdePieModalEsc(e) { if (e.key === 'Escape') cdeClosePieModal(); }
 
 // ── Mini-tarjetas de estatus (reemplazan el dropdown) + detalle de lead ──
 let cdeTableLeads = [];   // leads actualmente mostrados en la tabla (para abrir el detalle por índice)
-const CDE_CHIP_ESTADOS = ['Lead Empeño Oro', 'Rescate / Empeño Otros', 'Cita agendada', 'Reagendar', 'Empeñado', 'Venta perdida'];
+// Sin "Empeñado": esta sección se corta por fecha de REGISTRO del lead y su conteo
+// de empeñados no coincide con la tarjeta "Empeños cerrados" (por fecha de empeño).
+// Los empeños del periodo viven en la tabla "Empeños cerrados del periodo".
+const CDE_CHIP_ESTADOS = ['Lead Empeño Oro', 'Rescate / Empeño Otros', 'Cita agendada', 'Reagendar', 'Venta perdida'];
 
 function cdeRenderStatusChips(leadsToShow, current) {
     const bar = document.getElementById('table-filter-bar');
