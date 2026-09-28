@@ -34,6 +34,7 @@ const leadsListHandler    = require('./api/leads/list');
 const reservationsCreateHandler = require('./api/reservations/create');
 const kommoHeartbeatHandler = require('./api/kommo/heartbeat');
 const kommoSweepHandler     = require('./api/kommo/sweep');
+const kommoLeadsHandler     = require('./api/kommo/leads');
 
 // Adapta el res de Node.js nativo a la API de Vercel (res.status().json())
 function vercelRes(res) {
@@ -88,6 +89,11 @@ const server = http.createServer(async (req, res) => {
     // ── /api/kommo/sweep (job de vencimiento; GET=cron) ──────
     if (req.url.startsWith('/api/kommo/sweep')) {
         return callApi(kommoSweepHandler, req, res);
+    }
+
+    // ── /api/kommo/leads (leads directo de Kommo, sin n8n) ───
+    if (req.url.startsWith('/api/kommo/leads')) {
+        return callApi(kommoLeadsHandler, req, res);
     }
 
     // ── Static files ──────────────────────────────────────────

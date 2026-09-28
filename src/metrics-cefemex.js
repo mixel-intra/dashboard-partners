@@ -446,11 +446,21 @@ function cmxRenderCards(cards) {
     `).join('')}</div>`;
 }
 
+// Monto de los créditos ganados en el rango (suma del precio de los leads con
+// resultado "Ganado"). Con por=cierre el endpoint ya corta por fecha de cierre.
+function cmxMontoGanado() {
+    return (cefemexMetrics.data.leads || [])
+        .filter(l => /ganad/i.test(l.resultado || ''))
+        .reduce((a, l) => a + (Number(l.precio) || 0), 0);
+}
+
 function cmxBuildCardsHtml(totales) {
     if (!totales) return '';
+    const porCierre = cefemexMetrics.por !== 'creacion';
     return cmxRenderCards([
         { label: 'Leads en el rango', sub: 'TOTAL', value: cmxNum(totales.leads), cls: 'card-cyan', icon: 'people-outline' },
         { label: 'Ganados', sub: 'CERRADOS', value: cmxNum(totales.ganados), cls: 'card-orange', icon: 'trophy-outline' },
+        { label: 'Ventas', sub: porCierre ? 'MONTO GANADO · POR FECHA DE CIERRE' : 'MONTO GANADO · POR FECHA DE CREACIÓN', value: cmxMonto(cmxMontoGanado()), cls: 'card-cyan', icon: 'cash-outline' },
         { label: 'Perdidos', sub: 'CERRADOS', value: cmxNum(totales.perdidos), cls: 'card-pink', icon: 'close-circle-outline' },
         { label: 'Días en proceso · Ganado', sub: 'PROMEDIO', value: fmtDias(totales.dias_en_proceso_promedio_ganado), cls: 'card-purple', icon: 'trending-up-outline' },
         { label: 'Días en proceso · Perdido', sub: 'PROMEDIO', value: fmtDias(totales.dias_en_proceso_promedio_perdido), cls: 'card-purple', icon: 'trending-down-outline' },

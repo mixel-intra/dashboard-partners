@@ -18,6 +18,9 @@
   "functions": {
     "api/scrape-reviews.js": {
       "maxDuration": 300
+    },
+    "api/kommo/leads.js": {
+      "maxDuration": 60
     }
   },
   "crons": [

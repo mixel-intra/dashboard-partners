@@ -143,12 +143,11 @@ async function init() {
             return;
         }
 
-        // Clientes con data server-side por rango: Casa de Empeño arranca consultando
-        // solo el día actual; CEFEMEX Capital, el mes en curso.
-        if (usaRangoServidor()) {
-            if (esCasaDeEmpeno()) setRangoHoy();
-            else setRangoMesEnCurso();
-        }
+        // Casa de Empeño consulta por rango en el servidor y arranca en el día actual.
+        // CEFEMEX Capital trae todo su histórico de una vez, pero arranca mostrando el
+        // mes en curso para no abrir con 6,700 leads encima.
+        if (esCasaDeEmpeno()) setRangoHoy();
+        else if (state.clientId === 'cefemex') setRangoMesEnCurso();
 
         await fetchData();
         setLoaderProgress(75);
@@ -413,10 +412,13 @@ function setPredefinedRange(range) {
     aplicarRangoFechas();
 }
 
-// CEFEMEX Capital y Casa de Empeño consultan los leads por rango de fechas en el
-// servidor; los demás clientes traen todo una vez y filtran en memoria.
+// Clientes que consultan los leads por rango de fechas en el servidor (cambiar de
+// fechas obliga a re-consultar). Los demás traen todo una vez y filtran en memoria.
+// CEFEMEX Capital salió de aquí el 2026-09-28: ahora se piden TODOS sus leads de
+// una sola vez a Kommo (api/kommo/leads.js, ~15 s) y el rango se aplica en memoria,
+// así cambiar de fechas es instantáneo y "Todo el tiempo" funciona de verdad.
 function usaRangoServidor() {
-    return state.clientId === 'cefemex' || esCasaDeEmpeno();
+    return esCasaDeEmpeno();
 }
 
 function esCasaDeEmpeno() {
@@ -987,19 +989,35 @@ function generateFakeHotelLeads() {
 
 async function fetchData() {
     const isDemoMode = state.config.webhookUrl === 'DEMO';
-    console.log(isDemoMode ? 'MODO DEMO — Generando datos ficticios' : 'Fetching leads from (via proxy): ' + state.config.webhookUrl);
+    console.log(isDemoMode ? 'MODO DEMO — Generando datos ficticios'
+        : state.clientId === 'cefemex' ? 'Leads desde Kommo (directo, sin n8n)'
+        : 'Fetching leads from (via proxy): ' + state.config.webhookUrl);
 
     try {
         let rawData;
 
         if (isDemoMode) {
             rawData = generateFakeHotelLeads();
+        } else if (state.clientId === 'cefemex') {
+            // CEFEMEX Capital ya no pasa por n8n. Se consulta Kommo directo con el
+            // token de larga duración desde el servidor (api/kommo/leads.js), que
+            // devuelve el mismo formato que devolvía el webhook.
+            // Motivo: n8n tardaba ~63 s por 180 días y se CAÍA con rangos mayores
+            // (502 y servidor en 503 varios minutos). Directo, la cuenta completa
+            // (6,772 leads) baja en ~15 s. Se pide TODO y el filtro de fechas se
+            // aplica en memoria, así cambiar de rango ya no re-consulta nada.
+            const response = await fetch('/api/kommo/leads?client=cefemex');
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            rawData = await response.json();
         } else {
             let leadsUrl = state.config.webhookUrl;
-            // CEFEMEX Capital / Casa de Empeño: el webhook filtra los leads por rango de fechas en el servidor
-            if (usaRangoServidor() && state.filters.start && state.filters.end) {
-                const desde = Math.floor(state.filters.start.getTime() / 1000);
-                const hasta = Math.floor(state.filters.end.getTime() / 1000);
+            // Casa de Empeño: el webhook filtra los leads por rango en el servidor.
+            // El rango se manda SIEMPRE explícito: sin parámetros, el flujo de n8n
+            // asume "mes en curso", así que "Todo el tiempo" (filtros vacíos) traía
+            // menos leads que "Últimos 30 días".
+            if (usaRangoServidor()) {
+                const desde = state.filters.start ? Math.floor(state.filters.start.getTime() / 1000) : 0;
+                const hasta = state.filters.end ? Math.floor(state.filters.end.getTime() / 1000) : Math.floor(Date.now() / 1000);
                 leadsUrl += (leadsUrl.includes('?') ? '&' : '?') + `desde=${desde}&hasta=${hasta}`;
             }
             const proxyUrl = `/api/proxy?url=${encodeURIComponent(leadsUrl)}`;
@@ -1054,6 +1072,12 @@ async function fetchData() {
         console.log(`Leads Processing Complete. Total: ${state.leads.length}` + (isDemoMode ? ' (DEMO)' : ''));
     } catch (error) {
         console.error('Fetch Data Failed:', error);
+        // Si ya había datos en pantalla (cambio de rango que falló), se conservan y se
+        // avisa, en vez de dejar el dashboard en ceros como si no hubiera leads.
+        if (usaRangoServidor() && state.leads && state.leads.length > 0) {
+            if (typeof showToast === 'function') showToast('No se pudieron actualizar los datos del rango. Se muestran los últimos cargados.', 'warning', 6000);
+            return;
+        }
         state.leads = [];
         state.filteredLeads = [];
     }
@@ -1075,21 +1099,33 @@ function calculateMetrics() {
 
     const investment = parseFloat(state.config.investment) || 0;
 
-    // Filtrar ventas por el rango de fechas activo
-    const filteredVentas = state.ventas.filter(v => {
-        if (!v.fecha) return true;
-        const ventaDate = new Date(v.fecha + 'T00:00:00');
-        if (state.filters.start && ventaDate < state.filters.start) return false;
-        if (state.filters.end && ventaDate > state.filters.end) return false;
-        return true;
-    });
-    const sales = filteredVentas.reduce((sum, v) => sum + parseFloat(v.monto || 0), 0);
+    let sales, ganados = 0;
+    if (state.clientId === 'cefemex') {
+        // CEFEMEX Capital: las ventas salen de Kommo, no de la tabla manual.
+        // Venta = lead en etapa "Ganado" (142); monto = precio del lead (monto del
+        // crédito). Se cuenta sobre filteredLeads, es decir POR FECHA DE CREACIÓN
+        // del lead, igual que el resto del Dashboard (decisión del cliente, 2026-09-28).
+        // Las ventas por fecha de CIERRE viven en la pestaña Métricas.
+        const won = state.filteredLeads.filter(l => Number(l.estatus_id) === CEFEMEX_ETAPA_GANADO);
+        ganados = won.length;
+        sales = won.reduce((sum, l) => sum + (Number(l.precio || l.price) || 0), 0);
+    } else {
+        // Filtrar ventas por el rango de fechas activo
+        const filteredVentas = state.ventas.filter(v => {
+            if (!v.fecha) return true;
+            const ventaDate = new Date(v.fecha + 'T00:00:00');
+            if (state.filters.start && ventaDate < state.filters.start) return false;
+            if (state.filters.end && ventaDate > state.filters.end) return false;
+            return true;
+        });
+        sales = filteredVentas.reduce((sum, v) => sum + parseFloat(v.monto || 0), 0);
+    }
 
     const conversionRate = total > 0 ? (qualified / total) : 0;
     const roi = investment > 0 ? (sales / investment) : 0;
     const cpl = qualified > 0 ? (investment / qualified) : 0;
 
-    return { total, qualified, investment, sales, roi, conversionRate, cpl };
+    return { total, qualified, investment, sales, ganados, roi, conversionRate, cpl };
 }
 
 function updateUI(m) {
@@ -1102,6 +1138,17 @@ function updateUI(m) {
     setTxt('card-2-value', (m.conversionRate * 100).toFixed(1) + '%');
     setTxt('card-3-value', `$${m.sales.toLocaleString('en-US')}`);
     setTxt('card-4-value', `${m.roi.toFixed(2)}x`);
+
+    // CEFEMEX Capital: la tarjeta "Ventas" viene de Kommo (leads Ganado del rango)
+    if (state.clientId === 'cefemex') {
+        setTxt('label-sub-3', 'CRÉDITOS GANADOS EN KOMMO');
+        setTxt('pill-3-text', `${m.ganados} ${m.ganados === 1 ? 'crédito ganado' : 'créditos ganados'}`);
+        // El registro manual de ventas se duplicaría con Kommo: se oculta.
+        ['ventas-toggle-btn', 'ventas-mobile-btn'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.setProperty('display', 'none', 'important');
+        });
+    }
 
     setTxt('card-5-value', m.total);
     setTxt('card-6-value', `$${m.investment.toLocaleString('en-US')}`);
