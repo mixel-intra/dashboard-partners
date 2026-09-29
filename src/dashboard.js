@@ -1354,16 +1354,17 @@ function clearTableFilters() {
 }
 
 // Etiqueta de origen del lead (CEFEMEX Capital) según tags de Kommo.
-// Se compara por PREFIJO, no por igualdad: además de calificado_intra y
-// condicionado_intra, Camila pone variantes por monto (calificado_intra_500k,
-// calificado_intra_150k_499k). Con igualdad exacta, un lead que solo trajera la
-// variante se iba a "Orgánico" sin que nadie lo notara.
+// Solo estos dos nombres EXACTOS cuentan como Intra. Las variantes por monto
+// (calificado_intra_150k_499k, calificado_intra_500k) NO cuentan a propósito:
+// fueron un error que ya se corrigió en Kommo el 2026-09-29 — a los leads del
+// rango 150k-499k se les quitó calificado_intra y se les dejó una etiqueta
+// neutra "150k-499k", porque ese rango no se considera calificado.
 // Ojo: "Orgánico" no es una clasificación, es el sobrante — en Kommo no existe
 // ninguna etiqueta que lo marque; significa "sin etiqueta de calificación".
 function etiquetaIntra(lead) {
     const tags = getLeadTags(lead);
-    if (tags.some(t => t.startsWith('calificado_intra'))) return 'Calificado Intra';
-    if (tags.some(t => t.startsWith('condicionado_intra'))) return 'Condicionado Intra';
+    if (tags.includes('calificado_intra')) return 'Calificado Intra';
+    if (tags.includes('condicionado_intra')) return 'Condicionado Intra';
     return 'Orgánico';
 }
 
