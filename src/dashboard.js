@@ -1104,8 +1104,24 @@ function ajustarValorGrande(el) {
     }
 }
 
+// animateCounters saca el destino del PROPIO texto de la tarjeta. Si una animación
+// anterior sigue viva, uno de sus fotogramas pisa el valor que el render acaba de
+// escribir y la animación nueva arranca apuntando al valor viejo: el dashboard se
+// quedaba en ceros al cargar, porque el primer render va sin datos todavía y las
+// tarjetas seguían contando hacia 0 aunque las píldoras ya mostraran el dato real.
+// Por eso, tras cada render se corta lo que quedara en vuelo.
+function cancelarConteo(el) {
+    el._animToken = (el._animToken || 0) + 1;
+    el._animDone = true;
+    el._animLast = (el.textContent || '').trim();
+}
+
+// Se llama SIEMPRE justo después de escribir los valores y ANTES de animarlos.
 function ajustarValoresGrandes() {
-    document.querySelectorAll('.value-big').forEach(ajustarValorGrande);
+    document.querySelectorAll('.value-big').forEach(el => {
+        cancelarConteo(el);
+        ajustarValorGrande(el);
+    });
 }
 
 function calculateMetrics() {
@@ -7196,10 +7212,12 @@ function cdePintarEmpenos() {
     // Las tarjetas animan su número al renderizar (animateCounters, en index.html).
     // La respuesta llega a media animación, cuyo destino es el valor viejo y
     // pisaría el nuevo al terminar: se relanza para que apunte al nuevo.
-    if (typeof window.animateCounters === 'function') window.animateCounters();
     cdeUpdateMonthView();      // ROAS con el mismo monto de la tarjeta
     cdeRenderEmpenosTable();
+    // Orden obligatorio: primero fijar los valores, luego animarlos. Al revés,
+    // ajustarValoresGrandes cortaría la animación que se acaba de lanzar.
     ajustarValoresGrandes();
+    if (typeof window.animateCounters === 'function') window.animateCounters();
 }
 
 // dd/mm/aaaa a partir de un Date, ms, o el string es-MX que manda el endpoint

@@ -1215,6 +1215,10 @@ tr:hover td { background: rgba(255,255,255,0.03); color: var(--text-primary); }
 [data-theme="light"] .dash-tab.active ion-icon { color: inherit; }
 [data-theme="light"] .dash-tab.active::after { background: #0F172A; }
 [data-theme="light"] .chart-mode-btn.active { background: linear-gradient(135deg, #6366F1, #4F46E5) !important; }
+/* El botón inactivo es blanco al 40%: sobre la tarjeta clara desaparecía */
+[data-theme="light"] .chart-mode-toggle { background: #F1F5F9; border-color: rgba(15,23,42,0.08); }
+[data-theme="light"] .chart-mode-btn { color: #64748B; }
+[data-theme="light"] .chart-mode-btn:hover { color: #0F172A !important; }
 [data-theme="light"] .modal-overlay { background: rgba(15,23,42,0.4); }
 [data-theme="light"] .modal-content { background: #FFF; border-color: rgba(15,23,42,0.1); box-shadow: 0 24px 60px rgba(15,23,42,0.15); }
 [data-theme="light"] .modal-header { border-bottom-color: rgba(15,23,42,0.08); }
