@@ -1354,11 +1354,17 @@ function clearTableFilters() {
 }
 
 // Etiqueta de origen del lead (CEFEMEX Capital) según tags de Kommo.
+// Se compara por PREFIJO, no por igualdad: además de calificado_intra y
+// condicionado_intra, Camila pone variantes por monto (calificado_intra_500k,
+// calificado_intra_150k_499k). Con igualdad exacta, un lead que solo trajera la
+// variante se iba a "Orgánico" sin que nadie lo notara.
+// Ojo: "Orgánico" no es una clasificación, es el sobrante — en Kommo no existe
+// ninguna etiqueta que lo marque; significa "sin etiqueta de calificación".
 function etiquetaIntra(lead) {
     const tags = getLeadTags(lead);
-    if (tags.includes('calificado_intra')) return 'Calificado Intra';
-    if (tags.includes('condicionado_intra')) return 'Condicionado Intra';
-    return 'Orgánico'; // no trae ninguno de los dos tags intra
+    if (tags.some(t => t.startsWith('calificado_intra'))) return 'Calificado Intra';
+    if (tags.some(t => t.startsWith('condicionado_intra'))) return 'Condicionado Intra';
+    return 'Orgánico';
 }
 
 const ETIQUETA_INTRA_STYLE = {
@@ -1811,7 +1817,6 @@ function ventasCefemexEnRango() {
     });
 }
 const CEFEMEX_ETAPA_PERDIDO = 143;
-const CEFEMEX_TAGS_CALIFICAN = ['calificado_intra', 'condicionado_intra'];
 
 function isQualified(lead) {
     if (!lead) return false;
@@ -1826,9 +1831,11 @@ function isQualified(lead) {
         // Ganado: cuentan todos.
         if (etapa === CEFEMEX_ETAPA_GANADO) return true;
 
-        // Perdido: solo si trae tag calificado_intra / condicionado_intra.
+        // Perdido: solo si Camila lo había calificado (etiqueta *_intra).
+        // Se resuelve con etiquetaIntra() para que use el mismo criterio de
+        // prefijo que la columna "Etiqueta" y el filtro Intra/Orgánico.
         if (etapa === CEFEMEX_ETAPA_PERDIDO) {
-            return getLeadTags(lead).some(t => CEFEMEX_TAGS_CALIFICAN.includes(String(t).toLowerCase()));
+            return etiquetaIntra(lead) !== 'Orgánico';
         }
 
         return false;
