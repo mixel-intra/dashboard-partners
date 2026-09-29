@@ -764,14 +764,7 @@ function applyGlobalFilters() {
         }
 
         // Filtro global de etiqueta — solo CEFEMEX Capital
-        if (match && state.clientId === 'cefemex' && state.filters.etiqueta) {
-            const etq = etiquetaIntra(lead);
-            if (state.filters.etiqueta === 'intra') {
-                match = (etq === 'Calificado Intra' || etq === 'Condicionado Intra');
-            } else if (state.filters.etiqueta === 'organico') {
-                match = (etq === 'Orgánico');
-            }
-        }
+        if (match) match = pasaFiltroEtiqueta(lead);
 
         return match;
     });
@@ -1090,6 +1083,29 @@ function renderDashboard() {
     renderTable();
     renderMobileDashboard();
     if (typeof renderCdeExtra === 'function') renderCdeExtra(); // CEFEMEX Casa de Empeño (solo ese cliente)
+    ajustarValoresGrandes();
+}
+
+// .value-big es de 3.2rem fijos y la tarjeta tiene overflow:hidden, así que los
+// números largos ($47,826,285, 4904.25x) se cortaban a media cifra. Se baja el
+// tamaño por pasos hasta que el número quepa en su tarjeta.
+// Se mide el texto FINAL: animateCounters cuenta desde 0, con menos dígitos, así
+// que el tamaño elegido aquí le sirve durante toda la animación.
+function ajustarValorGrande(el) {
+    if (!el) return;
+    // Respetar los tamaños que alguna vista fija a propósito con !important
+    // (p. ej. "Sin inversión" en la tarjeta de ROAS de Casa de Empeño).
+    if (el.style.getPropertyPriority('font-size') === 'important') return;
+    el.style.removeProperty('font-size');
+    el.style.whiteSpace = 'nowrap';
+    const pasos = ['2.7rem', '2.3rem', '2rem', '1.7rem', '1.45rem', '1.25rem'];
+    for (let i = 0; i < pasos.length && el.scrollWidth > el.clientWidth; i++) {
+        el.style.fontSize = pasos[i];
+    }
+}
+
+function ajustarValoresGrandes() {
+    document.querySelectorAll('.value-big').forEach(ajustarValorGrande);
 }
 
 function calculateMetrics() {
@@ -1749,6 +1765,18 @@ const CEFEMEX_ETAPAS_CALIFICADAS = new Set([
 ]);
 const CEFEMEX_ETAPA_GANADO = 142;
 
+// Filtro global de etiqueta (Todas / Intra / Orgánico) — solo CEFEMEX Capital.
+// Vive aparte porque lo comparten applyGlobalFilters, que corta por fecha de
+// creación, y ventasCefemexEnRango, que corta por fecha de cierre: el selector
+// tiene que afectar por igual a las tarjetas de conteo y a la de Ventas.
+function pasaFiltroEtiqueta(lead) {
+    if (state.clientId !== 'cefemex' || !state.filters.etiqueta) return true;
+    const etq = etiquetaIntra(lead);
+    if (state.filters.etiqueta === 'intra') return etq === 'Calificado Intra' || etq === 'Condicionado Intra';
+    if (state.filters.etiqueta === 'organico') return etq === 'Orgánico';
+    return true;
+}
+
 // Créditos ganados CERRADOS dentro del rango activo (cerrado_ts = closed_at de
 // Kommo, unix en segundos). Lo usan la tarjeta "Ventas" del Dashboard, el ROI y la
 // tarjeta gemela de la pestaña Métricas, así los tres dan siempre lo mismo.
@@ -1757,6 +1785,7 @@ function ventasCefemexEnRango() {
     const fin = state.filters.end ? state.filters.end.getTime() : null;
     return (state.leads || []).filter(l => {
         if (Number(l.estatus_id) !== CEFEMEX_ETAPA_GANADO) return false;
+        if (!pasaFiltroEtiqueta(l)) return false;
         const ts = Number(l.cerrado_ts);
         if (!ts) return false;
         const ms = ts * 1000;
@@ -7170,6 +7199,7 @@ function cdePintarEmpenos() {
     if (typeof window.animateCounters === 'function') window.animateCounters();
     cdeUpdateMonthView();      // ROAS con el mismo monto de la tarjeta
     cdeRenderEmpenosTable();
+    ajustarValoresGrandes();
 }
 
 // dd/mm/aaaa a partir de un Date, ms, o el string es-MX que manda el endpoint

@@ -352,6 +352,7 @@ function renderCefemexMetricsContent() {
             : `<div class="cmx-state-msg">${vacio}</div>${esActivos ? '' : cmxBuildDescartadosHtml()}`}
     `;
     if (hayLeads) cmxRenderTableSlot();
+    cmxAjustarValores();
 }
 
 function cmxRenderTableSlot() {
@@ -429,6 +430,12 @@ function cmxBuildNoteHtml(totales) {
             <span>Comparación con poca base: ${cmxNum(ganados)} leads ganados contra ${cmxNum(perdidos)} perdidos en este rango. Cualquier lectura entre ambos grupos se apoya en muy pocos casos del lado ganador.</span>
         </div>
     `;
+}
+
+// Las tarjetas de Métricas usan la misma clase .value-big, así que también les
+// toca el ajuste de tamaño para que los montos largos no se corten.
+function cmxAjustarValores() {
+    if (typeof ajustarValoresGrandes === 'function') ajustarValoresGrandes();
 }
 
 function cmxRenderCards(cards) {
