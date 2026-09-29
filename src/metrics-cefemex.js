@@ -448,10 +448,23 @@ function cmxRenderCards(cards) {
 
 // Monto de los créditos ganados en el rango (suma del precio de los leads con
 // resultado "Ganado"). Con por=cierre el endpoint ya corta por fecha de cierre.
+//
+// El precio se toma del lead VIGENTE en Kommo (state.leads, que el Dashboard ya
+// tiene cargado), no del que manda este reporte: cuando el monto se corrige en el
+// mismo movimiento que marca el lead como Ganado, el reporte se queda con el valor
+// anterior (pasó con el lead 61049521, $3.0M → $3.5M en el mismo minuto, y dejaba
+// el total $500,000 por debajo del de la tarjeta "Ventas" del Dashboard).
 function cmxMontoGanado() {
+    const vigente = {};
+    if (typeof state !== 'undefined') {
+        (state.leads || []).forEach(l => { vigente[l.id_lead] = Number(l.precio) || 0; });
+    }
     return (cefemexMetrics.data.leads || [])
         .filter(l => /ganad/i.test(l.resultado || ''))
-        .reduce((a, l) => a + (Number(l.precio) || 0), 0);
+        .reduce((a, l) => {
+            const v = vigente[l.lead_id];
+            return a + (v === undefined ? (Number(l.precio) || 0) : v);
+        }, 0);
 }
 
 function cmxBuildCardsHtml(totales) {

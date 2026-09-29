@@ -1103,10 +1103,13 @@ function calculateMetrics() {
     if (state.clientId === 'cefemex') {
         // CEFEMEX Capital: las ventas salen de Kommo, no de la tabla manual.
         // Venta = lead en etapa "Ganado" (142); monto = precio del lead (monto del
-        // crédito). Se cuenta sobre filteredLeads, es decir POR FECHA DE CREACIÓN
-        // del lead, igual que el resto del Dashboard (decisión del cliente, 2026-09-28).
-        // Las ventas por fecha de CIERRE viven en la pestaña Métricas.
-        const won = state.filteredLeads.filter(l => Number(l.estatus_id) === CEFEMEX_ETAPA_GANADO);
+        // crédito). Se cuenta POR FECHA DE CIERRE (cerrado_ts), no por la fecha de
+        // creación que filtra el resto del Dashboard: un crédito que entró en abril
+        // y se firmó en agosto es una venta de agosto. Mismo criterio que la pestaña
+        // Métricas, para que las dos vistas den el mismo número.
+        // Por eso se recorre state.leads y no filteredLeads, que ya viene cortado
+        // por fecha de creación y dejaría fuera los cierres de leads antiguos.
+        const won = ventasCefemexEnRango();
         ganados = won.length;
         sales = won.reduce((sum, l) => sum + (Number(l.precio || l.price) || 0), 0);
     } else {
@@ -1141,7 +1144,7 @@ function updateUI(m) {
 
     // CEFEMEX Capital: la tarjeta "Ventas" viene de Kommo (leads Ganado del rango)
     if (state.clientId === 'cefemex') {
-        setTxt('label-sub-3', 'CRÉDITOS GANADOS EN KOMMO');
+        setTxt('label-sub-3', 'POR FECHA DE CIERRE');
         setTxt('pill-3-text', `${m.ganados} ${m.ganados === 1 ? 'crédito ganado' : 'créditos ganados'}`);
         // El registro manual de ventas se duplicaría con Kommo: se oculta.
         ['ventas-toggle-btn', 'ventas-mobile-btn'].forEach(id => {
@@ -1745,6 +1748,23 @@ const CEFEMEX_ETAPAS_CALIFICADAS = new Set([
     // #19 LEADS HILLFLARE (94994555) se ignora por completo — filtrado en el workflow "DASHBOARD" de n8n
 ]);
 const CEFEMEX_ETAPA_GANADO = 142;
+
+// Créditos ganados CERRADOS dentro del rango activo (cerrado_ts = closed_at de
+// Kommo, unix en segundos). Lo usan la tarjeta "Ventas" del Dashboard, el ROI y la
+// tarjeta gemela de la pestaña Métricas, así los tres dan siempre lo mismo.
+function ventasCefemexEnRango() {
+    const ini = state.filters.start ? state.filters.start.getTime() : null;
+    const fin = state.filters.end ? state.filters.end.getTime() : null;
+    return (state.leads || []).filter(l => {
+        if (Number(l.estatus_id) !== CEFEMEX_ETAPA_GANADO) return false;
+        const ts = Number(l.cerrado_ts);
+        if (!ts) return false;
+        const ms = ts * 1000;
+        if (ini !== null && ms < ini) return false;
+        if (fin !== null && ms > fin) return false;
+        return true;
+    });
+}
 const CEFEMEX_ETAPA_PERDIDO = 143;
 const CEFEMEX_TAGS_CALIFICAN = ['calificado_intra', 'condicionado_intra'];
 

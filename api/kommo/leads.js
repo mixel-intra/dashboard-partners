@@ -182,6 +182,11 @@ module.exports = async function handler(req, res) {
                 // Mismo formato que mandaba n8n; parseCustomDate del dashboard lo lee tal cual.
                 fecha_creacion: new Date(l.created_at * 1000)
                     .toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),
+                // Fecha en que el lead se cerró (Ganado o Perdido), unix en segundos.
+                // Coincide exactamente con el "cerrado_en" que calcula el reporte de
+                // Métricas a partir del historial de etapas (verificado en los 18
+                // ganados del histórico). La tarjeta "Ventas" cuenta por esta fecha.
+                cerrado_ts: l.closed_at || null,
                 utm_medium: valor(campos, cuenta.campos.utm_medium),
                 utm_campaign: valor(campos, cuenta.campos.utm_campaign),
                 utm_content: valor(campos, cuenta.campos.utm_content),
