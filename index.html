@@ -6258,7 +6258,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/dashboard.js?v=20260929-cmx9"></script>
+    <script src="src/dashboard.js?v=20260929-cmx10"></script>
     <script src="src/metrics-cefemex.js?v=20260928-cmx22"></script>
 
     <!-- Client Switcher Drawer -->
@@ -9295,7 +9295,9 @@
                 if (isInt) {
                     formatted = Math.round(current).toLocaleString('en-US');
                 } else {
-                    formatted = current.toFixed(decimals);
+                    // toFixed pierde el separador de miles: "$19876.71" en vez de
+                    // "$19,876.71". Se nota desde que la inversión trae centavos.
+                    formatted = current.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
                 }
                 el.textContent = prefix + formatted + suffix;
                 if (t < 1) {
@@ -9306,7 +9308,7 @@
                     if (isInt) {
                         el.textContent = prefix + Math.round(target).toLocaleString('en-US') + suffix;
                     } else {
-                        el.textContent = prefix + target.toFixed(decimals) + suffix;
+                        el.textContent = prefix + target.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + suffix;
                     }
                     el._animLast = el.textContent;
                     el._animDone = true;

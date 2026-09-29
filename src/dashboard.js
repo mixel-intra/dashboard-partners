@@ -153,6 +153,9 @@ async function init() {
         setLoaderProgress(75);
 
         await loadVentasForDashboard();
+        // CEFEMEX Capital: la inversión mensual tiene que estar cargada ANTES del
+        // primer render, si no la tarjeta y el ROI salen con el valor viejo de config.
+        if (state.clientId === 'cefemex') await invCargarSpend();
         setLoaderProgress(92);
 
         applyGlobalFilters();
@@ -1129,7 +1132,14 @@ function calculateMetrics() {
     const qualifiedLeads = state.filteredLeads.filter(l => isQualified(l));
     const qualified = qualifiedLeads.length;
 
-    const investment = parseFloat(state.config.investment) || 0;
+    // CEFEMEX Capital: la inversión sale de la captura mensual (tabla ad_spend),
+    // sumando los meses que toca el rango, en vez del número fijo de la config.
+    // De ahí salen también el ROI y el Costo por oportunidad, que antes dividían
+    // siempre entre el mismo importe daba igual el periodo elegido.
+    // Si todavía no cargó la captura se usa el valor de config, para no mostrar $0.
+    const investment = (state.clientId === 'cefemex' && Object.keys(invSpendMap).length)
+        ? invGastoDelRango()
+        : (parseFloat(state.config.investment) || 0);
 
     let sales, ganados = 0;
     if (state.clientId === 'cefemex') {
@@ -1183,6 +1193,20 @@ function updateUI(m) {
             const el = document.getElementById(id);
             if (el) el.style.setProperty('display', 'none', 'important');
         });
+
+        // Inversión por mes, igual que Casa de Empeño y con el mismo panel.
+        setTxt('label-main-6', 'Inversión en Publicidad');
+        setTxt('label-sub-6', 'Captura mensual');
+        const conGasto = invMesesDelRango().filter(mm => invSpendMap[mm] != null);
+        setTxt('card-6-date', conGasto.length === 1 ? invLabel(conGasto[0])
+            : conGasto.length ? `${conGasto.length} meses` : 'Sin captura');
+        const w6 = document.getElementById('card-6-wrapper');
+        if (w6 && !w6.dataset.invClick) {
+            w6.style.cursor = 'pointer';
+            w6.title = 'Clic para registrar la inversión mensual';
+            w6.addEventListener('click', cdeOpenInvestmentPanel);
+            w6.dataset.invClick = '1';
+        }
     }
 
     setTxt('card-5-value', m.total);
@@ -1190,8 +1214,9 @@ function updateUI(m) {
     setTxt('card-7-value', `$${m.cpl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
     // Fecha de actualización de inversión
+    // CEFEMEX Capital pinta su propio pie en el bloque de arriba (mes o nº de meses)
     const card6pill = document.getElementById('card-6-date');
-    if (card6pill) {
+    if (card6pill && state.clientId !== 'cefemex') {
         if (state.config.investmentUpdatedAt) {
             const [y, mo, d] = state.config.investmentUpdatedAt.split('-');
             card6pill.textContent = `Actualizada al ${d}/${mo}/${y}`;
@@ -7786,36 +7811,89 @@ function cdeCloseLeadModal() {
 
 function cdeLeadModalEsc(e) { if (e.key === 'Escape') cdeCloseLeadModal(); }
 
-// ── Inversión en Publicidad (captura mensual, editable por el CLIENTE) ──
-// Reemplaza la tarjeta "Inversión" (card-6). El gasto vive en la tabla ad_spend
-// (por mes, Mayo–Diciembre 2026). El ROAS (card-7) = monto empeñado ÷ gasto total.
+// ── Inversión en Publicidad (captura mensual, tabla ad_spend) ──
+// La usan DOS clientes con el MISMO panel de captura (#cde-invest-panel, que vive
+// fuera de la sección de Casa de Empeño y por eso se puede reusar):
+//   · Casa de Empeño → tarjeta "Inversión" + ROAS
+//   · CEFEMEX Capital → tarjeta "Inversión" + ROI + Costo por oportunidad
+// Lo único que cambia entre uno y otro es el cliente activo y el rango de meses.
 const CDE_MESES = ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12'];
-const CDE_MES_LABEL = {
-    '2026-05': 'Mayo 2026', '2026-06': 'Junio 2026', '2026-07': 'Julio 2026', '2026-08': 'Agosto 2026',
-    '2026-09': 'Septiembre 2026', '2026-10': 'Octubre 2026', '2026-11': 'Noviembre 2026', '2026-12': 'Diciembre 2026'
-};
-let cdeSpendMap = {};
+const INV_MES_NOMBRE = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+let invSpendMap = {};
 
 let cdeSelMonth = '';   // mes activo que refleja la tarjeta + ROAS
 
-function cdeDefaultMonth() {
-    const now = new Date().toISOString().slice(0, 7);
-    return CDE_MESES.includes(now) ? now : '2026-05';
+// Cuenta sobre la que se lee y se guarda el gasto: siempre el cliente abierto.
+function invSlug() { return state.clientId; }
+
+function invLabel(periodo) {
+    const [y, m] = String(periodo).split('-');
+    return INV_MES_NOMBRE[Number(m) - 1] ? `${INV_MES_NOMBRE[Number(m) - 1]} ${y}` : periodo;
 }
 
-async function cdeRenderInvestment() {
-    // Cargar gasto mensual de la tabla ad_spend
+// Meses que ofrece el panel. Casa de Empeño arrancó en mayo y conserva su lista;
+// los demás ven el año en curso completo. Se suma cualquier periodo ya capturado
+// que quede fuera de esa base, para no esconder un mes viejo con gasto.
+function invMeses() {
+    let base;
+    if (esCasaDeEmpeno()) {
+        base = CDE_MESES;
+    } else {
+        const anio = new Date().getFullYear();
+        base = Array.from({ length: 12 }, (_, i) => `${anio}-${String(i + 1).padStart(2, '0')}`);
+    }
+    return [...new Set([...base, ...Object.keys(invSpendMap)])].sort();
+}
+
+function cdeDefaultMonth() {
+    const meses = invMeses();
+    const now = new Date().toISOString().slice(0, 7);
+    return meses.includes(now) ? now : (meses[0] || now);
+}
+
+// Carga el gasto mensual del cliente activo desde ad_spend.
+async function invCargarSpend() {
     let rows = [];
     try {
         if (window.adminSupabase) {
             const { data } = await window.adminSupabase.from('ad_spend')
-                .select('periodo, monto').eq('account_slug', CDE_SLUG);
+                .select('periodo, monto').eq('account_slug', invSlug());
             rows = data || [];
         }
-    } catch (e) { console.error('[cde] ad_spend', e); }
-    cdeSpendMap = {};
-    rows.forEach(r => { cdeSpendMap[r.periodo] = Number(r.monto) || 0; });
+    } catch (e) { console.error('[inversión] ad_spend', e); }
+    invSpendMap = {};
+    rows.forEach(r => { invSpendMap[r.periodo] = Number(r.monto) || 0; });
     if (!cdeSelMonth) cdeSelMonth = cdeDefaultMonth();
+    return invSpendMap;
+}
+
+// Meses (YYYY-MM) que cubre el rango de fechas activo. Sin rango ("Todo el
+// tiempo") cuentan todos los meses capturados.
+function invMesesDelRango() {
+    const capturados = Object.keys(invSpendMap).sort();
+    if (!state.filters.start && !state.filters.end) return capturados;
+    const ini = state.filters.start || (capturados[0] ? new Date(capturados[0] + '-01T00:00:00') : new Date());
+    const fin = state.filters.end || new Date();
+    const out = [];
+    const d = new Date(ini.getFullYear(), ini.getMonth(), 1);
+    while (d <= fin) {
+        out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+        d.setMonth(d.getMonth() + 1);
+    }
+    return out;
+}
+
+// Gasto del rango activo: suma de los meses que toca. Es lo que alimenta la
+// tarjeta "Inversión", el ROI y el Costo por oportunidad de CEFEMEX Capital.
+function invGastoDelRango() {
+    return invMesesDelRango().reduce((a, m) => a + (invSpendMap[m] || 0), 0);
+}
+
+async function cdeRenderInvestment() {
+    // Cargar gasto mensual de la tabla ad_spend
+    await invCargarSpend();
 
     // Tarjeta "Inversión en Publicidad" (card-6) — SOLO muestra el dato (la captura va en el panel)
     const lbl6 = document.getElementById('label-main-6'); if (lbl6) lbl6.textContent = 'Inversión en Publicidad';
@@ -7869,11 +7947,11 @@ function cdeUpdateMonthView() {
     const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
 
     const months = cdePeriodMonths();
-    const periodSpend = months.reduce((a, m) => a + (cdeSpendMap[m] || 0), 0);
+    const periodSpend = months.reduce((a, m) => a + (invSpendMap[m] || 0), 0);
 
     let label;
     if (months.length === 0) label = 'Sin datos en el periodo';
-    else if (months.length === 1) label = CDE_MES_LABEL[months[0]] || months[0];
+    else if (months.length === 1) label = invLabel(months[0]);
     else label = 'Periodo filtrado';
 
     const val = document.getElementById('card-6-value'); if (val) val.textContent = fmt(periodSpend);
@@ -7902,7 +7980,7 @@ function cdeOpenInvestmentPanel() {
     const back = document.getElementById('cde-invest-backdrop');
     if (!panel) return;
     const sel = document.getElementById('cde-inv-mes');
-    if (sel) sel.innerHTML = CDE_MESES.map(m => `<option value="${m}"${m === cdeSelMonth ? ' selected' : ''}>${CDE_MES_LABEL[m]}</option>`).join('');
+    if (sel) sel.innerHTML = invMeses().map(m => `<option value="${m}"${m === cdeSelMonth ? ' selected' : ''}>${invLabel(m)}</option>`).join('');
     cdeInvestSyncInput();
     cdeInvestRenderList();
     panel.classList.add('open');
@@ -7922,7 +8000,7 @@ function cdeInvestEsc(e) { if (e.key === 'Escape') cdeCloseInvestmentPanel(); }
 
 function cdeInvestSyncInput() {
     const inp = document.getElementById('cde-inv-monto');
-    if (inp) inp.value = (cdeSpendMap[cdeSelMonth] != null) ? cdeSpendMap[cdeSelMonth] : '';
+    if (inp) inp.value = (invSpendMap[cdeSelMonth] != null) ? invSpendMap[cdeSelMonth] : '';
 }
 
 function cdeInvestPickMonth() {
@@ -7945,10 +8023,10 @@ function cdeInvestRenderList() {
     const cont = document.getElementById('cde-inv-list');
     if (!cont) return;
     const fmt = (n) => '$' + Number(n).toLocaleString('en-US');
-    cont.innerHTML = CDE_MESES.map(m => {
-        const a = cdeSpendMap[m] || 0;
+    cont.innerHTML = invMeses().map(m => {
+        const a = invSpendMap[m] || 0;
         return `<div class="cde-inv-row${m === cdeSelMonth ? ' active' : ''}" onclick="cdeInvestSelect('${m}')">`
-            + `<span class="m">${CDE_MES_LABEL[m]}</span><span class="a">${fmt(a)}</span></div>`;
+            + `<span class="m">${invLabel(m)}</span><span class="a">${fmt(a)}</span></div>`;
     }).join('');
 }
 
@@ -7958,12 +8036,12 @@ async function cdeInvestSave(btn) {
     const monto = Math.max(0, parseFloat(document.getElementById('cde-inv-monto').value) || 0);
     try {
         await window.adminSupabase.from('ad_spend').upsert(
-            { account_slug: CDE_SLUG, periodo, monto, updated_at: new Date().toISOString() },
+            { account_slug: invSlug(), periodo, monto, updated_at: new Date().toISOString() },
             { onConflict: 'account_slug,periodo' });
-        cdeSpendMap[periodo] = monto;
+        invSpendMap[periodo] = monto;
         if (btn) { const t = btn.textContent; btn.textContent = '✓ Guardado'; setTimeout(() => btn.textContent = t, 1400); }
         cdeInvestRenderList();
         cdeUpdateMonthView();
-        if (typeof showToast === 'function') showToast('Inversión guardada (' + (CDE_MES_LABEL[periodo] || periodo) + ')', 'success');
+        if (typeof showToast === 'function') showToast('Inversión guardada (' + invLabel(periodo) + ')', 'success');
     } catch (e) { console.error('[cde] save spend', e); alert('Error: ' + e.message); }
 }
