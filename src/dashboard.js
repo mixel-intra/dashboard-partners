@@ -1775,7 +1775,12 @@ const CEFEMEX_ETAPAS_CALIFICADAS = new Set([
     // #8 Rechazado (100538408) NO cuenta — un lead rechazado no es una oportunidad calificada
     100538404, // #9  Condicionado
     100458628, // #10 Lead Calificado
-    100538416, // #11 Atención personalizada
+    // #11 Atención personalizada (100538416) NO cuenta: ahí caen los leads que
+    // Camila escala a un asesor ANTES de terminar de calificarlos, así que no
+    // tienen score todavía. Se ve en los datos: ninguno trae etiqueta de
+    // calificación, solo stop_ai, y llegan saltándose "Precalificando (score)".
+    // El reporte de Métricas ya la excluía ("atencion_personalizada: Excluida
+    // del alcance"); el Dashboard era el que no coincidía.
     101647764, // #12 Contacto inicial
     94994543,  // #13 Integración de expediente E1
     104432180, // #14 Preanálisis
