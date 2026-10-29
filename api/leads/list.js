@@ -33,6 +33,21 @@ function sendCors(res) {
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
 }
 
+// `created_at` y `demo_inicio` son timestamptz (instantes UTC reales) → hora de pared
+// CDMX 'YYYY-MM-DDTHH:mm:ss', para que el panel cuente periodos y horario igual que el
+// reporte semanal sin depender de la zona horaria del navegador.
+const fmtCdmx = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Mexico_City', hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+});
+function aCdmx(ts) {
+    if (!ts) return null;
+    const d = new Date(ts);
+    if (isNaN(d)) return null;
+    const p = Object.fromEntries(fmtCdmx.formatToParts(d).map(x => [x.type, x.value]));
+    return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`;
+}
+
 // Mapea una fila cruda de Supabase a las claves canónicas que consume director.js,
 // conservando además los campos originales (empresa, correo, situacion, urgencia,
 // accion_calendario, demo_inicio, event_id, contexto, …) por si el panel los usa.
@@ -43,6 +58,8 @@ function mapLead(row) {
         nombre:         row.nombre,
         telefono:       row.telefono_contacto || row.telefono || '',
         fecha_creacion: row.created_at,
+        created_cdmx:   aCdmx(row.created_at),    // cuándo se AGENDÓ la demo (hora CDMX)
+        demo_cdmx:      aCdmx(row.demo_inicio),   // cuándo se DA la demo (hora CDMX)
         // Dimensiones de marketing: director.js las normaliza con normSistema()/normFuente().
         // Se exponen como utm_* (además de los originales) para robustez.
         // NOTA: la columna del canal de contacto se renombró de `fuente` a `contacto`.

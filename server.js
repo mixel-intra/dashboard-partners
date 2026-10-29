@@ -31,6 +31,7 @@ try {
 const proxyHandler        = require('./api/proxy');
 const leadsIngestHandler  = require('./api/leads/ingest');
 const leadsListHandler    = require('./api/leads/list');
+const leadsConvHandler    = require('./api/leads/conversaciones');
 const reservationsCreateHandler = require('./api/reservations/create');
 const kommoHeartbeatHandler = require('./api/kommo/heartbeat');
 const kommoSweepHandler     = require('./api/kommo/sweep');
@@ -74,6 +75,11 @@ const server = http.createServer(async (req, res) => {
     // ── /api/leads/list (lee leads de Airtable para el panel) ─
     if (req.url.startsWith('/api/leads/list')) {
         return callApi(leadsListHandler, req, res);
+    }
+
+    // ── /api/leads/conversaciones (primer mensaje por persona, panel Logic) ─
+    if (req.url.startsWith('/api/leads/conversaciones')) {
+        return callApi(leadsConvHandler, req, res);
     }
 
     // ── /api/reservations/create ─────────────────────────────

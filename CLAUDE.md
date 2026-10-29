@@ -104,6 +104,22 @@ datos ficticios (`demoLeads()`); el viejo flag `webhook_url = 'DEMO'` ya se igno
 _(La ruta anterior por Airtable — `AIRTABLE_TOKEN` + `clients_config.leads_config` —
 se retiró; ver historial de git.)_
 
+**Datos del reporte semanal de Edel (oct 2026), integrados al dashboard existente** (no
+es un bloque aparte): periodo "Semana (lun–dom)" con ‹ › (abre en la semana pasada) y "Mes
+calendario"; el funnel del hero dice "Conversaciones atendidas" (antes "Leads entrantes",
+que venía del webhook de Kommo e incluía empeño); tarjeta "Fuera de horario"; tarjeta
+"Conversaciones y demos por fuente" a todo lo ancho (reemplaza la vieja "Fuente" de
+`fuente_lead`); "Contacto" → "Canal de mensajería". Las conversaciones salen de
+**`/api/leads/conversaciones`** (`n8n_chat_histories` de la misma Supabase): una por persona
+(`session_id`), contada en el periodo de su **primer mensaje humano**, sin empeño/prenda. La
+**fuente se clasifica por el texto de ese primer mensaje** (`clasificarFuente()`), NO con
+`leads.fuente_lead` (estuvo mal guardado). Reglas idénticas a la skill `logic-reporte-semanal`
+(`references/consultas.md`); si cambian allá, cambian aquí. Horario laboral = L–V 8:00–18:30
+CDMX. ⚠️ `n8n_chat_histories.created_at` ya es hora CDMX (no convertir); `leads.created_at`/
+`demo_inicio` son UTC reales → `list.js` expone `created_cdmx`/`demo_cdmx`. Los filtros
+Sistema/Canal filtran demos, no conversaciones (el sistema se conoce hasta que agenda).
+Validación: semana 12–18 oct 2026 = 36 conversaciones (5 dentro/31 fuera), 2 demos, 6%.
+
 Cada lead de la tabla `leads` **ya está calificado y con demo agendada en el
 calendario real (Outlook)**: trae `accion_calendario`, `demo_inicio` y `event_id`
 (la integración de calendario que antes estaba pendiente ya existe). Por eso los
@@ -120,13 +136,15 @@ como en el dashboard estándar):
   botones fijos para los 4 productos → **CIB Financiera, e-SIGeN, CIB Casa de Empeño,
   e-SIGeN PLD**. Definidos en `SISTEMAS` (`src/director.js`); cada lead se mapea con
   `normSistema()` desde `utm_campaign`.
-- **Fuente:** botones fijos → **Facebook, WhatsApp, Instagram, Google** (siempre estas
-  cuatro). Definidos en `FUENTES`; cada lead se mapea con `normFuente()` desde
-  `utm_medium`/`utm_source`.
+- **Canal de mensajería** (antes "Contacto"): botones fijos → **WhatsApp, Messenger,
+  Instagram**. Definidos en `FUENTES`; cada lead se mapea con `normFuente()` desde
+  `utm_medium` (= `leads.contacto`); lo que no reconoce cae en "Sin dato". Es el canal
+  por donde escribió quien agendó, NO la campaña de origen (esa es la tarjeta
+  "Conversaciones y demos por fuente"). ⚠️ El agente guarda `contacto = 'whatsapp'`
+  fijo; verificado en Kommo (oct 2026): todos los leads calificados sí fueron WhatsApp.
 
 `normSistema()`/`normFuente()` normalizan por regex con fallbacks, así que toleran
-variantes (`fb`, `ig`, `cpc`, "casa de empeño", etc.). **Cuando confirmes cómo llega
-el dato real de Kommo, ajusta esos patrones.** El agente de IA que califica los leads
+variantes (`fb`, `ig`, `waba`, "casa de empeño", etc.). El agente de IA que califica los leads
 se llama **Camila** (etapa "Seguimiento CAMILA" en el pipeline de Kommo). Bump del
 cache-bust `director.js?v=YYYYMMDD-N` al tocar el JS.
 

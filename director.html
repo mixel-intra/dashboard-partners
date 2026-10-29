@@ -109,13 +109,26 @@
             .sidebar { height: auto; min-height: 100dvh; }
         }
 
+        /* Flechas ‹ › del periodo (semana / mes) */
+        .dg-pnav { width:36px; height:36px; border-radius:11px; background:#FFFFFF; border:1px solid #E3E3E8; color:#1D1D1F; font-size:19px; line-height:1; display:inline-flex; align-items:center; justify-content:center; transition:border-color 140ms ease, background 140ms ease; }
+        .dg-pnav:hover:not(:disabled) { border-color:#C7C7CC; background:#FBFBFD; }
+        .dg-pnav:disabled { opacity:0.35; cursor:default; }
+        /* Tarjeta "Conversaciones y demos por fuente" */
+        .dg-bento > * { min-width: 0; }
+        .dg-fu-row { display:grid; grid-template-columns: minmax(140px,1.1fr) minmax(200px,2.6fr) minmax(110px,0.8fr) minmax(130px,0.9fr) minmax(140px,0.9fr); gap:0 24px; align-items:center; padding:14px 0; border-top:1px solid #F2F2F5; }
+        .dg-fu-head { border-top:none; padding:0 0 10px; font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; color:#86868B; }
+        .dg-fu-row.vacia > * { opacity:0.5; }
+        .dg-fu-num { font-size:17px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F; font-variant-numeric:tabular-nums; }
+        .dg-fu-sub { font-size:11.5px; color:#86868B; margin-top:2px; }
+        .dg-fu-mlabel { display:none; }
+
         /* Media queries en orden desktop-first (los anchos menores ganan por orden) */
         /* ── Tablet ── */
         @media (max-width: 1100px) {
             .dg-wrap { padding: 32px 24px 56px !important; }
             .dg-bento { grid-template-columns: 1fr 1fr !important; }
-            .dg-hero, .dg-trend, .dg-products, .dg-agenda { grid-column: 1 / span 2 !important; grid-row: auto !important; }
-            .dg-donut, .dg-sources, .dg-top { grid-column: auto !important; grid-row: auto !important; }
+            .dg-hero, .dg-trend, .dg-products, .dg-agenda, .dg-fuentes, .dg-top { grid-column: 1 / span 2 !important; grid-row: auto !important; }
+            .dg-donut, .dg-sources { grid-column: auto !important; grid-row: auto !important; }
             .dg-products-grid { grid-template-columns: repeat(2, 1fr) !important; }
             .dg-cal-cell { min-height: 96px; }
         }
@@ -127,12 +140,16 @@
             .dg-cal-daynum { min-width: 20px; height: 20px; font-size: 11.5px; padding: 0 4px; }
             .dg-cal-weekdays > div { font-size: 9.5px; padding: 8px 0; }
             .dg-legend { gap: 8px 12px; }
+            .dg-fu-head { display:none; }
+            .dg-fu-row { grid-template-columns: repeat(3, 1fr); gap:10px 12px; align-items:start; }
+            .dg-fu-name, .dg-fu-bar { grid-column: 1 / -1; }
+            .dg-fu-mlabel { display:block; font-size:10.5px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; color:#A1A1A6; margin-bottom:2px; }
         }
         /* ── Móvil ── */
         @media (max-width: 680px) {
             .dg-wrap { padding: 22px 14px 44px !important; }
             .dg-bento { grid-template-columns: 1fr !important; }
-            .dg-hero, .dg-trend, .dg-products, .dg-agenda, .dg-donut, .dg-sources, .dg-top { grid-column: 1 !important; }
+            .dg-hero, .dg-trend, .dg-products, .dg-agenda, .dg-donut, .dg-sources, .dg-top, .dg-fuentes { grid-column: 1 !important; }
             .dg-products-grid { grid-template-columns: 1fr 1fr !important; }
         }
         @media (max-width: 460px) {
@@ -240,9 +257,17 @@
                 <div>
                     <div style="font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#0A6CFF;">Inteligencia comercial · intra</div>
                     <div id="dg-client-name" style="font-size:27px; font-weight:600; letter-spacing:-0.02em; color:#1D1D1F; margin-top:7px;">Logic Systems</div>
+                    <div style="display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px; margin-top:6px;">
+                        <span id="periodRange" style="font-size:17px; font-weight:600; letter-spacing:-0.01em; color:#3A3A3C;">—</span>
+                        <span id="periodNote" style="font-size:12.5px; color:#86868B;"></span>
+                    </div>
                 </div>
-                <div style="display:flex; align-items:center; gap:14px;">
-                    <select id="periodSelect" class="dg-select" aria-label="Periodo"></select>
+                <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button class="dg-pnav" onclick="window.__dgPeriodMove(-1)" title="Periodo anterior" aria-label="Periodo anterior">‹</button>
+                        <select id="periodSelect" class="dg-select" aria-label="Periodo"></select>
+                        <button class="dg-pnav" id="periodNext" onclick="window.__dgPeriodMove(1)" title="Periodo siguiente" aria-label="Periodo siguiente">›</button>
+                    </div>
                     <div style="display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:999px; background:#E7F7EF; border:1px solid #C7EEDB;">
                         <span style="width:7px; height:7px; border-radius:999px; background:#1FB36B; animation:pulseDot 2.4s infinite;"></span>
                         <span style="font-size:12.5px; font-weight:600; color:#0E8F53;">Agente activo · 24/7</span>
@@ -257,8 +282,8 @@
                     <select id="sysSelect" class="dg-select" aria-label="Sistema"></select>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#A1A1A6;">Contacto</span>
-                    <select id="srcSelect" class="dg-select" aria-label="Contacto"></select>
+                    <span style="font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#A1A1A6;">Canal de mensajería</span>
+                    <select id="srcSelect" class="dg-select" aria-label="Canal de mensajería"></select>
                 </div>
             </div>
 
@@ -270,7 +295,7 @@
                     <div style="font-size:11.5px; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; color:#86868B; line-height:1.35;">Citas / demos de 90 min agendadas</div>
                     <div class="citasFmt" style="font-size:84px; line-height:0.86; font-weight:600; letter-spacing:-0.04em; color:#0A6CFF; margin-top:14px;">—</div>
                     <div style="display:flex; align-items:center; gap:9px; margin-top:18px;">
-                        <span style="display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:999px; background:#E7F7EF; font-size:12.5px; font-weight:600; color:#0E8F53;">↑ <span class="dCitas">—</span></span>
+                        <span class="dCitas" style="display:inline-flex; align-items:center; padding:5px 11px; border-radius:999px; background:#F2F4F7; font-size:12.5px; font-weight:600; color:#6E6E73;">—</span>
                         <span style="font-size:12.5px; color:#86868B;">vs. periodo anterior</span>
                     </div>
 
@@ -283,12 +308,12 @@
 
                 <!-- TREND -->
                 <div class="dg-trend lift" style="grid-column:2 / span 3; grid-row:1; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:26px 28px;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px 12px; flex-wrap:wrap;">
                         <div>
-                            <div style="font-size:11.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#86868B; white-space:nowrap;">Tendencia de agendamiento</div>
+                            <div style="font-size:11.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#86868B;">Tendencia de agendamiento</div>
                             <div style="font-size:22px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F; margin-top:8px;"><span class="citasFmt">—</span> demos · <span class="periodLabel">—</span></div>
                         </div>
-                        <span style="display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:999px; background:#E7F7EF; font-size:12.5px; font-weight:600; color:#0E8F53;">↑ <span class="dCitas">—</span></span>
+                        <span class="dCitas" style="display:inline-flex; align-items:center; padding:5px 11px; border-radius:999px; background:#F2F4F7; font-size:12.5px; font-weight:600; color:#6E6E73; white-space:nowrap;">—</span>
                     </div>
                     <div id="trendBig" style="margin-top:14px;"></div>
                 </div>
@@ -298,30 +323,46 @@
                     <div style="font-size:11.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#86868B; margin-bottom:8px;">Tasa de agendamiento</div>
                     <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
                         <div id="donut" style="flex:none;"></div>
-                        <div style="font-size:12.5px; color:#6E6E73; line-height:1.45; text-align:center; max-width:210px;">de cada lead entrante termina en demo agendada</div>
+                        <div style="font-size:12.5px; color:#6E6E73; line-height:1.45; text-align:center; max-width:210px;">de cada conversación atendida termina en demo agendada</div>
                     </div>
                 </div>
 
-                <!-- CONTACTO -->
+                <!-- CANAL DE MENSAJERÍA (columna `contacto`) -->
                 <div class="dg-sources lift" style="grid-column:3; grid-row:2; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:24px; display:flex; flex-direction:column;">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                         <i class="ph ph-broadcast" style="font-size:16px; color:#0A6CFF;"></i>
-                        <span style="font-size:11.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#86868B;">Contacto</span>
+                        <span style="font-size:11.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#86868B;">Canal de mensajería</span>
                     </div>
+                    <div style="font-size:12px; color:#A1A1A6; margin-bottom:16px;">Por dónde escribió quien agendó demo</div>
                     <div id="sources"></div>
                 </div>
 
-                <!-- FUENTE (columna fuente_lead, categorías dinámicas) -->
+                <!-- FUERA DE HORARIO -->
                 <div class="dg-top lift" style="grid-column:4; grid-row:2; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:24px; display:flex; flex-direction:column;">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px;">
-                        <i class="ph ph-funnel" style="font-size:16px; color:#0A6CFF;"></i>
-                        <span style="font-size:11.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#86868B;">Fuente</span>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                        <i class="ph ph-moon-stars" style="font-size:16px; color:#0A6CFF;"></i>
+                        <span style="font-size:11.5px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#86868B;">Fuera de horario</span>
                     </div>
-                    <div id="fuenteLead"></div>
+                    <div id="fueraHorario" style="flex:1; display:flex; flex-direction:column;"></div>
+                </div>
+
+                <!-- FUENTE: conversaciones y demos por fuente (texto del primer mensaje) -->
+                <div class="dg-fuentes lift" style="grid-column:1 / span 4; grid-row:3; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:28px 30px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px 20px; flex-wrap:wrap; margin-bottom:20px;">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="ph ph-funnel" style="font-size:16px; color:#0A6CFF;"></i>
+                                <span style="font-size:15px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F;">Conversaciones y demos por fuente</span>
+                            </div>
+                            <div style="font-size:12.5px; color:#86868B; margin-top:4px;">Según el primer mensaje de cada conversación · <span class="periodLabel">—</span></div>
+                        </div>
+                        <div id="fuentesLeyenda" style="display:flex; gap:16px; font-size:12px; color:#6E6E73; padding-top:3px;"></div>
+                    </div>
+                    <div id="fuentes"></div>
                 </div>
 
                 <!-- CAMPAÑAS -->
-                <div class="dg-products lift" style="grid-column:1 / span 4; grid-row:3; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:28px 30px;">
+                <div class="dg-products lift" style="grid-column:1 / span 4; grid-row:4; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:28px 30px;">
                     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:20px;">
                         <span style="font-size:15px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F;">Estadísticas por sistema</span>
                         <span style="font-size:12.5px; color:#86868B;">Demos agendadas por producto · <span class="periodLabel">—</span></span>
@@ -330,7 +371,7 @@
                 </div>
 
                 <!-- AGENDA (calendario) -->
-                <div class="dg-agenda lift" style="grid-column:1 / span 4; grid-row:4; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:26px 30px;">
+                <div class="dg-agenda lift" style="grid-column:1 / span 4; grid-row:5; background:#FFFFFF; border-radius:24px; box-shadow:0 1px 2px rgba(16,24,40,0.04), 0 10px 28px rgba(16,24,40,0.05); padding:26px 30px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
                         <div>
                             <span style="font-size:15px; font-weight:600; letter-spacing:-0.01em; color:#1D1D1F;">Agenda de demos</span>
@@ -430,7 +471,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/config.js"></script>
     <script src="src/auth.js"></script>
-    <script src="src/director.js?v=20260724-1"></script>
+    <script src="src/director.js?v=20261019-3"></script>
 </body>
 
 </html>
