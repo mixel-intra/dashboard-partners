@@ -826,7 +826,7 @@ async function exportToPDF() {
 }
 
 function exportLeadsToExcel() {
-    const leads = state.filteredLeads.filter(l => isQualified(l));
+    const leads = leadsCalificados();
     if (!leads || leads.length === 0) {
         alert('No hay leads calificados para exportar.');
         return;
@@ -1017,9 +1017,11 @@ async function fetchData() {
                 leadsUrl += (leadsUrl.includes('?') ? '&' : '?') + `desde=${desde}&hasta=${hasta}`;
             }
             const proxyUrl = `/api/proxy?url=${encodeURIComponent(leadsUrl)}`;
+            const calificadosPromise = esCasaDeEmpeno() ? cdeFetchCalificados() : null;
             const response = await fetch(proxyUrl);
             if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
             rawData = await response.json();
+            if (calificadosPromise) state.cdeCalificados = await calificadosPromise;
         }
 
         // Rango sin leads: el webhook responde [{ sin_datos: true }] para que la
@@ -1129,7 +1131,7 @@ function ajustarValoresGrandes() {
 
 function calculateMetrics() {
     const total = state.filteredLeads.length;
-    const qualifiedLeads = state.filteredLeads.filter(l => isQualified(l));
+    const qualifiedLeads = leadsCalificados();
     const qualified = qualifiedLeads.length;
 
     // CEFEMEX Capital: la inversión sale de la captura mensual (tabla ad_spend),
@@ -1294,9 +1296,10 @@ function renderTable() {
         th.style.display = isCDETable ? '' : 'none';
     });
 
-    let leadsToShow = state.filteredLeads.filter(l => isQualified(l));
+    let leadsToShow = leadsCalificados();
 
-    if (leadsToShow.length === 0 && state.leads.length > 0) {
+    const cdeConEndpoint = esCasaDeEmpeno() && Array.isArray(state.cdeCalificados);
+    if (leadsToShow.length === 0 && state.leads.length > 0 && !cdeConEndpoint) {
         leadsToShow = state.filteredLeads;
     }
 
@@ -1620,7 +1623,7 @@ function createMainChart() {
     // Grouping by Date
     const dailyData = {};
     const sourceLeads = state.chartMode === 'calificados'
-        ? state.filteredLeads.filter(l => isQualified(l))
+        ? leadsCalificados()
         : state.filteredLeads;
     const sorted = [...sourceLeads].sort((a, b) => a.fecha_parsed - b.fecha_parsed);
 
@@ -1849,6 +1852,24 @@ function ventasCefemexEnRango() {
 }
 const CEFEMEX_ETAPA_PERDIDO = 143;
 
+// Lista de calificados del rango activo.
+// Casa de Empeño: sale de dashbord_cde_calificados = leads que ENTRARON a una etapa
+// de calificado (Lead empeño Oro / OTROS / vehículo, Rescate, Venta oro) dentro del
+// rango, contados por FECHA DE CALIFICACIÓN y sin importar su etapa actual. Es el
+// mismo criterio que los correos "Nuevo Lead CALIFICADO" y el tablero de Intralabs.
+// Antes se contaban los leads CREADOS en el rango que SEGUÍAN en una etapa del
+// funnel: un calificado que el equipo pasaba a Seguimiento / Sin respuesta /
+// Contactar futuro desaparecía (oct-2026: 24 en vez de 60).
+// Si el endpoint falla (state.cdeCalificados = null) se usa el criterio anterior.
+function leadsCalificados() {
+    if (esCasaDeEmpeno() && Array.isArray(state.cdeCalificados)) {
+        return state.cdeCalificados.filter(l => l.fecha_parsed
+            && (!state.filters.start || l.fecha_parsed >= state.filters.start)
+            && (!state.filters.end || l.fecha_parsed <= state.filters.end));
+    }
+    return state.filteredLeads.filter(l => isQualified(l));
+}
+
 function isQualified(lead) {
     if (!lead) return false;
 
@@ -1887,6 +1908,7 @@ function isQualified(lead) {
 
     // --- CEFEMEX CASA DE EMPEÑO: califican las 6 etapas del funnel (incl. venta perdida) ---
     if (state.clientId === 'casa-de-empeno' || state.clientId === 'casa-de-empeño') {
+        if (lead.calificado) return true;   // viene de dashbord_cde_calificados
         return typeof cdeStage === 'function' && cdeStage(lead) !== null;
     }
 
@@ -5472,7 +5494,7 @@ function renderMobileDashboard() {
     // Leads list (show last 6 qualified)
     const leadsList = document.getElementById('mob-leads-list');
     if (leadsList) {
-        const qualified = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l) : true);
+        const qualified = [...leadsCalificados()].sort((a, b) => (a.fecha_parsed || 0) - (b.fecha_parsed || 0));
         const recent = qualified.slice(-6).reverse();
         if (recent.length === 0) {
             const emptyColor = document.documentElement.getAttribute('data-theme') === 'light' ? 'rgba(15,23,42,0.3)' : 'rgba(255,255,255,0.3)';
@@ -5502,7 +5524,7 @@ function _renderMobileChart() {
     if (_mobChartInstance) { _mobChartInstance.destroy(); _mobChartInstance = null; }
 
     // Build daily data same way as main chart
-    const sourceLeads = state.filteredLeads.filter(l => typeof isQualified === 'function' ? isQualified(l) : true);
+    const sourceLeads = leadsCalificados();
     const dailyData = {};
     sourceLeads.forEach(l => {
         if (!l.fecha_parsed || isNaN(l.fecha_parsed.getTime())) return;
@@ -7163,6 +7185,37 @@ function cdeStage(lead) {
 // llega en la consulta de agosto y la tarjeta lo perdía.
 // Consulta Kommo por etapa "Empeñado" + updated_at y filtra por F_Empeño.
 const CDE_EMPENOS_URL = 'https://n8n.srv1436923.hstgr.cloud/webhook/dashbord_cde_empenos';
+
+// Calificados por FECHA DE CALIFICACIÓN (workflow n8n "DASHBOARD CDE - Calificados").
+// Ver leadsCalificados(). Devuelve la lista normalizada o null si falla.
+const CDE_CALIFICADOS_URL = 'https://n8n.srv1436923.hstgr.cloud/webhook/dashbord_cde_calificados';
+
+async function cdeFetchCalificados() {
+    const desde = state.filters.start ? Math.floor(state.filters.start.getTime() / 1000) : 0;
+    const hasta = state.filters.end ? Math.floor(state.filters.end.getTime() / 1000) : Math.floor(Date.now() / 1000);
+    try {
+        const url = `${CDE_CALIFICADOS_URL}?desde=${desde}&hasta=${hasta}`;
+        const res = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const payload = Array.isArray(data) ? data[0] : data;
+        if (!payload || !Array.isArray(payload.leads)) throw new Error('respuesta inesperada');
+        return payload.leads.map(l => {
+            const estatus = normalizeStatus(l.estatus);
+            return {
+                ...l,
+                calificado: true,
+                estatus,
+                estatus_original: estatus,
+                // La fecha que se muestra y se filtra es la de calificación.
+                fecha_parsed: parseCustomDate(l.fecha_calificacion || l.fecha_creacion)
+            };
+        });
+    } catch (e) {
+        console.warn('[CDE] Calificados por fecha de calificación no disponibles:', e.message);
+        return null;
+    }
+}
 // Respuesta completa del endpoint: { total, monto, leads[] }. null = sin respuesta
 // (petición en vuelo o fallida) → se usa el respaldo local (cdeEmpenosLocales()).
 // Conteo (card-3), monto (card-8), ROAS y la tabla "Empeños cerrados del periodo"
@@ -7383,8 +7436,11 @@ function renderCdeExtra() {
     const empenosAct = cdeEmpenosActivos();
     const empenados = empenosAct.total;
 
-    // Punto 1: Oportunidades calificadas = total del funnel INCLUYENDO venta perdida
-    const c1 = document.getElementById('card-1-value'); if (c1) c1.textContent = totalFunnel;
+    // Punto 1: Oportunidades calificadas = calificados por FECHA DE CALIFICACIÓN
+    // (leadsCalificados(), mismo número que la tabla). Si el endpoint no respondió,
+    // respaldo: total del funnel INCLUYENDO venta perdida (criterio anterior).
+    const totalCalificados = Array.isArray(state.cdeCalificados) ? leadsCalificados().length : totalFunnel;
+    const c1 = document.getElementById('card-1-value'); if (c1) c1.textContent = totalCalificados;
     // Punto 2: "Ventas" -> "Empeños cerrados" (conteo de empeñados)
     const lbl3 = document.getElementById('label-main-3'); if (lbl3) lbl3.textContent = 'Empeños cerrados';
     const sub3 = document.getElementById('label-sub-3'); if (sub3) sub3.textContent = 'POR FECHA DE EMPEÑO';
@@ -7738,15 +7794,18 @@ function cdeRenderStatusChips(leadsToShow, current) {
     const counts = {}; CDE_CHIP_ESTADOS.forEach(f => counts[f] = 0);
     (leadsToShow || []).forEach(l => {
         const b = l.etiquetas_display || l.estatus;
-        if (counts[b] != null) counts[b]++;
+        if (b) counts[b] = (counts[b] || 0) + 1;
     });
+    // Un calificado puede estar hoy en cualquier etapa: las que no son fijas se
+    // agregan al final para que la suma de los chips dé el total de calificados.
+    const estados = [...CDE_CHIP_ESTADOS, ...Object.keys(counts).filter(e => !CDE_CHIP_ESTADOS.includes(e))];
     const chip = (label, count, value) => {
         const active = (current || '') === value;
         return `<button type="button" class="cde-chip${active ? ' active' : ''}" onclick="cdeSetEstado(this.dataset.v)" data-v="${value.replace(/"/g, '&quot;')}">`
             + `<span class="cde-chip-n">${count}</span><span class="cde-chip-l">${label}</span></button>`;
     };
     cont.innerHTML = chip('Calificados', (leadsToShow || []).length, '')
-        + CDE_CHIP_ESTADOS.map(f => chip(f, counts[f], f)).join('');
+        + estados.map(f => chip(f, counts[f], f)).join('');
 }
 
 function cdeSetEstado(v) {
