@@ -33,7 +33,12 @@ const CUENTAS = {
             utm_campaign: 717912,
             utm_source: 717914,
             respuesta_ai: 3871571   // RespuestaCamila
-        }
+        },
+        // Etapas donde el agente deja al lead cuando lo califica: «condicionado» y
+        // «Lead Calificado 500k-5m». La fecha en que el lead ENTRÓ a una de ellas es
+        // su fecha de calificación (misma que el correo «Nuevo Lead CALIFICADO /
+        // CONDICIONADO» y el tablero de Intralabs).
+        calificacion: { pipeline: 12290263, etapas: [100538404, 100458628] }
     }
 };
 
@@ -99,6 +104,32 @@ async function leerLeads(base, cabeceras, desde, hasta) {
     return todos;
 }
 
+// Fechas de calificación por lead: eventos «cambio de etapa» que entran a las
+// etapas de cuenta.calificacion. Un lead puede calificar más de una vez (vuelve
+// meses después): se devuelven todas las fechas y el dashboard usa las del rango.
+// Si falla, devuelve null y el dashboard usa su criterio anterior.
+async function leerCalificaciones(base, cabeceras, conf) {
+    if (!conf) return null;
+    const filtro = conf.etapas.map((id, i) =>
+        `&filter[value_after][leads_statuses][${i}][pipeline_id]=${conf.pipeline}` +
+        `&filter[value_after][leads_statuses][${i}][status_id]=${id}`).join('');
+    const porLead = {};
+    try {
+        for (let pagina = 1; pagina <= 100; pagina++) {
+            const j = await pedirJson(`${base}/api/v4/events?limit=100&page=${pagina}` +
+                `&filter[type]=lead_status_changed${filtro}`, cabeceras);
+            const eventos = j?._embedded?.events || [];
+            for (const e of eventos) (porLead[e.entity_id] ||= []).push(e.created_at);
+            if (eventos.length < 100) break;
+        }
+    } catch (e) {
+        console.error('[kommo/leads] calificaciones:', e.message);
+        return null;
+    }
+    for (const id in porLead) porLead[id].sort((a, b) => a - b);
+    return porLead;
+}
+
 // Kommo NO manda el nombre del contacto junto con el lead, solo su id: hay que
 // pedirlos aparte. Es el 60% del tiempo total de la consulta.
 async function leerContactos(base, cabeceras, ids) {
@@ -150,9 +181,10 @@ module.exports = async function handler(req, res) {
 
     try {
         const t0 = Date.now();
-        const [etapas, leads] = await Promise.all([
+        const [etapas, leads, calificaciones] = await Promise.all([
             leerEtapas(base, cabeceras),
-            leerLeads(base, cabeceras, desde, hasta)
+            leerLeads(base, cabeceras, desde, hasta),
+            leerCalificaciones(base, cabeceras, cuenta.calificacion)
         ]);
 
         const idsContacto = [...new Set(
@@ -174,6 +206,9 @@ module.exports = async function handler(req, res) {
                 id_lead: l.id,
                 id_contacto: idContacto,
                 nombre: contacto?.nombre || l.name,
+                // Nombre del LEAD (no del contacto): ahí se marcan las pruebas internas,
+                // p. ej. «Prueba intra», cuyo contacto se llama «Mundo Hola».
+                nombre_lead: l.name,
                 telefono: contacto?.telefono || null,
                 precio: l.price,
                 estatus: etapas[l.status_id] || `ID: ${l.status_id}`,
@@ -187,6 +222,10 @@ module.exports = async function handler(req, res) {
                 // Métricas a partir del historial de etapas (verificado en los 18
                 // ganados del histórico). La tarjeta "Ventas" cuenta por esta fecha.
                 cerrado_ts: l.closed_at || null,
+                // Fechas (unix, s) en que el lead entró a una etapa de calificado.
+                // Solo viene si se pudieron leer; sin el campo, el dashboard cuenta
+                // como antes.
+                ...(calificaciones ? { calificado_ts: calificaciones[l.id] || [] } : {}),
                 utm_medium: valor(campos, cuenta.campos.utm_medium),
                 utm_campaign: valor(campos, cuenta.campos.utm_campaign),
                 utm_content: valor(campos, cuenta.campos.utm_content),

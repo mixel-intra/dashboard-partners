@@ -1168,7 +1168,17 @@ function calculateMetrics() {
         sales = filteredVentas.reduce((sum, v) => sum + parseFloat(v.monto || 0), 0);
     }
 
-    const conversionRate = total > 0 ? (qualified / total) : 0;
+    // CEFEMEX Capital con fechas de calificación: el filtro Intra deja en `total`
+    // solo los leads etiquetados CREADOS en el rango, y los calificados ya no salen
+    // de ahí (oct-2026: 13 calificados / 10 etiquetados = 130%). La tasa se mide
+    // contra TODOS los leads que llegaron en el rango, con o sin etiqueta.
+    let base = total;
+    if (capitalConFechasCalificacion() && state.filters.etiqueta) {
+        const ini = state.filters.start, fin = state.filters.end;
+        base = state.leads.filter(l => l.fecha_parsed && (!ini || l.fecha_parsed >= ini)
+            && (!fin || l.fecha_parsed <= fin)).length;
+    }
+    const conversionRate = base > 0 ? (qualified / base) : 0;
     const roi = investment > 0 ? (sales / investment) : 0;
     const cpl = qualified > 0 ? (investment / qualified) : 0;
 
@@ -1862,6 +1872,7 @@ const CEFEMEX_ETAPA_PERDIDO = 143;
 // Contactar futuro desaparecía (oct-2026: 24 en vez de 60).
 // Si el endpoint falla (state.cdeCalificados = null) se usa el criterio anterior.
 function leadsCalificados() {
+    if (capitalConFechasCalificacion()) return capitalCalificados();
     if (esCasaDeEmpeno() && Array.isArray(state.cdeCalificados)) {
         return state.cdeCalificados.filter(l => l.fecha_parsed
             && (!state.filters.start || l.fecha_parsed >= state.filters.start)
@@ -1870,11 +1881,52 @@ function leadsCalificados() {
     return state.filteredLeads.filter(l => isQualified(l));
 }
 
+// CEFEMEX Capital: calificados por FECHA DE CALIFICACIÓN, sin importar la etapa actual.
+// api/kommo/leads.js manda en cada lead `calificado_ts` = fechas en que ENTRÓ a
+// «condicionado» o «Lead Calificado 500k-5m» (donde lo deja Camila al calificar).
+// Cuenta si alguna cae en el rango; la fecha que se muestra es la última del rango.
+// Es el mismo criterio que los correos «Nuevo Lead CALIFICADO / CONDICIONADO» y el
+// tablero de Intralabs (oct-2026: 13). Antes se contaban los leads CREADOS en el
+// rango que SEGUÍAN en ciertas etapas: oct daba 8 (se perdían los creados en meses
+// anteriores que calificaron en octubre y los que están en «Seguimiento calificado
+// Camila»). Leads que nunca pasaron por esas etapas (p. ej. los que un asesor da de
+// alta directo en Integración de expediente) siguen con el criterio anterior.
+// Si el servidor no manda `calificado_ts`, todo se cuenta como antes.
+function capitalConFechasCalificacion() {
+    return state.clientId === 'cefemex' && (state.leads || []).some(l => Array.isArray(l.calificado_ts));
+}
+
+// Leads de prueba internos: nunca cuentan como calificados. Se reconocen por el
+// nombre del lead o del contacto («Prueba intra») o por la etiqueta PRUEBAS_INTRA.
+function esLeadPrueba(lead) {
+    return /prueba/i.test(`${lead?.nombre || ''} ${lead?.nombre_lead || ''} ${getLeadTags(lead || {}).join(' ')}`);
+}
+
+function capitalCalificados() {
+    const ini = state.filters.start, fin = state.filters.end;
+    const enRango = d => (!ini || d >= ini) && (!fin || d <= fin);
+    const tipoTab = state.clientType === 'hotel' ? TAB_SERVICE_MAP[state.activeTab] : null;
+    const salida = [];
+    for (const lead of state.leads) {
+        if (tipoTab && lead.tipo_servicio !== tipoTab) continue;
+        if (!pasaFiltroEtiqueta(lead) || esLeadPrueba(lead)) continue;
+        const ts = lead.calificado_ts || [];
+        if (ts.length) {
+            const fechas = ts.map(t => new Date(t * 1000)).filter(enRango);
+            if (fechas.length) salida.push({ ...lead, calificado: true, fecha_parsed: fechas[fechas.length - 1] });
+        } else if (lead.fecha_parsed && enRango(lead.fecha_parsed) && isQualified(lead)) {
+            salida.push(lead);
+        }
+    }
+    return salida;
+}
+
 function isQualified(lead) {
     if (!lead) return false;
 
     // --- CEFEMEX CAPITAL: se evalúa por ID de etapa del pipeline ---
     if (state.clientId === 'cefemex') {
+        if (lead.calificado) return true;   // viene de capitalCalificados()
         const etapa = Number(lead.estatus_id);
 
         // Etapas #8 a #19 del pipeline → calificado directo.
